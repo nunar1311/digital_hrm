@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Digital HRM
 
-## Getting Started
+Hệ thống quản lý nhân sự thông minh xây dựng trên **Next.js 16**, **Prisma**, **PostgreSQL** và **Better Auth**.
 
-First, run the development server:
+---
+
+## Yêu cầu hệ thống
+
+| Công cụ    | Phiên bản tối thiểu |
+| ---------- | ------------------- |
+| Node.js    | 20+                 |
+| pnpm       | 9+                  |
+| PostgreSQL | 14+                 |
+
+---
+
+## Hướng dẫn cài đặt
+
+### 1. Clone repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/<your-org>/digital_hrm.git
+cd digital_hrm
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Cài đặt dependencies
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Cấu hình biến môi trường
 
-## Learn More
+Tạo file `.env` ở thư mục gốc:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+# Database
+DATABASE_URL="postgresql://<user>:<password>@<host>:<port>/<database>"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Better Auth
+BETTER_AUTH_SECRET="<random-secret-string>"
+BETTER_AUTH_URL="http://localhost:3000"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> **Lưu ý:** `BETTER_AUTH_SECRET` nên là một chuỗi ngẫu nhiên dài ít nhất 32 ký tự. Có thể tạo bằng lệnh:
+>
+> ```bash
+> openssl rand -base64 32
+> ```
 
-## Deploy on Vercel
+### 4. Tạo database schema
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm prisma migrate deploy
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> Nếu đang ở môi trường **development** lần đầu:
+>
+> ```bash
+> pnpm prisma migrate dev
+> ```
+
+### 5. Seed dữ liệu mẫu
+
+```bash
+pnpm tsx prisma/seed.ts
+```
+
+Lệnh này sẽ tạo tài khoản admin mặc định và dữ liệu mẫu ban đầu.
+
+### 6. Generate Prisma Client
+
+```bash
+pnpm prisma generate
+```
+
+### 7. Chạy ứng dụng
+
+```bash
+pnpm dev
+```
+
+Mở [http://localhost:3000](http://localhost:3000) trên trình duyệt.
+
+---
+
+## Scripts
+
+| Lệnh                      | Mô tả                            |
+| ------------------------- | -------------------------------- |
+| `pnpm dev`                | Chạy development server          |
+| `pnpm build`              | Build production                 |
+| `pnpm start`              | Chạy production server           |
+| `pnpm lint`               | Kiểm tra lỗi ESLint              |
+| `pnpm prisma studio`      | Mở Prisma Studio để xem database |
+| `pnpm prisma migrate dev` | Tạo và áp dụng migration mới     |
+| `pnpm tsx prisma/seed.ts` | Seed dữ liệu mẫu                 |
+
+---
+
+## Tech Stack
+
+- **Framework:** [Next.js 16](https://nextjs.org) (App Router)
+- **Database ORM:** [Prisma 7](https://www.prisma.io) + PostgreSQL
+- **Authentication:** [Better Auth](https://better-auth.com)
+- **UI Components:** [shadcn/ui](https://ui.shadcn.com) + [Radix UI](https://www.radix-ui.com)
+- **Styling:** [Tailwind CSS v4](https://tailwindcss.com)
+- **Icons:** [Lucide React](https://lucide.dev)
