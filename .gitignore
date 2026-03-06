@@ -41,3 +41,13 @@ yarn-error.log*
 next-env.d.ts
 
 /generated/prisma
+
+# Bỏ qua các file tài liệu context cá nhân
+AntigravityReadMe.txt
+*.xlsx
+digital_hrm_build_prompt.md.resolved
+
+# Bỏ qua não bộ AI của cá nhân
+.agent/
+AGENTS.md
+GEMINI.md
