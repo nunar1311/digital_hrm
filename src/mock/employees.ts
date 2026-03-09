@@ -123,13 +123,14 @@ export function generateMockEmployees(count: number): Employee[] {
         const middleName = isFemale ? pick(MIDDLE_F) : pick(MIDDLE_M);
         const firstName = isFemale ? pick(FIRST_F) : pick(FIRST_M);
         const dept = pick(depts);
-        const code = `NV-${String(i + 1).padStart(3, '0')}`;
+        const empIndex = i + 100; // Offset by 100 to avoid conflicts with base employees (which are under 100)
+        const code = `NV-${String(empIndex).padStart(3, '0')}`;
         const year = 1985 + Math.floor(Math.random() * 15);
         const hireYear = 2019 + Math.floor(Math.random() * 6);
 
         result.push({
-            id: `emp-${String(i + 1).padStart(3, '0')}`,
-            userId: `usr-${String(i + 1).padStart(3, '0')}`,
+            id: `emp-${String(empIndex).padStart(3, '0')}`,
+            userId: `usr-${String(empIndex).padStart(3, '0')}`,
             employeeCode: code,
             fullName: `${lastName} ${middleName} ${firstName}`,
             dateOfBirth: `${year}-${String(1 + Math.floor(Math.random() * 12)).padStart(2, '0')}-${String(1 + Math.floor(Math.random() * 28)).padStart(2, '0')}`,

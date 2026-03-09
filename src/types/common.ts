@@ -189,6 +189,7 @@ export interface PaginatedResult<T> {
 export interface FilterParams {
     search?: string;
     departmentId?: string;
+    positionId?: string;
     status?: string;
     employmentType?: string;
     dateFrom?: string;

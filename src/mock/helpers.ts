@@ -51,6 +51,7 @@ export function filterEmployees(
             if (!match) return false;
         }
         if (filters.departmentId && emp.departmentId !== filters.departmentId) return false;
+        if (filters.positionId && emp.positionId !== filters.positionId) return false;
         if (filters.status && emp.status !== filters.status) return false;
         if (filters.employmentType && emp.employmentType !== filters.employmentType) return false;
         return true;

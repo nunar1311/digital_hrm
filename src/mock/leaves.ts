@@ -32,8 +32,6 @@ export function generateLeaveBalances(): LeaveBalance[] {
 
 export const mockLeaveBalances: LeaveBalance[] = generateLeaveBalances();
 
-const STATUSES: LeaveRequest['status'][] = ['PENDING', 'APPROVED', 'APPROVED', 'APPROVED', 'REJECTED'];
-
 export const mockLeaveRequests: LeaveRequest[] = [
     { id: 'lr-001', employeeId: 'emp-007', leaveTypeId: 'lt-001', startDate: '2026-03-10', endDate: '2026-03-11', totalDays: 2, reason: 'Về quê thăm gia đình', status: 'PENDING', approvedBy: null, approvedAt: null, rejectedReason: null, attachmentUrl: null, createdAt: '2026-03-05T08:00:00Z', updatedAt: '2026-03-05T08:00:00Z', employeeName: 'Trần Thị Linh', employeeCode: 'NV-007', departmentName: 'Phòng Kỹ thuật', leaveTypeName: 'Nghỉ phép năm', leaveTypeColor: '#6366f1', approverName: undefined },
     { id: 'lr-002', employeeId: 'emp-004', leaveTypeId: 'lt-002', startDate: '2026-02-20', endDate: '2026-02-21', totalDays: 2, reason: 'Khám bệnh', status: 'APPROVED', approvedBy: 'emp-001', approvedAt: '2026-02-19T10:00:00Z', rejectedReason: null, attachmentUrl: null, createdAt: '2026-02-18T09:00:00Z', updatedAt: '2026-02-19T10:00:00Z', employeeName: 'Phạm Đức Cường', employeeCode: 'NV-004', departmentName: 'Phòng Kỹ thuật', leaveTypeName: 'Nghỉ ốm', leaveTypeColor: '#ef4444', approverName: 'Nguyễn Văn An' },

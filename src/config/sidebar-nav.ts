@@ -96,6 +96,14 @@ export const sidebarNav: NavGroup[] = [
                         url: "/employees/new",
                         permissions: [Permission.EMPLOYEE_CREATE],
                     },
+                    {
+                        title: "Nhập/Xuất Excel",
+                        url: "/employees/import-export",
+                        permissions: [
+                            Permission.EMPLOYEE_IMPORT,
+                            Permission.EMPLOYEE_EXPORT,
+                        ],
+                    },
                 ],
             },
             {
