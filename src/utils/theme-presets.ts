@@ -28,41 +28,70 @@ export function getPresetThemeStyles(name: string): ThemeStyles {
     };
 }
 
+const primaryPair = (primary: string, primaryFg: string) => ({
+    primary,
+    "primary-foreground": primaryFg,
+});
+
 export const presets: Record<string, ThemeStyles> = {
     green: {
         light: {
-            background: "oklch(1 0 0)",
-            foreground: "oklch(0.141 0.005 285.823)",
-            card: "oklch(1 0 0)",
-            "card-foreground": "oklch(0.141 0.005 285.823)",
-            popover: "oklch(1 0 0)",
-            "popover-foreground": "oklch(0.141 0.005 285.823)",
-            primary: "oklch(0.648 0.2 131.684)",
-            "primary-foreground": "oklch(0.986 0.031 120.757)",
-            secondary: "oklch(0.967 0.001 286.375)",
-            "secondary-foreground": "oklch(0.21 0.006 285.885)",
-            muted: "oklch(0.967 0.001 286.375)",
-            "muted-foreground": "oklch(0.552 0.016 285.938)",
-            accent: "oklch(0.967 0.001 286.375)",
-            "accent-foreground": "oklch(0.21 0.006 285.885)",
-            destructive: "oklch(0.577 0.245 27.325)",
+            ...defaultThemeState.light,
+            ...primaryPair("oklch(0.648 0.2 131.684)", "oklch(0.986 0.031 120.757)"),
         },
         dark: {
-            background: "oklch(0.141 0.005 285.823)",
-            foreground: "oklch(0.985 0 0)",
-            card: "oklch(0.21 0.006 285.885)",
-            "card-foreground": "oklch(0.985 0 0)",
-            popover: "oklch(0.21 0.006 285.885)",
-            "popover-foreground": "oklch(0.985 0 0)",
-            primary: "oklch(0.648 0.2 131.684)",
-            "primary-foreground": "oklch(0.986 0.031 120.757)",
-            secondary: "oklch(0.274 0.006 286.033)",
-            "secondary-foreground": "oklch(0.985 0 0)",
-            muted: "oklch(0.274 0.006 286.033)",
-            "muted-foreground": "oklch(0.705 0.015 286.067)",
-            accent: "oklch(0.274 0.006 286.033)",
-            "accent-foreground": "oklch(0.985 0 0)",
-            destructive: "oklch(0.704 0.191 22.216)",
+            ...defaultThemeState.dark,
+            ...primaryPair("oklch(0.648 0.2 131.684)", "oklch(0.986 0.031 120.757)"),
+        },
+    },
+    violet: {
+        light: {
+            ...defaultThemeState.light,
+            ...primaryPair("oklch(0.556 0.215 292.717)", "oklch(0.985 0 0)"),
+        },
+        dark: {
+            ...defaultThemeState.dark,
+            ...primaryPair("oklch(0.627 0.265 303.9)", "oklch(0.985 0 0)"),
+        },
+    },
+    blue: {
+        light: {
+            ...defaultThemeState.light,
+            ...primaryPair("oklch(0.558 0.214 252.894)", "oklch(0.985 0 0)"),
+        },
+        dark: {
+            ...defaultThemeState.dark,
+            ...primaryPair("oklch(0.488 0.243 264.376)", "oklch(0.985 0 0)"),
+        },
+    },
+    rose: {
+        light: {
+            ...defaultThemeState.light,
+            ...primaryPair("oklch(0.645 0.246 16.439)", "oklch(0.985 0 0)"),
+        },
+        dark: {
+            ...defaultThemeState.dark,
+            ...primaryPair("oklch(0.704 0.191 22.216)", "oklch(0.985 0 0)"),
+        },
+    },
+    orange: {
+        light: {
+            ...defaultThemeState.light,
+            ...primaryPair("oklch(0.705 0.213 47.604)", "oklch(0.145 0 0)"),
+        },
+        dark: {
+            ...defaultThemeState.dark,
+            ...primaryPair("oklch(0.769 0.188 70.08)", "oklch(0.145 0 0)"),
+        },
+    },
+    teal: {
+        light: {
+            ...defaultThemeState.light,
+            ...primaryPair("oklch(0.696 0.17 162.48)", "oklch(0.985 0 0)"),
+        },
+        dark: {
+            ...defaultThemeState.dark,
+            ...primaryPair("oklch(0.696 0.17 162.48)", "oklch(0.985 0 0)"),
         },
     },
 };

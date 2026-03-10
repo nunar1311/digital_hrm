@@ -1,16 +1,25 @@
 import type { Metadata } from "next";
+import { requirePermission } from "@/lib/auth-session";
+import { Permission } from "@/lib/rbac/permissions";
+import { getAuditLogs, getAuditLogFilters } from "../actions";
+import { AuditLogClient } from "./audit-log-client";
 
 export const metadata: Metadata = {
     title: "Nhật ký hệ thống | Digital HRM",
 };
 
-export default function AuditLogPage() {
+export default async function AuditLogPage() {
+    await requirePermission(Permission.SETTINGS_AUDIT_LOG);
+
+    const [logsData, filters] = await Promise.all([
+        getAuditLogs({ page: 1, pageSize: 20 }),
+        getAuditLogFilters(),
+    ]);
+
     return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Nhật ký hệ thống (Audit Log)
-            </h1>
-            {/* TODO: Activity audit log */}
-        </div>
+        <AuditLogClient
+            initialData={JSON.parse(JSON.stringify(logsData))}
+            filters={JSON.parse(JSON.stringify(filters))}
+        />
     );
 }

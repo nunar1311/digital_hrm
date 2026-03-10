@@ -1,16 +1,9 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
 
 export default function Loading() {
     return (
-        <div className="space-y-6">
-            <Skeleton className="h-8 w-48" />
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Skeleton className="h-32" />
-                <Skeleton className="h-32" />
-                <Skeleton className="h-32" />
-                <Skeleton className="h-32" />
-            </div>
-            <Skeleton className="h-64" />
+        <div className="h-full w-full flex items-center justify-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
         </div>
     );
 }

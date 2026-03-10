@@ -189,6 +189,14 @@ export const sidebarNav: NavGroup[] = [
                         ],
                     },
                     {
+                        title: "Nhật ký chấm công",
+                        url: "/attendance/records",
+                        permissions: [
+                            Permission.ATTENDANCE_VIEW_TEAM,
+                            Permission.ATTENDANCE_VIEW_ALL,
+                        ],
+                    },
+                    {
                         title: "Ca làm việc",
                         url: "/attendance/shifts",
                         permissions: [
@@ -209,6 +217,13 @@ export const sidebarNav: NavGroup[] = [
                         permissions: [
                             Permission.ATTENDANCE_EXPLANATION,
                             Permission.ATTENDANCE_APPROVE,
+                        ],
+                    },
+                    {
+                        title: "Thiết lập",
+                        url: "/attendance/settings",
+                        permissions: [
+                            Permission.ATTENDANCE_SHIFT_MANAGE,
                         ],
                     },
                 ],

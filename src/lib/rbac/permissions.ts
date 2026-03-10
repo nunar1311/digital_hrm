@@ -68,6 +68,7 @@ export enum Permission {
     ATTENDANCE_APPROVE = "attendance:approve",
     ATTENDANCE_SHIFT_MANAGE = "attendance:shift_manage",
     ATTENDANCE_OVERTIME_APPROVE = "attendance:overtime_approve",
+    ATTENDANCE_OVERTIME_HR_REVIEW = "attendance:overtime_hr_review",
 
     // Lương
     PAYROLL_VIEW_SELF = "payroll:view_self",
@@ -141,6 +142,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.LEAVE_CALENDAR_VIEW,
         Permission.ATTENDANCE_VIEW_ALL,
         Permission.ATTENDANCE_OVERTIME_APPROVE,
+        Permission.ATTENDANCE_OVERTIME_HR_REVIEW,
         Permission.PAYROLL_VIEW_ALL,
         Permission.PAYROLL_APPROVE,
         Permission.ONBOARDING_VIEW,
@@ -191,6 +193,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.ATTENDANCE_APPROVE,
         Permission.ATTENDANCE_SHIFT_MANAGE,
         Permission.ATTENDANCE_OVERTIME_APPROVE,
+        Permission.ATTENDANCE_OVERTIME_HR_REVIEW,
         Permission.PAYROLL_VIEW_ALL,
         Permission.PAYROLL_CALCULATE,
         Permission.PAYROLL_FORMULA_MANAGE,

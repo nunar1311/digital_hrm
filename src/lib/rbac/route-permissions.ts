@@ -68,6 +68,13 @@ export const ROUTE_PERMISSIONS: Array<{
 
     // ─── Chấm công ───
     {
+        pattern: "/attendance/records",
+        permissions: [
+            Permission.ATTENDANCE_VIEW_TEAM,
+            Permission.ATTENDANCE_VIEW_ALL,
+        ],
+    },
+    {
         pattern: "/attendance/shifts",
         permissions: [Permission.ATTENDANCE_SHIFT_MANAGE],
     },

@@ -141,6 +141,290 @@ async function seed() {
         }
     }
 
+    // ─── Seed Departments ───
+    console.log("\n🏢 Seeding departments...\n");
+
+    // Find users by email for manager assignment
+    const directorUser = await prisma.user.findUnique({
+        where: { email: "director@company.vn" },
+    });
+    const hrManagerUser = await prisma.user.findUnique({
+        where: { email: "hr.manager@company.vn" },
+    });
+    const deptManagerUser = await prisma.user.findUnique({
+        where: { email: "dept.manager@company.vn" },
+    });
+    const accountantUser = await prisma.user.findUnique({
+        where: { email: "accountant@company.vn" },
+    });
+    const itAdminUser = await prisma.user.findUnique({
+        where: { email: "it.admin@company.vn" },
+    });
+    const teamLeaderUser = await prisma.user.findUnique({
+        where: { email: "team.leader@company.vn" },
+    });
+
+    // Create root department
+    const bgd = await prisma.department.upsert({
+        where: { code: "BGD" },
+        update: {},
+        create: {
+            name: "Ban Giám đốc",
+            code: "BGD",
+            description: "Ban lãnh đạo công ty",
+            managerId: directorUser?.id ?? null,
+            sortOrder: 0,
+        },
+    });
+    console.log("  ✅ Ban Giám đốc (BGD)");
+
+    // Create child departments
+    const departments = [
+        {
+            name: "Phòng Nhân sự",
+            code: "HR",
+            description: "Quản lý nhân sự và tuyển dụng",
+            managerId: hrManagerUser?.id,
+            sortOrder: 1,
+        },
+        {
+            name: "Phòng Kỹ thuật",
+            code: "TECH",
+            description: "Phát triển phần mềm và công nghệ",
+            managerId: deptManagerUser?.id,
+            sortOrder: 2,
+        },
+        {
+            name: "Phòng Kinh doanh",
+            code: "SALES",
+            description: "Kinh doanh và chăm sóc khách hàng",
+            managerId: null,
+            sortOrder: 3,
+        },
+        {
+            name: "Phòng Tài chính - Kế toán",
+            code: "FIN",
+            description: "Quản lý tài chính và kế toán",
+            managerId: accountantUser?.id,
+            sortOrder: 4,
+        },
+        {
+            name: "Phòng Marketing",
+            code: "MKT",
+            description: "Marketing và truyền thông",
+            managerId: null,
+            sortOrder: 5,
+        },
+        {
+            name: "Phòng IT & Hạ tầng",
+            code: "IT",
+            description: "Quản trị hệ thống và hạ tầng CNTT",
+            managerId: itAdminUser?.id,
+            sortOrder: 6,
+        },
+    ];
+
+    const deptMap: Record<string, string> = {};
+    for (const dept of departments) {
+        const created = await prisma.department.upsert({
+            where: { code: dept.code },
+            update: {},
+            create: {
+                name: dept.name,
+                code: dept.code,
+                description: dept.description,
+                parentId: bgd.id,
+                managerId: dept.managerId ?? null,
+                sortOrder: dept.sortOrder,
+            },
+        });
+        deptMap[dept.code] = created.id;
+        console.log(`  ✅ ${dept.name} (${dept.code})`);
+    }
+
+    // Create sub-departments under TECH
+    const techSubDepts = [
+        {
+            name: "Nhóm Frontend",
+            code: "TECH-FE",
+            description: "Phát triển giao diện người dùng",
+            managerId: teamLeaderUser?.id,
+            sortOrder: 1,
+        },
+        {
+            name: "Nhóm Backend",
+            code: "TECH-BE",
+            description: "Phát triển hệ thống server",
+            managerId: null,
+            sortOrder: 2,
+        },
+        {
+            name: "Nhóm QA/Testing",
+            code: "TECH-QA",
+            description: "Kiểm thử và đảm bảo chất lượng",
+            managerId: null,
+            sortOrder: 3,
+        },
+    ];
+
+    for (const dept of techSubDepts) {
+        await prisma.department.upsert({
+            where: { code: dept.code },
+            update: {},
+            create: {
+                name: dept.name,
+                code: dept.code,
+                description: dept.description,
+                parentId: deptMap["TECH"],
+                managerId: dept.managerId ?? null,
+                sortOrder: dept.sortOrder,
+            },
+        });
+        console.log(`  ✅   └─ ${dept.name} (${dept.code})`);
+    }
+
+    // ─── Seed Positions ───
+    console.log("\n💼 Seeding positions...\n");
+
+    const positions = [
+        {
+            name: "Giám đốc",
+            code: "POS-DIR",
+            departmentId: bgd.id,
+            level: 1,
+        },
+        {
+            name: "Phó Giám đốc",
+            code: "POS-VDIR",
+            departmentId: bgd.id,
+            level: 2,
+        },
+        {
+            name: "Trưởng phòng Nhân sự",
+            code: "POS-HR-MGR",
+            departmentId: deptMap["HR"],
+            level: 1,
+        },
+        {
+            name: "Nhân viên Nhân sự",
+            code: "POS-HR-STAFF",
+            departmentId: deptMap["HR"],
+            level: 2,
+        },
+        {
+            name: "Trưởng phòng Kỹ thuật",
+            code: "POS-TECH-MGR",
+            departmentId: deptMap["TECH"],
+            level: 1,
+        },
+        {
+            name: "Trưởng nhóm",
+            code: "POS-TECH-TL",
+            departmentId: deptMap["TECH"],
+            level: 2,
+        },
+        {
+            name: "Lập trình viên",
+            code: "POS-TECH-DEV",
+            departmentId: deptMap["TECH"],
+            level: 3,
+        },
+        {
+            name: "Kỹ sư QA",
+            code: "POS-TECH-QA",
+            departmentId: deptMap["TECH"],
+            level: 3,
+        },
+        {
+            name: "Trưởng phòng Kinh doanh",
+            code: "POS-SALES-MGR",
+            departmentId: deptMap["SALES"],
+            level: 1,
+        },
+        {
+            name: "Nhân viên Kinh doanh",
+            code: "POS-SALES-STAFF",
+            departmentId: deptMap["SALES"],
+            level: 2,
+        },
+        {
+            name: "Kế toán trưởng",
+            code: "POS-FIN-MGR",
+            departmentId: deptMap["FIN"],
+            level: 1,
+        },
+        {
+            name: "Kế toán viên",
+            code: "POS-FIN-STAFF",
+            departmentId: deptMap["FIN"],
+            level: 2,
+        },
+        {
+            name: "Trưởng phòng Marketing",
+            code: "POS-MKT-MGR",
+            departmentId: deptMap["MKT"],
+            level: 1,
+        },
+        {
+            name: "Nhân viên Marketing",
+            code: "POS-MKT-STAFF",
+            departmentId: deptMap["MKT"],
+            level: 2,
+        },
+        {
+            name: "Quản trị hệ thống",
+            code: "POS-IT-ADMIN",
+            departmentId: deptMap["IT"],
+            level: 1,
+        },
+        {
+            name: "Nhân viên IT Support",
+            code: "POS-IT-STAFF",
+            departmentId: deptMap["IT"],
+            level: 2,
+        },
+    ];
+
+    for (const pos of positions) {
+        await prisma.position.upsert({
+            where: { code: pos.code },
+            update: {},
+            create: {
+                name: pos.name,
+                code: pos.code,
+                departmentId: pos.departmentId,
+                level: pos.level,
+            },
+        });
+        console.log(`  ✅ ${pos.name} (${pos.code})`);
+    }
+
+    // ─── Update user departmentId ───
+    console.log("\n🔗 Linking users to departments...\n");
+    const userDeptLinks: { email: string; deptCode: string }[] = [
+        { email: "director@company.vn", deptCode: "BGD" },
+        { email: "hr.manager@company.vn", deptCode: "HR" },
+        { email: "hr.staff@company.vn", deptCode: "HR" },
+        { email: "dept.manager@company.vn", deptCode: "TECH" },
+        { email: "team.leader@company.vn", deptCode: "TECH" },
+        { email: "employee@company.vn", deptCode: "TECH" },
+        { email: "accountant@company.vn", deptCode: "FIN" },
+        { email: "it.admin@company.vn", deptCode: "IT" },
+    ];
+
+    for (const link of userDeptLinks) {
+        const dept = await prisma.department.findUnique({
+            where: { code: link.deptCode },
+        });
+        if (dept) {
+            await prisma.user.updateMany({
+                where: { email: link.email },
+                data: { departmentId: dept.id },
+            });
+            console.log(`  ✅ ${link.email} → ${link.deptCode}`);
+        }
+    }
+
     console.log("\n🎉 Seed hoàn tất!");
     console.log("\n📋 Thông tin đăng nhập:");
     console.log("─".repeat(60));
