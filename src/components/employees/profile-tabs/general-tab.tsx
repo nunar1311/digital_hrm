@@ -108,7 +108,7 @@ export function GeneralTab({ employee }: Props) {
                 </CardHeader>
                 <CardContent>
                     {dependents.length > 0 ? (
-                        <div className="rounded-md border overflow-hidden">
+                        <div className="rounded-md border overflow-x-auto overflow-hidden">
                             <table className="w-full text-sm">
                                 <thead className="bg-muted/50 border-b">
                                     <tr>

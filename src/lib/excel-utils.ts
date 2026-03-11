@@ -5,7 +5,6 @@
 
 "use client";
 
-import * as XLSX from 'xlsx';
 import type { Employee } from '@/types';
 
 // ─── Vietnamese Column Mapping ──────────────────────────────────────────────
@@ -96,7 +95,8 @@ export function parseVietnameseDate(dateStr: string): string | null {
 
 // ─── Export ─────────────────────────────────────────────────────────────────
 
-export function exportEmployeesToExcel(employees: Employee[], filename = 'danh-sach-nhan-vien') {
+export async function exportEmployeesToExcel(employees: Employee[], filename = 'danh-sach-nhan-vien') {
+    const XLSX = await import('xlsx');
     const vietnameseData = employees.map((emp) => ({
         [COLUMN_MAP.employeeCode]: emp.employeeCode,
         [COLUMN_MAP.fullName]: emp.fullName,
@@ -155,8 +155,9 @@ export function parseExcelFile(file: File): Promise<ParsedImportResult> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
+                const XLSX = await import('xlsx');
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
                 const workbook = XLSX.read(data, { type: 'array' });
 

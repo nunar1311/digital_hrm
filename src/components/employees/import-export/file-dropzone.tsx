@@ -120,14 +120,16 @@ export function FileDropzone({ onFileParsed, onClear, isLoading }: FileDropzoneP
             onClick={() => !selectedFile && inputRef.current?.click()}
         >
             <CardContent className="flex flex-col items-center justify-center py-10 gap-4">
+                <label htmlFor="excel-file-input" className="sr-only">Tải lên file Excel</label>
                 <input
                     ref={inputRef}
+                    id="excel-file-input"
+                    name="excel-file-input"
                     type="file"
                     accept=".xlsx,.xls,.csv"
                     onChange={handleInputChange}
                     className="hidden"
                     aria-label="Chọn file Excel để nhập"
-                    id="excel-file-input"
                 />
 
                 {isParsing || isLoading ? (

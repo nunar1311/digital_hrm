@@ -30,7 +30,7 @@ export function ExportButton({ employees, filename = 'danh-sach-nhan-vien' }: Ex
         try {
             // Small delay for UX feedback
             await new Promise((resolve) => setTimeout(resolve, 300));
-            exportEmployeesToExcel(employees, filename);
+            await exportEmployeesToExcel(employees, filename);
             toast.success(`Đã xuất ${employees.length} nhân viên ra file Excel thành công`);
         } catch {
             toast.error('Lỗi khi xuất file. Vui lòng thử lại.');

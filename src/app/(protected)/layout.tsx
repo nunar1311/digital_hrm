@@ -13,21 +13,21 @@ export default async function ProtectedLayout({
 }: {
     children: React.ReactNode;
 }) {
-     // Server-side auth check
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+    // Server-side auth check
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
 
-  if (!session) {
-    redirect("/login");
-  }
+    if (!session) {
+        redirect("/login");
+    }
     return (
-        <div className="fixed inset-0">
+        <div className="min-h-screen w-full">
             <SidebarProvider>
                 <AppSidebar />
-                <SidebarInset className="overflow-hidden min-h-0">
+                <SidebarInset className="flex flex-col min-h-screen">
                     <AppHeader />
-                    <main className="flex-1 overflow-auto p-4 md:p-6">
+                    <main className="flex-1 p-4 md:p-6">
                         {children}
                     </main>
                 </SidebarInset>

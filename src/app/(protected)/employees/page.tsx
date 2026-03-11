@@ -110,10 +110,12 @@ export default function EmployeesPage() {
                 <CardContent className="p-4 sm:p-6 space-y-4">
                     <div className="flex flex-col sm:flex-row gap-4 items-end">
                         <div className="w-full sm:max-w-[300px] space-y-1.5">
-                            <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <label htmlFor="search-employee" className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                                 <Search className="h-4 w-4" /> Tìm kiếm
                             </label>
                             <Input
+                                id="search-employee"
+                                name="search-employee"
                                 type="search"
                                 placeholder="Tên, mã NV, email, SĐT..."
                                 value={localSearch}
@@ -123,11 +125,11 @@ export default function EmployeesPage() {
 
                         <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <label htmlFor="department-filter" className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                                     <Filter className="h-4 w-4" /> Phòng ban
                                 </label>
-                                <Select value={departmentId} onValueChange={(val) => updateFilters({ departmentId: val })}>
-                                    <SelectTrigger>
+                                <Select name="department" value={departmentId} onValueChange={(val) => updateFilters({ departmentId: val })}>
+                                    <SelectTrigger id="department-filter">
                                         <SelectValue placeholder="Tất cả phòng ban" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -140,9 +142,9 @@ export default function EmployeesPage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Chức vụ</label>
-                                <Select value={positionId} onValueChange={(val) => updateFilters({ positionId: val })}>
-                                    <SelectTrigger>
+                                <label htmlFor="position-filter" className="text-sm font-medium text-muted-foreground">Chức vụ</label>
+                                <Select name="position" value={positionId} onValueChange={(val) => updateFilters({ positionId: val })}>
+                                    <SelectTrigger id="position-filter">
                                         <SelectValue placeholder="Tất cả chức vụ" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -155,9 +157,9 @@ export default function EmployeesPage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Trạng thái</label>
-                                <Select value={status} onValueChange={(val) => updateFilters({ status: val })}>
-                                    <SelectTrigger>
+                                <label htmlFor="status-filter" className="text-sm font-medium text-muted-foreground">Trạng thái</label>
+                                <Select name="status" value={status} onValueChange={(val) => updateFilters({ status: val })}>
+                                    <SelectTrigger id="status-filter">
                                         <SelectValue placeholder="Tất cả trạng thái" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -183,8 +185,8 @@ export default function EmployeesPage() {
                     </div>
                 </CardContent>
             </Card>
-
-            <div className="rounded-md border bg-card shadow-sm overflow-hidden">
+            {/* Table Section */}
+            <div className="rounded-md border overflow-x-auto overflow-hidden mt-4">
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">

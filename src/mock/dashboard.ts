@@ -6,7 +6,8 @@ export const kpiData = {
     totalEmployees: 35,
     newHiresThisMonth: 3,
     turnoverRate: 3.2,
-    totalPayroll: 695_000_000,
+    totalPayroll: 695_000_000, // Year or accumulative
+    currentMonthPayroll: 500_000_000,
     avgSalary: 19_857_143,
     pendingLeaves: 4,
 };
@@ -84,4 +85,18 @@ export const employmentTypeDistribution = [
     { name: 'Bán thời gian', value: 2, color: '#8b5cf6' },
     { name: 'Hợp đồng', value: 3, color: '#f59e0b' },
     { name: 'Thực tập', value: 2, color: '#22c55e' },
+];
+
+export const ageDistribution = [
+    { range: '18-25', value: 10, color: '#ec4899' },
+    { range: '26-35', value: 18, color: '#8b5cf6' },
+    { range: '36-45', value: 5, color: '#3b82f6' },
+    { range: '45+', value: 2, color: '#10b981' },
+];
+
+export const seniorityDistribution = [
+    { range: '<1 năm', value: 8, color: '#f59e0b' },
+    { range: '1-3 năm', value: 15, color: '#6366f1' },
+    { range: '3-5 năm', value: 7, color: '#8b5cf6' },
+    { range: '>5 năm', value: 5, color: '#10b981' },
 ];
