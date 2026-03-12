@@ -43,6 +43,12 @@ const UserProfile = () => {
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isThemeOpen, setIsThemeOpen] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+         
+        setIsMounted(true);
+    }, []);
 
     const ref = useClickOutside(() => {
         setIsDropdownOpen(false);
@@ -56,11 +62,11 @@ const UserProfile = () => {
 
     const initials = user?.name
         ? user.name
-              .split(" ")
-              .map((n: string) => n[0])
-              .join("")
-              .toUpperCase()
-              .slice(0, 2)
+            .split(" ")
+            .map((n: string) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2)
         : "??";
 
     useEffect(() => {
@@ -133,7 +139,7 @@ const UserProfile = () => {
                             alt={user?.name ?? "User"}
                         />
                         <AvatarFallback className="rounded-lg bg-amber-300 text-xs">
-                            {isPending ? "..." : initials}
+                            {isMounted ? (isPending ? "..." : initials) : <UserCircle2Icon className="size-4 text-muted-foreground" />}
                         </AvatarFallback>
                     </Avatar>
 
@@ -159,7 +165,7 @@ const UserProfile = () => {
                                     alt={user?.name ?? "User"}
                                 />
                                 <AvatarFallback className="rounded-lg text-xs">
-                                    {initials}
+                                    {isMounted ? initials : <UserCircle2Icon className="size-4 text-muted-foreground" />}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="grid flex-1 text-left leading-tight">
