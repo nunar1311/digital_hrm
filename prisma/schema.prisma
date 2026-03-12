@@ -29,9 +29,14 @@ model User {
   hrmRole      String  @default("EMPLOYEE") // SUPER_ADMIN, HR_MANAGER, etc.
 
   // ─── Relations ───
-  sessions Session[]
-  accounts Account[]
-  members  Member[]
+  sessions            Session[]
+  accounts            Account[]
+  members             Member[]
+  managedDepartments  Department[]        @relation("DeptManager")
+  attendances         Attendance[]
+  overtimeRequests    OvertimeRequest[]
+  shiftAssignments    ShiftAssignment[]
+  attendanceSummaries AttendanceSummary[]
 
   @@map("users")
 }
@@ -108,4 +113,323 @@ model Member {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("members")
+}
+
+model Department {
+  id                 String       @id @default(cuid())
+  name               String
+  code               String       @unique
+  logo               String?
+  description        String?
+  parentId           String?
+  secondaryParentIds String[]
+  managerId          String? // userId of the department manager
+  status             String       @default("ACTIVE")
+  sortOrder          Int          @default(0)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  parent             Department?  @relation("DeptHierarchy", fields: [parentId], references: [id])
+  children           Department[] @relation("DeptHierarchy")
+  positions          Position[]
+  manager            User?        @relation("DeptManager", fields: [managerId], references: [id])
+
+  @@map("departments")
+}
+
+model Position {
+  id           String      @id @default(cuid())
+  name         String
+  code         String      @unique
+  departmentId String?
+  level        Int         @default(1)
+  description  String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  @@map("positions")
+}
+
+// ─── ATTENDANCE MODULE ───
+
+model Shift {
+  id               String            @id @default(cuid())
+  name             String // Ca sáng, Ca chiều, Ca hành chính
+  code             String            @unique
+  startTime        String // "08:00"
+  endTime          String // "17:00"
+  breakMinutes     Int               @default(60)
+  lateThreshold    Int               @default(15) // Số phút cho phép đi muộn trước khi ghi late
+  earlyThreshold   Int               @default(15) // Số phút rời sớm trước khi ghi early_leave
+  isDefault        Boolean           @default(false)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  attendances      Attendance[]
+  shiftAssignments ShiftAssignment[]
+  workCycleEntries WorkCycleEntry[]
+
+  @@map("shifts")
+}
+
+model ShiftAssignment {
+  id             String     @id @default(cuid())
+  userId         String
+  shiftId        String?
+  startDate      DateTime   @db.Date
+  endDate        DateTime?  @db.Date
+  workCycleId    String?
+  cycleStartDate DateTime?  @db.Date // Ngày bắt đầu tính chu kỳ
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shift          Shift?     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  workCycle      WorkCycle? @relation(fields: [workCycleId], references: [id], onDelete: Cascade)
+  createdAt      DateTime   @default(now())
+
+  @@map("shift_assignments")
+}
+
+model Attendance {
+  id               String                 @id @default(cuid())
+  userId           String
+  date             DateTime               @db.Date
+  shiftId          String?
+  checkIn          DateTime?
+  checkOut         DateTime?
+  checkInMethod    String? // MANUAL, QR, FACE_ID, GPS, WIFI, VANTAY
+  checkOutMethod   String?
+  checkInLocation  String? // Tọa độ GPS "lat,lng" hoặc tên WiFi
+  checkOutLocation String?
+  checkInPhoto     String? // URL ảnh selfie check-in
+  checkOutPhoto    String? // URL ảnh selfie check-out
+  checkInDeviceId  String? // ID máy chấm công
+  checkOutDeviceId String?
+  checkInVerified  Boolean                @default(false) // Đã xác minh chống gian lận
+  checkOutVerified Boolean                @default(false)
+  workHours        Float?
+  overtimeHours    Float?
+  lateMinutes      Int                    @default(0) // Số phút đi muộn
+  earlyMinutes     Int                    @default(0) // Số phút về sớm
+  status           String                 @default("PRESENT") // PRESENT, ABSENT, LATE, EARLY_LEAVE, HALF_DAY, LATE_AND_EARLY, ON_LEAVE, HOLIDAY
+  note             String?
+  isLocked         Boolean                @default(false)
+  source           String                 @default("MANUAL") // MANUAL, WEB, DEVICE, API
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  user             User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shift            Shift?                 @relation(fields: [shiftId], references: [id])
+  explanation      AttendanceExplanation?
+
+  @@unique([userId, date])
+  @@map("attendances")
+}
+
+model AttendanceExplanation {
+  id             String     @id @default(cuid())
+  attendanceId   String     @unique
+  type           String     @default("OTHER") // LATE, EARLY_LEAVE, ABSENT, FORGOT_CHECKOUT, OTHER
+  reason         String
+  status         String     @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy     String?
+  approvedAt     DateTime?
+  rejectedReason String?
+  attachment     String? // URL đính kèm minh chứng
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  attendance     Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+
+  @@map("attendance_explanations")
+}
+
+model OvertimeRequest {
+  id          String   @id @default(cuid())
+  userId      String // Nhân viên làm OT
+  requestedBy String // Người tạo đơn (NV tự tạo hoặc Quản lý tạo hộ)
+  date        DateTime @db.Date
+  startTime   String
+  endTime     String
+  hours       Float // Số giờ đăng ký
+  reason      String
+
+  // Trạng thái luồng: PENDING → MANAGER_APPROVED → HR_APPROVED → COMPLETED
+  // Hoặc: REJECTED, CANCELLED tại bất kỳ bước nào
+  status String @default("PENDING")
+
+  // Bước 2: Quản lý trực tiếp duyệt
+  managerApprovedBy String?
+  managerApprovedAt DateTime?
+  managerNote       String?
+
+  // Bước 3: HR kiểm soát
+  hrApprovedBy String?
+  hrApprovedAt DateTime?
+  hrNote       String?
+
+  // Từ chối (tại bước nào)
+  rejectedBy     String?
+  rejectedAt     DateTime?
+  rejectedReason String?
+  rejectedStep   String? // MANAGER, HR
+
+  // Bước 4: Xác nhận kết quả thực tế
+  actualStartTime String?
+  actualEndTime   String?
+  actualHours     Float?
+  confirmedAt     DateTime?
+
+  coefficient Float  @default(1.5) // Hệ số OT: 1.5x, 2x, 3x
+  dayType     String @default("WEEKDAY") // WEEKDAY, WEEKEND, HOLIDAY
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("overtime_requests")
+}
+
+// ─── ANTI-FRAUD & DEVICE CONFIG ───
+
+model AttendanceConfig {
+  id                   String          @id @default(cuid())
+  requireGps           Boolean         @default(true)
+  requireWifi          Boolean         @default(false)
+  requireSelfie        Boolean         @default(false)
+  maxGpsDistanceMeters Int             @default(200) // Bán kính GPS cho phép (m)
+  earlyCheckinMinutes  Int             @default(60) // Cho phép check-in sớm tối đa (phút) trước ca
+  officeLat            Float? // Tọa độ văn phòng
+  officeLng            Float?
+  standardWorkHours    Float           @default(8) // Giờ làm chuẩn/ngày
+  standardWorkDays     Int             @default(22) // Ngày công chuẩn/tháng
+  otWeekdayCoeff       Float           @default(1.5) // Hệ số OT ngày thường
+  otWeekendCoeff       Float           @default(2.0) // Hệ số OT cuối tuần
+  otHolidayCoeff       Float           @default(3.0) // Hệ số OT ngày lễ
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  wifiWhitelist        WifiWhitelist[]
+
+  @@map("attendance_configs")
+}
+
+model WifiWhitelist {
+  id       String           @id @default(cuid())
+  configId String
+  ssid     String // Tên WiFi
+  bssid    String? // MAC address WiFi
+  config   AttendanceConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@map("wifi_whitelists")
+}
+
+model TimekeeperDevice {
+  id        String    @id @default(cuid())
+  name      String // "Máy chấm công Tầng 1"
+  code      String    @unique
+  type      String    @default("FINGERPRINT") // FINGERPRINT, FACE_ID, CARD, QR
+  location  String? // "Cửa chính tầng 1"
+  ipAddress String?
+  apiKey    String? // Secret key cho xác thực webhook
+  isActive  Boolean   @default(true)
+  lastSync  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("timekeeper_devices")
+}
+
+model Holiday {
+  id          String    @id @default(cuid())
+  name        String // "Tết Nguyên đán", "Quốc khánh"
+  date        DateTime  @db.Date
+  endDate     DateTime? @db.Date // Nghỉ nhiều ngày
+  isRecurring Boolean   @default(false) // Lặp lại hàng năm
+  year        Int?
+  createdAt   DateTime  @default(now())
+
+  @@map("holidays")
+}
+
+// ─── WORK CYCLE (Chu kỳ làm việc linh động) ───
+
+model WorkCycle {
+  id               String            @id @default(cuid())
+  name             String // "4 làm - 2 nghỉ", "Xoay ca 3 tuần"
+  description      String?
+  totalDays        Int // Tổng số ngày trong 1 chu kỳ
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  entries          WorkCycleEntry[]
+  shiftAssignments ShiftAssignment[]
+
+  @@map("work_cycles")
+}
+
+model WorkCycleEntry {
+  id          String    @id @default(cuid())
+  workCycleId String
+  dayIndex    Int // 0-based: ngày thứ mấy trong chu kỳ
+  shiftId     String? // null = ngày nghỉ
+  isDayOff    Boolean   @default(false) // true = ngày nghỉ
+  workCycle   WorkCycle @relation(fields: [workCycleId], references: [id], onDelete: Cascade)
+  shift       Shift?    @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+
+  @@unique([workCycleId, dayIndex])
+  @@map("work_cycle_entries")
+}
+
+model AttendanceSummary {
+  id              String    @id @default(cuid())
+  userId          String
+  month           Int
+  year            Int
+  totalWorkDays   Float     @default(0) // Ngày công thực tế
+  standardDays    Float     @default(22) // Ngày công chuẩn
+  lateDays        Int       @default(0) // Số ngày đi muộn
+  earlyLeaveDays  Int       @default(0) // Số ngày về sớm
+  absentDays      Float     @default(0) // Số ngày vắng
+  leaveDays       Float     @default(0) // Nghỉ phép (được lương)
+  unpaidLeaveDays Float     @default(0) // Nghỉ không lương
+  holidayDays     Float     @default(0) // Ngày lễ
+  otHoursWeekday  Float     @default(0) // Giờ OT ngày thường
+  otHoursWeekend  Float     @default(0) // Giờ OT cuối tuần
+  otHoursHoliday  Float     @default(0) // Giờ OT ngày lễ
+  totalOtHours    Float     @default(0) // Tổng giờ OT
+  totalWorkHours  Float     @default(0) // Tổng giờ làm
+  isLocked        Boolean   @default(false)
+  lockedBy        String?
+  lockedAt        DateTime?
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId, month, year])
+  @@map("attendance_summaries")
+}
+
+// ─── SETTINGS & AUDIT ───
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  userName  String   @default("")
+  action    String // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, EXPORT
+  entity    String // User, Department, Shift, Attendance, ...
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  id    String  @id @default(cuid())
+  key   String  @unique
+  value String
+  group String? // general, attendance, payroll, leave
+
+  @@map("system_settings")
 }

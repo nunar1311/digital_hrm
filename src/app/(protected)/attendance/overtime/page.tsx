@@ -1,16 +1,54 @@
 import type { Metadata } from "next";
+import { getOvertimeRequests } from "../actions";
+import { requireAuth, extractRole } from "@/lib/auth-session";
+import { hasAnyPermission } from "@/lib/rbac/check-access";
+import { Permission } from "@/lib/rbac/permissions";
+import { OvertimeClient } from "./overtime-client";
 
 export const metadata: Metadata = {
-    title: "Quản lý làm thêm giờ | Digital HRM",
+    title: "Quản lý làm thêm giờ",
 };
 
-export default function OvertimePage() {
+const EMPTY_PAGE = { items: [], nextCursor: null };
+
+export default async function OvertimePage() {
+    const session = await requireAuth();
+    const role = extractRole(session);
+    const canManagerApprove = hasAnyPermission(role, [
+        Permission.ATTENDANCE_OVERTIME_APPROVE,
+    ]);
+    const canHrReview = hasAnyPermission(role, [
+        Permission.ATTENDANCE_OVERTIME_HR_REVIEW,
+    ]);
+    const canViewAll = canManagerApprove || canHrReview;
+
+    const [my, pending, managerApproved, hrApproved, all] =
+        await Promise.all([
+            getOvertimeRequests({ userId: session.user.id }),
+            canManagerApprove
+                ? getOvertimeRequests({ status: "PENDING" })
+                : Promise.resolve(EMPTY_PAGE),
+            canHrReview
+                ? getOvertimeRequests({ status: "MANAGER_APPROVED" })
+                : Promise.resolve(EMPTY_PAGE),
+            getOvertimeRequests({ status: "HR_APPROVED", userId: session.user.id }),
+            canViewAll ? getOvertimeRequests() : Promise.resolve(EMPTY_PAGE),
+        ]);
+
+    const initialData = {
+        my: JSON.parse(JSON.stringify(my)),
+        pending: JSON.parse(JSON.stringify(pending)),
+        managerApproved: JSON.parse(JSON.stringify(managerApproved)),
+        hrApproved: JSON.parse(JSON.stringify(hrApproved)),
+        all: JSON.parse(JSON.stringify(all)),
+    };
+
     return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Đăng ký & Duyệt OT
-            </h1>
-            {/* TODO: OT registration, approval, coefficient config */}
-        </div>
+        <OvertimeClient
+            initialData={initialData}
+            canManagerApprove={canManagerApprove}
+            canHrReview={canHrReview}
+            currentUserId={session.user.id}
+        />
     );
 }

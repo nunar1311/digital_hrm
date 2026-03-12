@@ -1,16 +1,26 @@
 import type { Metadata } from "next";
+import { requirePermission, extractRole } from "@/lib/auth-session";
+import { hasAnyPermission } from "@/lib/rbac/check-access";
+import { Permission } from "@/lib/rbac/permissions";
+import { getSystemSettings } from "./actions";
+import { SettingsClient } from "./settings-client";
 
 export const metadata: Metadata = {
-    title: "Cài đặt hệ thống | Digital HRM",
+    title: "Cài đặt hệ thống",
 };
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+    const session = await requirePermission(Permission.SETTINGS_VIEW);
+    const role = extractRole(session);
+    const canEdit = hasAnyPermission(role, [
+        Permission.SETTINGS_SYSTEM,
+    ]);
+    const settings = await getSystemSettings();
+
     return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Cài đặt hệ thống
-            </h1>
-            {/* TODO: System settings, RBAC, audit log */}
-        </div>
+        <SettingsClient
+            initialSettings={settings}
+            canEdit={canEdit}
+        />
     );
 }
