@@ -43,6 +43,7 @@ interface TimezoneContextValue {
     timezone: string;
     setTimezone: (value: string) => void;
     isLoading: boolean;
+    isInitialized: boolean;
     formatDate: (date: string | Date | null, options?: Intl.DateTimeFormatOptions) => string;
     formatTime: (date: string | Date | null, options?: Intl.DateTimeFormatOptions) => string;
     formatDateTime: (date: string | Date | null, options?: Intl.DateTimeFormatOptions) => string;
@@ -162,6 +163,7 @@ export function TimezoneProvider({ children, initialTimezone }: TimezoneProvider
                 timezone,
                 setTimezone,
                 isLoading,
+                isInitialized: !isLoading,
                 formatDate,
                 formatTime,
                 formatDateTime,

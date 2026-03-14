@@ -168,6 +168,7 @@ export interface AttendanceRecord {
     source: string;
     createdAt: string;
     updatedAt: string;
+    explanation?: AttendanceExplanation | null;
 }
 
 /** Attendance with shift + explanation (for getTodayAttendance) */
@@ -399,4 +400,22 @@ export interface AttendanceRecordsResult {
     total: number;
     page: number;
     pageSize: number;
+}
+
+// ─── Attendance Statistics ─---
+
+export interface AttendanceStats {
+    userId: string;
+    periodType: "week" | "month";
+    totalDays: number;
+    presentDays: number;
+    lateDays: number;
+    earlyLeaveDays: number;
+    absentDays: number;
+    onLeaveDays: number;
+    holidayDays: number;
+    onTimeRate: number;
+    lateRate: number;
+    earlyLeaveRate: number;
+    absentRate: number;
 }

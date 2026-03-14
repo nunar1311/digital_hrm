@@ -10,16 +10,7 @@ export default async function OrgChartPage() {
     const data = await getDepartmentTree();
 
     return (
-        <div className="flex flex-col h-[calc(100vh-10rem)]">
-            <div className="p-4 md:p-6">
-                <h1 className="text-2xl font-bold tracking-tight">
-                    Sơ đồ tổ chức
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    Cấu trúc phòng ban và nhân sự toàn công ty — kéo
-                    thả nhân viên để chuyển phòng ban
-                </p>
-            </div>
+        <div className="flex flex-col h-[calc(100vh-3rem)]">
             <OrgChartView data={data} />
         </div>
     );

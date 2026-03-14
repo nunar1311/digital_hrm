@@ -1,8 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import type { Employee } from "@/types";
 
 interface Props {
-    status: Employee['status'];
+    status: string | undefined | null;
 }
 
 export function EmployeeStatusBadge({ status }: Props) {

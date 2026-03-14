@@ -34,10 +34,10 @@ export const DATE_FORMAT_OPTIONS = [
 ];
 
 export const COMPANY_FIELDS = [
-    { key: "company.name", label: "Tên công ty", type: "text", placeholder: "Nhập tên công ty" },
-    { key: "company.email", label: "Email", type: "email", placeholder: "contact@company.com" },
-    { key: "company.phone", label: "Số điện thoại", type: "text", placeholder: "024-xxxx-xxxx" },
-    { key: "company.taxCode", label: "Mã số thuế", type: "text", placeholder: "Nhập mã số thuế" },
+    { key: "company.name", label: "Tên công ty", type: "text", placeholder: "Nhập tên công ty", fullWidth: false },
+    { key: "company.email", label: "Email", type: "email", placeholder: "contact@company.com", fullWidth: false },
+    { key: "company.phone", label: "Số điện thoại", type: "text", placeholder: "024-xxxx-xxxx", fullWidth: false },
+    { key: "company.taxCode", label: "Mã số thuế", type: "text", placeholder: "Nhập mã số thuế", fullWidth: false },
     { key: "company.address", label: "Địa chỉ", type: "text", placeholder: "Nhập địa chỉ công ty", fullWidth: true },
 ] as const;
 

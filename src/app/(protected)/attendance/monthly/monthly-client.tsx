@@ -12,6 +12,7 @@ import {
     calculateMonthlySummary,
     lockMonthlySummary,
     getAttendanceSummaries,
+    exportMonthlyAttendance,
 } from "../actions";
 import type {
     MonthlyAttendanceData,
@@ -87,8 +88,8 @@ export function MonthlyClient({
             },
             initialData:
                 month === initialMonth &&
-                year === initialYear &&
-                !departmentId
+                    year === initialYear &&
+                    !departmentId
                     ? initialData
                     : undefined,
         });
@@ -116,8 +117,8 @@ export function MonthlyClient({
         },
         initialData:
             month === initialMonth &&
-            year === initialYear &&
-            !departmentId
+                year === initialYear &&
+                !departmentId
                 ? initialSummaries
                 : undefined,
     });
@@ -159,6 +160,32 @@ export function MonthlyClient({
         onError: (err: Error) =>
             toast.error(err.message || "Có lỗi xảy ra"),
     });
+
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExport = useCallback(async () => {
+        setIsExporting(true);
+        try {
+            const result = await exportMonthlyAttendance({ month, year, departmentId: departmentId || undefined });
+
+            // Create and download CSV file
+            const blob = new Blob([result.csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = result.fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            toast.success("Xuất file thành công");
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra khi xuất file");
+        } finally {
+            setIsExporting(false);
+        }
+    }, [month, year, departmentId]);
 
     const isPending =
         calculateMutation.isPending ||
@@ -250,8 +277,8 @@ export function MonthlyClient({
                         att
                             ? (att.status as AttendanceStatus)
                             : isScheduledToWork && date < today
-                              ? "ABSENT"
-                              : null,
+                                ? "ABSENT"
+                                : null,
                     );
                 }
             }
@@ -330,6 +357,8 @@ export function MonthlyClient({
                 isPending={isPending}
                 onCalculate={() => calculateMutation.mutate()}
                 onLock={handleLock}
+                onExport={handleExport}
+                isExporting={isExporting}
             />
 
             {viewMode === "grid" ? (

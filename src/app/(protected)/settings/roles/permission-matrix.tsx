@@ -42,56 +42,51 @@ export function PermissionMatrix({
     const permGroups = groupPermissions(permissions);
 
     return (
-        <div className="flex-1 min-h-0 h-full overflow-y-auto">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Ma trận phân quyền</CardTitle>
-                    <CardDescription>
+        <div className="flex-1 min-h-0 h-full overflow-y-auto space-y-4 no-scrollbar">
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                    <h3 className="text-lg font-medium">
+                        Ma trận phân quyền
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
                         Xem chi tiết quyền hạn của từng vai trò trong
-                        hệ thống
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {Object.entries(ROLE_LABELS).map(
-                            ([role, label]) => {
-                                const permsCount =
-                                    rolePermissionsMap[role]
-                                        ?.length ?? 0;
-                                return (
-                                    <Card
-                                        key={role}
-                                        className="cursor-pointer transition-colors hover:bg-accent/50"
-                                        onClick={() =>
-                                            setViewRole(role)
-                                        }
-                                    >
-                                        <CardContent className="flex items-center justify-between">
-                                            <div>
-                                                <Badge
-                                                    variant="secondary"
-                                                    className={
-                                                        ROLE_COLORS[
-                                                            role
-                                                        ] ?? ""
-                                                    }
-                                                >
-                                                    {label}
-                                                </Badge>
-                                                <p className="mt-1 text-sm text-muted-foreground">
-                                                    {permsCount} quyền
-                                                </p>
-                                            </div>
-                                            <Eye className="h-4 w-4 text-muted-foreground" />
-                                        </CardContent>
-                                    </Card>
-                                );
-                            },
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-
+                    </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {Object.entries(ROLE_LABELS).map(
+                        ([role, label]) => {
+                            const permsCount =
+                                rolePermissionsMap[role]?.length ?? 0;
+                            return (
+                                <Card
+                                    key={role}
+                                    className="cursor-pointer transition-colors hover:bg-accent/50"
+                                    onClick={() => setViewRole(role)}
+                                >
+                                    <CardContent className="flex items-center justify-between">
+                                        <div>
+                                            <Badge
+                                                variant="secondary"
+                                                className={
+                                                    ROLE_COLORS[
+                                                        role
+                                                    ] ?? ""
+                                                }
+                                            >
+                                                {label}
+                                            </Badge>
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                {permsCount} quyền
+                                            </p>
+                                        </div>
+                                        <Eye className="h-4 w-4 text-muted-foreground" />
+                                    </CardContent>
+                                </Card>
+                            );
+                        },
+                    )}
+                </div>
+            </div>
             {/* All permissions overview */}
             <Card>
                 <CardHeader>
@@ -134,7 +129,6 @@ export function PermissionMatrix({
                     </div>
                 </CardContent>
             </Card>
-
             {/* ─── View Role Permissions Dialog ─── */}
             <Dialog
                 open={!!viewRole}

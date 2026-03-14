@@ -5,7 +5,7 @@ import type {
     DepartmentNode,
     EmployeeBasic,
 } from "@/types/org-chart";
-import { requirePermission } from "@/lib/auth-session";
+import { requirePermission, requireAuth } from "@/lib/auth-session";
 import { Permission } from "@/lib/rbac/permissions";
 import { revalidatePath } from "next/cache";
 import {
@@ -155,6 +155,7 @@ export async function createDepartment(data: {
     parentId?: string | null;
     secondaryParentIds?: string[];
     status?: string;
+    managerId?: string | null;
 }): Promise<{ success: boolean; message: string }> {
     await requirePermission(Permission.DEPT_CREATE);
     try {
@@ -177,8 +178,28 @@ export async function createDepartment(data: {
                 parentId: data.parentId,
                 secondaryParentIds: data.secondaryParentIds || [],
                 status: data.status || "ACTIVE",
+                managerId: data.managerId,
             },
         });
+
+        // Audit log
+        const session = await requireAuth();
+        await prisma.auditLog.create({
+            data: {
+                userId: session.user.id,
+                action: "CREATE",
+                entity: "Department",
+                entityId: created.id,
+                newData: {
+                    name: created.name,
+                    code: created.code,
+                    description: created.description,
+                    status: created.status,
+                    managerId: created.managerId,
+                },
+            },
+        });
+
         revalidatePath("/org-chart");
         emitToAll("department:created", {
             departmentId: created.id,
@@ -212,6 +233,9 @@ export async function updateDepartment(
 ): Promise<{ success: boolean; message: string }> {
     await requirePermission(Permission.DEPT_EDIT);
     try {
+        // Lấy dữ liệu cũ để audit
+        const oldDepartment = await prisma.department.findUnique({ where: { id } });
+
         if (data.code) {
             const existing = await prisma.department.findUnique({
                 where: { code: data.code },
@@ -237,6 +261,25 @@ export async function updateDepartment(
                 status: data.status,
             },
         });
+
+        // Audit log
+        const session = await requireAuth();
+        await prisma.auditLog.create({
+            data: {
+                userId: session.user.id,
+                action: "UPDATE",
+                entity: "Department",
+                entityId: id,
+                oldData: {
+                    name: oldDepartment?.name,
+                    code: oldDepartment?.code,
+                    description: oldDepartment?.description,
+                    status: oldDepartment?.status,
+                },
+                newData: data,
+            },
+        });
+
         revalidatePath("/org-chart");
         emitToAll("department:updated", {
             departmentId: id,
@@ -284,7 +327,28 @@ export async function deleteDepartment(
             };
         }
 
+        // Lấy dữ liệu cũ để audit
+        const department = await prisma.department.findUnique({ where: { id } });
+
         await prisma.department.delete({ where: { id } });
+
+        // Audit log
+        const session = await requireAuth();
+        await prisma.auditLog.create({
+            data: {
+                userId: session.user.id,
+                action: "DELETE",
+                entity: "Department",
+                entityId: id,
+                oldData: {
+                    name: department?.name,
+                    code: department?.code,
+                    description: department?.description,
+                    status: department?.status,
+                },
+            },
+        });
+
         revalidatePath("/org-chart");
         emitToAll("department:deleted", { departmentId: id });
         return {

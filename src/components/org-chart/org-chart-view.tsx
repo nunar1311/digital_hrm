@@ -1,13 +1,28 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import {
+    useState,
+    useMemo,
+    useEffect,
+    useCallback,
+    useRef,
+} from "react";
 import {
     useQuery,
     useMutation,
     useQueryClient,
 } from "@tanstack/react-query";
 import type { DepartmentNode } from "@/types/org-chart";
-import { OrgChartToolbar } from "./org-chart-toolbar";
+import {
+    OrgChartToolbar,
+    ViewMode,
+    StatusFilter,
+} from "./org-chart-toolbar";
+import {
+    type ChartThemeId,
+    type ChartCardStyle,
+    type ChartLayoutMode,
+} from "./org-chart-constants";
 import { OrgChartCanvas } from "./org-chart-canvas";
 import { DepartmentDetailPanel } from "./department-detail-panel";
 import { DepartmentFormDialog } from "./department-form-dialog";
@@ -21,6 +36,22 @@ import { toast } from "sonner";
 import { TemplatePreviewDialog } from "./template-preview-dialog";
 import { useSocketEvents } from "@/hooks/use-socket-event";
 import type { ServerToClientEvents } from "@/lib/socket/types";
+import { ANIMATION_CONFIG } from "./org-chart-constants";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar";
+import {
+    Mail,
+    Phone,
+    Briefcase,
+    Building2,
+    Users,
+    ChevronRight,
+} from "lucide-react";
 
 interface OrgChartViewProps {
     data: DepartmentNode[];
@@ -38,6 +69,23 @@ function collectAllIds(nodes: DepartmentNode[]): Set<string> {
     return ids;
 }
 
+// Cache for node lookups
+const nodeCache = new Map<string, DepartmentNode>();
+function buildNodeCache(nodes: DepartmentNode[]) {
+    nodeCache.clear();
+    function traverse(items: DepartmentNode[]) {
+        for (const node of items) {
+            nodeCache.set(node.id, node);
+            traverse(node.children);
+        }
+    }
+    traverse(nodes);
+}
+
+function findNodeByIdCached(id: string): DepartmentNode | null {
+    return nodeCache.get(id) ?? null;
+}
+
 function findNodeById(
     nodes: DepartmentNode[],
     id: string,
@@ -48,6 +96,23 @@ function findNodeById(
         if (found) return found;
     }
     return null;
+}
+
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+
+    return debouncedValue;
 }
 
 export function OrgChartView({
@@ -68,6 +133,67 @@ export function OrgChartView({
     const [templateToApply, setTemplateToApply] = useState<
         string | null
     >(null);
+    const [viewMode, setViewMode] = useState<ViewMode>("tree");
+    const [statusFilter, setStatusFilter] =
+        useState<StatusFilter>("all");
+
+    // Cá nhân hóa & layout (persist in localStorage)
+    const [chartTheme, setChartTheme] = useState<ChartThemeId>(() => {
+        if (typeof window === "undefined") return "default";
+        return (
+            (localStorage.getItem("orgChartTheme") as ChartThemeId) ||
+            "default"
+        );
+    });
+    const [cardStyle, setCardStyle] = useState<ChartCardStyle>(() => {
+        if (typeof window === "undefined") return "default";
+        return (
+            (localStorage.getItem(
+                "orgChartCardStyle",
+            ) as ChartCardStyle) || "default"
+        );
+    });
+    const [chartLayout, setChartLayout] = useState<ChartLayoutMode>(
+        () => {
+            if (typeof window === "undefined") return "hierarchy";
+            return (
+                (localStorage.getItem(
+                    "orgChartLayout",
+                ) as ChartLayoutMode) || "hierarchy"
+            );
+        },
+    );
+
+    useEffect(() => {
+        try {
+            localStorage.setItem("orgChartTheme", chartTheme);
+            localStorage.setItem("orgChartCardStyle", cardStyle);
+            localStorage.setItem("orgChartLayout", chartLayout);
+        } catch {
+            // ignore
+        }
+    }, [chartTheme, cardStyle, chartLayout]);
+
+    const handleShare = useCallback(() => {
+        const url =
+            typeof window !== "undefined" ? window.location.href : "";
+        navigator.clipboard?.writeText(url).then(
+            () => toast.success("Đã sao chép liên kết vào clipboard"),
+            () => toast.error("Không thể sao chép liên kết"),
+        );
+    }, []);
+
+    const handleExportImage = useCallback(() => {
+        toast.info(
+            'Xuất ảnh: dùng chức năng In (Ctrl+P) và chọn "Lưu dưới dạng PDF" để xuất.',
+        );
+    }, []);
+
+    // Debounce search query for performance
+    const debouncedSearchQuery = useDebounce(
+        searchQuery,
+        ANIMATION_CONFIG.DEBOUNCE_DELAY,
+    );
 
     const { data: treeData = [] } = useQuery({
         queryKey: ["departmentTree"],
@@ -77,6 +203,11 @@ export function OrgChartView({
 
     useEffect(() => {
         setExpandedNodes(collectAllIds(treeData));
+    }, [treeData]);
+
+    // Build cache when treeData changes
+    useEffect(() => {
+        buildNodeCache(treeData);
     }, [treeData]);
 
     // === Real-time WebSocket listeners ===
@@ -355,6 +486,124 @@ export function OrgChartView({
         ? findNodeById(treeData, selectedDeptId)
         : null;
 
+    // Flatten tree for list view with status filter
+    const flatDepartments = useMemo(() => {
+        const result: DepartmentNode[] = [];
+        function flatten(nodes: DepartmentNode[]) {
+            for (const node of nodes) {
+                if (
+                    statusFilter === "all" ||
+                    node.status === statusFilter
+                ) {
+                    result.push(node);
+                }
+                flatten(node.children);
+            }
+        }
+        flatten(treeData);
+        return result;
+    }, [treeData, statusFilter]);
+
+    // Filter by search query
+    const filteredDepartments = useMemo(() => {
+        if (!debouncedSearchQuery.trim()) return flatDepartments;
+        const query = debouncedSearchQuery.toLowerCase();
+        return flatDepartments.filter(
+            (dept) =>
+                dept.name.toLowerCase().includes(query) ||
+                dept.code.toLowerCase().includes(query) ||
+                dept.manager?.name.toLowerCase().includes(query),
+        );
+    }, [flatDepartments, debouncedSearchQuery]);
+
+    const renderListView = () => (
+        <div className="flex-1 overflow-auto p-4 pt-20">
+            <div className="grid gap-3">
+                {filteredDepartments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+                        <Building2 className="h-16 w-16 mb-4 opacity-30" />
+                        <p className="text-lg font-semibold">
+                            Không tìm thấy phòng ban
+                        </p>
+                        <p className="text-sm mt-1">
+                            Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
+                        </p>
+                    </div>
+                ) : (
+                    filteredDepartments.map((dept) => (
+                        <div
+                            key={dept.id}
+                            className={cn(
+                                "flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors",
+                                selectedDeptId === dept.id &&
+                                    "border-primary ring-1 ring-primary",
+                            )}
+                            onClick={() => setSelectedDeptId(dept.id)}
+                        >
+                            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <Building2 className="h-6 w-6 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold truncate">
+                                        {dept.name}
+                                    </h3>
+                                    <Badge
+                                        variant={
+                                            dept.status === "ACTIVE"
+                                                ? "default"
+                                                : "secondary"
+                                        }
+                                        className="text-xs"
+                                    >
+                                        {dept.status === "ACTIVE"
+                                            ? "Hoạt động"
+                                            : "Ngừng"}
+                                    </Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                    {dept.code} •{" "}
+                                    {dept.employeeCount || 0} nhân
+                                    viên
+                                </p>
+                            </div>
+                            {dept.manager && (
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage
+                                            src={
+                                                dept.manager.image ??
+                                                undefined
+                                            }
+                                            alt={dept.manager.name}
+                                        />
+                                        <AvatarFallback className="text-xs">
+                                            {dept.manager.name
+                                                .split(" ")
+                                                .map((n) => n[0])
+                                                .join("")
+                                                .slice(0, 2)
+                                                .toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="text-sm shrink-0">
+                                        <p className="font-medium truncate max-w-24">
+                                            {dept.manager.name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground truncate max-w-24">
+                                            {dept.manager.position}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                            <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+
     return (
         <div className="flex flex-col gap-4 h-full relative">
             <div className="absolute top-4 left-4 right-4 z-30 pointer-events-none">
@@ -377,21 +626,40 @@ export function OrgChartView({
                         onApplyTemplate={(templateId) =>
                             setTemplateToApply(templateId)
                         }
+                        viewMode={viewMode}
+                        onViewModeChange={setViewMode}
+                        statusFilter={statusFilter}
+                        onStatusFilterChange={setStatusFilter}
+                        chartTheme={chartTheme}
+                        onChartThemeChange={setChartTheme}
+                        cardStyle={cardStyle}
+                        onCardStyleChange={setCardStyle}
+                        chartLayout={chartLayout}
+                        onChartLayoutChange={setChartLayout}
+                        onShare={handleShare}
+                        onExportImage={handleExportImage}
                     />
                 </div>
             </div>
 
-            <OrgChartCanvas
-                data={treeData}
-                expandedNodes={expandedNodes}
-                highlightedNodes={filteredHighlights}
-                searchQuery={searchQuery}
-                isLocked={isLocked}
-                onToggleNode={toggleNode}
-                onSelectNode={setSelectedDeptId}
-                onDropEmployee={handleDropEmployee}
-                onDropDepartment={handleDropDepartment}
-            />
+            {viewMode === "list" ? (
+                renderListView()
+            ) : (
+                <OrgChartCanvas
+                    data={treeData}
+                    expandedNodes={expandedNodes}
+                    highlightedNodes={filteredHighlights}
+                    searchQuery={searchQuery}
+                    chartTheme={chartTheme}
+                    cardStyle={cardStyle}
+                    chartLayout={chartLayout}
+                    isLocked={isLocked}
+                    onToggleNode={toggleNode}
+                    onSelectNode={setSelectedDeptId}
+                    onDropEmployee={handleDropEmployee}
+                    onDropDepartment={handleDropDepartment}
+                />
+            )}
 
             <DepartmentDetailPanel
                 department={selectedDept}

@@ -28,7 +28,57 @@ model User {
   position     String?
   hrmRole      String  @default("EMPLOYEE") // SUPER_ADMIN, HR_MANAGER, etc.
 
-  // ─── Relations ───
+  // ─── Employee extended fields ───
+  // Thông tin cá nhân
+  fullName          String?
+  dateOfBirth       DateTime?
+  gender            String? // MALE, FEMALE, OTHER
+  nationalId        String? // CMND/CCCD
+  nationalIdDate    DateTime?
+  nationalIdPlace   String?
+  phone             String?
+  personalEmail     String?
+  address           String?
+  permanentAddress  String?
+  nationality       String?  @default("Việt Nam")
+  religion          String?
+  ethnicity         String?  @default("Kinh")
+  maritalStatus     String?  // SINGLE, MARRIED, DIVORCED
+
+  // Thông tin công việc
+  jobTitleId       String?
+  managerId         String?
+  employmentType    String?  @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT, INTERN
+  employeeStatus    String?  @default("ACTIVE") // ACTIVE, ON_LEAVE, RESIGNED, TERMINATED
+  hireDate          DateTime?
+  probationEnd      DateTime?
+  resignDate        DateTime?
+
+  // Thông tin ngân hàng
+  bankName          String?
+  bankAccount       String?
+  bankBranch        String?
+
+  // Thông tin BHXH, BHYT, MST
+  socialInsuranceNo String?
+  healthInsuranceNo String?
+  taxCode           String?
+
+  // Trình độ học vấn
+  educationLevel    String?  // HIGHSCHOOL, COLLEGE, BACHELOR, MASTER, PHD
+  major             String?
+  university        String?
+
+  // Metadata
+  avatar            String?
+  notes             String?
+
+  // Relations
+  department        Department? @relation(fields: [departmentId], references: [id])
+  manager           User?       @relation("ManagerReports", fields: [managerId], references: [id])
+  reports           User[]      @relation("ManagerReports")
+
+  // ─── Better Auth relations ───
   sessions            Session[]
   accounts            Account[]
   members             Member[]
@@ -37,6 +87,7 @@ model User {
   overtimeRequests    OvertimeRequest[]
   shiftAssignments    ShiftAssignment[]
   attendanceSummaries AttendanceSummary[]
+  offboardings        Offboarding[]
 
   @@map("users")
 }
@@ -132,6 +183,8 @@ model Department {
   children           Department[] @relation("DeptHierarchy")
   positions          Position[]
   manager            User?        @relation("DeptManager", fields: [managerId], references: [id])
+  jobPostings        JobPosting[]
+  users              User[]
 
   @@map("departments")
 }
@@ -144,6 +197,7 @@ model Position {
   level        Int         @default(1)
   description  String?
   department   Department? @relation(fields: [departmentId], references: [id])
+  jobPostings JobPosting[]
 
   @@map("positions")
 }
@@ -432,4 +486,314 @@ model SystemSetting {
   group String? // general, attendance, payroll, leave
 
   @@map("system_settings")
+}
+
+// ─── RECRUITMENT MODULE ───
+
+model JobPosting {
+  id             String       @id @default(cuid())
+  title          String
+  departmentId   String?
+  positionId     String?
+  description    String       @db.Text
+  requirements   String       @db.Text
+  salaryMin      Decimal?     @db.Decimal(15, 0)
+  salaryMax      Decimal?     @db.Decimal(15, 0)
+  salaryCurrency String       @default("VND")
+  headcount      Int          @default(1)
+  employmentType String       @default("FULL_TIME") // FULL_TIME, PART_TIME, INTERN, CONTRACT
+  status         String       @default("DRAFT") // DRAFT, OPEN, ON_HOLD, CLOSED
+  priority       String       @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  deadline       DateTime?
+  benefits       String?      @db.Text // Phúc lợi
+  workLocation   String?      // Địa điểm làm việc
+  interviewRounds Int         @default(1) // Số vòng phỏng vấn
+  createdBy      String
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  closedBy       String?
+  closedAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  department     Department?   @relation(fields: [departmentId], references: [id])
+  position       Position?     @relation(fields: [positionId], references: [id])
+  candidates     Candidate[]
+  interviews     Interview[]
+
+  @@map("job_postings")
+}
+
+model Candidate {
+  id           String       @id @default(cuid())
+  jobPostingId String
+  name         String
+  email        String
+  phone        String?
+  gender       String?      // MALE, FEMALE, OTHER
+  dateOfBirth  DateTime?
+  address      String?
+  cvUrl        String?      // URL CV file
+  cvFileName   String?      // Tên file CV gốc
+  linkedinUrl  String?
+  portfolioUrl String?
+  source       String       @default("WEBSITE") // WEBSITE, LINKEDIN, FACEBOOK, REFERRAL, AGENCY, OTHER
+  sourceDetail String?      // Nguồn chi tiết
+  stage        String       @default("APPLIED") // APPLIED, SCREENING, INTERVIEW, OFFER, HIRED, REJECTED
+  rating       Int?         @default(0) // 1-5 sao
+  rejectionReason String?
+  hiredSalary  Decimal?     @db.Decimal(15, 0)
+  hiredDate    DateTime?
+  notes        String?      @db.Text
+  tags         String[]     // Tags cho candidate pool
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  jobPosting   JobPosting   @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  interviews   Interview[]
+  candidateTags CandidateTag[]
+
+  @@unique([email, jobPostingId])
+  @@map("candidates")
+}
+
+model CandidateTag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#6366f1") // Màu tag
+  createdAt DateTime @default(now())
+
+  candidates Candidate[]
+
+  @@map("candidate_tags")
+}
+
+model Interview {
+  id            String    @id @default(cuid())
+  candidateId   String
+  jobPostingId  String
+  round         Int       @default(1) // Vòng phỏng vấn
+  type          String    @default("ONSITE") // ONSITE, ONLINE, PHONE
+  method        String    @default("INDIVIDUAL") // INDIVIDUAL, GROUP, PANEL
+
+  // Lịch phỏng vấn
+  scheduledDate DateTime
+  scheduledTime String    // "14:00"
+  endTime       String?   // "15:00"
+  duration      Int       @default(60) // Phút
+
+  // Địa điểm/Link
+  location      String?   // Địa điểi ONSITE
+  meetingLink   String?   // Link meeting ONLINE
+  meetingId     String?   // Zoom/Google Meet ID
+
+  // Người phỏng vấn
+  interviewerIds String[]  // Array of user IDs
+  interviewerNames String[] // Array of interviewer names (cached)
+
+  // Kết quả
+  status        String    @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW
+  result        String?   // PASS, FAIL, PENDING
+  score         Int?      // Điểm tổng hợp 1-10
+  strengths     String?   @db.Text
+  weaknesses    String?   @db.Text
+  notes         String?   @db.Text
+
+  // Google Calendar integration
+  googleEventId String?   // Google Calendar event ID
+  calendarSync  Boolean   @default(false)
+
+  // Thông tin phụ
+  reviewedBy    String?
+  reviewedAt    DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  candidate     Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  jobPosting    JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  feedbacks     InterviewFeedback[]
+
+  @@map("interviews")
+}
+
+model InterviewFeedback {
+  id           String   @id @default(cuid())
+  interviewId  String
+  userId       String   // Người phỏng vấn
+  userName     String   // Tên người phỏng vấn (cached)
+
+  // Đánh giá
+  score        Int?     // Điểm 1-10
+  result       String?  // PASS, FAIL, PENDING
+
+  // Chi tiết
+  technicalSkill Int?   // Kỹ thuật 1-5
+  communication  Int?   // Giao tiếp 1-5
+  problemSolving  Int?   // Giải quyết vấn đề 1-5
+  cultureFit     Int?    // Văn hóa 1-5
+
+  strengths    String?  @db.Text
+  improvements String?  @db.Text
+  notes        String?  @db.Text
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  interview    Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@unique([interviewId, userId])
+  @@map("interview_feedbacks")
+}
+
+// ─── ASSET MODULE ───
+
+model Asset {
+  id            String            @id @default(cuid())
+  name          String
+  code          String            @unique
+  category      String            // LAPTOP, PHONE, MONITOR, DESK, CHAIR, CARD, OTHER
+  status        String            @default("AVAILABLE") // AVAILABLE, ASSIGNED, MAINTENANCE, DISPOSED
+  brand         String?
+  model         String?
+  serialNumber  String?
+  purchaseDate  DateTime?
+  purchasePrice Decimal?          @db.Decimal(15, 0)
+  warrantyEnd   DateTime?
+  location      String?
+  description   String?
+  createdBy     String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  assignments   AssetAssignment[]
+
+  @@index([category])
+  @@index([status])
+  @@map("assets")
+}
+
+model AssetAssignment {
+  id             String    @id @default(cuid())
+  assetId        String
+  userId         String
+  assignedBy     String?
+  assignDate     DateTime  @default(now())
+  expectedReturn DateTime?
+  returnDate     DateTime?
+  returnedTo     String?
+  status         String    @default("ASSIGNED") // ASSIGNED, RETURNED
+  condition      String?   // GOOD, DAMAGED, LOST
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  asset          Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([userId])
+  @@index([status])
+  @@map("asset_assignments")
+}
+
+// ─── OFFBOARDING MODULE ───
+
+model OffboardingTemplate {
+  id          String              @id @default(cuid())
+  name        String
+  description String?
+  tasks       OffboardingTask[]
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  offboardings Offboarding[]
+
+  @@map("offboarding_templates")
+}
+
+model OffboardingTask {
+  id           String              @id @default(cuid())
+  templateId   String
+  title        String
+  description  String?
+  category     String              @default("GENERAL") // GENERAL, ASSET, ACCOUNT, FINANCIAL, INTERVIEW
+  assigneeRole String?             // Role phụ trách: HR_STAFF, IT_ADMIN, DEPT_MANAGER, ACCOUNTANT
+  dueDays      Int                 @default(7) // Số ngày trước khi nghỉ việc
+  sortOrder    Int                 @default(0)
+  isRequired   Boolean             @default(true)
+  template     OffboardingTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("offboarding_tasks")
+}
+
+model Offboarding {
+  id             String                @id @default(cuid())
+  userId         String
+  templateId     String?
+  resignDate     DateTime              @db.Date // Ngày nộp đơn nghỉ
+  lastWorkDate   DateTime              @db.Date // Ngày làm việc cuối cùng
+  reason         String?               // Lý do nghỉ việc
+  reasonDetail   String?              @db.Text // Chi tiết lý do
+  status         String                @default("PROCESSING") // PROCESSING, COMPLETED, CANCELLED
+  exitInterview  String?               @db.Text // Nội dung exit interview
+  interviewDate DateTime?
+  interviewerId  String?
+  
+  // Tài chính
+  finalSalary           Decimal?       @db.Decimal(15, 0) // Lương cuối cùng
+  unusedLeaveDays       Float?         @default(0) // Ngày phép chưa dùng
+  unusedLeaveAmount    Decimal?       @db.Decimal(15, 0) // Tiền phép chưa dùng
+  severancePay         Decimal?       @db.Decimal(15, 0) // Trợ cấp thôi việc
+  otherAllowances      Decimal?       @db.Decimal(15, 0) // Các khoản khác
+  totalFinalPayment    Decimal?       @db.Decimal(15, 0) // Tổng thanh toán
+  
+  // Thông tin tạo/cập nhật
+  createdBy      String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  completedAt    DateTime?
+
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template       OffboardingTemplate? @relation(fields: [templateId], references: [id])
+  checklist      OffboardingChecklist[]
+  assets         OffboardingAsset[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("offboardings")
+}
+
+model OffboardingChecklist {
+  id              String      @id @default(cuid())
+  offboardingId   String
+  taskTitle       String
+  taskDescription String?
+  category        String      @default("GENERAL")
+  assigneeRole    String?
+  assigneeId      String?     // User ID được giao
+  isCompleted     Boolean     @default(false)
+  completedBy     String?
+  completedAt     DateTime?
+  dueDate         DateTime?
+  notes           String?
+  offboarding     Offboarding @relation(fields: [offboardingId], references: [id], onDelete: Cascade)
+
+  @@index([offboardingId])
+  @@map("offboarding_checklists")
+}
+
+model OffboardingAsset {
+  id              String      @id @default(cuid())
+  offboardingId   String
+  assetId         String?
+  assetName       String      // Tên tài sản (cached)
+  assetCode       String?     // Mã tài sản (cached)
+  category        String?     // Loại tài sản
+  status          String      @default("PENDING") // PENDING, RETURNED, DAMAGED, NOT_RETURNED
+  returnDate      DateTime?
+  returnedTo      String?
+  condition       String?     // Tình trạng khi trả: GOOD, DAMAGED
+  notes           String?
+  offboarding     Offboarding @relation(fields: [offboardingId], references: [id], onDelete: Cascade)
+
+  @@index([offboardingId])
+  @@map("offboarding_assets")
 }

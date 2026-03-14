@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { DepartmentNode } from "@/types/org-chart";
 import {
     Sheet,
@@ -24,17 +24,18 @@ import {
     AvatarImage,
 } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Building2,
-    Users,
-    Briefcase,
     UserCircle,
     FolderTree,
     Mail,
     Pencil,
     Trash2,
-    MoreVerticalIcon,
+    MoreVertical,
+    Search,
+    Users,
 } from "lucide-react";
 import { deleteDepartment } from "@/app/(protected)/org-chart/actions";
 import { toast } from "sonner";
@@ -44,6 +45,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { DepartmentStats } from "./department-stats";
+import { EmployeeListItem } from "./employee-list-item";
 
 interface DepartmentDetailPanelProps {
     department: DepartmentNode | null;
@@ -59,6 +62,22 @@ export function DepartmentDetailPanel({
     const queryClient = useQueryClient();
     const isOpen = department !== null;
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [employeeSearchQuery, setEmployeeSearchQuery] =
+        useState("");
+
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
+    const filteredEmployees = useMemo(() => {
+        if (!department?.employees || !employeeSearchQuery.trim()) {
+            return department?.employees || [];
+        }
+        const query = employeeSearchQuery.toLowerCase();
+        return department.employees.filter(
+            (emp) =>
+                emp.name.toLowerCase().includes(query) ||
+                emp.employeeCode?.toLowerCase().includes(query) ||
+                emp.position?.toLowerCase().includes(query),
+        );
+    }, [department?.employees, employeeSearchQuery]);
 
     const managerInitials =
         department?.manager?.name
@@ -124,7 +143,7 @@ export function DepartmentDetailPanel({
                                             variant="ghost"
                                             size="icon"
                                         >
-                                            <MoreVerticalIcon />
+                                            <MoreVertical />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent
@@ -168,23 +187,11 @@ export function DepartmentDetailPanel({
                         </div>
 
                         {/* Quick Stats */}
-                        <div className="grid grid-cols-3 gap-3">
-                            <StatMini
-                                icon={Users}
-                                label="Nhân viên"
-                                value={department.employeeCount}
-                            />
-                            <StatMini
-                                icon={Briefcase}
-                                label="Vị trí"
-                                value={department.positionCount}
-                            />
-                            <StatMini
-                                icon={FolderTree}
-                                label="Phòng con"
-                                value={department.children.length}
-                            />
-                        </div>
+                        <DepartmentStats
+                            employeeCount={department.employeeCount}
+                            positionCount={department.positionCount}
+                            childrenCount={department.children.length}
+                        />
 
                         {/* Manager */}
                         <section>
@@ -230,62 +237,49 @@ export function DepartmentDetailPanel({
                             department.employees.length > 0 && (
                                 <section>
                                     <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                                        <Users className="h-4 w-4 text-primary" />{" "}
+                                        <Users className="h-4 w-4 text-primary" />
                                         Nhân viên (
                                         {department.employees.length})
                                     </h3>
-                                    <div className="space-y-2">
-                                        {department.employees.map(
+                                    <div className="relative mb-3">
+                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Tìm nhân viên..."
+                                            value={
+                                                employeeSearchQuery
+                                            }
+                                            onChange={(e) =>
+                                                setEmployeeSearchQuery(
+                                                    e.target.value,
+                                                )
+                                            }
+                                            className="pl-7 h-8 text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-2 max-h-64 overflow-y-auto no-scrollbar">
+                                        {filteredEmployees.map(
                                             (emp) => (
-                                                <div
+                                                <EmployeeListItem
                                                     key={emp.id}
-                                                    className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50 border text-sm"
-                                                >
-                                                    <Avatar className="h-7 w-7">
-                                                        <AvatarImage
-                                                            src={
-                                                                emp.image ??
-                                                                undefined
-                                                            }
-                                                        />
-                                                        <AvatarFallback className="text-[9px] bg-muted font-bold">
-                                                            {
-                                                                emp.name
-                                                                    .split(
-                                                                        " ",
-                                                                    )
-                                                                    .slice(
-                                                                        -1,
-                                                                    )[0][0]
-                                                            }
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="font-medium text-xs">
-                                                            {emp.name}
-                                                        </p>
-                                                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                                            <span>
-                                                                {
-                                                                    emp.position
-                                                                }
-                                                            </span>
-                                                            {emp.employeeCode && (
-                                                                <>
-                                                                    <span>
-                                                                        •
-                                                                    </span>
-                                                                    <span className="font-mono">
-                                                                        {
-                                                                            emp.employeeCode
-                                                                        }
-                                                                    </span>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                    employee={emp}
+                                                    showActions
+                                                    onViewProfile={(
+                                                        id,
+                                                    ) =>
+                                                        console.log(
+                                                            "View profile",
+                                                            id,
+                                                        )
+                                                    }
+                                                />
                                             ),
+                                        )}
+                                        {filteredEmployees.length ===
+                                            0 && (
+                                            <p className="text-sm text-muted-foreground text-center py-4">
+                                                Không tìm thấy nhân
+                                                viên
+                                            </p>
                                         )}
                                     </div>
                                 </section>
@@ -352,25 +346,5 @@ export function DepartmentDetailPanel({
                 </AlertDialogContent>
             </AlertDialog>
         </Sheet>
-    );
-}
-
-function StatMini({
-    icon: Icon,
-    label,
-    value,
-}: {
-    icon: React.ComponentType<{ className?: string }>;
-    label: string;
-    value: number;
-}) {
-    return (
-        <div className="p-3 rounded-lg bg-muted/50 border text-center">
-            <Icon className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
-            <p className="text-lg font-bold">{value}</p>
-            <p className="text-[10px] text-muted-foreground">
-                {label}
-            </p>
-        </div>
     );
 }

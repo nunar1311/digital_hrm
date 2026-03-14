@@ -40,13 +40,7 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
-import {
-    Clock,
-    AlertTriangle,
-    RefreshCw,
-    Pencil,
-    Trash2,
-} from "lucide-react";
+import { Clock, AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Shift, UserBasic, WorkCycle } from "../types";
@@ -180,8 +174,8 @@ export function ShiftFormDialog({
         defaultValues: {
             name: "",
             code: "",
-            startTime: "08:00",
-            endTime: "17:00",
+            startTime: new Date().toISOString().split("T")[0],
+            endTime: new Date().toISOString().split("T")[0],
             breakMinutes: 60,
             lateThreshold: 15,
             earlyThreshold: 15,
@@ -208,8 +202,8 @@ export function ShiftFormDialog({
                 form.reset({
                     name: "",
                     code: "",
-                    startTime: "08:00",
-                    endTime: "17:00",
+                    startTime: new Date().toISOString().split("T")[0],
+                    endTime: new Date().toISOString().split("T")[0],
                     breakMinutes: 60,
                     lateThreshold: 15,
                     earlyThreshold: 15,
@@ -393,7 +387,7 @@ export function ShiftFormDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Nghỉ (phút)
+                                            Nghỉ (p)
                                         </FormLabel>
                                         <FormControl>
                                             <Input
@@ -424,7 +418,7 @@ export function ShiftFormDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Muộn cho phép (phút)
+                                            Muộn cho phép (p)
                                         </FormLabel>
                                         <FormControl>
                                             <Input
@@ -455,7 +449,7 @@ export function ShiftFormDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Sớm cho phép (phút)
+                                            Sớm cho phép (p)
                                         </FormLabel>
                                         <FormControl>
                                             <Input
@@ -495,7 +489,7 @@ export function ShiftFormDialog({
                                                 }
                                             />
                                         </FormControl>
-                                        <FormLabel className="!mt-0">
+                                        <FormLabel className="mt-0!">
                                             Ca mặc định
                                         </FormLabel>
                                     </FormItem>

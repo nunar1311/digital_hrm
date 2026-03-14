@@ -1,16 +1,44 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import {
+    useRef,
+    useState,
+    useCallback,
+    useEffect,
+    useMemo,
+} from "react";
 import type { DepartmentNode } from "@/types/org-chart";
 import { OrgChartNode } from "./org-chart-node";
 import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import {
+    ZoomIn,
+    ZoomOut,
+    RotateCcw,
+    Lock,
+    Unlock,
+} from "lucide-react";
+import {
+    ZOOM_CONFIG,
+    HELP_TEXT,
+    CHART_THEMES,
+    FUNCTIONAL_GROUP_COLORS,
+    type ChartThemeId,
+    type ChartCardStyle,
+    type ChartLayoutMode,
+} from "./org-chart-constants";
+import { useKeyboardShortcuts } from "./use-keyboard-shortcuts";
+import { cn } from "@/lib/utils";
+
+const { MIN: MIN_ZOOM, MAX: MAX_ZOOM, STEP: ZOOM_STEP } = ZOOM_CONFIG;
 
 interface OrgChartCanvasProps {
     data: DepartmentNode[];
     expandedNodes: Set<string>;
     highlightedNodes: Set<string>;
     searchQuery: string;
+    chartTheme?: ChartThemeId;
+    cardStyle?: ChartCardStyle;
+    chartLayout?: ChartLayoutMode;
     onToggleNode: (id: string) => void;
     onSelectNode: (id: string) => void;
     onDropEmployee: (
@@ -24,15 +52,18 @@ interface OrgChartCanvasProps {
     isLocked?: boolean;
 }
 
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 2;
-const ZOOM_STEP = 0.1;
+function countEmployees(n: DepartmentNode): number {
+    return (n.employeeCount ?? 0) + n.children.reduce((s, c) => s + countEmployees(c), 0);
+}
 
 export function OrgChartCanvas({
     data,
     expandedNodes,
     highlightedNodes,
     searchQuery,
+    chartTheme = "default",
+    cardStyle = "default",
+    chartLayout = "hierarchy",
     onToggleNode,
     onSelectNode,
     onDropEmployee,
@@ -57,6 +88,31 @@ export function OrgChartCanvas({
     const [hierarchyLines, setHierarchyLines] = useState<
         { id: string; d: string }[]
     >([]);
+
+    // Keyboard shortcuts
+    const zoomInRef = useCallback(() => {
+        setZoom((z) =>
+            Math.min(MAX_ZOOM, +(z + ZOOM_STEP).toFixed(2)),
+        );
+    }, []);
+
+    const zoomOutRef = useCallback(() => {
+        setZoom((z) =>
+            Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(2)),
+        );
+    }, []);
+
+    const resetViewRef = useCallback(() => {
+        setZoom(0.75);
+        setPan({ x: 0, y: 0 });
+    }, []);
+
+    useKeyboardShortcuts({
+        onZoomIn: zoomInRef,
+        onZoomOut: zoomOutRef,
+        onResetView: resetViewRef,
+        enabled: !isLocked,
+    });
 
     // --- Node movement ---
     const [nodeOffsets, setNodeOffsets] = useState<
@@ -345,14 +401,7 @@ export function OrgChartCanvas({
                     size="icon"
                     className="h-8 w-8 bg-background/90 backdrop-blur-sm shadow-md"
                     disabled={isLocked}
-                    onClick={() =>
-                        setZoom((z) =>
-                            Math.min(
-                                MAX_ZOOM,
-                                +(z + ZOOM_STEP).toFixed(2),
-                            ),
-                        )
-                    }
+                    onClick={zoomInRef}
                 >
                     <ZoomIn className="h-3.5 w-3.5" />
                 </Button>
@@ -364,14 +413,7 @@ export function OrgChartCanvas({
                     size="icon"
                     className="h-8 w-8 bg-background/90 backdrop-blur-sm shadow-md"
                     disabled={isLocked}
-                    onClick={() =>
-                        setZoom((z) =>
-                            Math.max(
-                                MIN_ZOOM,
-                                +(z - ZOOM_STEP).toFixed(2),
-                            ),
-                        )
-                    }
+                    onClick={zoomOutRef}
                 >
                     <ZoomOut className="h-3.5 w-3.5" />
                 </Button>
@@ -487,23 +529,81 @@ export function OrgChartCanvas({
                     )}
 
                     {hasData ? (
-                        data.map((node) => (
-                            <OrgChartBranch
-                                key={node.id}
-                                node={node}
-                                expandedNodes={expandedNodes}
-                                highlightedNodes={highlightedNodes}
-                                searchQuery={searchQuery}
-                                onToggleNode={onToggleNode}
-                                onSelectNode={onSelectNode}
-                                onDropEmployee={onDropEmployee}
-                                onDropDepartment={onDropDepartment}
-                                isLocked={isLocked}
-                                nodeOffsets={nodeOffsets}
-                                onNodeMoveStart={handleNodeMoveStart}
-                                isRoot
-                            />
-                        ))
+                        chartLayout === "functional" ? (
+                            <div className="flex flex-col gap-8 items-stretch w-full">
+                                {data.map((rootNode, groupIndex) => {
+                                    const groupColor =
+                                        FUNCTIONAL_GROUP_COLORS[
+                                            groupIndex % FUNCTIONAL_GROUP_COLORS.length
+                                        ];
+                                    const totalInGroup = countEmployees(rootNode);
+                                    return (
+                                        <div
+                                            key={rootNode.id}
+                                            className="flex flex-col items-center w-full"
+                                        >
+                                            <div
+                                                className={cn(
+                                                    "w-full py-2 px-4 rounded-t-lg text-white font-semibold text-sm flex items-center justify-between mb-2",
+                                                    groupColor,
+                                                )}
+                                            >
+                                                <span>{rootNode.name}</span>
+                                                <span className="opacity-90">
+                                                    {totalInGroup} nhân viên
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-col items-center w-full">
+                                                <OrgChartBranch
+                                                    node={rootNode}
+                                                    expandedNodes={expandedNodes}
+                                                    highlightedNodes={
+                                                        highlightedNodes
+                                                    }
+                                                    searchQuery={searchQuery}
+                                                    chartTheme={chartTheme}
+                                                    cardStyle={cardStyle}
+                                                    onToggleNode={onToggleNode}
+                                                    onSelectNode={onSelectNode}
+                                                    onDropEmployee={
+                                                        onDropEmployee
+                                                    }
+                                                    onDropDepartment={
+                                                        onDropDepartment
+                                                    }
+                                                    isLocked={isLocked}
+                                                    nodeOffsets={nodeOffsets}
+                                                    onNodeMoveStart={
+                                                        handleNodeMoveStart
+                                                    }
+                                                    isRoot
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            data.map((node) => (
+                                <OrgChartBranch
+                                    key={node.id}
+                                    node={node}
+                                    expandedNodes={expandedNodes}
+                                    highlightedNodes={highlightedNodes}
+                                    searchQuery={searchQuery}
+                                    chartTheme={chartTheme}
+                                    cardStyle={cardStyle}
+                                    onToggleNode={onToggleNode}
+                                    onSelectNode={onSelectNode}
+                                    onDropEmployee={onDropEmployee}
+                                    onDropDepartment={onDropDepartment}
+                                    isLocked={isLocked}
+                                    nodeOffsets={nodeOffsets}
+                                    onNodeMoveStart={handleNodeMoveStart}
+                                    isRoot
+                                />
+                            ))
+                        )
                     ) : (
                         <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
                             <svg
@@ -547,6 +647,8 @@ interface OrgChartBranchProps {
     expandedNodes: Set<string>;
     highlightedNodes: Set<string>;
     searchQuery: string;
+    chartTheme?: ChartThemeId;
+    cardStyle?: ChartCardStyle;
     onToggleNode: (id: string) => void;
     onSelectNode: (id: string) => void;
     onDropEmployee: (
@@ -572,6 +674,8 @@ function OrgChartBranch({
     expandedNodes,
     highlightedNodes,
     searchQuery,
+    chartTheme = "default",
+    cardStyle = "default",
     onToggleNode,
     onSelectNode,
     onDropEmployee,
@@ -611,6 +715,8 @@ function OrgChartBranch({
                 isDimmed={isDimmed}
                 searchQuery={searchQuery}
                 hasChildren={hasChildren}
+                themeBorderClass={CHART_THEMES[chartTheme]?.border}
+                cardStyle={cardStyle}
                 onToggle={() => onToggleNode(node.id)}
                 onSelect={() => onSelectNode(node.id)}
                 onDropEmployee={onDropEmployee}
@@ -636,6 +742,8 @@ function OrgChartBranch({
                                         highlightedNodes
                                     }
                                     searchQuery={searchQuery}
+                                    chartTheme={chartTheme}
+                                    cardStyle={cardStyle}
                                     onToggleNode={onToggleNode}
                                     onSelectNode={onSelectNode}
                                     onDropEmployee={onDropEmployee}

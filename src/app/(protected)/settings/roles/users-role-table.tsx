@@ -6,12 +6,7 @@ import {
     useQueryClient,
     keepPreviousData,
 } from "@tanstack/react-query";
-import {
-    Search,
-    ChevronLeft,
-    ChevronRight,
-    UserCog,
-} from "lucide-react";
+import { Search, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +63,8 @@ export function UsersRoleTable({
         null,
     );
 
+    const pageSize = 5;
+
     const queryKey = [
         "settings",
         "users-roles",
@@ -82,7 +79,7 @@ export function UsersRoleTable({
             queryFn: async () => {
                 const result = await getUsersWithRoles({
                     page,
-                    pageSize: 20,
+                    pageSize,
                     search: searchQuery || undefined,
                     role:
                         roleFilter === "all" ? undefined : roleFilter,
@@ -117,7 +114,7 @@ export function UsersRoleTable({
     return (
         <>
             {/* Filters */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto mb-4 p-2">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -255,7 +252,7 @@ export function UsersRoleTable({
 
             {/* Pagination */}
             {usersData && usersData.totalPages > 1 && (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mt-4">
                     <p className="text-sm text-muted-foreground">
                         Hiển thị{" "}
                         {(usersData.page - 1) * usersData.pageSize +
@@ -274,15 +271,22 @@ export function UsersRoleTable({
                             disabled={page <= 1}
                             onClick={() => setPage((p) => p - 1)}
                         >
-                            <ChevronLeft className="h-4 w-4" />
+                            <span className="sr-only">
+                                Trang trước
+                            </span>
+                            ←
                         </Button>
+                        <span className="flex items-center px-3 text-sm">
+                            {page} / {usersData.totalPages}
+                        </span>
                         <Button
                             variant="outline"
                             size="sm"
                             disabled={page >= usersData.totalPages}
                             onClick={() => setPage((p) => p + 1)}
                         >
-                            <ChevronRight className="h-4 w-4" />
+                            <span className="sr-only">Trang sau</span>
+                            →
                         </Button>
                     </div>
                 </div>

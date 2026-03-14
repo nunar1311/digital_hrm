@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import { z } from "zod";
+import {
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
     Search,
     ChevronLeft,
@@ -14,7 +20,6 @@ import {
     Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
     Card,
@@ -45,9 +50,17 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+} from "@/components/ui/form";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { getAuditLogs } from "../actions";
+import { DatePicker } from "@/components/ui/date-picker";
 
 // ─── Types ───
 
@@ -126,6 +139,20 @@ const ENTITY_LABELS: Record<string, string> = {
     AttendanceConfig: "Cấu hình chấm công",
 };
 
+// ─── Schema ───
+
+const filterSchema = z.object({
+    userId: z.string(),
+    action: z.string(),
+    entity: z.string(),
+    startDate: z.date().optional(),
+    endDate: z.date().optional(),
+});
+
+type FilterFormValues = z.infer<typeof filterSchema>;
+
+// ─── Helper Functions ───
+
 function formatDate(dateStr: string) {
     try {
         return format(new Date(dateStr), "dd/MM/yyyy HH:mm:ss", {
@@ -193,85 +220,76 @@ export function AuditLogClient({
     initialData,
     filters,
 }: AuditLogClientProps) {
-    const [data, setData] = useState<LogsPage>(initialData);
-    const [isLoading, setIsLoading] = useState(false);
-    const [detailLog, setDetailLog] = useState<AuditLogEntry | null>(
-        null,
-    );
+    const queryClient = useQueryClient();
+    const [detailLog, setDetailLog] = useState<AuditLogEntry | null>(null);
+    const [page, setPage] = useState(1);
 
-    // Filter states
-    const [userFilter, setUserFilter] = useState("all");
-    const [actionFilter, setActionFilter] = useState("all");
-    const [entityFilter, setEntityFilter] = useState("all");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
-
-    const fetchLogs = useCallback(
-        async (
-            page: number,
-            overrides?: {
-                userId?: string;
-                action?: string;
-                entity?: string;
-                startDate?: string;
-                endDate?: string;
-            },
-        ) => {
-            setIsLoading(true);
-            try {
-                const userId =
-                    (overrides?.userId ?? userFilter) === "all"
-                        ? undefined
-                        : (overrides?.userId ?? userFilter);
-                const action =
-                    (overrides?.action ?? actionFilter) === "all"
-                        ? undefined
-                        : (overrides?.action ?? actionFilter);
-                const entity =
-                    (overrides?.entity ?? entityFilter) === "all"
-                        ? undefined
-                        : (overrides?.entity ?? entityFilter);
-                const sd = overrides?.startDate ?? startDate;
-                const ed = overrides?.endDate ?? endDate;
-
-                const result = await getAuditLogs({
-                    page,
-                    pageSize: 20,
-                    userId: userId || undefined,
-                    action: action || undefined,
-                    entity: entity || undefined,
-                    startDate: sd || undefined,
-                    endDate: ed || undefined,
-                });
-                setData(result);
-            } catch {
-                toast.error("Không thể tải nhật ký");
-            } finally {
-                setIsLoading(false);
-            }
-        },
-        [userFilter, actionFilter, entityFilter, startDate, endDate],
-    );
-
-    const handleFilter = () => fetchLogs(1);
-
-    const handleResetFilters = () => {
-        setUserFilter("all");
-        setActionFilter("all");
-        setEntityFilter("all");
-        setStartDate("");
-        setEndDate("");
-        fetchLogs(1, {
+    const form = useForm<FilterFormValues>({
+        resolver: zodResolver(filterSchema),
+        defaultValues: {
             userId: "all",
             action: "all",
             entity: "all",
-            startDate: "",
-            endDate: "",
+            startDate: undefined,
+            endDate: undefined,
+        },
+    });
+
+    const filterValues = form.watch();
+
+    const { data, isLoading, isFetching } = useQuery({
+        queryKey: ["audit-logs", page, filterValues],
+        queryFn: async () => {
+            const userId = filterValues.userId === "all" ? undefined : filterValues.userId;
+            const action = filterValues.action === "all" ? undefined : filterValues.action;
+            const entity = filterValues.entity === "all" ? undefined : filterValues.entity;
+            const startDate = filterValues.startDate
+                ? format(filterValues.startDate, "yyyy-MM-dd")
+                : undefined;
+            const endDate = filterValues.endDate
+                ? format(filterValues.endDate, "yyyy-MM-dd")
+                : undefined;
+
+            const result = await getAuditLogs({
+                page,
+                pageSize: 20,
+                userId,
+                action,
+                entity,
+                startDate,
+                endDate,
+            });
+            return result;
+        },
+        initialData: page === 1 ? initialData : undefined,
+        placeholderData: (previousData) => previousData,
+    });
+
+    const logsData = data ?? initialData;
+
+    const handleFilter = form.handleSubmit(() => {
+        setPage(1);
+        queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+    });
+
+    const handleResetFilters = () => {
+        form.reset({
+            userId: "all",
+            action: "all",
+            entity: "all",
+            startDate: undefined,
+            endDate: undefined,
         });
+        setPage(1);
+        queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+    };
+
+    const handlePageChange = (newPage: number) => {
+        setPage(newPage);
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-4 md:p-6">
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">
                     Nhật ký hệ thống
@@ -288,111 +306,152 @@ export function AuditLogClient({
                         Bộ lọc
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <Select
-                            value={userFilter}
-                            onValueChange={setUserFilter}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Người thực hiện" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    Tất cả người dùng
-                                </SelectItem>
-                                {filters.users.map((u) => (
-                                    <SelectItem
-                                        key={u.id}
-                                        value={u.id}
+                <CardContent>
+                    <Form {...form}>
+                        <form onSubmit={handleFilter} className="space-y-4">
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <FormField
+                                    control={form.control}
+                                    name="userId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Người thực hiện</FormLabel>
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Người thực hiện" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="all">
+                                                        Tất cả người dùng
+                                                    </SelectItem>
+                                                    {filters.users.map((u) => (
+                                                        <SelectItem
+                                                            key={u.id}
+                                                            value={u.id}
+                                                        >
+                                                            {u.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="action"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Hành động</FormLabel>
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Hành động" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="all">
+                                                        Tất cả hành động
+                                                    </SelectItem>
+                                                    {filters.actions.map((a) => (
+                                                        <SelectItem key={a} value={a}>
+                                                            {ACTION_LABELS[a]?.label ?? a}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="entity"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Đối tượng</FormLabel>
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Đối tượng" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="all">
+                                                        Tất cả đối tượng
+                                                    </SelectItem>
+                                                    {filters.entities.map((e) => (
+                                                        <SelectItem key={e} value={e}>
+                                                            {ENTITY_LABELS[e] ?? e}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <div className="flex items-end gap-2">
+                                    <Button
+                                        type="submit"
+                                        className="flex-1"
                                     >
-                                        {u.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                                        <Search className="mr-2 h-4 w-4" />
+                                        Lọc
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleResetFilters}
+                                    >
+                                        Xóa lọc
+                                    </Button>
+                                </div>
+                            </div>
 
-                        <Select
-                            value={actionFilter}
-                            onValueChange={setActionFilter}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Hành động" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    Tất cả hành động
-                                </SelectItem>
-                                {filters.actions.map((a) => (
-                                    <SelectItem key={a} value={a}>
-                                        {ACTION_LABELS[a]?.label ?? a}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <FormField
+                                    control={form.control}
+                                    name="startDate"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-col">
+                                            <FormLabel>Từ ngày</FormLabel>
+                                            <DatePicker
+                                                date={field.value}
+                                                setDate={field.onChange}
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
 
-                        <Select
-                            value={entityFilter}
-                            onValueChange={setEntityFilter}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Đối tượng" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    Tất cả đối tượng
-                                </SelectItem>
-                                {filters.entities.map((e) => (
-                                    <SelectItem key={e} value={e}>
-                                        {ENTITY_LABELS[e] ?? e}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <div className="flex gap-2">
-                            <Button
-                                onClick={handleFilter}
-                                className="flex-1"
-                            >
-                                <Search className="mr-2 h-4 w-4" />
-                                Lọc
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={handleResetFilters}
-                            >
-                                Xóa lọc
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-1">
-                            <label className="text-sm text-muted-foreground">
-                                Từ ngày
-                            </label>
-                            <Input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) =>
-                                    setStartDate(e.target.value)
-                                }
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-sm text-muted-foreground">
-                                Đến ngày
-                            </label>
-                            <Input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) =>
-                                    setEndDate(e.target.value)
-                                }
-                            />
-                        </div>
-                    </div>
+                                <FormField
+                                    control={form.control}
+                                    name="endDate"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-col">
+                                            <FormLabel>Đến ngày</FormLabel>
+                                            <DatePicker
+                                                date={field.value}
+                                                setDate={field.onChange}
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        </form>
+                    </Form>
                 </CardContent>
             </Card>
 
@@ -403,7 +462,8 @@ export function AuditLogClient({
                         Lịch sử hoạt động
                     </CardTitle>
                     <CardDescription>
-                        Tổng cộng {data.total} bản ghi
+                        Tổng cộng {logsData.total} bản ghi
+                        {isFetching && " (đang tải...)"}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -435,7 +495,7 @@ export function AuditLogClient({
                                             Đang tải...
                                         </TableCell>
                                     </TableRow>
-                                ) : data.logs.length === 0 ? (
+                                ) : logsData.logs.length === 0 ? (
                                     <TableRow>
                                         <TableCell
                                             colSpan={6}
@@ -451,7 +511,7 @@ export function AuditLogClient({
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    data.logs.map((log) => {
+                                    logsData.logs.map((log: AuditLogEntry) => {
                                         const actionInfo =
                                             ACTION_LABELS[log.action];
                                         return (
@@ -513,19 +573,19 @@ export function AuditLogClient({
                     </div>
 
                     {/* Pagination */}
-                    {data.totalPages > 1 && (
+                    {logsData.totalPages > 1 && (
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-muted-foreground">
-                                Trang {data.page} / {data.totalPages}{" "}
-                                ({data.total} bản ghi)
+                                Trang {logsData.page} / {logsData.totalPages}{" "}
+                                ({logsData.total} bản ghi)
                             </p>
                             <div className="flex gap-1">
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    disabled={data.page <= 1}
+                                    disabled={logsData.page <= 1}
                                     onClick={() =>
-                                        fetchLogs(data.page - 1)
+                                        handlePageChange(logsData.page - 1)
                                     }
                                 >
                                     <ChevronLeft className="h-4 w-4" />
@@ -534,10 +594,10 @@ export function AuditLogClient({
                                     variant="outline"
                                     size="sm"
                                     disabled={
-                                        data.page >= data.totalPages
+                                        logsData.page >= logsData.totalPages
                                     }
                                     onClick={() =>
-                                        fetchLogs(data.page + 1)
+                                        handlePageChange(logsData.page + 1)
                                     }
                                 >
                                     <ChevronRight className="h-4 w-4" />

@@ -36,6 +36,8 @@ interface OvertimeClientProps {
         pending: OvertimeRequestsPage;
         managerApproved: OvertimeRequestsPage;
         hrApproved: OvertimeRequestsPage;
+        rejected: OvertimeRequestsPage;
+        cancelled: OvertimeRequestsPage;
         all: OvertimeRequestsPage;
     };
     canManagerApprove: boolean;

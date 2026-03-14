@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,6 +20,7 @@ import {
     createDepartment,
     updateDepartment,
 } from "@/app/(protected)/org-chart/actions";
+import { getPotentialManagers } from "@/app/(protected)/departments/actions";
 import { toast } from "sonner";
 import { Textarea } from "../ui/textarea";
 import {
@@ -37,9 +38,20 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { IconPicker } from "./icon-picker";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { ChevronsUpDown, Check } from "lucide-react";
 
 const departmentFormSchema = z.object({
     name: z.string().min(1, "Vui lòng nhập tên phòng ban"),
@@ -49,6 +61,7 @@ const departmentFormSchema = z.object({
     parentId: z.string().optional(),
     secondaryParentIds: z.array(z.string()).optional(),
     status: z.enum(["ACTIVE", "INACTIVE"]),
+    managerId: z.string().optional(),
 });
 
 type DepartmentFormValues = z.infer<typeof departmentFormSchema>;
@@ -84,6 +97,13 @@ export function DepartmentFormDialog({
     const isEdit = department !== null;
     const allFlat = flattenDepartments(allDepartments);
 
+    // Fetch potential managers
+    const { data: potentialManagers = [] } = useQuery({
+        queryKey: ["potentialManagers"],
+        queryFn: getPotentialManagers,
+        enabled: open,
+    });
+
     const form = useForm<DepartmentFormValues>({
         resolver: zodResolver(departmentFormSchema),
         defaultValues: {
@@ -94,6 +114,7 @@ export function DepartmentFormDialog({
             parentId: "none",
             secondaryParentIds: [],
             status: "ACTIVE",
+            managerId: "__none__",
         },
     });
 
@@ -108,6 +129,7 @@ export function DepartmentFormDialog({
                 secondaryParentIds:
                     department.secondaryParentIds ?? [],
                 status: department.status as "ACTIVE" | "INACTIVE",
+                managerId: department.managerId ?? "__none__",
             });
         } else if (open) {
             form.reset({
@@ -118,6 +140,7 @@ export function DepartmentFormDialog({
                 parentId: "none",
                 secondaryParentIds: [],
                 status: "ACTIVE",
+                managerId: "__none__",
             });
         }
     }, [department, open, form]);
@@ -125,16 +148,13 @@ export function DepartmentFormDialog({
     const watchName = form.watch("name");
 
     useEffect(() => {
-        // Auto generate code from name ONLY in create mode, OR if we want to allow it always we can just set it.
-        // Usually it's best to only auto-generate if it's not being explicitly edited,
-        // but to keep it simple and fulfill the requirement:
+        // Auto generate code from name ONLY in create mode
         if (watchName && !isEdit) {
             const generatedCode = watchName
                 .split(/\s+/)
                 .filter((word) => word.length > 0)
                 .map((word) => word[0].toUpperCase())
                 .join("");
-            // Set the value without triggering validation immediately to avoid errors while typing, but update the UI
             form.setValue("code", generatedCode, {
                 shouldValidate: true,
                 shouldDirty: true,
@@ -151,6 +171,7 @@ export function DepartmentFormDialog({
             parentId?: string | null;
             secondaryParentIds?: string[];
             status: string;
+            managerId?: string | null;
         }) => {
             if (isEdit && department) {
                 return updateDepartment(department.id, data);
@@ -163,6 +184,12 @@ export function DepartmentFormDialog({
                 toast.success(result.message);
                 queryClient.invalidateQueries({
                     queryKey: ["departmentTree"],
+                });
+                queryClient.invalidateQueries({
+                    queryKey: ["departments"],
+                });
+                queryClient.invalidateQueries({
+                    queryKey: ["potentialManagers"],
                 });
                 onClose();
             } else {
@@ -184,7 +211,17 @@ export function DepartmentFormDialog({
                 values.parentId === "none" ? null : values.parentId,
             secondaryParentIds: values.secondaryParentIds || [],
             status: values.status,
+            managerId: values.managerId === "__none__" || !values.managerId ? null : values.managerId,
         });
+    };
+
+    const getInitials = (name: string) => {
+        return name
+            .split(" ")
+            .slice(-1)
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase();
     };
 
     return (
@@ -283,6 +320,93 @@ export function DepartmentFormDialog({
                             )}
                         />
 
+                        <FormField
+                            control={form.control}
+                            name="managerId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Trưởng phòng</FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full justify-between"
+                                                >
+                                                    {field.value && field.value !== "__none__"
+                                                        ? potentialManagers.find(
+                                                              (m) => m.id === field.value
+                                                          )?.name || "Chọn trưởng phòng"
+                                                        : "Chọn trưởng phòng"}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[400px] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Tìm kiếm nhân viên..." />
+                                                <CommandList>
+                                                    <CommandEmpty>Không tìm thấy nhân viên</CommandEmpty>
+                                                    <CommandGroup>
+                                                        <CommandItem
+                                                            value="__none__"
+                                                            onSelect={() => {
+                                                                field.onChange("__none__");
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={`mr-2 h-4 w-4 ${
+                                                                    field.value === "__none__"
+                                                                        ? "opacity-100"
+                                                                        : "opacity-0"
+                                                                }`}
+                                                            />
+                                                            -- Chưa phân công --
+                                                        </CommandItem>
+                                                        {potentialManagers.map((manager) => (
+                                                            <CommandItem
+                                                                key={manager.id}
+                                                                value={`${manager.name} ${manager.position || ""} ${
+                                                                    manager.employeeCode || ""
+                                                                }`}
+                                                                onSelect={() => {
+                                                                    field.onChange(manager.id);
+                                                                }}
+                                                            >
+                                                                <Check
+                                                                    className={`mr-2 h-4 w-4 ${
+                                                                        field.value === manager.id
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    }`}
+                                                                />
+                                                                <Avatar className="h-6 w-6 mr-2">
+                                                                    <AvatarImage src={manager.image ?? undefined} />
+                                                                    <AvatarFallback className="text-[10px]">
+                                                                        {getInitials(manager.name)}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="flex flex-col">
+                                                                    <span>{manager.name}</span>
+                                                                    {manager.position && (
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            {manager.position}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
@@ -314,7 +438,7 @@ export function DepartmentFormDialog({
                                                         (d) =>
                                                             d.id !==
                                                             department?.id,
-                                                    ) // Don't parent to self
+                                                    )
                                                     .map((d) => (
                                                         <SelectItem
                                                             key={d.id}

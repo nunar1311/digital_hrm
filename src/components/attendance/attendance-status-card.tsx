@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { AttendanceRecord } from "@/app/(protected)/attendance/types";
 import { useTimezone } from "@/hooks/use-timezone";
+import Image from "next/image";
 
 interface StatusInfo {
     label: string;
@@ -97,83 +98,83 @@ export function AttendanceStatusCard({
                             {/* Check-in / Check-out Photos */}
                             {(att.checkInPhoto ||
                                 att.checkOutPhoto) && (
-                                <div className="space-y-2">
-                                    <span className="flex items-center gap-1.5 text-sm font-medium">
-                                        <Camera className="h-4 w-4" />{" "}
-                                        Ảnh chấm công
-                                    </span>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {att.checkInPhoto && (
-                                            <button
-                                                className="group relative overflow-hidden rounded-lg border"
-                                                onClick={() =>
-                                                    setPreviewPhoto({
-                                                        src: att.checkInPhoto!,
-                                                        label: `Check-in – ${new Date(att.checkIn!).toLocaleTimeString("vi-VN", { timeZone: timezone, hour: "2-digit", minute: "2-digit" })}`,
-                                                    })
-                                                }
-                                            >
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img
-                                                    src={
-                                                        att.checkInPhoto
+                                    <div className="space-y-2">
+                                        <span className="flex items-center gap-1.5 text-sm font-medium">
+                                            <Camera className="h-4 w-4" />{" "}
+                                            Ảnh chấm công
+                                        </span>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {att.checkInPhoto && (
+                                                <button
+                                                    className="group relative overflow-hidden rounded-lg border"
+                                                    onClick={() =>
+                                                        setPreviewPhoto({
+                                                            src: att.checkInPhoto!,
+                                                            label: `Check-in – ${new Date(att.checkIn!).toLocaleTimeString("vi-VN", { timeZone: timezone, hour: "2-digit", minute: "2-digit" })}`,
+                                                        })
                                                     }
-                                                    alt="Ảnh check-in"
-                                                    className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
-                                                />
-                                                <span className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
-                                                    Check-in{" "}
-                                                    {att.checkIn &&
-                                                        new Date(
-                                                            att.checkIn,
-                                                        ).toLocaleTimeString(
-                                                            "vi-VN",
-                                                            {
-                                                                timeZone: timezone,
-                                                                hour: "2-digit",
-                                                                minute: "2-digit",
-                                                            },
-                                                        )}
-                                                </span>
-                                            </button>
-                                        )}
-                                        {att.checkOutPhoto && (
-                                            <button
-                                                className="group relative overflow-hidden rounded-lg border"
-                                                onClick={() =>
-                                                    setPreviewPhoto({
-                                                        src: att.checkOutPhoto!,
-                                                        label: `Check-out – ${new Date(att.checkOut!).toLocaleTimeString("vi-VN", { timeZone: timezone, hour: "2-digit", minute: "2-digit" })}`,
-                                                    })
-                                                }
-                                            >
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img
-                                                    src={
-                                                        att.checkOutPhoto
+                                                >
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img
+                                                        src={
+                                                            att.checkInPhoto
+                                                        }
+                                                        alt="Ảnh check-in"
+                                                        className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
+                                                    />
+                                                    <span className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
+                                                        Check-in{" "}
+                                                        {att.checkIn &&
+                                                            new Date(
+                                                                att.checkIn,
+                                                            ).toLocaleTimeString(
+                                                                "vi-VN",
+                                                                {
+                                                                    timeZone: timezone,
+                                                                    hour: "2-digit",
+                                                                    minute: "2-digit",
+                                                                },
+                                                            )}
+                                                    </span>
+                                                </button>
+                                            )}
+                                            {att.checkOutPhoto && (
+                                                <button
+                                                    className="group relative overflow-hidden rounded-lg border"
+                                                    onClick={() =>
+                                                        setPreviewPhoto({
+                                                            src: att.checkOutPhoto!,
+                                                            label: `Check-out – ${new Date(att.checkOut!).toLocaleTimeString("vi-VN", { timeZone: timezone, hour: "2-digit", minute: "2-digit" })}`,
+                                                        })
                                                     }
-                                                    alt="Ảnh check-out"
-                                                    className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
-                                                />
-                                                <span className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
-                                                    Check-out{" "}
-                                                    {att.checkOut &&
-                                                        new Date(
-                                                            att.checkOut,
-                                                        ).toLocaleTimeString(
-                                                            "vi-VN",
-                                                            {
-                                                                timeZone: timezone,
-                                                                hour: "2-digit",
-                                                                minute: "2-digit",
-                                                            },
-                                                        )}
-                                                </span>
-                                            </button>
-                                        )}
+                                                >
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img
+                                                        src={
+                                                            att.checkOutPhoto
+                                                        }
+                                                        alt="Ảnh check-out"
+                                                        className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
+                                                    />
+                                                    <span className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
+                                                        Check-out{" "}
+                                                        {att.checkOut &&
+                                                            new Date(
+                                                                att.checkOut,
+                                                            ).toLocaleTimeString(
+                                                                "vi-VN",
+                                                                {
+                                                                    timeZone: timezone,
+                                                                    hour: "2-digit",
+                                                                    minute: "2-digit",
+                                                                },
+                                                            )}
+                                                    </span>
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
                             {att?.explanation && (
                                 <div className="rounded-lg border p-3 text-sm">
@@ -185,24 +186,24 @@ export function AttendanceStatusCard({
                                         variant={
                                             att?.explanation
                                                 ?.status ===
-                                            "APPROVED"
+                                                "APPROVED"
                                                 ? "default"
                                                 : att?.explanation
-                                                        .status ===
+                                                    .status ===
                                                     "REJECTED"
-                                                  ? "destructive"
-                                                  : "secondary"
+                                                    ? "destructive"
+                                                    : "secondary"
                                         }
                                         className="mt-1"
                                     >
                                         {att?.explanation?.status ===
-                                        "APPROVED"
+                                            "APPROVED"
                                             ? "Đã duyệt"
                                             : att?.explanation
-                                                    ?.status ===
+                                                ?.status ===
                                                 "REJECTED"
-                                              ? "Từ chối"
-                                              : "Chờ duyệt"}
+                                                ? "Từ chối"
+                                                : "Chờ duyệt"}
                                     </Badge>
                                 </div>
                             )}
@@ -231,10 +232,11 @@ export function AttendanceStatusCard({
                     </DialogHeader>
                     {previewPhoto && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                             src={previewPhoto.src}
                             alt={previewPhoto.label}
                             className="w-full object-contain"
+                            fill
                         />
                     )}
                 </DialogContent>

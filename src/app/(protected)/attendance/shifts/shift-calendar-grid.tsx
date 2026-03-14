@@ -120,7 +120,7 @@ export function ShiftCalendarGrid({
             </div>
 
             {/* Scrollable employee rows */}
-            <div className="flex-1 overflow-y-auto max-h-[calc(100vh-16rem)] no-scrollbar">
+            <div className="flex-1 overflow-y-auto max-h-[calc(100vh-17rem)] no-scrollbar">
                 {calendarData.sortedUsers.length === 0 && (
                     <div className="flex h-40 items-center justify-center text-muted-foreground">
                         {debouncedSearch.trim()

@@ -59,18 +59,18 @@ export function MonthlySummaryTable({
     }, [handleIntersect]);
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>{`Tổng hợp công tháng ${month}/${year}`}</CardTitle>
-                <CardDescription>
+        <div>
+            <div>
+                <h3 className="text-lg font-bold">{`Tổng hợp công tháng ${month}/${year}`}</h3>
+                <p className="text-sm text-muted-foreground">
                     Bảng tổng hợp đã tính sẵn. Nhấn &quot;Tính công&quot;
                     để cập nhật.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-            <div className="overflow-x-auto">
-                <Table>
-                    <TableHeader>
+                </p>
+            </div>
+        
+            <div className="h-[calc(100vh-19rem)] overflow-auto no-scrollbar **:data-[slot=table-container]:overflow-visible">
+                <Table className="min-w-max w-full">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm" >
                         <TableRow>
                             <TableHead>Nhân viên</TableHead>
                             <TableHead className="text-center">
@@ -196,10 +196,6 @@ export function MonthlySummaryTable({
             </div>
             {/* Sentinel + count */}
             <div ref={sentinelRef} className="h-1" />
-            <p className="text-xs text-muted-foreground mt-2">
-                Hiển thị {rows.length} / {totalCount} nhân viên
-            </p>
-            </CardContent>
-        </Card>
+        </div>
     );
 }

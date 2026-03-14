@@ -4,6 +4,7 @@ import {
     Calculator,
     ChevronLeft,
     ChevronRight,
+    Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +34,8 @@ interface MonthlyToolbarProps {
     isPending: boolean;
     onCalculate: () => void;
     onLock: () => void;
+    onExport: () => void;
+    isExporting: boolean;
 }
 
 export function MonthlyToolbar({
@@ -50,6 +53,8 @@ export function MonthlyToolbar({
     isPending,
     onCalculate,
     onLock,
+    onExport,
+    isExporting,
 }: MonthlyToolbarProps) {
     return (
         <>
@@ -68,6 +73,7 @@ export function MonthlyToolbar({
                         <>
                             <Button
                                 variant="outline"
+                                size="sm"
                                 onClick={onCalculate}
                                 disabled={isPending}
                             >
@@ -76,6 +82,7 @@ export function MonthlyToolbar({
                             </Button>
                             <Button
                                 variant="outline"
+                                size={"sm"}
                                 onClick={onLock}
                                 disabled={isPending}
                             >
@@ -84,6 +91,15 @@ export function MonthlyToolbar({
                             </Button>
                         </>
                     )}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onExport}
+                        disabled={isExporting}
+                    >
+                        <Download className="mr-2 h-4 w-4" />
+                        {isExporting ? "Đang xuất..." : "Xuất Excel"}
+                    </Button>
                 </div>
             </div>
 
@@ -92,7 +108,7 @@ export function MonthlyToolbar({
                 <div className="flex items-center gap-1">
                     <Button
                         variant="outline"
-                        size="icon"
+                        size="icon-sm"
                         onClick={() => onMonthChange(-1)}
                     >
                         <ChevronLeft className="h-4 w-4" />
@@ -102,7 +118,7 @@ export function MonthlyToolbar({
                     </span>
                     <Button
                         variant="outline"
-                        size="icon"
+                        size="icon-sm"
                         onClick={() => onMonthChange(1)}
                     >
                         <ChevronRight className="h-4 w-4" />

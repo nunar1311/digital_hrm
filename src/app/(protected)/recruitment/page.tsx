@@ -1,16 +1,10 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { requirePermission } from "@/lib/auth-session";
+import { Permission } from "@/lib/rbac/permissions";
+import { RecruitmentClient } from "./recruitment-client";
 
-export const metadata: Metadata = {
-    title: "Tuyển dụng | Digital HRM",
-};
+export default async function RecruitmentPage() {
+    await requirePermission(Permission.RECRUITMENT_VIEW);
 
-export default function RecruitmentPage() {
-    return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Quản lý tuyển dụng
-            </h1>
-            {/* TODO: Job postings, ATS pipeline */}
-        </div>
-    );
+    return <RecruitmentClient />;
 }

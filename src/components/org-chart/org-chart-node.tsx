@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import type { DepartmentNode } from "@/types/org-chart";
 import {
     Avatar,
@@ -16,6 +16,10 @@ import {
     GripVertical,
 } from "lucide-react";
 import { DEPARTMENT_ICONS } from "./icon-picker";
+import { EmployeePopover } from "./employee-popover";
+import { NODE_CONFIG } from "./org-chart-constants";
+import type { ChartCardStyle } from "./org-chart-constants";
+import { cn } from "@/lib/utils";
 
 interface OrgChartNodeProps {
     node: DepartmentNode;
@@ -24,6 +28,8 @@ interface OrgChartNodeProps {
     isDimmed: boolean;
     searchQuery: string;
     hasChildren: boolean;
+    themeBorderClass?: string;
+    cardStyle?: ChartCardStyle;
     onToggle: () => void;
     onSelect: () => void;
     onDropEmployee: (
@@ -49,6 +55,8 @@ export function OrgChartNode({
     isDimmed,
     searchQuery,
     hasChildren,
+    themeBorderClass,
+    cardStyle = "default",
     onToggle,
     onSelect,
     onDropEmployee,
@@ -143,13 +151,16 @@ export function OrgChartNode({
         <div
             data-interactive
             data-dept-id={node.id}
-            className={`
-        group relative w-70 rounded-xl border-2 bg-card shadow-sm
-        transition-all duration-200 cursor-pointer select-none hover:border-primary/30
-        ${isHighlighted ? "ring-2 ring-primary/60 border-primary/50 shadow-lg shadow-primary/10 scale-[1.02]" : "border-transparent"}
-        ${isDimmed ? "opacity-35 scale-[0.97]" : ""}
-        ${isDragOver ? "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/30 scale-[1.03]" : ""}
-      `}
+            className={cn(
+                "group relative w-70 rounded-xl border-2 bg-card shadow-sm",
+                "transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5",
+                themeBorderClass && !isHighlighted && !isDragOver && themeBorderClass,
+                cardStyle === "bordered" && "border-border shadow-md",
+                isHighlighted && "ring-2 ring-primary/60 border-primary/50 shadow-lg shadow-primary/10 scale-[1.02]",
+                isDimmed && "opacity-35 scale-[0.97]",
+                isDragOver && "ring-2 ring-primary border-primary bg-primary/5 dark:bg-primary/30 scale-[1.03]",
+                !themeBorderClass && !isHighlighted && !isDragOver && "border-transparent hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5",
+            )}
             onClick={handleNodeClick}
             onMouseDown={handleNodeMouseDown}
             onDragOver={handleDragOver}
@@ -158,12 +169,13 @@ export function OrgChartNode({
         >
             {/* Color bar */}
             <div
-                className={`absolute -top-0.5 left-3 right-3 h-0.75 rounded-full ${
-                    node.status === "ACTIVE" ? "bg-primary" : ""
-                }`}
+                className={cn(
+                    "absolute -top-0.5 left-3 right-3 h-0.75 rounded-full",
+                    node.status === "ACTIVE" && "bg-primary",
+                )}
             />
 
-            <div className="p-4 pt-5">
+            <div className={cn("pt-5", cardStyle === "compact" ? "p-3 pt-4" : "p-4")}>
                 {/* Department name & code */}
                 <div className="flex items-start gap-2.5 mb-3">
                     <div className="rounded-lg bg-primary/15 p-2 shrink-0">
@@ -233,10 +245,10 @@ export function OrgChartNode({
                     </div>
                 </div>
 
-                {/* Employee chips (draggable) */}
+                {/* Employee chips (draggable) - show first 3 with popover for more */}
                 {node.employees && node.employees.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-dashed flex flex-wrap gap-1">
-                        {node.employees.slice(0, 3).map((emp) => (
+                    <div className="mt-3 pt-3 border-t border-dashed flex flex-wrap gap-1 items-center">
+                        {node.employees.slice(0, NODE_CONFIG.CHIP_DISPLAY_LIMIT).map((emp) => (
                             <div
                                 key={emp.id}
                                 draggable={!isLocked}
@@ -261,7 +273,7 @@ export function OrgChartNode({
                                     e.dataTransfer.effectAllowed =
                                         "move";
                                 }}
-                                className="flex items-center gap-1 bg-muted/80 hover:bg-muted rounded-full pl-1 pr-2 py-0.5 text-[10px] cursor-grab active:cursor-grabbing transition-colors group/emp"
+                                className="flex items-center gap-1 bg-muted/80 hover:bg-muted rounded-full pl-1 pr-2 py-0.5 text-[10px] cursor-grab active:cursor-grabbing transition-colors group/emp hover:scale-105 hover:shadow-md"
                                 title={`Kéo để chuyển ${emp.name} sang phòng ban khác`}
                             >
                                 <GripVertical className="h-2.5 w-2.5 text-muted-foreground/50 group-hover/emp:text-muted-foreground" />
@@ -273,10 +285,15 @@ export function OrgChartNode({
                                 </span>
                             </div>
                         ))}
-                        {node.employees.length > 3 && (
-                            <span className="text-[10px] text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5">
-                                +{node.employees.length - 3}
-                            </span>
+                        {node.employees.length > NODE_CONFIG.CHIP_DISPLAY_LIMIT && (
+                            <EmployeePopover
+                                employees={node.employees}
+                                trigger={
+                                    <span className="text-[10px] text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 cursor-pointer hover:bg-muted hover:scale-105 transition-all">
+                                        +{node.employees.length - NODE_CONFIG.CHIP_DISPLAY_LIMIT}
+                                    </span>
+                                }
+                            />
                         )}
                     </div>
                 )}

@@ -30,6 +30,8 @@ interface UseOvertimeDataParams {
         pending: OvertimeRequestsPage;
         managerApproved: OvertimeRequestsPage;
         hrApproved: OvertimeRequestsPage;
+        rejected: OvertimeRequestsPage;
+        cancelled: OvertimeRequestsPage;
         all: OvertimeRequestsPage;
     };
 }
@@ -126,6 +128,44 @@ export function useOvertimeData({
         getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
         initialData: {
             pages: [initialData.hrApproved],
+            pageParams: [undefined],
+        },
+    });
+
+    const rejectedQuery = useInfiniteQuery<OvertimeRequestsPage>({
+        queryKey: ["attendance", "overtime", "rejected"],
+        queryFn: async ({ pageParam }) => {
+            const res = await getOvertimeRequests({
+                status: "REJECTED",
+                userId: currentUserId,
+                cursor: pageParam as string | undefined,
+                pageSize: PAGE_SIZE,
+            });
+            return parsePageData(res);
+        },
+        initialPageParam: undefined as string | undefined,
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        initialData: {
+            pages: [initialData.rejected],
+            pageParams: [undefined],
+        },
+    });
+
+    const cancelledQuery = useInfiniteQuery<OvertimeRequestsPage>({
+        queryKey: ["attendance", "overtime", "cancelled"],
+        queryFn: async ({ pageParam }) => {
+            const res = await getOvertimeRequests({
+                status: "CANCELLED",
+                userId: currentUserId,
+                cursor: pageParam as string | undefined,
+                pageSize: PAGE_SIZE,
+            });
+            return parsePageData(res);
+        },
+        initialPageParam: undefined as string | undefined,
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        initialData: {
+            pages: [initialData.cancelled],
             pageParams: [undefined],
         },
     });
@@ -282,6 +322,8 @@ export function useOvertimeData({
         pendingReqs: flatPages(pendingQuery.data?.pages),
         mgrApprovedReqs: flatPages(mgrApprovedQuery.data?.pages),
         hrApprovedReqs: flatPages(hrApprovedQuery.data?.pages),
+        rejectedReqs: flatPages(rejectedQuery.data?.pages),
+        cancelledReqs: flatPages(cancelledQuery.data?.pages),
         allReqs: flatPages(allQuery.data?.pages),
 
         // Infinite scroll helpers
@@ -289,6 +331,8 @@ export function useOvertimeData({
         pendingQuery,
         mgrApprovedQuery,
         hrApprovedQuery,
+        rejectedQuery,
+        cancelledQuery,
         allQuery,
 
         // Mutations

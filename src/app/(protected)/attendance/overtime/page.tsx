@@ -22,7 +22,7 @@ export default async function OvertimePage() {
     ]);
     const canViewAll = canManagerApprove || canHrReview;
 
-    const [my, pending, managerApproved, hrApproved, all] =
+    const [my, pending, managerApproved, hrApproved, rejected, cancelled, all] =
         await Promise.all([
             getOvertimeRequests({ userId: session.user.id }),
             canManagerApprove
@@ -32,6 +32,8 @@ export default async function OvertimePage() {
                 ? getOvertimeRequests({ status: "MANAGER_APPROVED" })
                 : Promise.resolve(EMPTY_PAGE),
             getOvertimeRequests({ status: "HR_APPROVED", userId: session.user.id }),
+            getOvertimeRequests({ status: "REJECTED", userId: session.user.id }),
+            getOvertimeRequests({ status: "CANCELLED", userId: session.user.id }),
             canViewAll ? getOvertimeRequests() : Promise.resolve(EMPTY_PAGE),
         ]);
 
@@ -40,6 +42,8 @@ export default async function OvertimePage() {
         pending: JSON.parse(JSON.stringify(pending)),
         managerApproved: JSON.parse(JSON.stringify(managerApproved)),
         hrApproved: JSON.parse(JSON.stringify(hrApproved)),
+        rejected: JSON.parse(JSON.stringify(rejected)),
+        cancelled: JSON.parse(JSON.stringify(cancelled)),
         all: JSON.parse(JSON.stringify(all)),
     };
 

@@ -205,7 +205,7 @@ export function AttendanceDashboard({
 
     return (
         <div className="grid gap-6 lg:grid-cols-2 lg:h-[calc(100vh-8rem)] lg:overflow-hidden">
-            <div className="space-y-6 lg:overflow-y-auto lg:pr-2">
+            <div className="space-y-6 lg:overflow-y-auto lg:pr-2 no-scrollbar">
                 <AttendanceActionPanel
                     config={config}
                     att={att}
@@ -226,7 +226,7 @@ export function AttendanceDashboard({
                 />
             </div>
 
-            <div className="space-y-6 lg:overflow-y-auto lg:pr-2">
+            <div className="space-y-6 lg:overflow-y-auto lg:pr-2 no-scrollbar">
                 <AttendanceStatusCard
                     att={att}
                     statusInfo={statusInfo}
@@ -237,8 +237,7 @@ export function AttendanceDashboard({
                     hasShiftToday={hasShiftToday}
                 />
                 <AttendanceStatsCard
-                    att={att}
-                    statusInfo={statusInfo}
+                    periodType="week"
                 />
             </div>
         </div>

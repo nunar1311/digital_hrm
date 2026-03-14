@@ -145,6 +145,50 @@ export interface RoleUpdatedEvent {
     updatedBy: string;
 }
 
+// === Asset Events ===
+
+export interface AssetCreatedEvent {
+    assetId: string;
+    assetName: string;
+    assetCode: string;
+    category: string;
+    createdBy: string;
+    createdByName: string;
+}
+
+export interface AssetUpdatedEvent {
+    assetId: string;
+    changes: Record<string, unknown>;
+}
+
+export interface AssetDeletedEvent {
+    assetId: string;
+    assetName: string;
+    assetCode: string;
+}
+
+export interface AssetAssignedEvent {
+    assetId: string;
+    assetName: string;
+    userId: string;
+    userName: string;
+    assignedBy: string;
+    assignedByName: string;
+    assignDate: string;
+    expectedReturn?: string;
+}
+
+export interface AssetReturnedEvent {
+    assetId: string;
+    assetName: string;
+    userId: string;
+    userName: string;
+    returnedBy: string;
+    returnedByName: string;
+    returnDate: string;
+    condition: "GOOD" | "DAMAGED" | "LOST";
+}
+
 // === Server → Client Events ===
 export interface ServerToClientEvents {
     "attendance:check-in": (data: AttendanceCheckInEvent) => void;
@@ -176,6 +220,11 @@ export interface ServerToClientEvents {
     ) => void;
     "settings:updated": (data: SettingsUpdatedEvent) => void;
     "settings:role-updated": (data: RoleUpdatedEvent) => void;
+    "asset:created": (data: AssetCreatedEvent) => void;
+    "asset:updated": (data: AssetUpdatedEvent) => void;
+    "asset:deleted": (data: AssetDeletedEvent) => void;
+    "asset:assigned": (data: AssetAssignedEvent) => void;
+    "asset:returned": (data: AssetReturnedEvent) => void;
 }
 
 // === Client → Server Events ===
@@ -209,4 +258,9 @@ export const SOCKET_EVENTS = {
     DEPARTMENT_TEMPLATE_APPLIED: "department:template-applied",
     SETTINGS_UPDATED: "settings:updated",
     SETTINGS_ROLE_UPDATED: "settings:role-updated",
+    ASSET_CREATED: "asset:created",
+    ASSET_UPDATED: "asset:updated",
+    ASSET_DELETED: "asset:deleted",
+    ASSET_ASSIGNED: "asset:assigned",
+    ASSET_RETURNED: "asset:returned",
 } as const;

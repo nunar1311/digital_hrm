@@ -384,6 +384,159 @@ export async function getTodayAttendance() {
     };
 }
 
+// ─── ATTENDANCE STATISTICS ───
+
+export interface AttendanceStats {
+    userId: string;
+    periodType: "week" | "month";
+    totalDays: number;
+    presentDays: number;
+    lateDays: number;
+    earlyLeaveDays: number;
+    absentDays: number;
+    onLeaveDays: number;
+    holidayDays: number;
+    onTimeRate: number; // Tỷ lệ đúng giờ (không muộn, không sớm)
+    lateRate: number;
+    earlyLeaveRate: number;
+    absentRate: number;
+}
+
+/**
+ * Lấy thống kê chấm công theo tuần hoặc tháng
+ * Dùng cho dashboard hiển thị tỷ lệ đúng giờ
+ */
+export async function getAttendanceStats(
+    periodType: "week" | "month",
+): Promise<AttendanceStats> {
+    const session = await requireAuth();
+    const userId = session.user.id;
+
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date;
+
+    if (periodType === "week") {
+        // Lấy tuần hiện tại (từ thứ 2 đến chủ nhật)
+        const dayOfWeek = now.getDay();
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() + mondayOffset);
+        startDate.setHours(0, 0, 0, 0);
+
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+    } else {
+        // Lấy tháng hiện tại
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
+
+    // Lấy holidays trong khoảng thời gian
+    const holidays = await prisma.holiday.findMany({
+        where: {
+            OR: [
+                { date: { gte: startDate, lte: endDate } },
+                { endDate: { gte: startDate, lte: endDate } },
+            ],
+        },
+    });
+
+    const holidayDates = new Set<string>();
+    for (const h of holidays) {
+        const start = new Date(h.date);
+        const end = h.endDate ? new Date(h.endDate) : start;
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            holidayDates.add(d.toISOString().split("T")[0]);
+        }
+    }
+
+    // Lấy attendance records trong khoảng thời gian
+    const attendances = await prisma.attendance.findMany({
+        where: {
+            userId,
+            date: { gte: startDate, lte: endDate },
+        },
+    });
+
+    // Đếm số ngày trong tuần/tháng (trừ chủ nhật)
+    let totalWorkDays = 0;
+    const current = new Date(startDate);
+    while (current <= endDate) {
+        if (current.getDay() !== 0 && !holidayDates.has(current.toISOString().split("T")[0])) {
+            totalWorkDays++;
+        }
+        current.setDate(current.getDate() + 1);
+    }
+
+    // Thống kê theo status
+    let presentDays = 0;
+    let lateDays = 0;
+    let earlyLeaveDays = 0;
+    let absentDays = 0;
+    let onLeaveDays = 0;
+
+    for (const att of attendances) {
+        switch (att.status) {
+            case "PRESENT":
+                presentDays++;
+                break;
+            case "LATE":
+                lateDays++;
+                break;
+            case "EARLY_LEAVE":
+                earlyLeaveDays++;
+                break;
+            case "LATE_AND_EARLY":
+                lateDays++;
+                earlyLeaveDays++;
+                break;
+            case "ABSENT":
+                absentDays++;
+                break;
+            case "ON_LEAVE":
+                onLeaveDays++;
+                break;
+            case "HALF_DAY":
+                presentDays += 0.5;
+                break;
+        }
+    }
+
+    const holidayDays = holidayDates.size;
+
+    // Tính tỷ lệ (chỉ tính trên ngày làm việc thực tế)
+    const onTimeRate = totalWorkDays > 0 
+        ? Math.round((presentDays / totalWorkDays) * 100 * 10) / 10 
+        : 0;
+    const lateRate = totalWorkDays > 0 
+        ? Math.round((lateDays / totalWorkDays) * 100 * 10) / 10 
+        : 0;
+    const earlyLeaveRate = totalWorkDays > 0 
+        ? Math.round((earlyLeaveDays / totalWorkDays) * 100 * 10) / 10 
+        : 0;
+    const absentRate = totalWorkDays > 0 
+        ? Math.round((absentDays / totalWorkDays) * 100 * 10) / 10 
+        : 0;
+
+    return {
+        userId,
+        periodType,
+        totalDays: totalWorkDays,
+        presentDays,
+        lateDays,
+        earlyLeaveDays,
+        absentDays,
+        onLeaveDays,
+        holidayDays,
+        onTimeRate,
+        lateRate,
+        earlyLeaveRate,
+        absentRate,
+    };
+}
+
 const uploadPhoto = async (base64Data: string) => {
     return base64Data;
 };
@@ -2153,6 +2306,160 @@ export async function lockMonthlySummary(params: {
     });
 
     revalidatePath("/attendance/monthly");
+}
+
+// ─── EXPORT ATTENDANCE ───
+
+export interface ExportAttendanceParams {
+    month: number;
+    year: number;
+    departmentId?: string;
+}
+
+/**
+ * Export bảng công tháng ra CSV (có thể mở trong Excel)
+ */
+export async function exportMonthlyAttendance(params: ExportAttendanceParams) {
+    const session = await requireAuth();
+    
+    // Lấy dữ liệu monthly attendance
+    const data = await getMonthlyAttendance(params);
+    
+    if (!data || !data.users || data.users.length === 0) {
+        throw new Error("Không có dữ liệu để xuất");
+    }
+
+    const { users, attendances, holidays, daysInMonth, year, month } = data;
+    
+    // Tạo map ngày lễ
+    const holidayDates = new Set<string>();
+    for (const h of holidays || []) {
+        const start = new Date(h.date);
+        const end = h.endDate ? new Date(h.endDate) : start;
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            holidayDates.add(d.toISOString().split("T")[0]);
+        }
+    }
+
+    // Map attendance theo userId và ngày
+    const attendanceMap = new Map<string, Record<string, string>>();
+    for (const att of attendances || []) {
+        const dateKey = new Date(att.date).toISOString().split("T")[0];
+        if (!attendanceMap.has(att.userId)) {
+            attendanceMap.set(att.userId, {});
+        }
+        attendanceMap.get(att.userId)![dateKey] = att.status;
+    }
+
+    // Tạo header CSV
+    const headers = ["STT", "Mã NV", "Họ tên"];
+    for (let d = 1; d <= daysInMonth; d++) {
+        headers.push(`${d}`);
+    }
+    headers.push("Tổng công", "Đi muộn", "Về sớm", "Vắng mặt");
+
+    // Map status sang ký hiệu
+    const statusSymbols: Record<string, string> = {
+        PRESENT: "✓",
+        LATE: "M",
+        EARLY_LEAVE: "S",
+        LATE_AND_EARLY: "MS",
+        ABSENT: "X",
+        HALF_DAY: "0.5",
+        ON_LEAVE: "P",
+        HOLIDAY: "L",
+    };
+
+    // Tạo rows
+    const rows: string[][] = [];
+    
+    for (let i = 0; i < users.length; i++) {
+        const user = users[i];
+        const userAttendance = attendanceMap.get(user.id) || {};
+        
+        const row: string[] = [
+            String(i + 1),
+            user.employeeCode || "",
+            user.name,
+        ];
+        
+        let totalWorkDays = 0;
+        let lateDays = 0;
+        let earlyLeaveDays = 0;
+        let absentDays = 0;
+        
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+            const date = new Date(year, month - 1, d);
+            const dayOfWeek = date.getDay();
+            
+            let symbol = "—";
+            
+            // Nếu là ngày lễ
+            if (holidayDates.has(dateStr)) {
+                symbol = "L";
+            } 
+            // Nếu là cuối tuần
+            else if (dayOfWeek === 0 || dayOfWeek === 6) {
+                symbol = "—";
+            }
+            // Ngày trong tương lai
+            else if (date > new Date()) {
+                symbol = "—";
+            }
+            else {
+                const status = userAttendance[dateStr];
+                if (status) {
+                    symbol = statusSymbols[status] || status;
+                    
+                    // Đếm thống kê
+                    if (status === "PRESENT" || status === "LATE" || status === "EARLY_LEAVE" || status === "LATE_AND_EARLY") {
+                        totalWorkDays++;
+                    }
+                    if (status === "LATE" || status === "LATE_AND_EARLY") {
+                        lateDays++;
+                    }
+                    if (status === "EARLY_LEAVE" || status === "LATE_AND_EARLY") {
+                        earlyLeaveDays++;
+                    }
+                    if (status === "ABSENT") {
+                        absentDays++;
+                    }
+                    if (status === "HALF_DAY") {
+                        totalWorkDays += 0.5;
+                    }
+                } else {
+                    // Không có attendance = vắng mặt (nếu là ngày trong quá khứ)
+                    if (date < new Date()) {
+                        symbol = "X";
+                        absentDays++;
+                    }
+                }
+            }
+            
+            row.push(symbol);
+        }
+        
+        row.push(String(totalWorkDays));
+        row.push(String(lateDays));
+        row.push(String(earlyLeaveDays));
+        row.push(String(absentDays));
+        
+        rows.push(row);
+    }
+
+    // Tạo CSV content
+    const csvContent = [
+        `BẢNG CHẤM CÔNG THÁNG ${month}/${year}`,
+        "",
+        headers.join(","),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    return {
+        csvContent,
+        fileName: `bang_cong_${month}_${year}.csv`
+    };
 }
 
 // ─── HOLIDAYS ───

@@ -11,13 +11,19 @@ import {
 import { format } from "date-fns";
 import { ChevronDownIcon } from "lucide-react";
 import { vi } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface DatePickerProps {
     date?: Date;
     setDate: (date: Date | undefined) => void;
+    className?: string;
 }
 
-export function DatePicker({ date, setDate }: DatePickerProps) {
+export function DatePicker({
+    date,
+    setDate,
+    className,
+}: DatePickerProps) {
     const [open, setOpen] = React.useState(false);
 
     return (
@@ -26,7 +32,10 @@ export function DatePicker({ date, setDate }: DatePickerProps) {
                 <Button
                     variant="outline"
                     data-empty={!date}
-                    className=" justify-between text-left font-normal data-[empty=true]:text-muted-foreground"
+                    className={cn(
+                        " justify-between text-left font-normal data-[empty=true]:text-muted-foreground",
+                        className,
+                    )}
                 >
                     {date ? (
                         format(date, "PPP", { locale: vi })
