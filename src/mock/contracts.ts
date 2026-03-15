@@ -2,7 +2,7 @@
 // Mock Contracts — Base records + Generator
 // =============================================================================
 
-import type { Contract, ContractTemplate } from '@/types';
+import type { Contract, ContractTemplate, ContractAppendix } from '@/types';
 import { mockEmployees } from './employees';
 
 export const mockContractTemplates: ContractTemplate[] = [
@@ -58,3 +58,30 @@ export function generateMockContracts(): Contract[] {
 }
 
 export const mockContracts: Contract[] = generateMockContracts();
+
+export const mockContractAppendices: ContractAppendix[] = [
+    {
+        id: 'appx-001',
+        contractId: 'con-001',
+        employeeName: 'Nguyễn Văn An',
+        changeType: 'Tăng lương định kỳ',
+        effectiveDate: '2025-01-01',
+        reason: 'Đạt thành tích xuất sắc trong năm'
+    },
+    {
+        id: 'appx-002',
+        contractId: 'con-002',
+        employeeName: 'Phạm Đức Cường',
+        changeType: 'Điều chỉnh chức danh',
+        effectiveDate: '2024-10-01',
+        reason: 'Bổ nhiệm Trưởng phòng Công nghệ'
+    },
+    {
+        id: 'appx-003',
+        contractId: 'con-003',
+        employeeName: 'Lê Thị Thu',
+        changeType: 'Thưởng hiệu suất',
+        effectiveDate: '2025-12-01',
+        reason: 'Phụ cấp hiệu suất cuối năm'
+    }
+];

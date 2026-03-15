@@ -14,7 +14,7 @@ export type {
 } from './employee';
 
 // Contract
-export type { Contract, ContractTemplate } from './contract';
+export type { Contract, ContractTemplate, ContractAppendix } from './contract';
 
 // Leave
 export type { LeaveType, LeaveBalance, LeaveRequest } from './leave';

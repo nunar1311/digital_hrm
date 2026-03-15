@@ -33,3 +33,12 @@ export interface ContractTemplate {
     isActive: boolean;
     createdAt: string;
 }
+
+export interface ContractAppendix {
+    id: string;
+    contractId: string;
+    employeeName: string;
+    changeType: string;
+    effectiveDate: string;
+    reason: string;
+}
