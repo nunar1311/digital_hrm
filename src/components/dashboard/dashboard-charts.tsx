@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Banknote } from 'lucide-react';
-import { formatVND } from '@/mock/helpers';
+import { formatCurrency } from '@/app/(protected)/assets/constants';
 import type { ReactNode } from 'react';
 import type { DashboardItemId } from "@/hooks/use-dashboard-preferences";
 
@@ -384,7 +384,7 @@ export function PayrollSummaryChart({
                         <Banknote className="h-8 w-8 text-primary mr-3" />
                         <div>
                             <p className="text-sm text-muted-foreground">Thang hien tai</p>
-                            <p className="text-xl font-bold">{formatVND(totalPayroll)}</p>
+                            <p className="text-xl font-bold">{formatCurrency(totalPayroll)}</p>
                         </div>
                     </div>
                 </div>
@@ -403,7 +403,7 @@ export function PayrollSummaryChart({
                                 labelFormatter={(label) => `Thang ${label}`}
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 formatter={(value: any) => {
-                                    return [formatVND(value as number), 'Thuc chi'];
+                                    return [formatCurrency(value as number | null | undefined), 'Thuc chi'];
                                 }}
                                 cursor={{ fill: 'transparent' }}
                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}

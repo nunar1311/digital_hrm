@@ -900,11 +900,56 @@ export async function assignShift(
 ) {
     await requirePermission(Permission.ATTENDANCE_SHIFT_MANAGE);
 
+    // Lấy thông tin ca để kiểm tra thời gian
+    const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
+    if (!shift) throw new Error("Không tìm thấy ca làm việc");
+
+    const startDateObj = new Date(startDate);
+    const endDateObj = endDate ? new Date(endDate) : new Date("2099-12-31");
+
+    // Kiểm tra trùng lịch với ca đơn lẻ
+    const existingSingleShift = await prisma.shiftAssignment.findFirst({
+        where: {
+            userId,
+            shiftId: { not: null },
+            startDate: { lte: endDateObj },
+            OR: [
+                { endDate: null },
+                { endDate: { gte: startDateObj } },
+            ],
+        },
+        include: { shift: true },
+    });
+    if (existingSingleShift) {
+        throw new Error(
+            `Nhân viên đã có ca "${existingSingleShift.shift?.name}" trong khoảng thời gian này`,
+        );
+    }
+
+    // Kiểm tra trùng lịch với chu kỳ
+    const existingCycle = await prisma.shiftAssignment.findFirst({
+        where: {
+            userId,
+            workCycleId: { not: null },
+            startDate: { lte: endDateObj },
+            OR: [
+                { endDate: null },
+                { endDate: { gte: startDateObj } },
+            ],
+        },
+        include: { workCycle: true },
+    });
+    if (existingCycle) {
+        throw new Error(
+            `Nhân viên đã có chu kỳ "${existingCycle.workCycle?.name}" trong khoảng thời gian này`,
+        );
+    }
+
     const assignment = await prisma.shiftAssignment.create({
         data: {
             userId,
             shiftId,
-            startDate: new Date(startDate),
+            startDate: startDateObj,
             endDate: endDate ? new Date(endDate) : null,
         },
         include: { shift: true },
@@ -935,6 +980,28 @@ export async function assignWorkCycle(
     });
     if (!cycle) throw new Error("Không tìm thấy chu kỳ làm việc");
     if (!cycle.isActive) throw new Error("Chu kỳ đã bị vô hiệu hóa");
+
+    const startDateObj = new Date(cycleStartDate);
+    const endDateObj = endDate ? new Date(endDate) : new Date("2099-12-31");
+
+    // Kiểm tra trùng lịch với ca đơn lẻ
+    const existingSingleShift = await prisma.shiftAssignment.findFirst({
+        where: {
+            userId,
+            shiftId: { not: null },
+            startDate: { lte: endDateObj },
+            OR: [
+                { endDate: null },
+                { endDate: { gte: startDateObj } },
+            ],
+        },
+        include: { shift: true },
+    });
+    if (existingSingleShift) {
+        throw new Error(
+            `Nhân viên đã có ca "${existingSingleShift.shift?.name}" trong khoảng thời gian này`,
+        );
+    }
 
     // Kiểm tra trùng lặp: user đã có cycle assignment chồng chéo?
     const existing = await prisma.shiftAssignment.findFirst({
@@ -1021,6 +1088,30 @@ export async function assignWorkCycleToDepartment(
     const endDateObj = endDate
         ? new Date(endDate)
         : new Date("2099-12-31");
+
+    const startDateObj = new Date(cycleStartDate);
+
+    // Find users who already have an overlapping single shift assignment
+    const existingShiftAssignments = await prisma.shiftAssignment.findMany({
+        where: {
+            userId: { in: usersInDept.map((u) => u.id) },
+            shiftId: { not: null },
+            startDate: { lte: endDateObj },
+            OR: [
+                { endDate: null },
+                { endDate: { gte: startDateObj } },
+            ],
+        },
+        include: { shift: true, user: true },
+    });
+
+    if (existingShiftAssignments.length > 0) {
+        const userNames = [...new Set(existingShiftAssignments.map(a => a.user.name))];
+        const shiftNames = [...new Set(existingShiftAssignments.map(a => a.shift?.name))];
+        throw new Error(
+            `Có ${existingShiftAssignments.length} nhân viên đã có ca làm việc (${shiftNames.join(", ")}) trong khoảng thời gian này: ${userNames.join(", ")}`,
+        );
+    }
 
     // Find users who already have an overlapping cycle assignment
     const existingAssignments = await prisma.shiftAssignment.findMany(
@@ -2553,7 +2644,9 @@ export async function getDepartments() {
 
 export async function getUsers(departmentId?: string) {
     await requireAuth();
-    return prisma.user.findMany({
+
+    // Get users with their jobTitle to find department via position
+    const users = await prisma.user.findMany({
         where: departmentId ? { departmentId } : undefined,
         orderBy: { name: "asc" },
         select: {
@@ -2561,8 +2654,29 @@ export async function getUsers(departmentId?: string) {
             name: true,
             employeeCode: true,
             departmentId: true,
+            jobTitle: {
+                select: {
+                    id: true,
+                    departmentId: true,
+                },
+            },
         },
     });
+
+    // Map users with departmentId from either direct field or via jobTitle
+    const mappedUsers = users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        employeeCode: user.employeeCode,
+        departmentId: user.departmentId ?? user.jobTitle?.departmentId ?? null,
+    }));
+
+    // If filtering by departmentId, filter the mapped results
+    if (departmentId) {
+        return mappedUsers.filter((u) => u.departmentId === departmentId);
+    }
+
+    return mappedUsers;
 }
 
 export async function getUsersPaginated({
@@ -2614,12 +2728,26 @@ export async function getUsersPaginated({
                 employeeCode: true,
                 departmentId: true,
                 image: true,
+                jobTitle: {
+                    select: {
+                        departmentId: true,
+                    },
+                },
             },
         }),
         prisma.user.count({ where }),
     ]);
 
-    return { users, totalCount, page, pageSize };
+    // Map users with departmentId from either direct field or via jobTitle
+    const mappedUsers = users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        employeeCode: user.employeeCode,
+        departmentId: user.departmentId ?? user.jobTitle?.departmentId ?? null,
+        image: user.image,
+    }));
+
+    return { users: mappedUsers, totalCount, page, pageSize };
 }
 
 // ─── WORK CYCLES (Chu kỳ làm việc linh động) ───

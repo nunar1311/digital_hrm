@@ -10,7 +10,7 @@ export default async function AttendancePage() {
     const data = await getTodayAttendance();
 
     return (
-        <div className="space-y-6 p-4 md:p-6">
+        <div className="relative space-y-6 p-4 md:p-6">
             <h1 className="text-2xl font-bold tracking-tight">
                 Chấm công hôm nay
             </h1>

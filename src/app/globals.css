@@ -129,6 +129,14 @@
     }
 }
 
+@theme {
+    --color-primary-dark: color-mix(
+        in oklch,
+        var(--primary),
+        black 50%
+    );
+}
+
 .hidden-scrollbar {
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;

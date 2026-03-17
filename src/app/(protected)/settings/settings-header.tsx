@@ -22,7 +22,7 @@ export function SettingsHeader({
                 <h1 className="text-2xl font-bold tracking-tight">
                     Cài đặt hệ thống
                 </h1>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                     Cấu hình thông tin công ty và hệ thống
                 </p>
             </div>

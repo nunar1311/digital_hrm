@@ -163,8 +163,6 @@ export function PendingApprovalsCard() {
     const handleApprove = async (id: string, type: string) => {
         setProcessingId(id);
         try {
-            // TODO: Implement approval action
-            console.log(`Approving ${type} ${id}`);
             refetch();
         } catch (error) {
             console.error("Error approving:", error);
@@ -176,8 +174,6 @@ export function PendingApprovalsCard() {
     const handleReject = async (id: string, type: string) => {
         setProcessingId(id);
         try {
-            // TODO: Implement rejection action
-            console.log(`Rejecting ${type} ${id}`);
             refetch();
         } catch (error) {
             console.error("Error rejecting:", error);

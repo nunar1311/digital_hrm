@@ -43,6 +43,7 @@ import {
 import { Clock, AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Combobox } from "@/components/ui/combobox";
 import type { Shift, UserBasic, WorkCycle } from "../types";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format, parseISO } from "date-fns";
@@ -297,7 +298,7 @@ export function ShiftFormDialog({
                                                         e.target.value.toUpperCase(),
                                                     )
                                                 }
-                                                disabled
+                                                readOnly
                                                 maxLength={10}
                                                 className="w-31"
                                             />
@@ -806,6 +807,8 @@ interface AssignCycleDialogProps {
     workCycles: WorkCycle[];
     onSubmit: (values: AssignCycleFormValues) => void;
     isPending: boolean;
+    defaultUserId?: string;
+    defaultStartDate?: string;
 }
 
 export function AssignCycleDialog({
@@ -815,13 +818,15 @@ export function AssignCycleDialog({
     workCycles,
     onSubmit,
     isPending,
+    defaultUserId,
+    defaultStartDate,
 }: AssignCycleDialogProps) {
     const form = useForm<AssignCycleFormValues>({
         resolver: zodResolver(assignCycleFormSchema),
         defaultValues: {
-            userId: "",
+            userId: defaultUserId || "",
             workCycleId: "",
-            startDate: "",
+            startDate: defaultStartDate || "",
             endDate: "",
         },
     });
@@ -829,13 +834,13 @@ export function AssignCycleDialog({
     useEffect(() => {
         if (open) {
             form.reset({
-                userId: "",
+                userId: defaultUserId || "",
                 workCycleId: "",
-                startDate: "",
+                startDate: defaultStartDate || "",
                 endDate: "",
             });
         }
-    }, [open, form]);
+    }, [open, form, defaultUserId, defaultStartDate]);
 
     const userId = form.watch("userId");
     const workCycleId = form.watch("workCycleId");
@@ -872,29 +877,21 @@ export function AssignCycleDialog({
                                             *
                                         </span>
                                     </FormLabel>
-                                    <Select
-                                        value={field.value}
-                                        onValueChange={field.onChange}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Chọn nhân viên" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {users.map((u) => (
-                                                <SelectItem
-                                                    key={u.id}
-                                                    value={u.id}
-                                                >
-                                                    {u.name}{" "}
-                                                    {u.employeeCode
-                                                        ? `(${u.employeeCode})`
-                                                        : ""}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <FormControl>
+                                        <Combobox
+                                            options={users.map((u) => ({
+                                                value: u.id,
+                                                label: u.employeeCode
+                                                    ? `${u.name} (${u.employeeCode})`
+                                                    : u.name,
+                                            }))}
+                                            value={field.value ? [field.value] : []}
+                                            onChange={(vals) =>
+                                                field.onChange(vals[0] || "")
+                                            }
+                                            placeholder="Chọn nhân viên..."
+                                        />
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}

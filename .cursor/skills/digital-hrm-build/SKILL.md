@@ -35,20 +35,32 @@ description: Builds complete Digital HRM system for Vietnamese enterprises with 
 
 ```bash
 pnpm dev          # Development server (localhost:3000)
-pnpm db:push     # Sync Prisma schema
-pnpm db:studio   # Open Prisma Studio
-node prisma/seed.js  # Seed demo data (9 users)
+pnpm prisma db push     # Sync Prisma schema
+pnpm prisma generate    #Generate database
+pnpm prisma db studio   # Open Prisma Studio
+pnpm tsx prisma/seed.js  # Seed demo data (9 users)
 pnpm build       # Production build
 ```
 
 ## Timezone System
 
 Always use `useTimezone` hook for date/time display:
+
 ```typescript
-const { timezone, formatDate, formatTime, formatDateTime, getTimezoneLabel } = useTimezone();
+const {
+    timezone,
+    formatDate,
+    formatTime,
+    formatDateTime,
+    getTimezoneLabel,
+} = useTimezone();
 
 // Format with timezone
-new Date().toLocaleTimeString("vi-VN", { timeZone: timezone, hour: "2-digit", minute: "2-digit" })
+new Date().toLocaleTimeString("vi-VN", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+});
 ```
 
 **Supported timezones:** 27 popular timezones including Asia/Ho_Chi_Minh, Asia/Singapore, Asia/Tokyo, Europe/London, America/New_York
@@ -58,6 +70,7 @@ new Date().toLocaleTimeString("vi-VN", { timeZone: timezone, hour: "2-digit", mi
 ### ✅ Completed Modules
 
 **Infrastructure & Cross-Cutting:**
+
 - Auth: Login, forgot-password, session management, middleware protection
 - RBAC: 9 roles with ~60 permissions, PermissionGate component
 - Middleware: Route protection + RBAC checking
@@ -72,6 +85,7 @@ new Date().toLocaleTimeString("vi-VN", { timeZone: timezone, hour: "2-digit", mi
 - Timezone System: useTimezone hook with localStorage sync
 
 **Completed Business Modules:**
+
 - **Org Chart**: Interactive canvas with zoom/pan, drag-and-drop, department CRUD, matrix reporting, 4 company templates (JSC/LLC/Partnership/Sole), WebSocket sync
 - **Attendance** (44 files, ~14,200+ LOC): Check-in/out with GPS/WiFi/selfie verification, shifts management, monthly grid table, overtime requests, explanations, records, settings
 - **Recruitment** (12 files): Kanban pipeline, candidate management, job postings, interview scheduling, calendar view, reports
@@ -95,6 +109,7 @@ new Date().toLocaleTimeString("vi-VN", { timeZone: timezone, hour: "2-digit", mi
 ## RBAC System
 
 ### 9 Roles (Priority Order)
+
 ```
 SUPER_ADMIN      → Full system access
 DIRECTOR        → Approve high-level requests
@@ -108,31 +123,34 @@ IT_ADMIN        → System + assets management
 ```
 
 ### Permission Scopes
+
 Each module has scopes: `view_self`, `view_team`, `view_all`, `create`, `edit`, `delete`, `approve`, `manage`, `export`
 
 ### Permission Enum Examples
+
 ```typescript
 enum Permission {
-  DASHBOARD_VIEW = "dashboard:view",
-  DASHBOARD_VIEW_ALL = "dashboard:view_all",
-  EMPLOYEE_VIEW_SELF = "employee:view_self",
-  EMPLOYEE_VIEW_TEAM = "employee:view_team",
-  EMPLOYEE_VIEW_ALL = "employee:view_all",
-  EMPLOYEE_CREATE = "employee:create",
-  EMPLOYEE_EDIT = "employee:edit",
-  EMPLOYEE_DELETE = "employee:delete",
-  ATTENDANCE_VIEW_SELF = "attendance:view_self",
-  ATTENDANCE_CHECK_IN = "attendance:check_in",
-  LEAVE_CREATE = "leave:create",
-  LEAVE_APPROVE = "leave:approve",
-  PAYROLL_VIEW_ALL = "payroll:view_all",
-  // ... more
+    DASHBOARD_VIEW = "dashboard:view",
+    DASHBOARD_VIEW_ALL = "dashboard:view_all",
+    EMPLOYEE_VIEW_SELF = "employee:view_self",
+    EMPLOYEE_VIEW_TEAM = "employee:view_team",
+    EMPLOYEE_VIEW_ALL = "employee:view_all",
+    EMPLOYEE_CREATE = "employee:create",
+    EMPLOYEE_EDIT = "employee:edit",
+    EMPLOYEE_DELETE = "employee:delete",
+    ATTENDANCE_VIEW_SELF = "attendance:view_self",
+    ATTENDANCE_CHECK_IN = "attendance:check_in",
+    LEAVE_CREATE = "leave:create",
+    LEAVE_APPROVE = "leave:approve",
+    PAYROLL_VIEW_ALL = "payroll:view_all",
+    // ... more
 }
 ```
 
 ## Code Patterns
 
 ### Server Actions Pattern
+
 ```typescript
 // src/app/(protected)/[module]/actions.ts
 "use server";
@@ -143,50 +161,60 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 export const schema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  // ...
+    name: z.string().min(2),
+    email: z.string().email(),
+    // ...
 });
 
-export async function getData(params: { page: number; pageSize: number; search?: string }) {
-  await requirePermission(Permission.VIEW_ALL);
-  // ... query with pagination
+export async function getData(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+}) {
+    await requirePermission(Permission.VIEW_ALL);
+    // ... query with pagination
 }
 
 export async function createItem(data: z.infer<typeof schema>) {
-  const session = await requirePermission(Permission.CREATE);
-  const validated = schema.parse(data);
-  // ... create logic
-  // ... audit log
-  revalidatePath("/module");
-  return result;
+    const session = await requirePermission(Permission.CREATE);
+    const validated = schema.parse(data);
+    // ... create logic
+    // ... audit log
+    revalidatePath("/module");
+    return result;
 }
 ```
 
 ### Client Component Pattern
+
 ```typescript
 "use client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+    useQuery,
+    useMutation,
+    useQueryClient,
+} from "@tanstack/react-query";
 import { useSocketEvent } from "@/hooks/use-socket-event";
 import { toast } from "sonner";
 
 export function ModuleClient({ initialData }) {
-  const queryClient = useQueryClient();
-  const { data } = useQuery({ 
-    queryKey: ["module"], 
-    queryFn: fetchData, 
-    initialData 
-  });
-  
-  useSocketEvent("module:updated", () => {
-    queryClient.invalidateQueries({ queryKey: ["module"] });
-  });
-  
-  // ...
+    const queryClient = useQueryClient();
+    const { data } = useQuery({
+        queryKey: ["module"],
+        queryFn: fetchData,
+        initialData,
+    });
+
+    useSocketEvent("module:updated", () => {
+        queryClient.invalidateQueries({ queryKey: ["module"] });
+    });
+
+    // ...
 }
 ```
 
 ### Infinite Scroll Pattern (PAGE_SIZE=20)
+
 ```typescript
 const PAGE_SIZE = 20;
 const sentinelRef = useRef<HTMLDivElement>(null);
@@ -283,30 +311,31 @@ digital_hrm/
 
 ## Module Routes
 
-| Route | Module | Status |
-|-------|--------|--------|
-| `/` | Dashboard | To build |
-| `/org-chart` | Org Chart | ✅ Complete |
-| `/departments` | Departments | |
-| `/employees` | Employees | To build |
-| `/contracts` | Contracts | To build |
-| `/attendance` | Attendance | ✅ Complete |
-| `/leaves` | Leaves | To build |
-| `/payroll` | Payroll | To build |
-| `/onboarding` | Onboarding | To build |
+| Route          | Module      | Status      |
+| -------------- | ----------- | ----------- |
+| `/`            | Dashboard   | To build    |
+| `/org-chart`   | Org Chart   | ✅ Complete |
+| `/departments` | Departments |             |
+| `/employees`   | Employees   | To build    |
+| `/contracts`   | Contracts   | To build    |
+| `/attendance`  | Attendance  | ✅ Complete |
+| `/leaves`      | Leaves      | To build    |
+| `/payroll`     | Payroll     | To build    |
+| `/onboarding`  | Onboarding  | To build    |
 | `/offboarding` | Offboarding | ✅ Complete |
 | `/recruitment` | Recruitment | ✅ Complete |
-| `/training` | Training | To build |
-| `/performance` | Performance | To build |
-| `/rewards` | Rewards | To build |
-| `/assets` | Assets | ✅ Complete |
-| `/reports` | Reports | To build |
-| `/ess` | ESS | To build |
-| `/settings` | Settings | Partial |
+| `/training`    | Training    | To build    |
+| `/performance` | Performance | To build    |
+| `/rewards`     | Rewards     | To build    |
+| `/assets`      | Assets      | ✅ Complete |
+| `/reports`     | Reports     | To build    |
+| `/ess`         | ESS         | To build    |
+| `/settings`    | Settings    | Partial     |
 
 ## Feature List (84 Features)
 
 ### Phase 1 - Core Platform (~25 features)
+
 1. Org Chart visualization (zoom/pan, search)
 2. Drag & Drop employee transfer
 3. Department CRUD
@@ -334,6 +363,7 @@ digital_hrm/
 25. Audit log
 
 ### Phase 2 - Business Expansion (~30 features)
+
 - Job postings management
 - ATS pipeline
 - Training courses
@@ -356,6 +386,7 @@ digital_hrm/
 - 2FA
 
 ### Phase 3 - Advanced (~25 features)
+
 - Custom reports
 - 360 feedback
 - Business trip requests
@@ -370,6 +401,7 @@ digital_hrm/
 - Backup & recovery
 
 ### Phase 4 - Enterprise (~1 feature)
+
 - Multi-tenant
 
 ## Detailed Module Requirements

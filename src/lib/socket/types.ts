@@ -167,6 +167,14 @@ export interface AssetDeletedEvent {
     assetCode: string;
 }
 
+export interface CompanyUpdatedEvent {
+    changes: Record<string, unknown>;
+}
+
+export interface CompanyLogoUpdatedEvent {
+    logo: string;
+}
+
 export interface AssetAssignedEvent {
     assetId: string;
     assetName: string;
@@ -225,6 +233,8 @@ export interface ServerToClientEvents {
     "asset:deleted": (data: AssetDeletedEvent) => void;
     "asset:assigned": (data: AssetAssignedEvent) => void;
     "asset:returned": (data: AssetReturnedEvent) => void;
+    "company:updated": (data: CompanyUpdatedEvent) => void;
+    "company:logo-updated": (data: CompanyLogoUpdatedEvent) => void;
 }
 
 // === Client → Server Events ===
@@ -263,4 +273,6 @@ export const SOCKET_EVENTS = {
     ASSET_DELETED: "asset:deleted",
     ASSET_ASSIGNED: "asset:assigned",
     ASSET_RETURNED: "asset:returned",
+    COMPANY_UPDATED: "company:updated",
+    COMPANY_LOGO_UPDATED: "company:logo-updated",
 } as const;

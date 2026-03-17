@@ -14,18 +14,16 @@ export function SettingsSection({
     children,
 }: SettingsSectionProps) {
     return (
-        <div className="flex flex-col flex-1 gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-8 py-6 border-b border-border last:border-b-0 last:pb-0">
-            <div className="min-w-0 flex-1 space-y-1">
-                <h3 className="text-sm font-medium leading-none">
+        <section className="grid grid-cols-[290px_repeat(auto-fit,minmax(290px,1fr))] gap-4 sm:gap-8 py-6 border-b border-border last:border-b-0 last:pb-0">
+            <header className="min-w-0 flex flex-col gap-1">
+                <h3 className="text-sm font-semibold leading-none">
                     {title}
                 </h3>
                 <p className="text-xs text-muted-foreground">
                     {description}
                 </p>
-            </div>
-            <div className="flex-2 flex shrink-0 items-start sm:pt-0.5">
-                {children}
-            </div>
-        </div>
+            </header>
+            <article className="block">{children}</article>
+        </section>
     );
 }

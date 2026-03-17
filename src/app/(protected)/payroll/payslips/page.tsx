@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
+import { getPayslips } from "../actions";
+import PayslipsClient from "./payslips-client";
 
 export const metadata: Metadata = {
     title: "Phiếu lương | Digital HRM",
+    description: "Xem và tải phiếu lương",
 };
 
-export default function PayslipsPage() {
-    return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Phiếu lương
-            </h1>
-            {/* TODO: Payslip generation and distribution */}
-        </div>
-    );
+export default async function PayslipsPage() {
+    const payslips = await getPayslips({});
+
+    return <PayslipsClient initialData={payslips} />;
 }

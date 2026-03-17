@@ -399,30 +399,72 @@ async function seed() {
         console.log(`  ✅ ${pos.name} (${pos.code})`);
     }
 
-    // ─── Update user departmentId ───
-    console.log("\n🔗 Linking users to departments...\n");
-    const userDeptLinks: { email: string; deptCode: string }[] = [
-        { email: "director@company.vn", deptCode: "BGD" },
-        { email: "hr.manager@company.vn", deptCode: "HR" },
-        { email: "hr.staff@company.vn", deptCode: "HR" },
-        { email: "dept.manager@company.vn", deptCode: "TECH" },
-        { email: "team.leader@company.vn", deptCode: "TECH" },
-        { email: "employee@company.vn", deptCode: "TECH" },
-        { email: "accountant@company.vn", deptCode: "FIN" },
-        { email: "it.admin@company.vn", deptCode: "IT" },
+    // ─── Update user departmentId and jobTitle ───
+    console.log("\n🔗 Linking users to departments and positions...\n");
+    const userDeptLinks: { email: string; deptCode: string; positionCode: string }[] = [
+        { email: "admin@company.vn", deptCode: "BGD", positionCode: "POS-IT-ADMIN" },
+        { email: "director@company.vn", deptCode: "BGD", positionCode: "POS-DIR" },
+        { email: "hr.manager@company.vn", deptCode: "HR", positionCode: "POS-HR-MGR" },
+        { email: "hr.staff@company.vn", deptCode: "HR", positionCode: "POS-HR-STAFF" },
+        { email: "dept.manager@company.vn", deptCode: "TECH", positionCode: "POS-TECH-MGR" },
+        { email: "team.leader@company.vn", deptCode: "TECH", positionCode: "POS-TECH-TL" },
+        { email: "employee@company.vn", deptCode: "TECH", positionCode: "POS-TECH-DEV" },
+        { email: "accountant@company.vn", deptCode: "FIN", positionCode: "POS-FIN-MGR" },
+        { email: "it.admin@company.vn", deptCode: "IT", positionCode: "POS-IT-ADMIN" },
     ];
 
     for (const link of userDeptLinks) {
         const dept = await prisma.department.findUnique({
             where: { code: link.deptCode },
         });
-        if (dept) {
+        const position = await prisma.position.findUnique({
+            where: { code: link.positionCode },
+        });
+        if (dept || position) {
             await prisma.user.updateMany({
                 where: { email: link.email },
-                data: { departmentId: dept.id },
+                data: {
+                    departmentId: dept?.id,
+                    jobTitleId: position?.id,
+                },
             });
-            console.log(`  ✅ ${link.email} → ${link.deptCode}`);
+            console.log(`  ✅ ${link.email} → ${link.deptCode} (${link.positionCode})`);
         }
+    }
+
+    // ─── Seed Company Settings ───
+    console.log("\n🏢 Seeding company settings...\n");
+
+    const companySettings = [
+        { key: "company.companyName", value: "Công ty Công nghệ Digital HRM", group: "company" },
+        { key: "company.companyCode", value: "DHRM", group: "company" },
+        { key: "company.companyEmail", value: "info@digital-hrm.vn", group: "company" },
+        { key: "company.companyPhone", value: "028 1234 5678", group: "company" },
+        { key: "company.companyFax", value: "", group: "company" },
+        { key: "company.companyTaxCode", value: "0123456789", group: "company" },
+        { key: "company.companyAddress", value: "123 Đường Nguyễn Trãi", group: "company" },
+        { key: "company.companyWard", value: "Phường Bến Thành", group: "company" },
+        { key: "company.companyDistrict", value: "Quận 1", group: "company" },
+        { key: "company.companyCity", value: "Hồ Chí Minh", group: "company" },
+        { key: "company.companyCountry", value: "Vietnam", group: "company" },
+        { key: "company.companyWebsite", value: "https://digital-hrm.vn", group: "company" },
+        { key: "company.companyDescription", value: "Công ty chuyên cung cấp giải pháp quản lý nhân sự hàng đầu Việt Nam", group: "company" },
+        { key: "company.companyLogo", value: "", group: "company" },
+        { key: "company.companyIndustry", value: "technology", group: "company" },
+        { key: "company.companyFoundedDate", value: "2020-01-15", group: "company" },
+        { key: "company.companyEmployeeCount", value: "51-100", group: "company" },
+        { key: "company.companyBusinessLicense", value: "0123456789", group: "company" },
+        { key: "company.companyBankAccount", value: "1234567890", group: "company" },
+        { key: "company.companyBankName", value: "Ngân hàng TMCP Ngoại thương Việt Nam (VCB)", group: "company" },
+    ];
+
+    for (const setting of companySettings) {
+        await prisma.systemSetting.upsert({
+            where: { key: setting.key },
+            update: {},
+            create: setting,
+        });
+        console.log(`  ✅ ${setting.key}`);
     }
 
     console.log("\n🎉 Seed hoàn tất!");

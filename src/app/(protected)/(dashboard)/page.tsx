@@ -28,7 +28,6 @@ import {
     RotateCcw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatVND } from "@/mock/helpers";
 import { getDashboardData } from "./actions";
 import {
     useDashboardPreferences,
@@ -56,7 +55,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 
 import { useState } from "react";
-import { PendingApprovalsCard, QuickActions } from "@/components/dashboard";
+import { DocEmptyStateCard, PendingApprovalsCard, QuickActions } from "@/components/dashboard";
+import { formatCurrency } from "../assets/constants";
 
 const DashboardCharts = dynamic(
     () => import("@/components/dashboard/dashboard-charts"),
@@ -168,7 +168,7 @@ export default function DashboardPage() {
             const currentItems = [...preferences.items];
             const oldIndex = currentItems.indexOf(active.id as DashboardItemId);
             const newIndex = currentItems.indexOf(over.id as DashboardItemId);
-            
+
             if (oldIndex !== -1 && newIndex !== -1) {
                 // Apply the reorder directly
                 const newItems = arrayMove(currentItems, oldIndex, newIndex);
@@ -306,10 +306,16 @@ export default function DashboardPage() {
                 </SortableContext>
             </DndContext>
 
-            {/* Quick Actions & Pending Approvals Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Quick Actions, Pending Approvals & Docs Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <QuickActions />
                 <PendingApprovalsCard />
+                <DocEmptyStateCard
+                    title="Docs"
+                    emptyMessage="There are no Docs in this location yet."
+                    actionLabel="Add a Doc"
+                    onAction={() => {}}
+                />
             </div>
 
             {/* Lazy Loaded Charts */}
@@ -484,7 +490,7 @@ function KPICard({
                 return {
                     title: "Chi phí lương (Tháng này)",
                     icon: Banknote,
-                    value: formatVND(kpiData.currentMonthPayroll),
+                    value: formatCurrency(kpiData.currentMonthPayroll),
                     description: "Dự kiến chi phí tháng",
                     trend: "+3%",
                     trendPositive: false,

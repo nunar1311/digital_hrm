@@ -9,7 +9,6 @@ import type { ServerToClientEvents } from "@/lib/socket/types";
  *
  * @example
  * useSocketEvent("attendance:check-in", (data) => {
- *   console.log("Ai đó vừa check-in:", data.userName);
  *   queryClient.invalidateQueries({ queryKey: ["attendance"] });
  * });
  */

@@ -263,14 +263,7 @@ export function DepartmentDetailPanel({
                                                     key={emp.id}
                                                     employee={emp}
                                                     showActions
-                                                    onViewProfile={(
-                                                        id,
-                                                    ) =>
-                                                        console.log(
-                                                            "View profile",
-                                                            id,
-                                                        )
-                                                    }
+                                                    onViewProfile={() => {}}
                                                 />
                                             ),
                                         )}

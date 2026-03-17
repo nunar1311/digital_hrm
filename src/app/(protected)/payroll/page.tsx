@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
+import { getPayrollRecords, getDepartmentsForPayroll } from "./actions";
+import PayrollClient from "./payroll-client";
 
 export const metadata: Metadata = {
-    title: "Bảng lương | Digital HRM",
+    title: "Bảng lương",
+    description: "Quản lý và tính lương nhân viên",
 };
 
-export default function PayrollPage() {
+export default async function PayrollPage() {
+    const [records, departments] = await Promise.all([
+        getPayrollRecords(),
+        getDepartmentsForPayroll(),
+    ]);
+
     return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Bảng lương tháng
-            </h1>
-            {/* TODO: Monthly payroll processing */}
-        </div>
+        <PayrollClient
+            initialRecords={records}
+            departments={departments}
+        />
     );
 }

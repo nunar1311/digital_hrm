@@ -7,26 +7,26 @@ import {
     Pencil,
     Trash2,
     Settings2,
+    ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Shift } from "../types";
 import type { ViewMode, ShiftColor } from "./shifts-constants";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
 interface ShiftNavigationProps {
     viewMode: ViewMode;
@@ -61,57 +61,110 @@ export function ShiftNavigation({
     inactiveCount,
 }: ShiftNavigationProps) {
     return (
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between ">
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={goToday}
+                    >
+                        Hôm nay
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Quay về hôm nay</p>
+                </TooltipContent>
+            </Tooltip>
             {/* View mode toggle */}
-            <Select
-                value={viewMode}
-                onValueChange={(v) => setViewMode(v as ViewMode)}
-            >
-                <SelectTrigger size="sm" className="min-w-32">
-                    <SelectValue placeholder="Chế độ xem" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="day">Ngày</SelectItem>
-                    <SelectItem value="week">Tuần</SelectItem>
-                    <SelectItem value="month">Tháng</SelectItem>
-                </SelectContent>
-            </Select>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="xs"
+                        className="focus-visible:ring-0  text-xs"
+                    >
+                        {viewMode === "day"
+                            ? "Ngày"
+                            : viewMode === "week"
+                              ? "Tuần"
+                              : "Tháng"}
+                        <ChevronDown className="size-3" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                    <DropdownMenuGroup>
+                        <DropdownMenuLabel className="text-xs">
+                            Chế độ xem
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem
+                            onClick={() => setViewMode("day")}
+                        >
+                            Ngày
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => setViewMode("week")}
+                        >
+                            Tuần
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => setViewMode("month")}
+                        >
+                            Tháng
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Date navigation */}
-            <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={goToday}>
-                    Hôm nay
-                </Button>
-                <div className="flex items-center rounded-md border">
+            <Tooltip>
+                <TooltipTrigger asChild>
                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-r-none"
+                        variant="outline"
+                        size="icon-xs"
                         onClick={goPrev}
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <Separator
-                        orientation="vertical"
-                        className="h-5"
-                    />
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>
+                        {viewMode === "day"
+                            ? "Ngày trước"
+                            : viewMode === "week"
+                              ? "Tuần trước"
+                              : "Tháng trước"}
+                    </p>
+                </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+                <TooltipTrigger asChild>
                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-l-none"
+                        variant="outline"
+                        size="icon-xs"
                         onClick={goNext}
                     >
                         <ChevronRight className="h-4 w-4" />
                     </Button>
-                </div>
-                <span className="ml-1 min-w-50 text-sm font-semibold">
-                    {rangeLabel}
-                </span>
-            </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>
+                        {viewMode === "day"
+                            ? "Ngày sau"
+                            : viewMode === "week"
+                              ? "Tuần sau"
+                              : "Tháng sau"}
+                    </p>
+                </TooltipContent>
+            </Tooltip>
+
+            <span className="ml-1 min-w-50 text-sm font-semibold">
+                {rangeLabel}
+            </span>
 
             {/* Shift legend */}
-            <div className="flex flex-wrap items-center gap-2">
-                {/* Active shifts */}
+            {/* <div className="flex flex-wrap items-center gap-2">
                 {shifts
                     .filter((s) => s.isActive)
                     .slice(0, 5) // Show up to 5 active shifts
@@ -166,7 +219,7 @@ export function ShiftNavigation({
                             </div>
                         );
                     })}
-                {/* Manage shifts button */}
+
                 {canManage && (
                     <Button
                         variant="ghost"
@@ -186,7 +239,7 @@ export function ShiftNavigation({
                         )}
                     </Button>
                 )}
-            </div>
+            </div> */}
         </div>
     );
 }

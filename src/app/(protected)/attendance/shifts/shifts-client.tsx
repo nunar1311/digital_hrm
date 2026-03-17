@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { Plus, Settings2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+    TooltipProvider,
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type {
     Shift,
     UserBasic,
@@ -22,6 +27,7 @@ import {
     ShiftManageDialog,
 } from "./shift-dialogs";
 import Link from "next/link";
+import { format } from "date-fns";
 import { AssignCycleDeptDialog } from "./assign-cycle-dept-dialog";
 import { AssignDialog } from "./assign-shift-dialog";
 
@@ -51,57 +57,92 @@ export function ShiftsClient({
 
     return (
         <TooltipProvider>
-            <div className="flex h-full flex-col gap-4">
+            <div className="flex h-full flex-col gap-2">
                 {/* ─── Header ─── */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 pt-4 md:px-6 md:pt-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 pt-4">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">
+                        <h1 className="text-xl font-bold tracking-tight">
                             Quản lý phân ca
                         </h1>
-                        <p className="text-sm text-muted-foreground">
-                            Lịch phân ca làm việc cho nhân viên
-                        </p>
                     </div>
                     {canManage && (
                         <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={data.openCreateShift}
-                            >
-                                <Plus className=" h-4 w-4" />
-                                Tạo ca
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={data.openCreateShift}
+                                    >
+                                        <Plus className=" h-4 w-4" />
+                                        Tạo ca
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Tạo ca làm việc mới</p>
+                                </TooltipContent>
+                            </Tooltip>
 
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    data.setCycleDialogOpen(true);
-                                }}
-                            >
-                                <Plus className=" h-4 w-4" />
-                                Gán chu kỳ
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    data.setCycleDeptDialogOpen(true);
-                                }}
-                            >
-                                <Plus className=" h-4 w-4" />
-                                Gán chu kỳ phòng ban
-                            </Button>
-                            <Link
-                                href={"/attendance/settings"}
-                                className={buttonVariants({
-                                    size: "sm",
-                                })}
-                            >
-                                <Settings2 className="h-4 w-4" />
-                                Cài đặt
-                            </Link>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            data.setCycleDialogOpen(
+                                                true,
+                                            );
+                                        }}
+                                    >
+                                        <Plus className=" h-4 w-4" />
+                                        Gán chu kỳ
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>
+                                        Gán ca theo chu kỳ cho nhân
+                                        viên
+                                    </p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            data.setCycleDeptDialogOpen(
+                                                true,
+                                            );
+                                        }}
+                                    >
+                                        <Plus className=" h-4 w-4" />
+                                        Gán chu kỳ phòng ban
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>
+                                        Gán ca theo chu kỳ cho phòng
+                                        ban
+                                    </p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Link
+                                        href={"/attendance/settings"}
+                                        className={buttonVariants({
+                                            size: "sm",
+                                        })}
+                                    >
+                                        <Settings2 className="h-4 w-4" />
+                                        Cài đặt
+                                    </Link>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Cài đặt ca làm việc</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
                     )}
                 </div>
@@ -132,14 +173,15 @@ export function ShiftsClient({
                         totalCount={data.filteredUsers.length}
                         debouncedSearch={data.debouncedSearch}
                         departments={departments}
-                        departmentId={data.departmentId}
-                        onDepartmentChange={data.setDepartmentId}
+                        departmentIds={data.departmentIds}
+                        onDepartmentChange={data.setDepartmentIds}
+                        onRefresh={data.refreshUsers}
                     />
                 </div>
                 {/* ─── Navigation ─── */}
 
                 {/* ─── Calendar Grid ─── */}
-                <div className="min-h-0 flex-1 overflow-hidden border">
+                <div className="min-h-0 flex-1 overflow-hidden border-t">
                     <ShiftCalendarGrid
                         visibleDays={data.visibleDays}
                         calendarData={data.calendarData}
@@ -158,6 +200,7 @@ export function ShiftsClient({
                         hasMore={data.hasMore}
                         loadMore={data.loadMore}
                         viewMode={data.viewMode}
+                        workCycles={data.workCycles}
                     />
                 </div>
 
@@ -213,6 +256,12 @@ export function ShiftsClient({
                     workCycles={data.workCycles}
                     onSubmit={data.handleAssignCycle}
                     isPending={data.isPending}
+                    defaultUserId={data.assignCycleUserId || undefined}
+                    defaultStartDate={
+                        data.assignCycleDate
+                            ? format(data.assignCycleDate, "yyyy-MM-dd")
+                            : undefined
+                    }
                 />
 
                 <AssignCycleDeptDialog

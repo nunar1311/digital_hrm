@@ -35,7 +35,7 @@ export default async function RootLayout({
 }>) {
     const settingsCookie = await getSettingsFromCookie();
     const timezone = await getTimezoneFromDB();
-    
+
     return (
         <html
             lang="en"
@@ -44,7 +44,7 @@ export default async function RootLayout({
             suppressHydrationWarning
         >
             <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+                className={`${geistSans.variable} ${geistMono.variable} antialiased [--header-height:calc(var(--spacing)*10)] scroll-smooth overscroll-none overflow-hidden`}
             >
                 <SettingsProvider settingsCookies={settingsCookie}>
                     <TimezoneProvider initialTimezone={timezone}>

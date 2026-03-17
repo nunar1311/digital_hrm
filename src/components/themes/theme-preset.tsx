@@ -55,17 +55,18 @@ const ThemePreset = () => {
         ]?.[color];
     };
     return (
-        <Tabs value={value || ""} onValueChange={applyThemePreset}>
-            <TabsList className="bg-transparent w-full group-data-[orientation=horizontal]/tabs:h-full gap-2 justify-between grid md:grid-cols-6 lg:grid-cols-6">
+        <Tabs value={value || ""}>
+            <TabsList className="bg-transparent w-full group-data-[orientation=horizontal]/tabs:h-full gap-2 justify-between grid md:grid-cols-5 lg:grid-cols-6">
                 {presetNames.map((name) => {
                     return (
                         <div
                             key={name}
-                            className="flex flex-col items-center gap-2"
+                            className="flex flex-col items-center gap-1"
                         >
                             <TabsTrigger
                                 value={name}
                                 className="h-14 w-fit px-px py-px data-[state=active]:shadow-none data-[state=active]:ring-primary data-[state=active]:ring-2 ring-offset-0 rounded-[8px]"
+                                onClick={() => applyThemePreset(name)}
                             >
                                 <div className="flex items-center">
                                     <div

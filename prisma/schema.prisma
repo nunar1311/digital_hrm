@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -14,80 +8,70 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false)
-  image         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // ─── HRM custom fields ───
-  employeeCode String? @unique
-  departmentId String?
-  position     String?
-  hrmRole      String  @default("EMPLOYEE") // SUPER_ADMIN, HR_MANAGER, etc.
-
-  // ─── Employee extended fields ───
-  // Thông tin cá nhân
-  fullName          String?
-  dateOfBirth       DateTime?
-  gender            String? // MALE, FEMALE, OTHER
-  nationalId        String? // CMND/CCCD
-  nationalIdDate    DateTime?
-  nationalIdPlace   String?
-  phone             String?
-  personalEmail     String?
-  address           String?
-  permanentAddress  String?
-  nationality       String?  @default("Việt Nam")
-  religion          String?
-  ethnicity         String?  @default("Kinh")
-  maritalStatus     String?  // SINGLE, MARRIED, DIVORCED
-
-  // Thông tin công việc
-  jobTitleId       String?
-  managerId         String?
-  employmentType    String?  @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT, INTERN
-  employeeStatus    String?  @default("ACTIVE") // ACTIVE, ON_LEAVE, RESIGNED, TERMINATED
-  hireDate          DateTime?
-  probationEnd      DateTime?
-  resignDate        DateTime?
-
-  // Thông tin ngân hàng
-  bankName          String?
-  bankAccount       String?
-  bankBranch        String?
-
-  // Thông tin BHXH, BHYT, MST
-  socialInsuranceNo String?
-  healthInsuranceNo String?
-  taxCode           String?
-
-  // Trình độ học vấn
-  educationLevel    String?  // HIGHSCHOOL, COLLEGE, BACHELOR, MASTER, PHD
-  major             String?
-  university        String?
-
-  // Metadata
-  avatar            String?
-  notes             String?
-
-  // Relations
-  department        Department? @relation(fields: [departmentId], references: [id])
-  manager           User?       @relation("ManagerReports", fields: [managerId], references: [id])
-  reports           User[]      @relation("ManagerReports")
-
-  // ─── Better Auth relations ───
-  sessions            Session[]
-  accounts            Account[]
-  members             Member[]
-  managedDepartments  Department[]        @relation("DeptManager")
-  attendances         Attendance[]
-  overtimeRequests    OvertimeRequest[]
-  shiftAssignments    ShiftAssignment[]
-  attendanceSummaries AttendanceSummary[]
-  offboardings        Offboarding[]
+  id                       String                    @id @default(cuid())
+  name                     String
+  email                    String                    @unique
+  emailVerified            Boolean                   @default(false)
+  image                    String?
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  employeeCode             String?                   @unique
+  departmentId             String?
+  position                 String?
+  hrmRole                  String                    @default("EMPLOYEE")
+  address                  String?
+  avatar                   String?
+  bankAccount              String?
+  bankBranch               String?
+  bankName                 String?
+  dateOfBirth              DateTime?
+  educationLevel           String?
+  employeeStatus           String?                   @default("ACTIVE")
+  employmentType           String?                   @default("FULL_TIME")
+  ethnicity                String?                   @default("Kinh")
+  fullName                 String?
+  gender                   String?
+  healthInsuranceNo        String?
+  hireDate                 DateTime?
+  jobTitleId               String?
+  jobTitle                 Position?                 @relation(fields: [jobTitleId], references: [id])
+  major                    String?
+  managerId                String?
+  maritalStatus            String?
+  nationalId               String?
+  nationalIdDate           DateTime?
+  nationalIdPlace          String?
+  nationality              String?                   @default("Việt Nam")
+  notes                    String?
+  permanentAddress         String?
+  personalEmail            String?
+  phone                    String?
+  probationEnd             DateTime?
+  religion                 String?
+  resignDate               DateTime?
+  socialInsuranceNo        String?
+  taxCode                  String?
+  university               String?
+  accounts                 Account[]
+  attendanceSummaries      AttendanceSummary[]
+  attendances              Attendance[]
+  managedDepartments       Department[]              @relation("DeptManager")
+  employeeSalaryComponents EmployeeSalaryComponent[]
+  members                  Member[]
+  offboardings             Offboarding[]
+  overtimeRequests         OvertimeRequest[]
+  payrollRecordDetails     PayrollRecordDetail[]
+  payslips                 Payslip[]
+  salaries                 Salary?
+  sessions                 Session[]
+  shiftAssignments         ShiftAssignment[]
+  department               Department?               @relation(fields: [departmentId], references: [id])
+  manager                  User?                     @relation("ManagerReports", fields: [managerId], references: [id])
+  reports                  User[]                    @relation("ManagerReports")
+  notifications            Notification[]
+  notificationPreference   NotificationPreference?   @relation(fields: [notificationPreferenceId], references: [id])
+  notificationPreferenceId String?
+  emailLogs                EmailLog[]
 
   @@map("users")
 }
@@ -101,8 +85,7 @@ model Session {
   userAgent String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -121,8 +104,7 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("accounts")
 }
@@ -138,81 +120,82 @@ model Verification {
   @@map("verifications")
 }
 
-// ORGANIZATION (Phòng ban)
-
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  logo      String?
-  metadata  String?
-  createdAt DateTime @default(now())
-
-  members Member[]
+  id                String    @id @default(cuid())
+  name              String
+  slug              String    @unique
+  logo              String?
+  metadata          String?
+  email             String? // Email công ty
+  country           String? // Quốc gia
+  agreementAccepted Boolean   @default(false) // Đã đồng ý điều khoản
+  agreementDate     DateTime? // Ngày đồng ý điều khoản
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  members           Member[]
 
   @@map("organizations")
 }
 
 model Member {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   userId         String
   organizationId String
-  role           String   @default("member")
-  createdAt      DateTime @default(now())
-
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("members")
 }
 
 model Department {
-  id                 String       @id @default(cuid())
+  id                 String          @id @default(cuid())
   name               String
-  code               String       @unique
+  code               String          @unique
   logo               String?
   description        String?
   parentId           String?
   secondaryParentIds String[]
-  managerId          String? // userId of the department manager
-  status             String       @default("ACTIVE")
-  sortOrder          Int          @default(0)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  parent             Department?  @relation("DeptHierarchy", fields: [parentId], references: [id])
-  children           Department[] @relation("DeptHierarchy")
-  positions          Position[]
-  manager            User?        @relation("DeptManager", fields: [managerId], references: [id])
+  managerId          String?
+  status             String          @default("ACTIVE")
+  sortOrder          Int             @default(0)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  manager            User?           @relation("DeptManager", fields: [managerId], references: [id])
+  parent             Department?     @relation("DeptHierarchy", fields: [parentId], references: [id])
+  children           Department[]    @relation("DeptHierarchy")
   jobPostings        JobPosting[]
+  positions          Position[]
   users              User[]
+  payroll_records    PayrollRecord[] @relation("DepartmentToPayrollRecord")
 
   @@map("departments")
 }
 
 model Position {
-  id           String      @id @default(cuid())
+  id           String       @id @default(cuid())
   name         String
-  code         String      @unique
+  code         String       @unique
   departmentId String?
-  level        Int         @default(1)
+  level        Int          @default(1)
   description  String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  jobPostings JobPosting[]
+  jobPostings  JobPosting[]
+  department   Department?  @relation(fields: [departmentId], references: [id])
+  users        User[]
 
   @@map("positions")
 }
 
-// ─── ATTENDANCE MODULE ───
-
 model Shift {
   id               String            @id @default(cuid())
-  name             String // Ca sáng, Ca chiều, Ca hành chính
+  name             String
   code             String            @unique
-  startTime        String // "08:00"
-  endTime          String // "17:00"
+  startTime        String
+  endTime          String
   breakMinutes     Int               @default(60)
-  lateThreshold    Int               @default(15) // Số phút cho phép đi muộn trước khi ghi late
-  earlyThreshold   Int               @default(15) // Số phút rời sớm trước khi ghi early_leave
+  lateThreshold    Int               @default(15)
+  earlyThreshold   Int               @default(15)
   isDefault        Boolean           @default(false)
   isActive         Boolean           @default(true)
   createdAt        DateTime          @default(now())
@@ -231,11 +214,11 @@ model ShiftAssignment {
   startDate      DateTime   @db.Date
   endDate        DateTime?  @db.Date
   workCycleId    String?
-  cycleStartDate DateTime?  @db.Date // Ngày bắt đầu tính chu kỳ
-  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shift          Shift?     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  workCycle      WorkCycle? @relation(fields: [workCycleId], references: [id], onDelete: Cascade)
+  cycleStartDate DateTime?  @db.Date
   createdAt      DateTime   @default(now())
+  shift          Shift?     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workCycle      WorkCycle? @relation(fields: [workCycleId], references: [id], onDelete: Cascade)
 
   @@map("shift_assignments")
 }
@@ -247,29 +230,29 @@ model Attendance {
   shiftId          String?
   checkIn          DateTime?
   checkOut         DateTime?
-  checkInMethod    String? // MANUAL, QR, FACE_ID, GPS, WIFI, VANTAY
+  checkInMethod    String?
   checkOutMethod   String?
-  checkInLocation  String? // Tọa độ GPS "lat,lng" hoặc tên WiFi
+  checkInLocation  String?
   checkOutLocation String?
-  checkInPhoto     String? // URL ảnh selfie check-in
-  checkOutPhoto    String? // URL ảnh selfie check-out
-  checkInDeviceId  String? // ID máy chấm công
+  checkInPhoto     String?
+  checkOutPhoto    String?
+  checkInDeviceId  String?
   checkOutDeviceId String?
-  checkInVerified  Boolean                @default(false) // Đã xác minh chống gian lận
+  checkInVerified  Boolean                @default(false)
   checkOutVerified Boolean                @default(false)
   workHours        Float?
   overtimeHours    Float?
-  lateMinutes      Int                    @default(0) // Số phút đi muộn
-  earlyMinutes     Int                    @default(0) // Số phút về sớm
-  status           String                 @default("PRESENT") // PRESENT, ABSENT, LATE, EARLY_LEAVE, HALF_DAY, LATE_AND_EARLY, ON_LEAVE, HOLIDAY
+  lateMinutes      Int                    @default(0)
+  earlyMinutes     Int                    @default(0)
+  status           String                 @default("PRESENT")
   note             String?
   isLocked         Boolean                @default(false)
-  source           String                 @default("MANUAL") // MANUAL, WEB, DEVICE, API
+  source           String                 @default("MANUAL")
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
-  user             User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shift            Shift?                 @relation(fields: [shiftId], references: [id])
   explanation      AttendanceExplanation?
+  shift            Shift?                 @relation(fields: [shiftId], references: [id])
+  user             User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
   @@map("attendances")
@@ -278,13 +261,13 @@ model Attendance {
 model AttendanceExplanation {
   id             String     @id @default(cuid())
   attendanceId   String     @unique
-  type           String     @default("OTHER") // LATE, EARLY_LEAVE, ABSENT, FORGOT_CHECKOUT, OTHER
+  type           String     @default("OTHER")
   reason         String
-  status         String     @default("PENDING") // PENDING, APPROVED, REJECTED
+  status         String     @default("PENDING")
   approvedBy     String?
   approvedAt     DateTime?
   rejectedReason String?
-  attachment     String? // URL đính kèm minh chứng
+  attachment     String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   attendance     Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
@@ -293,67 +276,52 @@ model AttendanceExplanation {
 }
 
 model OvertimeRequest {
-  id          String   @id @default(cuid())
-  userId      String // Nhân viên làm OT
-  requestedBy String // Người tạo đơn (NV tự tạo hoặc Quản lý tạo hộ)
-  date        DateTime @db.Date
-  startTime   String
-  endTime     String
-  hours       Float // Số giờ đăng ký
-  reason      String
-
-  // Trạng thái luồng: PENDING → MANAGER_APPROVED → HR_APPROVED → COMPLETED
-  // Hoặc: REJECTED, CANCELLED tại bất kỳ bước nào
-  status String @default("PENDING")
-
-  // Bước 2: Quản lý trực tiếp duyệt
+  id                String    @id @default(cuid())
+  userId            String
+  requestedBy       String
+  date              DateTime  @db.Date
+  startTime         String
+  endTime           String
+  hours             Float
+  reason            String
+  status            String    @default("PENDING")
   managerApprovedBy String?
   managerApprovedAt DateTime?
   managerNote       String?
-
-  // Bước 3: HR kiểm soát
-  hrApprovedBy String?
-  hrApprovedAt DateTime?
-  hrNote       String?
-
-  // Từ chối (tại bước nào)
-  rejectedBy     String?
-  rejectedAt     DateTime?
-  rejectedReason String?
-  rejectedStep   String? // MANAGER, HR
-
-  // Bước 4: Xác nhận kết quả thực tế
-  actualStartTime String?
-  actualEndTime   String?
-  actualHours     Float?
-  confirmedAt     DateTime?
-
-  coefficient Float  @default(1.5) // Hệ số OT: 1.5x, 2x, 3x
-  dayType     String @default("WEEKDAY") // WEEKDAY, WEEKEND, HOLIDAY
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hrApprovedBy      String?
+  hrApprovedAt      DateTime?
+  hrNote            String?
+  rejectedBy        String?
+  rejectedAt        DateTime?
+  rejectedReason    String?
+  rejectedStep      String?
+  actualStartTime   String?
+  actualEndTime     String?
+  actualHours       Float?
+  confirmedAt       DateTime?
+  coefficient       Float     @default(1.5)
+  dayType           String    @default("WEEKDAY")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("overtime_requests")
 }
-
-// ─── ANTI-FRAUD & DEVICE CONFIG ───
 
 model AttendanceConfig {
   id                   String          @id @default(cuid())
   requireGps           Boolean         @default(true)
   requireWifi          Boolean         @default(false)
   requireSelfie        Boolean         @default(false)
-  maxGpsDistanceMeters Int             @default(200) // Bán kính GPS cho phép (m)
-  earlyCheckinMinutes  Int             @default(60) // Cho phép check-in sớm tối đa (phút) trước ca
-  officeLat            Float? // Tọa độ văn phòng
+  maxGpsDistanceMeters Int             @default(200)
+  earlyCheckinMinutes  Int             @default(60)
+  officeLat            Float?
   officeLng            Float?
-  standardWorkHours    Float           @default(8) // Giờ làm chuẩn/ngày
-  standardWorkDays     Int             @default(22) // Ngày công chuẩn/tháng
-  otWeekdayCoeff       Float           @default(1.5) // Hệ số OT ngày thường
-  otWeekendCoeff       Float           @default(2.0) // Hệ số OT cuối tuần
-  otHolidayCoeff       Float           @default(3.0) // Hệ số OT ngày lễ
+  standardWorkHours    Float           @default(8)
+  standardWorkDays     Int             @default(22)
+  otWeekdayCoeff       Float           @default(1.5)
+  otWeekendCoeff       Float           @default(2.0)
+  otHolidayCoeff       Float           @default(3.0)
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
   wifiWhitelist        WifiWhitelist[]
@@ -364,8 +332,8 @@ model AttendanceConfig {
 model WifiWhitelist {
   id       String           @id @default(cuid())
   configId String
-  ssid     String // Tên WiFi
-  bssid    String? // MAC address WiFi
+  ssid     String
+  bssid    String?
   config   AttendanceConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
 
   @@map("wifi_whitelists")
@@ -373,12 +341,12 @@ model WifiWhitelist {
 
 model TimekeeperDevice {
   id        String    @id @default(cuid())
-  name      String // "Máy chấm công Tầng 1"
+  name      String
   code      String    @unique
-  type      String    @default("FINGERPRINT") // FINGERPRINT, FACE_ID, CARD, QR
-  location  String? // "Cửa chính tầng 1"
+  type      String    @default("FINGERPRINT")
+  location  String?
   ipAddress String?
-  apiKey    String? // Secret key cho xác thực webhook
+  apiKey    String?
   isActive  Boolean   @default(true)
   lastSync  DateTime?
   createdAt DateTime  @default(now())
@@ -389,28 +357,26 @@ model TimekeeperDevice {
 
 model Holiday {
   id          String    @id @default(cuid())
-  name        String // "Tết Nguyên đán", "Quốc khánh"
+  name        String
   date        DateTime  @db.Date
-  endDate     DateTime? @db.Date // Nghỉ nhiều ngày
-  isRecurring Boolean   @default(false) // Lặp lại hàng năm
+  endDate     DateTime? @db.Date
+  isRecurring Boolean   @default(false)
   year        Int?
   createdAt   DateTime  @default(now())
 
   @@map("holidays")
 }
 
-// ─── WORK CYCLE (Chu kỳ làm việc linh động) ───
-
 model WorkCycle {
   id               String            @id @default(cuid())
-  name             String // "4 làm - 2 nghỉ", "Xoay ca 3 tuần"
+  name             String
   description      String?
-  totalDays        Int // Tổng số ngày trong 1 chu kỳ
+  totalDays        Int
   isActive         Boolean           @default(true)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
-  entries          WorkCycleEntry[]
   shiftAssignments ShiftAssignment[]
+  entries          WorkCycleEntry[]
 
   @@map("work_cycles")
 }
@@ -418,11 +384,11 @@ model WorkCycle {
 model WorkCycleEntry {
   id          String    @id @default(cuid())
   workCycleId String
-  dayIndex    Int // 0-based: ngày thứ mấy trong chu kỳ
-  shiftId     String? // null = ngày nghỉ
-  isDayOff    Boolean   @default(false) // true = ngày nghỉ
+  dayIndex    Int
+  shiftId     String?
+  isDayOff    Boolean   @default(false)
+  shift       Shift?    @relation(fields: [shiftId], references: [id])
   workCycle   WorkCycle @relation(fields: [workCycleId], references: [id], onDelete: Cascade)
-  shift       Shift?    @relation(fields: [shiftId], references: [id], onDelete: SetNull)
 
   @@unique([workCycleId, dayIndex])
   @@map("work_cycle_entries")
@@ -433,38 +399,36 @@ model AttendanceSummary {
   userId          String
   month           Int
   year            Int
-  totalWorkDays   Float     @default(0) // Ngày công thực tế
-  standardDays    Float     @default(22) // Ngày công chuẩn
-  lateDays        Int       @default(0) // Số ngày đi muộn
-  earlyLeaveDays  Int       @default(0) // Số ngày về sớm
-  absentDays      Float     @default(0) // Số ngày vắng
-  leaveDays       Float     @default(0) // Nghỉ phép (được lương)
-  unpaidLeaveDays Float     @default(0) // Nghỉ không lương
-  holidayDays     Float     @default(0) // Ngày lễ
-  otHoursWeekday  Float     @default(0) // Giờ OT ngày thường
-  otHoursWeekend  Float     @default(0) // Giờ OT cuối tuần
-  otHoursHoliday  Float     @default(0) // Giờ OT ngày lễ
-  totalOtHours    Float     @default(0) // Tổng giờ OT
-  totalWorkHours  Float     @default(0) // Tổng giờ làm
+  totalWorkDays   Float     @default(0)
+  standardDays    Float     @default(22)
+  lateDays        Int       @default(0)
+  earlyLeaveDays  Int       @default(0)
+  absentDays      Float     @default(0)
+  leaveDays       Float     @default(0)
+  unpaidLeaveDays Float     @default(0)
+  holidayDays     Float     @default(0)
+  otHoursWeekday  Float     @default(0)
+  otHoursWeekend  Float     @default(0)
+  otHoursHoliday  Float     @default(0)
+  totalOtHours    Float     @default(0)
+  totalWorkHours  Float     @default(0)
   isLocked        Boolean   @default(false)
   lockedBy        String?
   lockedAt        DateTime?
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, month, year])
   @@map("attendance_summaries")
 }
 
-// ─── SETTINGS & AUDIT ───
-
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String
   userName  String   @default("")
-  action    String // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, EXPORT
-  entity    String // User, Department, Shift, Attendance, ...
+  action    String
+  entity    String
   entityId  String?
   oldData   Json?
   newData   Json?
@@ -483,177 +447,149 @@ model SystemSetting {
   id    String  @id @default(cuid())
   key   String  @unique
   value String
-  group String? // general, attendance, payroll, leave
+  group String?
 
   @@map("system_settings")
 }
 
-// ─── RECRUITMENT MODULE ───
-
 model JobPosting {
-  id             String       @id @default(cuid())
-  title          String
-  departmentId   String?
-  positionId     String?
-  description    String       @db.Text
-  requirements   String       @db.Text
-  salaryMin      Decimal?     @db.Decimal(15, 0)
-  salaryMax      Decimal?     @db.Decimal(15, 0)
-  salaryCurrency String       @default("VND")
-  headcount      Int          @default(1)
-  employmentType String       @default("FULL_TIME") // FULL_TIME, PART_TIME, INTERN, CONTRACT
-  status         String       @default("DRAFT") // DRAFT, OPEN, ON_HOLD, CLOSED
-  priority       String       @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
-  deadline       DateTime?
-  benefits       String?      @db.Text // Phúc lợi
-  workLocation   String?      // Địa điểm làm việc
-  interviewRounds Int         @default(1) // Số vòng phỏng vấn
-  createdBy      String
-  reviewedBy     String?
-  reviewedAt     DateTime?
-  closedBy       String?
-  closedAt       DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  department     Department?   @relation(fields: [departmentId], references: [id])
-  position       Position?     @relation(fields: [positionId], references: [id])
-  candidates     Candidate[]
-  interviews     Interview[]
+  id              String      @id @default(cuid())
+  title           String
+  departmentId    String?
+  positionId      String?
+  description     String
+  requirements    String
+  salaryMin       Decimal?    @db.Decimal(15, 0)
+  salaryMax       Decimal?    @db.Decimal(15, 0)
+  salaryCurrency  String      @default("VND")
+  headcount       Int         @default(1)
+  employmentType  String      @default("FULL_TIME")
+  status          String      @default("DRAFT")
+  priority        String      @default("NORMAL")
+  deadline        DateTime?
+  benefits        String?
+  workLocation    String?
+  interviewRounds Int         @default(1)
+  createdBy       String
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  closedBy        String?
+  closedAt        DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  candidates      Candidate[]
+  interviews      Interview[]
+  department      Department? @relation(fields: [departmentId], references: [id])
+  position        Position?   @relation(fields: [positionId], references: [id])
 
   @@map("job_postings")
 }
 
 model Candidate {
-  id           String       @id @default(cuid())
-  jobPostingId String
-  name         String
-  email        String
-  phone        String?
-  gender       String?      // MALE, FEMALE, OTHER
-  dateOfBirth  DateTime?
-  address      String?
-  cvUrl        String?      // URL CV file
-  cvFileName   String?      // Tên file CV gốc
-  linkedinUrl  String?
-  portfolioUrl String?
-  source       String       @default("WEBSITE") // WEBSITE, LINKEDIN, FACEBOOK, REFERRAL, AGENCY, OTHER
-  sourceDetail String?      // Nguồn chi tiết
-  stage        String       @default("APPLIED") // APPLIED, SCREENING, INTERVIEW, OFFER, HIRED, REJECTED
-  rating       Int?         @default(0) // 1-5 sao
-  rejectionReason String?
-  hiredSalary  Decimal?     @db.Decimal(15, 0)
-  hiredDate    DateTime?
-  notes        String?      @db.Text
-  tags         String[]     // Tags cho candidate pool
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  jobPosting   JobPosting   @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
-  interviews   Interview[]
-  candidateTags CandidateTag[]
+  id                      String                    @id @default(cuid())
+  jobPostingId            String
+  name                    String
+  email                   String
+  phone                   String?
+  gender                  String?
+  dateOfBirth             DateTime?
+  address                 String?
+  cvUrl                   String?
+  cvFileName              String?
+  linkedinUrl             String?
+  portfolioUrl            String?
+  source                  String                    @default("WEBSITE")
+  sourceDetail            String?
+  stage                   String                    @default("APPLIED")
+  rating                  Int?                      @default(0)
+  rejectionReason         String?
+  hiredSalary             Decimal?                  @db.Decimal(15, 0)
+  hiredDate               DateTime?
+  notes                   String?
+  tags                    String[]
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  CandidateToCandidateTag CandidateToCandidateTag[]
+  jobPosting              JobPosting                @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  interviews              Interview[]
 
   @@unique([email, jobPostingId])
   @@map("candidates")
 }
 
 model CandidateTag {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  color     String   @default("#6366f1") // Màu tag
-  createdAt DateTime @default(now())
-
-  candidates Candidate[]
+  id                      String                    @id @default(cuid())
+  name                    String                    @unique
+  color                   String                    @default("#6366f1")
+  createdAt               DateTime                  @default(now())
+  CandidateToCandidateTag CandidateToCandidateTag[]
 
   @@map("candidate_tags")
 }
 
 model Interview {
-  id            String    @id @default(cuid())
-  candidateId   String
-  jobPostingId  String
-  round         Int       @default(1) // Vòng phỏng vấn
-  type          String    @default("ONSITE") // ONSITE, ONLINE, PHONE
-  method        String    @default("INDIVIDUAL") // INDIVIDUAL, GROUP, PANEL
-
-  // Lịch phỏng vấn
-  scheduledDate DateTime
-  scheduledTime String    // "14:00"
-  endTime       String?   // "15:00"
-  duration      Int       @default(60) // Phút
-
-  // Địa điểm/Link
-  location      String?   // Địa điểi ONSITE
-  meetingLink   String?   // Link meeting ONLINE
-  meetingId     String?   // Zoom/Google Meet ID
-
-  // Người phỏng vấn
-  interviewerIds String[]  // Array of user IDs
-  interviewerNames String[] // Array of interviewer names (cached)
-
-  // Kết quả
-  status        String    @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW
-  result        String?   // PASS, FAIL, PENDING
-  score         Int?      // Điểm tổng hợp 1-10
-  strengths     String?   @db.Text
-  weaknesses    String?   @db.Text
-  notes         String?   @db.Text
-
-  // Google Calendar integration
-  googleEventId String?   // Google Calendar event ID
-  calendarSync  Boolean   @default(false)
-
-  // Thông tin phụ
-  reviewedBy    String?
-  reviewedAt    DateTime?
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  candidate     Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  jobPosting    JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
-  feedbacks     InterviewFeedback[]
+  id               String              @id @default(cuid())
+  candidateId      String
+  jobPostingId     String
+  round            Int                 @default(1)
+  type             String              @default("ONSITE")
+  method           String              @default("INDIVIDUAL")
+  scheduledDate    DateTime
+  scheduledTime    String
+  endTime          String?
+  duration         Int                 @default(60)
+  location         String?
+  meetingLink      String?
+  meetingId        String?
+  interviewerIds   String[]
+  interviewerNames String[]
+  status           String              @default("SCHEDULED")
+  result           String?
+  score            Int?
+  strengths        String?
+  weaknesses       String?
+  notes            String?
+  googleEventId    String?
+  calendarSync     Boolean             @default(false)
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  feedbacks        InterviewFeedback[]
+  candidate        Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  jobPosting       JobPosting          @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
 
   @@map("interviews")
 }
 
 model InterviewFeedback {
-  id           String   @id @default(cuid())
-  interviewId  String
-  userId       String   // Người phỏng vấn
-  userName     String   // Tên người phỏng vấn (cached)
-
-  // Đánh giá
-  score        Int?     // Điểm 1-10
-  result       String?  // PASS, FAIL, PENDING
-
-  // Chi tiết
-  technicalSkill Int?   // Kỹ thuật 1-5
-  communication  Int?   // Giao tiếp 1-5
-  problemSolving  Int?   // Giải quyết vấn đề 1-5
-  cultureFit     Int?    // Văn hóa 1-5
-
-  strengths    String?  @db.Text
-  improvements String?  @db.Text
-  notes        String?  @db.Text
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  interview    Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  id             String    @id @default(cuid())
+  interviewId    String
+  userId         String
+  userName       String
+  score          Int?
+  result         String?
+  technicalSkill Int?
+  communication  Int?
+  problemSolving Int?
+  cultureFit     Int?
+  strengths      String?
+  improvements   String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  interview      Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
 
   @@unique([interviewId, userId])
   @@map("interview_feedbacks")
 }
 
-// ─── ASSET MODULE ───
-
 model Asset {
   id            String            @id @default(cuid())
   name          String
   code          String            @unique
-  category      String            // LAPTOP, PHONE, MONITOR, DESK, CHAIR, CARD, OTHER
-  status        String            @default("AVAILABLE") // AVAILABLE, ASSIGNED, MAINTENANCE, DISPOSED
+  category      String
+  status        String            @default("AVAILABLE")
   brand         String?
   model         String?
   serialNumber  String?
@@ -681,8 +617,8 @@ model AssetAssignment {
   expectedReturn DateTime?
   returnDate     DateTime?
   returnedTo     String?
-  status         String    @default("ASSIGNED") // ASSIGNED, RETURNED
-  condition      String?   // GOOD, DAMAGED, LOST
+  status         String    @default("ASSIGNED")
+  condition      String?
   notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -694,16 +630,14 @@ model AssetAssignment {
   @@map("asset_assignments")
 }
 
-// ─── OFFBOARDING MODULE ───
-
 model OffboardingTemplate {
-  id          String              @id @default(cuid())
-  name        String
-  description String?
-  tasks       OffboardingTask[]
-  isActive    Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id           String            @id @default(cuid())
+  name         String
+  description  String?
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  tasks        OffboardingTask[]
   offboardings Offboarding[]
 
   @@map("offboarding_templates")
@@ -714,9 +648,9 @@ model OffboardingTask {
   templateId   String
   title        String
   description  String?
-  category     String              @default("GENERAL") // GENERAL, ASSET, ACCOUNT, FINANCIAL, INTERVIEW
-  assigneeRole String?             // Role phụ trách: HR_STAFF, IT_ADMIN, DEPT_MANAGER, ACCOUNTANT
-  dueDays      Int                 @default(7) // Số ngày trước khi nghỉ việc
+  category     String              @default("GENERAL")
+  assigneeRole String?
+  dueDays      Int                 @default(7)
   sortOrder    Int                 @default(0)
   isRequired   Boolean             @default(true)
   template     OffboardingTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
@@ -725,36 +659,31 @@ model OffboardingTask {
 }
 
 model Offboarding {
-  id             String                @id @default(cuid())
-  userId         String
-  templateId     String?
-  resignDate     DateTime              @db.Date // Ngày nộp đơn nghỉ
-  lastWorkDate   DateTime              @db.Date // Ngày làm việc cuối cùng
-  reason         String?               // Lý do nghỉ việc
-  reasonDetail   String?              @db.Text // Chi tiết lý do
-  status         String                @default("PROCESSING") // PROCESSING, COMPLETED, CANCELLED
-  exitInterview  String?               @db.Text // Nội dung exit interview
-  interviewDate DateTime?
-  interviewerId  String?
-  
-  // Tài chính
-  finalSalary           Decimal?       @db.Decimal(15, 0) // Lương cuối cùng
-  unusedLeaveDays       Float?         @default(0) // Ngày phép chưa dùng
-  unusedLeaveAmount    Decimal?       @db.Decimal(15, 0) // Tiền phép chưa dùng
-  severancePay         Decimal?       @db.Decimal(15, 0) // Trợ cấp thôi việc
-  otherAllowances      Decimal?       @db.Decimal(15, 0) // Các khoản khác
-  totalFinalPayment    Decimal?       @db.Decimal(15, 0) // Tổng thanh toán
-  
-  // Thông tin tạo/cập nhật
-  createdBy      String?
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-  completedAt    DateTime?
-
-  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template       OffboardingTemplate? @relation(fields: [templateId], references: [id])
-  checklist      OffboardingChecklist[]
-  assets         OffboardingAsset[]
+  id                String                 @id @default(cuid())
+  userId            String
+  templateId        String?
+  resignDate        DateTime               @db.Date
+  lastWorkDate      DateTime               @db.Date
+  reason            String?
+  reasonDetail      String?
+  status            String                 @default("PROCESSING")
+  exitInterview     String?
+  interviewDate     DateTime?
+  interviewerId     String?
+  finalSalary       Decimal?               @db.Decimal(15, 0)
+  unusedLeaveDays   Float?                 @default(0)
+  unusedLeaveAmount Decimal?               @db.Decimal(15, 0)
+  severancePay      Decimal?               @db.Decimal(15, 0)
+  otherAllowances   Decimal?               @db.Decimal(15, 0)
+  totalFinalPayment Decimal?               @db.Decimal(15, 0)
+  createdBy         String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  completedAt       DateTime?
+  assets            OffboardingAsset[]
+  checklist         OffboardingChecklist[]
+  template          OffboardingTemplate?   @relation(fields: [templateId], references: [id])
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -768,7 +697,7 @@ model OffboardingChecklist {
   taskDescription String?
   category        String      @default("GENERAL")
   assigneeRole    String?
-  assigneeId      String?     // User ID được giao
+  assigneeId      String?
   isCompleted     Boolean     @default(false)
   completedBy     String?
   completedAt     DateTime?
@@ -781,19 +710,282 @@ model OffboardingChecklist {
 }
 
 model OffboardingAsset {
-  id              String      @id @default(cuid())
-  offboardingId   String
-  assetId         String?
-  assetName       String      // Tên tài sản (cached)
-  assetCode       String?     // Mã tài sản (cached)
-  category        String?     // Loại tài sản
-  status          String      @default("PENDING") // PENDING, RETURNED, DAMAGED, NOT_RETURNED
-  returnDate      DateTime?
-  returnedTo      String?
-  condition       String?     // Tình trạng khi trả: GOOD, DAMAGED
-  notes           String?
-  offboarding     Offboarding @relation(fields: [offboardingId], references: [id], onDelete: Cascade)
+  id            String      @id @default(cuid())
+  offboardingId String
+  assetId       String?
+  assetName     String
+  assetCode     String?
+  category      String?
+  status        String      @default("PENDING")
+  returnDate    DateTime?
+  returnedTo    String?
+  condition     String?
+  notes         String?
+  offboarding   Offboarding @relation(fields: [offboardingId], references: [id], onDelete: Cascade)
 
   @@index([offboardingId])
   @@map("offboarding_assets")
+}
+
+model Salary {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  baseSalary    Decimal  @db.Decimal(15, 0)
+  effectiveDate DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("salaries")
+}
+
+model SalaryComponentType {
+  id                 String                    @id @default(cuid())
+  code               String                    @unique
+  name               String
+  description        String?
+  category           String
+  isTaxable          Boolean                   @default(true)
+  isInsurance        Boolean                   @default(false)
+  isBase             Boolean                   @default(false)
+  coefficient        Decimal?                  @db.Decimal(5, 2)
+  maxAmount          Decimal?                  @db.Decimal(15, 0)
+  isActive           Boolean                   @default(true)
+  sortOrder          Int                       @default(0)
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  employeeComponents EmployeeSalaryComponent[]
+  payrollDetails     PayrollRecordDetail[]
+
+  @@map("salary_component_types")
+}
+
+model EmployeeSalaryComponent {
+  id              String              @id @default(cuid())
+  userId          String
+  componentTypeId String
+  amount          Decimal             @db.Decimal(15, 0)
+  effectiveDate   DateTime            @default(now())
+  endDate         DateTime?           @db.Date
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  componentType   SalaryComponentType @relation(fields: [componentTypeId], references: [id])
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, componentTypeId, effectiveDate])
+  @@map("employee_salary_components")
+}
+
+model PayrollRecord {
+  id              String                @id @default(cuid())
+  month           Int
+  year            Int
+  departmentId    String?
+  status          String                @default("DRAFT")
+  totalEmployees  Int                   @default(0)
+  totalGross      Decimal               @default(0) @db.Decimal(18, 0)
+  totalNet        Decimal               @default(0) @db.Decimal(18, 0)
+  totalTax        Decimal               @default(0) @db.Decimal(18, 0)
+  totalInsurance  Decimal               @default(0) @db.Decimal(18, 0)
+  totalDeductions Decimal               @default(0) @db.Decimal(18, 0)
+  processedBy     String?
+  processedAt     DateTime?
+  approvedBy      String?
+  approvedAt      DateTime?
+  note            String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  details         PayrollRecordDetail[]
+  payslips        Payslip[]
+  departments     Department[]          @relation("DepartmentToPayrollRecord")
+
+  @@unique([month, year, departmentId])
+  @@index([status])
+  @@index([month, year])
+  @@map("payroll_records")
+}
+
+model PayrollRecordDetail {
+  id                    String               @id @default(cuid())
+  payrollRecordId       String
+  userId                String
+  baseSalary            Decimal              @db.Decimal(15, 0)
+  grossSalary           Decimal              @db.Decimal(15, 0)
+  taxableIncome         Decimal              @db.Decimal(15, 0)
+  netSalary             Decimal              @db.Decimal(15, 0)
+  overtimeAmount        Decimal              @default(0) @db.Decimal(15, 0)
+  allowanceAmount       Decimal              @default(0) @db.Decimal(15, 0)
+  bonusAmount           Decimal              @default(0) @db.Decimal(15, 0)
+  deductionAmount       Decimal              @default(0) @db.Decimal(15, 0)
+  socialInsurance       Decimal              @default(0) @db.Decimal(15, 0)
+  healthInsurance       Decimal              @default(0) @db.Decimal(15, 0)
+  unemploymentInsurance Decimal              @default(0) @db.Decimal(15, 0)
+  personalDeduction     Decimal              @default(11000000) @db.Decimal(15, 0)
+  dependentDeduction    Decimal              @default(0) @db.Decimal(15, 0)
+  taxAmount             Decimal              @default(0) @db.Decimal(15, 0)
+  workDays              Float                @default(0)
+  standardDays          Float                @default(22)
+  lateDays              Int                  @default(0)
+  overtimeHours         Float                @default(0)
+  status                String               @default("PENDING")
+  paidAt                DateTime?
+  bankAccount           String?
+  bankName              String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  componentTypeId       String?
+  componentType         SalaryComponentType? @relation(fields: [componentTypeId], references: [id])
+  payrollRecord         PayrollRecord        @relation(fields: [payrollRecordId], references: [id], onDelete: Cascade)
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([payrollRecordId, userId])
+  @@index([userId])
+  @@map("payroll_record_details")
+}
+
+model PayrollConfig {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  value         Decimal  @db.Decimal(10, 2)
+  description   String?
+  effectiveDate DateTime @default(now())
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("payroll_configs")
+}
+
+model Payslip {
+  id              String        @id @default(cuid())
+  userId          String
+  payrollRecordId String
+  month           Int
+  year            Int
+  employeeCode    String?
+  employeeName    String
+  departmentName  String?
+  position        String?
+  baseSalary      Decimal       @db.Decimal(15, 0)
+  grossSalary     Decimal       @db.Decimal(15, 0)
+  netSalary       Decimal       @db.Decimal(15, 0)
+  earnings        Json          @default("[]")
+  deductions      Json          @default("[]")
+  insurance       Json          @default("{}")
+  tax             Json          @default("{}")
+  status          String        @default("GENERATED")
+  viewedAt        DateTime?
+  downloadedAt    DateTime?
+  signedBy        String?
+  signedAt        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  payrollRecord   PayrollRecord @relation(fields: [payrollRecordId], references: [id])
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month, year])
+  @@index([userId])
+  @@index([month, year])
+  @@map("payslips")
+}
+
+model CandidateToCandidateTag {
+  A              String
+  B              String
+  candidates     Candidate    @relation(fields: [A], references: [id], onDelete: Cascade)
+  candidate_tags CandidateTag @relation(fields: [B], references: [id], onDelete: Cascade)
+
+  @@id([A, B], map: "_CandidateToCandidateTag_AB_pkey")
+  @@index([B], map: "_CandidateToCandidateTag_B_index")
+  @@map("_CandidateToCandidateTag")
+}
+
+// ==================== NOTIFICATION SYSTEM ====================
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // ATTENDANCE, LEAVE, PAYROLL, OVERTIME, SYSTEM, etc.
+  title     String
+  content   String
+  link      String?
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  priority  String    @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  // Email channel
+  emailEnabled      Boolean  @default(true)
+  quietHoursEnabled Boolean  @default(false)
+  quietHoursStart   String? // "22:00"
+  quietHoursEnd     String? // "08:00"
+  notificationTypes String[] @default([]) // Email notification types (legacy - keeping for backward compatibility)
+  // Email channel - new separate fields (matching inbox pattern)
+  emailNotificationTypes String[] @default([])
+  emailQuietHoursEnabled Boolean  @default(false)
+  emailQuietHoursStart   String?
+  emailQuietHoursEnd     String?
+  // Browser channel
+  browserEnabled    Boolean  @default(true)
+  browserSoundEnabled Boolean @default(true)
+  browserNotificationTypes String[] @default([])
+  browserQuietHoursEnabled Boolean  @default(false)
+  browserQuietHoursStart   String?
+  browserQuietHoursEnd     String?
+  // Inbox channel (separate from email - using new fields)
+  inboxNotificationTypes String[] @default([])
+  inboxQuietHoursEnabled Boolean  @default(false)
+  inboxQuietHoursStart  String? // "22:00"
+  inboxQuietHoursEnd    String? // "08:00"
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  users             User[]
+
+  @@map("notification_preferences")
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  code      String   @unique // ATTENDANCE_REMINDER, LEAVE_APPROVED, PAYSLIP_READY, etc.
+  name      String
+  subject   String
+  body      String   @db.Text
+  bodyHtml  String?  @db.Text
+  isActive  Boolean  @default(true)
+  variables Json     @default("[]") // ["{{employeeName}}", "{{date}}", etc.]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("email_templates")
+}
+
+model EmailLog {
+  id           String    @id @default(cuid())
+  userId       String?
+  recipient    String
+  subject      String
+  body         String?   @db.Text
+  status       String    @default("PENDING") // PENDING, SENT, FAILED, BOUNCED
+  errorMessage String?
+  templateCode String?
+  metadata     Json?
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+  users        User[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("email_logs")
 }

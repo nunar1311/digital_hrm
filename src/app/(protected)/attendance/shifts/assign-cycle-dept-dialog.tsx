@@ -8,14 +8,33 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { DepartmentBasic, WorkCycle } from "../types";
-import { assignCycleDeptFormSchema, AssignCycleDeptFormValues, dateToStr, strToDate } from "./shift-dialogs";
+import {
+    assignCycleDeptFormSchema,
+    AssignCycleDeptFormValues,
+    dateToStr,
+    strToDate,
+} from "./shift-dialogs";
 import { WEEKDAY_SHORT } from "@/components/attendance/settings/work-cycles-constants";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
+import { CyclePreview } from "./assign-cycle-inline-form";
 
 interface AssignCycleDeptDialogProps {
     open: boolean;
@@ -164,36 +183,10 @@ export function AssignCycleDeptDialog({
                             )}
                         />
 
+                        <CyclePreview
+                            cycle={selectedCycle as WorkCycle}
+                        />
                         {/* Cycle preview */}
-                        {selectedCycle && (
-                            <div className="rounded-lg border bg-muted/50 p-3">
-                                <p className="mb-2 text-sm font-medium">
-                                    Mẫu chu kỳ (
-                                    {selectedCycle.totalDays} ngày):
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {selectedCycle.entries.map(
-                                        (entry) => (
-                                            <div
-                                                key={entry.id}
-                                                className={`rounded px-2 py-1 text-xs font-medium ${
-                                                    entry.isDayOff
-                                                        ? "bg-muted text-muted-foreground"
-                                                        : "bg-primary/10 text-primary"
-                                                }`}
-                                            >
-                                                {WEEKDAY_SHORT[entry.dayIndex % 7]}:{" "}
-                                                {entry.isDayOff
-                                                    ? "Nghỉ"
-                                                    : (entry.shift
-                                                          ?.name ??
-                                                      "N/A")}
-                                            </div>
-                                        ),
-                                    )}
-                                </div>
-                            </div>
-                        )}
 
                         <div className="grid grid-cols-2 gap-4">
                             <FormField

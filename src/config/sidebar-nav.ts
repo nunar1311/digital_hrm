@@ -17,6 +17,7 @@ import {
     BarChart3,
     Settings,
     UserCircle,
+    Bell,
     type LucideIcon,
 } from "lucide-react";
 import { Permission } from "@/lib/rbac/permissions";

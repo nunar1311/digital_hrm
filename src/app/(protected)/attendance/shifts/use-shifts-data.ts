@@ -25,6 +25,7 @@ import { toast } from "sonner";
 
 import {
     getShifts,
+    getUsers,
     createShift,
     updateShift,
     deleteShift,
@@ -90,8 +91,8 @@ export interface UseShiftsDataReturn {
     loadMore: () => void;
 
     // Department filter
-    departmentId: string;
-    setDepartmentId: (id: string) => void;
+    departmentIds: string[];
+    setDepartmentIds: (ids: string[]) => void;
     departments: DepartmentBasic[];
 
     // Shift CRUD Dialog
@@ -129,6 +130,19 @@ export interface UseShiftsDataReturn {
     setCycleDialogOpen: (open: boolean) => void;
     handleAssignCycle: (values: AssignCycleFormValues) => void;
     workCycles: WorkCycle[];
+    assignCycleUserId: string | null;
+    assignCycleDate: Date | null;
+    setAssignCycleUserId: (id: string | null) => void;
+    setAssignCycleDate: (date: Date | null) => void;
+    assignCycleMutation: {
+        mutate: (params: {
+            userId: string;
+            workCycleId: string;
+            cycleStartDate: string;
+            endDate?: string;
+        }) => void;
+        isPending: boolean;
+    };
 
     // Cycle assignment by department
     cycleDeptDialogOpen: boolean;
@@ -159,6 +173,9 @@ export interface UseShiftsDataReturn {
     // Props pass-through
     users: UserBasic[];
     canManage: boolean;
+
+    // Refresh
+    refreshUsers: () => void;
 }
 
 // ─── Hook ───
@@ -208,6 +225,10 @@ export function useShiftsData({
     // ─── Cycle Assignment Dialog ───
     const [cycleDialogOpen, setCycleDialogOpen] = useState(false);
 
+    // Track selected user and date when opening cycle dialog from calendar
+    const [assignCycleUserId, setAssignCycleUserId] = useState<string | null>(null);
+    const [assignCycleDate, setAssignCycleDate] = useState<Date | null>(null);
+
     // ─── Cycle Assignment by Department Dialog ───
     const [cycleDeptDialogOpen, setCycleDeptDialogOpen] =
         useState(false);
@@ -221,9 +242,9 @@ export function useShiftsData({
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
     // ─── Department filter ───
-    const [departmentId, setDepartmentIdState] = useState<string>("");
-    const setDepartmentId = useCallback((id: string) => {
-        setDepartmentIdState(id);
+    const [departmentIds, setDepartmentIdsState] = useState<string[]>([]);
+    const setDepartmentIds = useCallback((ids: string[]) => {
+        setDepartmentIdsState(ids);
         setVisibleCount(PAGE_SIZE);
     }, []);
 
@@ -310,6 +331,11 @@ export function useShiftsData({
             queryKey: ["attendance", "shiftAssignments"],
         });
     });
+    useSocketEvent("department:employee-moved", () => {
+        queryClient.invalidateQueries({
+            queryKey: ["attendance", "users"],
+        });
+    });
 
     // ─── Queries ───
     const { data: shifts = initialShifts } = useQuery({
@@ -319,6 +345,15 @@ export function useShiftsData({
             return JSON.parse(JSON.stringify(res)) as Shift[];
         },
         initialData: initialShifts,
+    });
+
+    const { data: usersData = users } = useQuery({
+        queryKey: ["attendance", "users"],
+        queryFn: async () => {
+            const res = await getUsers();
+            return JSON.parse(JSON.stringify(res)) as UserBasic[];
+        },
+        initialData: users,
     });
 
     const { data: assignments = [] } = useQuery({
@@ -344,7 +379,7 @@ export function useShiftsData({
 
     // ─── Client-side filtering ───
     const filteredUsers = useMemo(() => {
-        let result = users as (UserBasic & {
+        let result = usersData as (UserBasic & {
             image?: string | null;
         })[];
         if (debouncedSearch) {
@@ -355,13 +390,19 @@ export function useShiftsData({
                     u.employeeCode?.toLowerCase().includes(q),
             );
         }
-        if (departmentId) {
-            result = result.filter(
-                (u) => u.departmentId === departmentId,
-            );
+        if (departmentIds.length > 0) {
+            // If users have department data, filter by department
+            // Otherwise, show all users (department data not yet populated)
+            const usersWithDept = result.filter((u) => u.departmentId);
+            if (usersWithDept.length > 0) {
+                result = usersWithDept.filter((u) =>
+                    departmentIds.includes(u.departmentId!),
+                );
+            }
+            // If no users have department data, show all (waiting for data population)
         }
         return result;
-    }, [users, debouncedSearch, departmentId]);
+    }, [usersData, debouncedSearch, departmentIds]);
 
     const hasMore = visibleCount < filteredUsers.length;
     const loadMore = useCallback(() => {
@@ -803,10 +844,16 @@ export function useShiftsData({
 
     // ─── Assign Cycle ───
     const handleAssignCycle = (values: AssignCycleFormValues) => {
+        // Use selected user from calendar if available, otherwise use form value
+        const userId = assignCycleUserId || values.userId;
+        const startDate = assignCycleDate 
+            ? format(assignCycleDate, "yyyy-MM-dd") 
+            : values.startDate;
+
         assignCycleMutation.mutate({
-            userId: values.userId,
+            userId,
             workCycleId: values.workCycleId,
-            cycleStartDate: values.startDate,
+            cycleStartDate: startDate,
             endDate: values.endDate || undefined,
         });
     };
@@ -886,8 +933,8 @@ export function useShiftsData({
         filteredUsers,
         hasMore,
         loadMore,
-        departmentId,
-        setDepartmentId,
+        departmentIds,
+        setDepartmentIds,
         departments,
         isShiftDialogOpen,
         setIsShiftDialogOpen,
@@ -910,6 +957,10 @@ export function useShiftsData({
         cycleDialogOpen,
         setCycleDialogOpen,
         handleAssignCycle,
+        assignCycleUserId,
+        assignCycleDate,
+        setAssignCycleUserId,
+        setAssignCycleDate,
         cycleDeptDialogOpen,
         setCycleDeptDialogOpen,
         handleAssignCycleDept,
@@ -919,5 +970,7 @@ export function useShiftsData({
         isPending,
         users,
         canManage,
+        refreshUsers: () => queryClient.invalidateQueries({ queryKey: ["attendance", "users"] }),
+        assignCycleMutation,
     };
 }
