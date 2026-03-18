@@ -38,8 +38,6 @@ const tabsAppearance: {
 ];
 
 const ModeSelection = () => {
-    const mounted = useMounted();
-
     const { setTheme } = useTheme();
     const { settings, updateSettings } = useSettings();
 
@@ -63,8 +61,6 @@ const ModeSelection = () => {
             setTheme(newMode);
         }
     };
-
-    if (!mounted) return null;
 
     return (
         <Tabs value={settings.mode} onValueChange={handleModeChange}>

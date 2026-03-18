@@ -5,7 +5,7 @@ import { Permission, Role } from "@/lib/rbac/permissions";
 import {
     getRolesAndPermissions,
     getUsersWithRoles,
-} from "../actions";
+} from "../preferences/actions";
 import { RolesClient } from "./roles-client";
 
 export const metadata: Metadata = {

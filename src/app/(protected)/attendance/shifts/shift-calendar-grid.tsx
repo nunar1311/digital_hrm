@@ -293,7 +293,7 @@ function DayHeader({
                     "font-bold",
                     isMonthView ? "text-xs" : "mt-0.5 text-sm",
                     today &&
-                        "rounded-full bg-primary px-1.5 py-0.5 text-primary-foreground",
+                        "rounded-full bg-primary px-1.5 py-0.5 text-white",
                 )}
             >
                 {dayNum}

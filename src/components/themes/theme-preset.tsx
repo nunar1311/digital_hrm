@@ -1,11 +1,12 @@
 import { presets } from "@/utils/theme-presets";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { ThemeStyleProps } from "@/types/theme";
 import { defaultThemeState } from "@/config/theme";
 import { useSettings } from "@/contexts/settings-context";
+import { cn } from "@/lib/utils";
 
-const ThemePreset = () => {
+const ThemePreset = ({ className }: { className?: string }) => {
     const { settings, applyThemePreset } = useSettings();
 
     const presetNames = useMemo(() => {
@@ -56,7 +57,12 @@ const ThemePreset = () => {
     };
     return (
         <Tabs value={value || ""}>
-            <TabsList className="bg-transparent w-full group-data-[orientation=horizontal]/tabs:h-full gap-2 justify-between grid md:grid-cols-5 lg:grid-cols-6">
+            <TabsList
+                className={cn(
+                    "bg-transparent w-full group-data-[orientation=horizontal]/tabs:h-full gap-2 justify-between grid grid-cols-6",
+                    className,
+                )}
+            >
                 {presetNames.map((name) => {
                     return (
                         <div

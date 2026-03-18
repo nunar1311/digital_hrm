@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmployeeStatusBadge } from "@/components/employees/employee-status-badge";
 import type { Employee } from "@/types";
-import { mockWorkHistory } from "@/mock/employees";
 
 interface Props {
     employee: Employee;
@@ -15,6 +14,18 @@ const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) =>
         <div className="sm:col-span-2 text-sm text-foreground">{value || <span className="text-muted-foreground italic">Chưa cập nhật</span>}</div>
     </div>
 );
+
+const mockWorkHistory = [
+    {
+        id: "1",
+        employeeId: "1",
+        position: "Nhân viên",
+        company: "Công ty ABC",
+        startDate: "2020-01-01",
+        endDate: "2020-01-01",
+        description: "Nhân viên",
+    },
+]
 
 export function WorkTab({ employee }: Props) {
     const workHistories = mockWorkHistory.filter(wh => wh.employeeId === employee.id).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());

@@ -23,7 +23,11 @@ export type ModeSettings = {
     mode: Mode;
 };
 
-export type Settings = ModeSettings & ThemeSettings;
+export type Settings = ModeSettings &
+    ThemeSettings & {
+        flyoutToastEnabled: boolean;
+        keyboardShortcutsEnabled: boolean;
+    };
 
 type SettingsContextProps = {
     settings: Settings;
@@ -45,6 +49,14 @@ const initialThemeSettings: ThemeSettings = {
         preset: null,
         styles: defaultThemeState,
     },
+};
+
+const initialFlyoutToastSettings = {
+    flyoutToastEnabled: true,
+};
+
+const initialKeyboardShortcutsSettings = {
+    keyboardShortcutsEnabled: true,
 };
 
 export const SettingsContext =
@@ -73,9 +85,23 @@ export const SettingsProvider = ({
         defaultValue: initialThemeSettings,
     });
 
+    const [flyoutToastSettings, setFlyoutToastSettings] =
+        useLocalStorage({
+            key: "settings-flyout-toast",
+            defaultValue: initialFlyoutToastSettings,
+        });
+
+    const [keyboardShortcutsSettings, setKeyboardShortcutsSettings] =
+        useLocalStorage({
+            key: "settings-keyboard-shortcuts",
+            defaultValue: initialKeyboardShortcutsSettings,
+        });
+
     const settings: Settings = {
         ...modeCookie,
         ...themeSettings,
+        ...flyoutToastSettings,
+        ...keyboardShortcutsSettings,
     };
 
     const updateSettings = (newSettings: Partial<Settings>) => {
@@ -97,6 +123,18 @@ export const SettingsProvider = ({
                     savedThemes: newSettings.savedThemes,
                 }),
             }));
+        }
+
+        if ("flyoutToastEnabled" in newSettings) {
+            setFlyoutToastSettings({
+                flyoutToastEnabled: newSettings.flyoutToastEnabled!,
+            });
+        }
+
+        if ("keyboardShortcutsEnabled" in newSettings) {
+            setKeyboardShortcutsSettings({
+                keyboardShortcutsEnabled: newSettings.keyboardShortcutsEnabled!,
+            });
         }
     };
 

@@ -41,6 +41,7 @@ import {
     WEEKDAY_FULL,
 } from "./work-cycles-constants";
 import { useState, useEffect } from "react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface WorkCycleFormDialogProps {
     open: boolean;
@@ -152,7 +153,7 @@ export function WorkCycleFormDialog({
                 if (!v) onOpenChange(false);
             }}
         >
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent>
                 <DialogHeader>
                     <DialogTitle>
                         {editCycle
@@ -173,7 +174,7 @@ export function WorkCycleFormDialog({
                                     <FormLabel>Tên chu kỳ</FormLabel>
                                     <FormControl>
                                         <Input
-                                            placeholder="VD: 4 làm - 2 nghỉ"
+                                            placeholder="Nhập tên chu kỳ"
                                             {...field}
                                         />
                                     </FormControl>
@@ -190,8 +191,8 @@ export function WorkCycleFormDialog({
                                         Mô tả (tuỳ chọn)
                                     </FormLabel>
                                     <FormControl>
-                                        <Input
-                                            placeholder="VD: Chu kỳ xoay ca cho nhân viên sản xuất"
+                                        <Textarea
+                                            placeholder="Nhập mô tả"
                                             {...field}
                                         />
                                     </FormControl>
@@ -253,7 +254,7 @@ export function WorkCycleFormDialog({
                                 </div>
                             </div>
 
-                            <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                 {entries.map((entry) => (
                                     <div
                                         key={entry.dayIndex}
@@ -370,7 +371,7 @@ export function WorkCycleFormDialog({
                             </Button>
                             <Button type="submit" disabled={isSaving}>
                                 {isSaving && (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className="h-4 w-4 animate-spin" />
                                 )}
                                 {editCycle
                                     ? "Cập nhật"

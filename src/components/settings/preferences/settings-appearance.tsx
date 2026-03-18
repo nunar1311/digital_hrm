@@ -1,11 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useSettings } from "@/contexts/settings-context";
-import type { Mode } from "@/contexts/settings-context";
 import { SettingsSection } from "./settings-section";
-import { THEME_COLOR_SWATCHES } from "./constants";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLocalStorage } from "@mantine/hooks";
@@ -14,9 +9,6 @@ import ThemePreset from "@/components/themes/theme-preset";
 import ModeSelection from "@/components/themes/mode-selection";
 
 export function SettingsAppearance() {
-    const { settings, updateSettings, applyThemePreset } =
-        useSettings();
-    const { setTheme } = useTheme();
     const [highContrast, setHighContrast] = useLocalStorage({
         key: "settings-high-contrast",
         defaultValue: false,
@@ -29,17 +21,6 @@ export function SettingsAppearance() {
         );
     }, [highContrast]);
 
-    const currentPreset = settings.theme?.preset ?? "default";
-
-    const handlePreset = (id: string) => {
-        applyThemePreset(id === "default" ? "default" : id);
-    };
-
-    const handleModeChange = (mode: Mode) => {
-        updateSettings({ mode });
-        setTheme(mode);
-    };
-
     return (
         <>
             <SettingsSection
@@ -47,7 +28,7 @@ export function SettingsAppearance() {
                 description="Chọn màu chủ đạo cho ứng dụng."
             >
                 <div className="flex flex-wrap gap-2">
-                    <ThemePreset />
+                    <ThemePreset className="grid-cols-7" />
                 </div>
             </SettingsSection>
 

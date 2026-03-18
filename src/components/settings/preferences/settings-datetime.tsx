@@ -12,7 +12,7 @@ import {
     WEEK_START_OPTIONS,
     DATE_FORMAT_OPTIONS,
     SYSTEM_FIELDS,
-} from "./constants";
+} from "../../../app/(protected)/settings/constants";
 import { Label } from "@/components/ui/label";
 
 interface SettingsDatetimeProps {

@@ -9,7 +9,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { SettingsSection } from "./settings-section";
-import { LANGUAGE_OPTIONS } from "./constants";
+import { LANGUAGE_OPTIONS } from "../../../app/(protected)/settings/constants";
 import { TIMEZONE_OPTIONS } from "@/hooks/use-timezone";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -20,21 +20,33 @@ interface SettingsLanguageRegionProps {
     timezone: string;
     onTimezoneChange: (value: string) => void;
     canEdit: boolean;
+    notifyTimezone?: boolean;
+    onNotifyTimezoneChange?: (enabled: boolean) => void;
 }
 
 export function SettingsLanguageRegion({
     timezone,
     onTimezoneChange,
     canEdit,
+    notifyTimezone: externalNotifyTimezone,
+    onNotifyTimezoneChange,
 }: SettingsLanguageRegionProps) {
     const [language, setLanguage] = useLocalStorage({
         key: "settings-language",
         defaultValue: "vi",
     });
-    const [notifyTimezone, setNotifyTimezone] = useLocalStorage({
+    
+    // Use external state if provided, otherwise use localStorage
+    const [internalNotifyTimezone, setInternalNotifyTimezone] = useLocalStorage({
         key: "settings-notify-timezone",
         defaultValue: true,
     });
+    
+    const notifyTimezone = externalNotifyTimezone ?? internalNotifyTimezone;
+    const setNotifyTimezone = onNotifyTimezoneChange 
+        ? onNotifyTimezoneChange 
+        : setInternalNotifyTimezone;
+    
     const { setTimezone } = useTimezone();
 
     const handleTimezoneChange = (value: string) => {

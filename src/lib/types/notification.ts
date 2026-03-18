@@ -10,7 +10,8 @@ export type NotificationType =
   | "PERFORMANCE"
   | "SYSTEM"
   | "REMINDER"
-  | "APPROVAL";
+  | "APPROVAL"
+  | "SETTINGS";
 
 export type NotificationPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
@@ -56,6 +57,7 @@ export const NOTIFICATION_TYPES = {
   SYSTEM: "SYSTEM",
   REMINDER: "REMINDER",
   APPROVAL: "APPROVAL",
+  SETTINGS: "SETTINGS",
 } as const;
 
 export const NOTIFICATION_PRIORITIES = {

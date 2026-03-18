@@ -53,6 +53,40 @@ export async function getTimezone(): Promise<string> {
 
 const updateSettingsSchema = z.record(z.string(), z.string());
 
+// Helper function to get timezone label
+const getTimezoneLabel = (value: string): string => {
+    const timezoneLabels: Record<string, string> = {
+        "Asia/Ho_Chi_Minh": "Việt Nam (GMT+7)",
+        "Asia/Bangkok": "Thái Lan (GMT+7)",
+        "Asia/Singapore": "Singapore (GMT+8)",
+        "Asia/Hong_Kong": "Hồng Kông (GMT+8)",
+        "Asia/Shanghai": "Trung Quốc (GMT+8)",
+        "Asia/Tokyo": "Nhật Bản (GMT+9)",
+        "Asia/Seoul": "Hàn Quốc (GMT+9)",
+        "Asia/Jakarta": "Indonesia (GMT+7)",
+        "Asia/Manila": "Philippines (GMT+8)",
+        "Asia/Kuala_Lumpur": "Malaysia (GMT+8)",
+        "Asia/Dubai": "UAE (GMT+4)",
+        "Asia/Kolkata": "Ấn Độ (GMT+5:30)",
+        "Asia/Karachi": "Pakistan (GMT+5)",
+        "Europe/London": "Anh (GMT+0)",
+        "Europe/Paris": "Pháp (GMT+1)",
+        "Europe/Berlin": "Đức (GMT+1)",
+        "Europe/Moscow": "Nga (GMT+3)",
+        "America/New_York": "Mỹ - New York (GMT-5)",
+        "America/Los_Angeles": "Mỹ - Los Angeles (GMT-8)",
+        "America/Chicago": "Mỹ - Chicago (GMT-6)",
+        "America/Denver": "Mỹ - Denver (GMT-7)",
+        "America/Toronto": "Canada - Toronto (GMT-5)",
+        "America/Vancouver": "Canada - Vancouver (GMT-8)",
+        "Australia/Sydney": "Úc - Sydney (GMT+11)",
+        "Australia/Melbourne": "Úc - Melbourne (GMT+11)",
+        "Pacific/Auckland": "New Zealand (GMT+13)",
+        "UTC": "UTC (GMT+0)",
+    };
+    return timezoneLabels[value] || value;
+};
+
 export async function updateSystemSettings(data: Record<string, string>) {
     const session = await requirePermission(Permission.SETTINGS_SYSTEM);
     const validated = updateSettingsSchema.parse(data);
@@ -62,6 +96,11 @@ export async function updateSystemSettings(data: Record<string, string>) {
     for (const s of oldSettings) {
         oldMap[s.key] = s.value;
     }
+
+    // Check if timezone changed
+    const oldTimezone = oldMap["system.timezone"] ?? DEFAULT_SETTINGS["system.timezone"].value;
+    const newTimezone = validated["system.timezone"];
+    const timezoneChanged = oldTimezone !== newTimezone;
 
     // Upsert each setting
     for (const [key, value] of Object.entries(validated)) {
@@ -85,13 +124,43 @@ export async function updateSystemSettings(data: Record<string, string>) {
         },
     });
 
+    // Create notification for timezone change
+    if (timezoneChanged && newTimezone) {
+        const { NOTIFICATION_TYPES } = await import("@/lib/types/notification");
+        
+        // Get timezone labels using helper function
+        const oldTimezoneLabel = getTimezoneLabel(oldTimezone);
+        const newTimezoneLabel = getTimezoneLabel(newTimezone);
+
+        // Notify all users about timezone change
+        const allUsers = await prisma.user.findMany({
+            select: { id: true },
+        });
+
+        // Create notifications for all users
+        const notifications = allUsers.map((user) => ({
+            userId: user.id,
+            type: NOTIFICATION_TYPES.SETTINGS,
+            title: "Múi giờ hệ thống đã thay đổi",
+            content: `Múi giờ đã được thay đổi từ "${oldTimezoneLabel}" sang "${newTimezoneLabel}" bởi ${session.user.name}.`,
+            link: "/settings/preferences",
+            priority: "NORMAL" as const,
+        }));
+
+        if (notifications.length > 0) {
+            await prisma.notification.createMany({
+                data: notifications,
+            });
+        }
+    }
+
     emitToAll("settings:updated", {
         group: "general",
         changes: validated,
     });
 
     revalidatePath("/settings");
-    return { success: true };
+    return { success: true, timezoneChanged };
 }
 
 // ─────────────────────────────────────────────

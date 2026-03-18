@@ -8,7 +8,8 @@ import { getTimezoneFromDB } from "@/app/(protected)/settings/get-timezone";
 import { cn } from "@/lib/utils";
 import { SettingsProvider } from "@/contexts/settings-context";
 import { TimezoneProvider } from "@/contexts/timezone-context";
-import { Toaster } from "sonner";
+import { ToastProvider } from "@/providers/toast-provider";
+import { KeyboardShortcutsProvider } from "@/components/providers/keyboard-shortcuts-provider";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -47,11 +48,14 @@ export default async function RootLayout({
                 className={`${geistSans.variable} ${geistMono.variable} antialiased [--header-height:calc(var(--spacing)*10)] scroll-smooth overscroll-none overflow-hidden`}
             >
                 <SettingsProvider settingsCookies={settingsCookie}>
-                    <TimezoneProvider initialTimezone={timezone}>
-                        <Providers>{children}</Providers>
-                    </TimezoneProvider>
+                    <KeyboardShortcutsProvider>
+                        <ToastProvider>
+                            <TimezoneProvider initialTimezone={timezone}>
+                                <Providers>{children}</Providers>
+                            </TimezoneProvider>
+                        </ToastProvider>
+                    </KeyboardShortcutsProvider>
                 </SettingsProvider>
-                <Toaster richColors />
             </body>
         </html>
     );

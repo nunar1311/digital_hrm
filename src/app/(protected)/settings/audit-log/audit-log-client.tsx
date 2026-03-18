@@ -4,10 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { z } from "zod";
-import {
-    useQuery,
-    useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -59,7 +56,7 @@ import {
 } from "@/components/ui/form";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { getAuditLogs } from "../actions";
+import { getAuditLogs } from "../preferences/actions";
 import { DatePicker } from "@/components/ui/date-picker";
 
 // ─── Types ───
@@ -221,7 +218,9 @@ export function AuditLogClient({
     filters,
 }: AuditLogClientProps) {
     const queryClient = useQueryClient();
-    const [detailLog, setDetailLog] = useState<AuditLogEntry | null>(null);
+    const [detailLog, setDetailLog] = useState<AuditLogEntry | null>(
+        null,
+    );
     const [page, setPage] = useState(1);
 
     const form = useForm<FilterFormValues>({
@@ -240,9 +239,18 @@ export function AuditLogClient({
     const { data, isLoading, isFetching } = useQuery({
         queryKey: ["audit-logs", page, filterValues],
         queryFn: async () => {
-            const userId = filterValues.userId === "all" ? undefined : filterValues.userId;
-            const action = filterValues.action === "all" ? undefined : filterValues.action;
-            const entity = filterValues.entity === "all" ? undefined : filterValues.entity;
+            const userId =
+                filterValues.userId === "all"
+                    ? undefined
+                    : filterValues.userId;
+            const action =
+                filterValues.action === "all"
+                    ? undefined
+                    : filterValues.action;
+            const entity =
+                filterValues.entity === "all"
+                    ? undefined
+                    : filterValues.entity;
             const startDate = filterValues.startDate
                 ? format(filterValues.startDate, "yyyy-MM-dd")
                 : undefined;
@@ -308,17 +316,24 @@ export function AuditLogClient({
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
-                        <form onSubmit={handleFilter} className="space-y-4">
+                        <form
+                            onSubmit={handleFilter}
+                            className="space-y-4"
+                        >
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                                 <FormField
                                     control={form.control}
                                     name="userId"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Người thực hiện</FormLabel>
+                                            <FormLabel>
+                                                Người thực hiện
+                                            </FormLabel>
                                             <Select
                                                 value={field.value}
-                                                onValueChange={field.onChange}
+                                                onValueChange={
+                                                    field.onChange
+                                                }
                                             >
                                                 <FormControl>
                                                     <SelectTrigger className="w-full">
@@ -327,16 +342,25 @@ export function AuditLogClient({
                                                 </FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="all">
-                                                        Tất cả người dùng
+                                                        Tất cả người
+                                                        dùng
                                                     </SelectItem>
-                                                    {filters.users.map((u) => (
-                                                        <SelectItem
-                                                            key={u.id}
-                                                            value={u.id}
-                                                        >
-                                                            {u.name}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {filters.users.map(
+                                                        (u) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    u.id
+                                                                }
+                                                                value={
+                                                                    u.id
+                                                                }
+                                                            >
+                                                                {
+                                                                    u.name
+                                                                }
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                         </FormItem>
@@ -348,10 +372,14 @@ export function AuditLogClient({
                                     name="action"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Hành động</FormLabel>
+                                            <FormLabel>
+                                                Hành động
+                                            </FormLabel>
                                             <Select
                                                 value={field.value}
-                                                onValueChange={field.onChange}
+                                                onValueChange={
+                                                    field.onChange
+                                                }
                                             >
                                                 <FormControl>
                                                     <SelectTrigger className="w-full">
@@ -360,13 +388,27 @@ export function AuditLogClient({
                                                 </FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="all">
-                                                        Tất cả hành động
+                                                        Tất cả hành
+                                                        động
                                                     </SelectItem>
-                                                    {filters.actions.map((a) => (
-                                                        <SelectItem key={a} value={a}>
-                                                            {ACTION_LABELS[a]?.label ?? a}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {filters.actions.map(
+                                                        (a) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    a
+                                                                }
+                                                                value={
+                                                                    a
+                                                                }
+                                                            >
+                                                                {ACTION_LABELS[
+                                                                    a
+                                                                ]
+                                                                    ?.label ??
+                                                                    a}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                         </FormItem>
@@ -378,10 +420,14 @@ export function AuditLogClient({
                                     name="entity"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Đối tượng</FormLabel>
+                                            <FormLabel>
+                                                Đối tượng
+                                            </FormLabel>
                                             <Select
                                                 value={field.value}
-                                                onValueChange={field.onChange}
+                                                onValueChange={
+                                                    field.onChange
+                                                }
                                             >
                                                 <FormControl>
                                                     <SelectTrigger className="w-full">
@@ -390,13 +436,26 @@ export function AuditLogClient({
                                                 </FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="all">
-                                                        Tất cả đối tượng
+                                                        Tất cả đối
+                                                        tượng
                                                     </SelectItem>
-                                                    {filters.entities.map((e) => (
-                                                        <SelectItem key={e} value={e}>
-                                                            {ENTITY_LABELS[e] ?? e}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {filters.entities.map(
+                                                        (e) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    e
+                                                                }
+                                                                value={
+                                                                    e
+                                                                }
+                                                            >
+                                                                {ENTITY_LABELS[
+                                                                    e
+                                                                ] ??
+                                                                    e}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                         </FormItem>
@@ -427,10 +486,14 @@ export function AuditLogClient({
                                     name="startDate"
                                     render={({ field }) => (
                                         <FormItem className="flex flex-col">
-                                            <FormLabel>Từ ngày</FormLabel>
+                                            <FormLabel>
+                                                Từ ngày
+                                            </FormLabel>
                                             <DatePicker
                                                 date={field.value}
-                                                setDate={field.onChange}
+                                                setDate={
+                                                    field.onChange
+                                                }
                                             />
                                         </FormItem>
                                     )}
@@ -441,10 +504,14 @@ export function AuditLogClient({
                                     name="endDate"
                                     render={({ field }) => (
                                         <FormItem className="flex flex-col">
-                                            <FormLabel>Đến ngày</FormLabel>
+                                            <FormLabel>
+                                                Đến ngày
+                                            </FormLabel>
                                             <DatePicker
                                                 date={field.value}
-                                                setDate={field.onChange}
+                                                setDate={
+                                                    field.onChange
+                                                }
                                             />
                                         </FormItem>
                                     )}
@@ -511,62 +578,69 @@ export function AuditLogClient({
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    logsData.logs.map((log: AuditLogEntry) => {
-                                        const actionInfo =
-                                            ACTION_LABELS[log.action];
-                                        return (
-                                            <TableRow key={log.id}>
-                                                <TableCell className="whitespace-nowrap text-sm">
-                                                    {formatDate(
-                                                        log.createdAt,
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <span className="font-medium">
-                                                        {log.userName ||
-                                                            log.userId}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className={
-                                                            actionInfo?.color ??
-                                                            ""
-                                                        }
-                                                    >
-                                                        {actionInfo?.label ??
-                                                            log.action}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {ENTITY_LABELS[
-                                                        log.entity
-                                                    ] ?? log.entity}
-                                                </TableCell>
-                                                <TableCell className="max-w-[120px] truncate text-xs text-muted-foreground">
-                                                    {log.entityId ??
-                                                        "—"}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    {(log.oldData ||
-                                                        log.newData) && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                setDetailLog(
-                                                                    log,
-                                                                )
+                                    logsData.logs.map(
+                                        (log: AuditLogEntry) => {
+                                            const actionInfo =
+                                                ACTION_LABELS[
+                                                    log.action
+                                                ];
+                                            return (
+                                                <TableRow
+                                                    key={log.id}
+                                                >
+                                                    <TableCell className="whitespace-nowrap text-sm">
+                                                        {formatDate(
+                                                            log.createdAt,
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className="font-medium">
+                                                            {log.userName ||
+                                                                log.userId}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className={
+                                                                actionInfo?.color ??
+                                                                ""
                                                             }
                                                         >
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })
+                                                            {actionInfo?.label ??
+                                                                log.action}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {ENTITY_LABELS[
+                                                            log.entity
+                                                        ] ??
+                                                            log.entity}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-[120px] truncate text-xs text-muted-foreground">
+                                                        {log.entityId ??
+                                                            "—"}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {(log.oldData ||
+                                                            log.newData) && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    setDetailLog(
+                                                                        log,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        },
+                                    )
                                 )}
                             </TableBody>
                         </Table>
@@ -576,8 +650,9 @@ export function AuditLogClient({
                     {logsData.totalPages > 1 && (
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-muted-foreground">
-                                Trang {logsData.page} / {logsData.totalPages}{" "}
-                                ({logsData.total} bản ghi)
+                                Trang {logsData.page} /{" "}
+                                {logsData.totalPages} (
+                                {logsData.total} bản ghi)
                             </p>
                             <div className="flex gap-1">
                                 <Button
@@ -585,7 +660,9 @@ export function AuditLogClient({
                                     size="sm"
                                     disabled={logsData.page <= 1}
                                     onClick={() =>
-                                        handlePageChange(logsData.page - 1)
+                                        handlePageChange(
+                                            logsData.page - 1,
+                                        )
                                     }
                                 >
                                     <ChevronLeft className="h-4 w-4" />
@@ -594,10 +671,13 @@ export function AuditLogClient({
                                     variant="outline"
                                     size="sm"
                                     disabled={
-                                        logsData.page >= logsData.totalPages
+                                        logsData.page >=
+                                        logsData.totalPages
                                     }
                                     onClick={() =>
-                                        handlePageChange(logsData.page + 1)
+                                        handlePageChange(
+                                            logsData.page + 1,
+                                        )
                                     }
                                 >
                                     <ChevronRight className="h-4 w-4" />

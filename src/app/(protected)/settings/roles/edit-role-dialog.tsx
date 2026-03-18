@@ -30,7 +30,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { updateUserRole } from "../actions";
+import { updateUserRole } from "../preferences/actions";
 import { ROLE_LABELS, ROLE_COLORS } from "./constants";
 
 // ─── Types ───

@@ -176,7 +176,7 @@ export function WorkCyclesTab({
                     </CardDescription>
                 </div>
                 <Button onClick={openCreate} size="sm">
-                    <Plus className="mr-1.5 h-4 w-4" />
+                    <Plus className="h-4 w-4" />
                     Tạo chu kỳ
                 </Button>
             </CardHeader>

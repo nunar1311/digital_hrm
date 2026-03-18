@@ -4,6 +4,8 @@ import { Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SettingsHeaderProps {
+    title: string;
+    description: string;
     canEdit: boolean;
     hasChanges: boolean;
     isSaving: boolean;
@@ -11,6 +13,8 @@ interface SettingsHeaderProps {
 }
 
 export function SettingsHeader({
+    title,
+    description,
     canEdit,
     hasChanges,
     isSaving,
@@ -20,10 +24,10 @@ export function SettingsHeader({
         <div className="flex items-center justify-between">
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">
-                    Cài đặt hệ thống
+                    {title}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                    Cấu hình thông tin công ty và hệ thống
+                    {description}
                 </p>
             </div>
             {canEdit && (
@@ -33,7 +37,7 @@ export function SettingsHeader({
                     disabled={isSaving || !hasChanges}
                 >
                     {isSaving && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                     )}
                     Lưu thay đổi
                 </Button>

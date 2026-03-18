@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,7 +28,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { SettingsSection } from "../settings-section";
+import { SettingsSection } from "../../../../components/settings/preferences/settings-section";
 import {
     useCompanyInfo,
     useUpdateCompanyInfo,
@@ -37,6 +37,9 @@ import {
 } from "./use-company";
 import Loading from "../../loading";
 import { DatePicker } from "@/components/ui/date-picker";
+import { toast } from "sonner";
+import { SettingsHeader } from "@/components/settings/settings-header";
+import { ReadOnlyNotice } from "@/components/settings/read-only-notice";
 
 const companyFormSchema = z.object({
     companyName: z.string().min(1, "Tên công ty không được để trống"),
@@ -126,13 +129,32 @@ export function CompanyPageClient() {
     const deleteMutation = useDeleteCompanyLogo();
 
     const canEdit = data?.canEdit ?? false;
-    const initialData = data?.data ?? {};
 
     const form = useForm<CompanyFormValues>({
         resolver: zodResolver(companyFormSchema),
-        defaultValues: { ...initialData },
+        defaultValues: {
+            companyName: "",
+            companyCode: "",
+            companyEmail: "",
+            companyPhone: "",
+            companyFax: "",
+            companyTaxCode: "",
+            companyAddress: "",
+            companyWard: "",
+            companyDistrict: "",
+            companyCity: "",
+            companyCountry: "",
+            companyWebsite: "",
+            companyDescription: "",
+            companyLogo: "",
+            companyIndustry: "",
+            companyFoundedDate: undefined,
+            companyEmployeeCount: "",
+            companyBusinessLicense: "",
+            companyBankAccount: "",
+            companyBankName: "",
+        },
     });
-
 
     // Real-time updates
     useSocketEvent(SOCKET_EVENTS.COMPANY_UPDATED, () => {
@@ -143,18 +165,28 @@ export function CompanyPageClient() {
         queryClient.invalidateQueries({ queryKey: ["company"] });
     });
 
-    const onSubmit = form.handleSubmit(async (values) => {
-        try {
-            const dataToSubmit = {
-                ...values,
-                companyFoundedDate: values.companyFoundedDate
-                    ? values.companyFoundedDate.toISOString()
-                    : undefined,
-            };
-            await updateMutation.mutateAsync(dataToSubmit);
-        } catch (err) {
-            console.error("Failed to save:", err);
+    // Update form values when data changes (after save/reload)
+    useEffect(() => {
+        if (data?.data && Object.keys(data.data).length > 0) {
+            const dateValue = data.data.companyFoundedDate
+                ? new Date(data.data.companyFoundedDate)
+                : undefined;
+            form.reset({
+                ...form.getValues(),
+                ...data.data,
+                companyFoundedDate: dateValue,
+            });
         }
+    }, [data?.data, form]);
+
+    const onSubmit = form.handleSubmit(async (values) => {
+        const dataToSubmit = {
+            ...values,
+            companyFoundedDate: values.companyFoundedDate
+                ? values.companyFoundedDate.toISOString()
+                : undefined,
+        };
+        await updateMutation.mutateAsync(dataToSubmit);
     });
 
     const handleLogoUpload = async (
@@ -216,29 +248,14 @@ export function CompanyPageClient() {
     return (
         <div className="h-[calc(100vh-3rem)] flex flex-col overflow-hidden min-h-0">
             <div className="shrink-0 p-4 md:p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">
-                            Thông tin công ty
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                            Quản lý thông tin và cấu hình công ty của
-                            bạn
-                        </p>
-                    </div>
-                    {canEdit && (
-                        <Button
-                            onClick={onSubmit}
-                            size={"sm"}
-                            disabled={isSaving || !hasChanges}
-                        >
-                            {isSaving && (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            )}
-                            Lưu thay đổi
-                        </Button>
-                    )}
-                </div>
+                <SettingsHeader
+                    title="Thông tin công ty"
+                    description="Quản lý thông tin và cấu hình công ty của bạn"
+                    canEdit={canEdit}
+                    hasChanges={hasChanges}
+                    isSaving={isSaving}
+                    onSave={onSubmit}
+                />
             </div>
 
             <div className="flex-1 px-4 md:px-6 pb-6 overflow-auto h-full min-h-0 no-scrollbar">
@@ -850,14 +867,7 @@ export function CompanyPageClient() {
                         </div>
                     </SettingsSection>
 
-                    {!canEdit && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center mt-4">
-                            <p className="text-amber-700 text-sm">
-                                Bạn không có quyền chỉnh sửa thông tin
-                                công ty.
-                            </p>
-                        </div>
-                    )}
+                    {!canEdit && <ReadOnlyNotice />}
                 </Form>
             </div>
         </div>

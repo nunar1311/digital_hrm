@@ -31,7 +31,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useSocketEvent } from "@/hooks/use-socket-event";
-import { getUsersWithRoles } from "../actions";
+import { getUsersWithRoles } from "../preferences/actions";
 import { EditRoleDialog } from "./edit-role-dialog";
 import {
     ROLE_LABELS,
