@@ -42,7 +42,7 @@ const MySettings: SettingsItem[] = [
 const MyCompanySettings: SettingsItem[] = [
     {
         icon: Building,
-        name: "Công ty của tôi",
+        name: "Công ty",
         url: "/settings/company",
     },
     {

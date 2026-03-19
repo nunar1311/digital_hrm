@@ -24,8 +24,6 @@ interface SettingsClientProps {
     canEdit: boolean;
 }
 
-const DEFAULT_FLYOUT_TOAST = true;
-
 export function SettingsClient({
     initialSettings,
     canEdit,
@@ -36,13 +34,22 @@ export function SettingsClient({
     const queryClient = useQueryClient();
 
     // Local state for flyout toast (for pending changes)
-    const [flyoutToastEnabled, setFlyoutToastEnabled] = useState<boolean>(DEFAULT_FLYOUT_TOAST);
+    const [flyoutToastEnabled, setFlyoutToastEnabled] =
+        useState<boolean>(true);
+    const [keyboardShortcutsEnabled, setKeyboardShortcutsEnabled] =
+        useState<boolean>(true);
 
     // Load from localStorage on mount
     const [savedFlyoutToast, setSavedFlyoutToast] = useLocalStorage({
         key: "settings-flyout-toast",
-        defaultValue: { flyoutToastEnabled: DEFAULT_FLYOUT_TOAST },
+        defaultValue: { flyoutToastEnabled: true },
     });
+
+    const [savedKeyboardShortcuts, setSavedKeyboardShortcuts] =
+        useLocalStorage({
+            key: "settings-keyboard-shortcuts",
+            defaultValue: { keyboardShortcutsEnabled: true },
+        });
 
     // Notify timezone setting
     const [notifyTimezone, setNotifyTimezone] = useLocalStorage({
@@ -58,10 +65,12 @@ export function SettingsClient({
 
             // Save flyout toast setting to localStorage
             setSavedFlyoutToast({ flyoutToastEnabled });
+            setSavedKeyboardShortcuts({ keyboardShortcutsEnabled });
 
             // Show timezone change notification if timezone was changed
             if (result.timezoneChanged) {
-                const newTimezone = settings[SYSTEM_FIELDS.timezone.key];
+                const newTimezone =
+                    settings[SYSTEM_FIELDS.timezone.key];
                 const timezoneLabels: Record<string, string> = {
                     "Asia/Ho_Chi_Minh": "Việt Nam (GMT+7)",
                     "Asia/Bangkok": "Thái Lan (GMT+7)",
@@ -89,18 +98,23 @@ export function SettingsClient({
                     "Australia/Sydney": "Úc - Sydney (GMT+11)",
                     "Australia/Melbourne": "Úc - Melbourne (GMT+11)",
                     "Pacific/Auckland": "New Zealand (GMT+13)",
-                    "UTC": "UTC (GMT+0)",
+                    UTC: "UTC (GMT+0)",
                 };
-                const timezoneLabel = timezoneLabels[newTimezone] || newTimezone;
-                
-                toast.success(`Đã đổi múi giờ thành ${timezoneLabel}`, {
-                    description: "Tất cả người dùng đã được thông báo về thay đổi này.",
-                    duration: 5000,
-                });
+                const timezoneLabel =
+                    timezoneLabels[newTimezone] || newTimezone;
+
+                toast.success(
+                    `Đã đổi múi giờ thành ${timezoneLabel}`,
+                    {
+                        description:
+                            "Tất cả người dùng đã được thông báo về thay đổi này.",
+                        duration: 5000,
+                    },
+                );
             } else {
                 toast.success("Đã lưu cài đặt thành công");
             }
-            
+
             setHasChanges(false);
         } catch (err) {
             toast.error(
@@ -111,13 +125,24 @@ export function SettingsClient({
         } finally {
             setIsSaving(false);
         }
-    }, [settings, flyoutToastEnabled, setSavedFlyoutToast]);
+    }, [
+        settings,
+        flyoutToastEnabled,
+        keyboardShortcutsEnabled,
+        setSavedFlyoutToast,
+        setSavedKeyboardShortcuts,
+    ]);
 
     useEffect(() => {
-        if (savedFlyoutToast) {
-            setFlyoutToastEnabled(savedFlyoutToast.flyoutToastEnabled);
+        if (savedFlyoutToast && savedKeyboardShortcuts) {
+            setFlyoutToastEnabled(
+                savedFlyoutToast.flyoutToastEnabled,
+            );
+            setKeyboardShortcutsEnabled(
+                savedKeyboardShortcuts.keyboardShortcutsEnabled,
+            );
         }
-    }, [savedFlyoutToast]);
+    }, [savedFlyoutToast, savedKeyboardShortcuts]);
 
     // Register keyboard shortcut for save
     useEffect(() => {
@@ -145,6 +170,11 @@ export function SettingsClient({
 
     const handleFlyoutToastChange = (enabled: boolean) => {
         setFlyoutToastEnabled(enabled);
+        setHasChanges(true);
+    };
+
+    const handleKeyboardShortcutsChange = (enabled: boolean) => {
+        setKeyboardShortcutsEnabled(enabled);
         setHasChanges(true);
     };
 
@@ -179,6 +209,12 @@ export function SettingsClient({
                     <SettingPreferences
                         flyoutToastEnabled={flyoutToastEnabled}
                         onFlyoutToastChange={handleFlyoutToastChange}
+                        keyboardShortcutsEnabled={
+                            keyboardShortcutsEnabled
+                        }
+                        onKeyboardShortcutsChange={
+                            handleKeyboardShortcutsChange
+                        }
                     />
 
                     <Separator />
@@ -190,7 +226,9 @@ export function SettingsClient({
                         }
                         canEdit={canEdit}
                         notifyTimezone={notifyTimezone}
-                        onNotifyTimezoneChange={handleNotifyTimezoneChange}
+                        onNotifyTimezoneChange={
+                            handleNotifyTimezoneChange
+                        }
                     />
 
                     <Separator />

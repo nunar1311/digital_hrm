@@ -33,8 +33,10 @@ export function AppSidebar() {
     const pathname = usePathname();
     const { canAny } = useAuth();
 
-    const isSettings = pathname.startsWith("/settings");
-    if (isSettings) {
+    const isSettings = pathname.includes("/settings");
+    const isDashboard = pathname.includes("/dashboard");
+
+    if (isSettings || isDashboard) {
         return null;
     }
 
@@ -49,7 +51,7 @@ export function AppSidebar() {
                 </div>
                 <div className="flex items-center gap-0.5">
                     <div className="flex items-center transition-all duration-150 transform-gpu translate-x-2 group-hover:translate-x-0 gap-0.5 ease-linear opacity-0 group-hover:opacity-100">
-                        <SidebarTrigger className="group-data-[collapsible=icon]:hidden bg-transparent! text-muted-foreground h-7 gap-0!" />
+                        <SidebarTrigger className="group-data-[collapsible=icon]:hidden gap-0!" />
                     </div>
                 </div>
             </SidebarHeader>

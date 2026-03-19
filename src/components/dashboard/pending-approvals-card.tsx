@@ -2,12 +2,25 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, CalendarClock, FileText, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { getPendingApprovals } from "@/app/(protected)/(dashboard)/actions";
+import {
+    Clock,
+    CalendarClock,
+    FileText,
+    CheckCircle,
+    XCircle,
+    Loader2,
+} from "lucide-react";
+import { getPendingApprovals } from "@/app/(protected)/dashboard/actions";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -54,7 +67,10 @@ function PendingApprovalsSkeleton() {
             <CardContent>
                 <div className="space-y-3">
                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-16 bg-muted animate-pulse rounded" />
+                        <div
+                            key={i}
+                            className="h-16 bg-muted animate-pulse rounded"
+                        />
                     ))}
                 </div>
             </CardContent>
@@ -65,12 +81,14 @@ function PendingApprovalsSkeleton() {
 function ExplanationTypeBadge({ type }: { type: string }) {
     const styles: Record<string, string> = {
         LATE: "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-        EARLY_LEAVE: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
+        EARLY_LEAVE:
+            "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
         ABSENT: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-        FORGOT_CHECKOUT: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+        FORGOT_CHECKOUT:
+            "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
         OTHER: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
     };
-    
+
     const labels: Record<string, string> = {
         LATE: "Đi muộn",
         EARLY_LEAVE: "Về sớm",
@@ -78,9 +96,11 @@ function ExplanationTypeBadge({ type }: { type: string }) {
         FORGOT_CHECKOUT: "Quên checkout",
         OTHER: "Khác",
     };
-    
+
     return (
-        <Badge className={cn("text-xs", styles[type] || styles.OTHER)}>
+        <Badge
+            className={cn("text-xs", styles[type] || styles.OTHER)}
+        >
             {labels[type] || type}
         </Badge>
     );
@@ -92,13 +112,15 @@ function ApprovalItem({
     onReject,
     isProcessing,
 }: {
-    item: PendingApprovalsData["overtime"][0] | PendingApprovalsData["explanations"][0];
+    item:
+        | PendingApprovalsData["overtime"][0]
+        | PendingApprovalsData["explanations"][0];
     onApprove: (id: string, type: string) => void;
     onReject: (id: string, type: string) => void;
     isProcessing: boolean;
 }) {
     const isOvertime = item.type === "overtime";
-    
+
     return (
         <div className="flex items-start justify-between py-3 border-b last:border-0">
             <div className="flex-1 min-w-0">
@@ -107,7 +129,10 @@ function ApprovalItem({
                         {item.employeeName}
                     </span>
                     {item.employeeCode && (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge
+                            variant="outline"
+                            className="text-[10px]"
+                        >
                             {item.employeeCode}
                         </Badge>
                     )}
@@ -115,11 +140,18 @@ function ApprovalItem({
                 <div className="text-xs text-muted-foreground">
                     {isOvertime ? (
                         <span>
-                            Ngày {item.date} • {item.hours}h ({item.startTime} - {item.endTime})
+                            Ngày {item.date} • {item.hours}h (
+                            {item.startTime} - {item.endTime})
                         </span>
                     ) : (
                         <div className="flex items-center gap-2">
-                            <ExplanationTypeBadge type={(item as PendingApprovalsData["explanations"][0]).typeDetail} />
+                            <ExplanationTypeBadge
+                                type={
+                                    (
+                                        item as PendingApprovalsData["explanations"][0]
+                                    ).typeDetail
+                                }
+                            />
                             <span>Ngày {item.date}</span>
                         </div>
                     )}
@@ -155,11 +187,14 @@ function ApprovalItem({
 export function PendingApprovalsCard() {
     const { data, isLoading, refetch } = useQuery({
         queryKey: ["pending-approvals"],
-        queryFn: async () => getPendingApprovals() as Promise<PendingApprovalsData>,
+        queryFn: async () =>
+            getPendingApprovals() as Promise<PendingApprovalsData>,
     });
-    
-    const [processingId, setProcessingId] = useState<string | null>(null);
-    
+
+    const [processingId, setProcessingId] = useState<string | null>(
+        null,
+    );
+
     const handleApprove = async (id: string, type: string) => {
         setProcessingId(id);
         try {
@@ -170,7 +205,7 @@ export function PendingApprovalsCard() {
             setProcessingId(null);
         }
     };
-    
+
     const handleReject = async (id: string, type: string) => {
         setProcessingId(id);
         try {
@@ -181,22 +216,28 @@ export function PendingApprovalsCard() {
             setProcessingId(null);
         }
     };
-    
+
     if (isLoading) {
         return <PendingApprovalsSkeleton />;
     }
-    
+
     if (!data) {
         return null;
     }
-    
-    const totalPending = data.overtime.length + data.explanations.length + data.leaves.length;
-    const canApproveAny = data.canApproveOvertime || data.canApproveExplanation || data.canApproveLeave;
-    
+
+    const totalPending =
+        data.overtime.length +
+        data.explanations.length +
+        data.leaves.length;
+    const canApproveAny =
+        data.canApproveOvertime ||
+        data.canApproveExplanation ||
+        data.canApproveLeave;
+
     if (!canApproveAny) {
         return null;
     }
-    
+
     return (
         <Card className="border shadow-sm">
             <CardHeader className="pb-3">
@@ -206,7 +247,10 @@ export function PendingApprovalsCard() {
                         Đơn cần duyệt
                     </CardTitle>
                     {totalPending > 0 && (
-                        <Badge variant="destructive" className="animate-pulse">
+                        <Badge
+                            variant="destructive"
+                            className="animate-pulse"
+                        >
                             {totalPending}
                         </Badge>
                     )}
@@ -221,7 +265,9 @@ export function PendingApprovalsCard() {
                 {totalPending === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                         <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500 opacity-50" />
-                        <p className="text-sm">Không có đơn chờ duyệt</p>
+                        <p className="text-sm">
+                            Không có đơn chờ duyệt
+                        </p>
                     </div>
                 ) : (
                     <ScrollArea className="h-[280px] pr-2">
@@ -231,7 +277,8 @@ export function PendingApprovalsCard() {
                                 <div className="flex items-center gap-2 mb-2">
                                     <CalendarClock className="h-4 w-4 text-blue-500" />
                                     <span className="text-xs font-medium text-muted-foreground uppercase">
-                                        Làm thêm giờ ({data.overtime.length})
+                                        Làm thêm giờ (
+                                        {data.overtime.length})
                                     </span>
                                 </div>
                                 {data.overtime.map((item) => (
@@ -240,19 +287,22 @@ export function PendingApprovalsCard() {
                                         item={item}
                                         onApprove={handleApprove}
                                         onReject={handleReject}
-                                        isProcessing={processingId === item.id}
+                                        isProcessing={
+                                            processingId === item.id
+                                        }
                                     />
                                 ))}
                             </div>
                         )}
-                        
+
                         {/* Explanations */}
                         {data.explanations.length > 0 && (
                             <div className="mb-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     <FileText className="h-4 w-4 text-amber-500" />
                                     <span className="text-xs font-medium text-muted-foreground uppercase">
-                                        Giải trình ({data.explanations.length})
+                                        Giải trình (
+                                        {data.explanations.length})
                                     </span>
                                 </div>
                                 {data.explanations.map((item) => (
@@ -261,19 +311,22 @@ export function PendingApprovalsCard() {
                                         item={item}
                                         onApprove={handleApprove}
                                         onReject={handleReject}
-                                        isProcessing={processingId === item.id}
+                                        isProcessing={
+                                            processingId === item.id
+                                        }
                                     />
                                 ))}
                             </div>
                         )}
-                        
+
                         {/* Leave Requests */}
                         {data.leaves.length > 0 && (
                             <div>
                                 <div className="flex items-center gap-2 mb-2">
                                     <CalendarClock className="h-4 w-4 text-green-500" />
                                     <span className="text-xs font-medium text-muted-foreground uppercase">
-                                        Nghỉ phép ({data.leaves.length})
+                                        Nghỉ phép (
+                                        {data.leaves.length})
                                     </span>
                                 </div>
                                 {/* Leave items would go here */}
@@ -281,10 +334,14 @@ export function PendingApprovalsCard() {
                         )}
                     </ScrollArea>
                 )}
-                
+
                 {totalPending > 0 && (
                     <div className="mt-4 pt-3 border-t">
-                        <Button variant="outline" className="w-full" asChild>
+                        <Button
+                            variant="outline"
+                            className="w-full"
+                            asChild
+                        >
                             <Link href="/attendance">
                                 Xem tất cả đơn
                             </Link>

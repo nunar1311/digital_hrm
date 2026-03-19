@@ -24,18 +24,16 @@ const KEYBOARD_SHORTCUTS = [
 interface SettingPreferencesProps {
     flyoutToastEnabled: boolean;
     onFlyoutToastChange: (enabled: boolean) => void;
+    keyboardShortcutsEnabled: boolean;
+    onKeyboardShortcutsChange: (enabled: boolean) => void;
 }
 
 function SettingPreferences({
     flyoutToastEnabled,
     onFlyoutToastChange,
+    keyboardShortcutsEnabled,
+    onKeyboardShortcutsChange,
 }: SettingPreferencesProps) {
-    const { settings, updateSettings } = useSettings();
-    const keyboardShortcutsEnabled = settings.keyboardShortcutsEnabled;
-
-    const handleKeyboardShortcutsChange = (enabled: boolean) => {
-        updateSettings({ keyboardShortcutsEnabled: enabled });
-    };
 
     return (
         <>
@@ -83,7 +81,7 @@ function SettingPreferences({
                     <Switch
                         id="keyboard-shortcuts"
                         checked={keyboardShortcutsEnabled}
-                        onCheckedChange={handleKeyboardShortcutsChange}
+                        onCheckedChange={onKeyboardShortcutsChange}
                     />
 
                     <Label

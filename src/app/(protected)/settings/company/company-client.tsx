@@ -40,6 +40,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import { SettingsHeader } from "@/components/settings/settings-header";
 import { ReadOnlyNotice } from "@/components/settings/read-only-notice";
+import { Separator } from "@/components/ui/separator";
 
 const companyFormSchema = z.object({
     companyName: z.string().min(1, "Tên công ty không được để trống"),
@@ -536,6 +537,8 @@ export function CompanyPageClient() {
                         </div>
                     </SettingsSection>
 
+                    <Separator />
+
                     {/* Địa chỉ & Liên hệ */}
                     <SettingsSection
                         title="Địa chỉ & Liên hệ"
@@ -761,6 +764,8 @@ export function CompanyPageClient() {
                         </div>
                     </SettingsSection>
 
+                    <Separator />
+
                     {/* Thông tin pháp lý */}
                     <SettingsSection
                         title="Thông tin pháp lý"
@@ -813,6 +818,8 @@ export function CompanyPageClient() {
                             </div>
                         </div>
                     </SettingsSection>
+
+                    <Separator />
 
                     {/* Thông tin ngân hàng */}
                     <SettingsSection

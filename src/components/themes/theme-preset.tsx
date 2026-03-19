@@ -5,6 +5,7 @@ import { ThemeStyleProps } from "@/types/theme";
 import { defaultThemeState } from "@/config/theme";
 import { useSettings } from "@/contexts/settings-context";
 import { cn } from "@/lib/utils";
+import { colorFormatter } from "@/utils/color-converter";
 
 const ThemePreset = ({ className }: { className?: string }) => {
     const { settings, applyThemePreset } = useSettings();
@@ -51,9 +52,15 @@ const ThemePreset = ({ className }: { className?: string }) => {
                 ? defaultThemeState
                 : presets[themeName];
 
-        return theme?.[
+        const rawValue = theme?.[
             settings.mode === "system" ? "light" : settings.mode
         ]?.[color];
+
+        if (!rawValue) return undefined;
+
+        // CSSOM (style.backgroundColor) doesn't support oklch(),
+        // so convert to rgb which all browsers support.
+        return colorFormatter(rawValue, "rgb");
     };
     return (
         <Tabs value={value || ""}>

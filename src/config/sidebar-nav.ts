@@ -47,7 +47,7 @@ export const sidebarNav: NavGroup[] = [
         items: [
             {
                 title: "Dashboard",
-                url: "/",
+                url: "/dashboard",
                 icon: LayoutDashboard,
                 permissions: [Permission.DASHBOARD_VIEW],
             },
