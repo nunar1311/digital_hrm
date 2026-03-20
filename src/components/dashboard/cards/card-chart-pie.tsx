@@ -33,26 +33,32 @@ const CardChartPie = ({ departmentData }: CardChartPieProps) => {
 
     return (
         <CardToolbar title="Phân bổ nhân viên theo phòng ban">
-            <ChartContainer
-                config={chartConfig}
-                className="h-full w-full [&_.recharts-pie-label-text]:fill-foreground"
-            >
-                <PieChart>
-                    <ChartTooltip
-                        content={<ChartTooltipContent hideLabel />}
-                    />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Pie
-                        data={departmentData}
-                        dataKey="count"
-                        label={({ department, count }) =>
-                            `${department}: ${count}`
-                        }
-                        nameKey="department"
-                        isAnimationActive={false}
-                    />
-                </PieChart>
-            </ChartContainer>
+            <div className="h-full w-full">
+                <ChartContainer
+                    config={chartConfig}
+                    className="h-full w-full [&_.recharts-pie-label-text]:fill-foreground"
+                >
+                    <PieChart>
+                        <ChartTooltip
+                            content={
+                                <ChartTooltipContent hideLabel />
+                            }
+                        />
+                        <ChartLegend
+                            content={<ChartLegendContent />}
+                        />
+                        <Pie
+                            data={departmentData}
+                            dataKey="count"
+                            label={({ department, count }) =>
+                                `${department}: ${count}`
+                            }
+                            nameKey="department"
+                            isAnimationActive={false}
+                        />
+                    </PieChart>
+                </ChartContainer>
+            </div>
         </CardToolbar>
     );
 };

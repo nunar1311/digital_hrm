@@ -87,39 +87,37 @@ const DashboardClient = ({
     }, [autoRefresh]);
 
     // TanStack Query for dashboard data
-    const { data: stats = initialStats } = useQuery({
-        queryKey: ["dashboard-stats"],
-        queryFn: getDashboardStats,
-        initialData: initialStats,
-        staleTime: 30 * 1000, // 30 seconds
-    });
-
-    const { data: attendanceTrendData = attendanceTrendDataProp } =
+    const { data: stats = initialStats, isRefetching: isRefetchingStats } =
         useQuery({
-            queryKey: ["dashboard-attendance-trend"],
-            queryFn: getAttendanceTrend,
-            initialData: attendanceTrendDataProp,
-            staleTime: 30 * 1000,
+            queryKey: ["dashboard-stats"],
+            queryFn: getDashboardStats,
+            initialData: initialStats,
+            staleTime: 30 * 1000, // 30 seconds
         });
 
-    const { data: departmentData = departmentDataProp } = useQuery({
+    const {
+        data: attendanceTrendData = attendanceTrendDataProp,
+        isRefetching: isRefetchingTrend,
+    } = useQuery({
+        queryKey: ["dashboard-attendance-trend"],
+        queryFn: getAttendanceTrend,
+        initialData: attendanceTrendDataProp,
+        staleTime: 30 * 1000,
+    });
+
+    const {
+        data: departmentData = departmentDataProp,
+        isRefetching: isRefetchingDept,
+    } = useQuery({
         queryKey: ["dashboard-department-distribution"],
         queryFn: getDepartmentDistribution,
         initialData: departmentDataProp,
         staleTime: 30 * 1000,
     });
 
-    // Check if any query is fetching
+    // Check if any query is refetching
     const isRefetching =
-        queryClient.isFetching({
-            queryKey: ["dashboard-stats"],
-        }) > 0 ||
-        queryClient.isFetching({
-            queryKey: ["dashboard-attendance-trend"],
-        }) > 0 ||
-        queryClient.isFetching({
-            queryKey: ["dashboard-department-distribution"],
-        }) > 0;
+        isRefetchingStats || isRefetchingTrend || isRefetchingDept;
 
     const toggleFullscreen = useCallback(async () => {
         try {

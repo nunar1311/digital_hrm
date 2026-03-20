@@ -38,57 +38,61 @@ const CardChartAreaInteractive = ({
 }: CardChartAreaInteractiveProps) => {
     return (
         <CardToolbar title="Nhân sự đang hoạt động">
-            <ChartContainer
-                config={chartConfig}
-                className="h-full w-full"
-            >
-                <AreaChart
-                    accessibilityLayer
-                    data={trendData}
-                    margin={{
-                        left: -20,
-                        right: 12,
-                    }}
+            <div className="h-full w-full">
+                <ChartContainer
+                    config={chartConfig}
+                    className="h-full w-full"
                 >
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                        dataKey="month"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={8}
-                    />
-                    <YAxis
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={8}
-                        tickCount={3}
-                        allowDecimals={false}
-                    />
-                    <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent />}
-                    />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Area
-                        dataKey="late"
-                        type="natural"
-                        fill="var(--color-late)"
-                        fillOpacity={0.4}
-                        stroke="var(--color-late)"
-                        stackId="a"
-                        isAnimationActive={false}
-                    />
-                    <Area
-                        dataKey="onTime"
-                        type="natural"
-                        fill="var(--color-onTime)"
-                        fillOpacity={0.4}
-                        stroke="var(--color-onTime)"
-                        stackId="a"
-                        isAnimationActive={false}
-                    />
-                </AreaChart>
-            </ChartContainer>
+                    <AreaChart
+                        accessibilityLayer
+                        data={trendData}
+                        margin={{
+                            left: -20,
+                            right: 12,
+                        }}
+                    >
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                            dataKey="month"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                        />
+                        <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            tickCount={3}
+                            allowDecimals={false}
+                        />
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent />}
+                        />
+                        <ChartLegend
+                            content={<ChartLegendContent />}
+                        />
+                        <Area
+                            dataKey="late"
+                            type="natural"
+                            fill="var(--color-late)"
+                            fillOpacity={0.4}
+                            stroke="var(--color-late)"
+                            stackId="a"
+                            isAnimationActive={false}
+                        />
+                        <Area
+                            dataKey="onTime"
+                            type="natural"
+                            fill="var(--color-onTime)"
+                            fillOpacity={0.4}
+                            stroke="var(--color-onTime)"
+                            stackId="a"
+                            isAnimationActive={false}
+                        />
+                    </AreaChart>
+                </ChartContainer>
+            </div>
         </CardToolbar>
     );
 };

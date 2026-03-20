@@ -1,7 +1,7 @@
 type CardEntry = {
     id: string;
     title: string;
-    content: React.ReactNode;
+    content?: React.ReactNode;
 };
 
 const listeners = new Set<() => void>();

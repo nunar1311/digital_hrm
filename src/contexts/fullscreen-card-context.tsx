@@ -173,6 +173,9 @@ export function FullscreenCardProvider({
                     className="sm:max-w-[95vw] sm:max-h-[90vh] h-[90vh] w-[95vw] p-2 overflow-hidden flex flex-col gap-0"
                     onInteractOutside={(e) => e.preventDefault()}
                     onEscapeKeyDown={() => setFullscreenOpen(false)}
+                    data-fullscreen-open={
+                        fullscreenOpen ? "true" : undefined
+                    }
                 >
                     {/* Dialog header */}
                     <div className="flex items-center justify-between shrink-0">
@@ -242,7 +245,7 @@ export function FullscreenCardProvider({
                     </div>
 
                     {/* Dialog content */}
-                    <div className="flex-1 min-h-0 min-w-0 overflow-auto px-6 py-4 border rounded-lg">
+                    <div className="flex-1 min-h-0 min-w-0 overflow-auto mt-2 px-6 py-4 border rounded-lg">
                         {currentCard?.content}
                     </div>
                 </DialogContent>

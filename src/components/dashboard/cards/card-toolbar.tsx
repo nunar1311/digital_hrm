@@ -59,25 +59,40 @@ const CardToolbar = forwardRef<
         if (settingsOpen) setSettingsOpen(false);
     });
 
+    const contentRef = useRef<HTMLDivElement>(null);
+    const contentRenderedRef = useRef(false);
+
     useImperativeHandle(ref, () => ({
         openSettings: () => setSettingsOpen(true),
         closeSettings: () => setSettingsOpen(false),
     }));
 
-    // Register this card in the registry when title/content changes
-    const contentRef = useRef<HTMLDivElement>(null);
-
     useEffect(() => {
         if (!widget?.id) return;
-        cardRegistry.register({
-            id: widget.id,
-            title,
-            content: <div ref={contentRef}>{children}</div>,
-        });
+        const updateRegistry = () => {
+            cardRegistry.register({
+                id: widget.id,
+                title,
+                content: (
+                    <div
+                        ref={contentRef}
+                        className="card-content-wrapper w-full h-full"
+                    >
+                        {children}
+                    </div>
+                ),
+            });
+            contentRenderedRef.current = true;
+        };
+        if (contentRenderedRef.current || !contentRef.current) {
+            updateRegistry();
+        }
         return () => {
             cardRegistry.unregister(widget.id);
+            contentRenderedRef.current = false;
         };
-    }, [widget?.id, title, children]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [widget?.id, title]);
 
     const handleOpenFullscreen = () => {
         if (!widget?.id) return;
@@ -175,12 +190,14 @@ const CardToolbar = forwardRef<
             </div>
 
             <div className="h-[calc(100%-var(--toolbar-height))] w-full relative top-(--toolbar-height) flex flex-col">
-                <CardContent className="px-4 pb-4 flex-1 min-h-0 min-w-0 flex items-center justify-center relative">
-                    {children}
+                <CardContent className="px-4 pb-4 flex-1 min-h-0 min-w-0 flex items-center w-full h-full">
+                    <div className="card-content-wrapper w-full h-full">
+                        {children}
+                    </div>
                 </CardContent>
             </div>
 
-            {/* ── Settings Panel (slides in from right, inside card) ── */}
+            {/* Settings Panel (slides in from right, inside card) */}
             {settingsContent && (
                 <div
                     ref={settingsPanelRef}
