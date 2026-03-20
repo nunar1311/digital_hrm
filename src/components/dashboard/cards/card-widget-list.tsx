@@ -601,13 +601,14 @@ interface EmployeeTableDashboardProps {
     setEmploymentFilter: (v: string) => void;
     searchValue: string;
     setSearchValue: (v: string) => void;
+    toolbarRef: React.RefObject<CardToolbarRef>;
+    editMode: boolean;
 }
 
 const EmployeeTableDashboard = ({
     employees,
     isLoading,
     globalOffset,
-    isFetching,
     sorting,
     handleViewEmployee,
     columnVisibility,
@@ -619,6 +620,8 @@ const EmployeeTableDashboard = ({
     setEmploymentFilter,
     searchValue,
     setSearchValue,
+    toolbarRef,
+    editMode,
 }: EmployeeTableDashboardProps) => {
     const [searchExpanded, setSearchExpanded] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -663,84 +666,99 @@ const EmployeeTableDashboard = ({
     return (
         <div className="flex flex-col h-full w-full gap-2">
             {/* ── Filters ── */}
-            <div className="flex items-center justify-end gap-2 flex-wrap shrink-0">
-                <Select
-                    value={statusFilter}
-                    onValueChange={(v) => {
-                        setStatusFilter(v);
-                    }}
-                >
-                    <SelectTrigger size="sm">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {STATUS_OPTIONS.map((opt) => (
-                            <SelectItem
-                                key={opt.value}
-                                value={opt.value}
-                            >
-                                {opt.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+            {editMode && (
+                <div className="flex items-center justify-end gap-2 flex-wrap shrink-0">
+                    <Select
+                        value={statusFilter}
+                        onValueChange={(v) => {
+                            setStatusFilter(v);
+                        }}
+                    >
+                        <SelectTrigger size="sm" className="h-7!">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {STATUS_OPTIONS.map((opt) => (
+                                <SelectItem
+                                    key={opt.value}
+                                    value={opt.value}
+                                >
+                                    {opt.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
-                <Select
-                    value={employmentFilter}
-                    onValueChange={(v) => {
-                        setEmploymentFilter(v);
-                    }}
-                >
-                    <SelectTrigger size="sm">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {EMPLOYMENT_TYPE_OPTIONS.map((opt) => (
-                            <SelectItem
-                                key={opt.value}
-                                value={opt.value}
-                            >
-                                {opt.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                    <Select
+                        value={employmentFilter}
+                        onValueChange={(v) => {
+                            setEmploymentFilter(v);
+                        }}
+                    >
+                        <SelectTrigger size="sm" className="h-7!">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {EMPLOYMENT_TYPE_OPTIONS.map((opt) => (
+                                <SelectItem
+                                    key={opt.value}
+                                    value={opt.value}
+                                >
+                                    {opt.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
-                {/* Handle search */}
-                <div
-                    className="relative flex items-center"
-                    ref={searchContainerRef}
-                >
-                    <Input
-                        ref={searchInputRef}
-                        value={searchValue}
-                        onChange={(e) =>
-                            setSearchValue(e.target.value)
-                        }
-                        onKeyDown={handleSearchKeyDown}
-                        placeholder="Tìm kiếm..."
-                        className={cn(
-                            "h-7 text-xs transition-all duration-300 ease-in-out pr-6",
-                            searchExpanded
-                                ? "w-50 opacity-100 pl-3"
-                                : "w-0 opacity-0 pl-0",
-                        )}
+                    {/* Handle search */}
+                    <div
+                        className="relative flex items-center"
+                        ref={searchContainerRef}
+                    >
+                        <Input
+                            ref={searchInputRef}
+                            value={searchValue}
+                            onChange={(e) =>
+                                setSearchValue(e.target.value)
+                            }
+                            onKeyDown={handleSearchKeyDown}
+                            placeholder="Tìm kiếm..."
+                            className={cn(
+                                "h-7 text-xs transition-all duration-300 ease-in-out pr-6",
+                                searchExpanded
+                                    ? "w-50 opacity-100 pl-3"
+                                    : "w-0 opacity-0 pl-0",
+                            )}
+                        />
+                        <Button
+                            size={"icon-xs"}
+                            variant={"ghost"}
+                            onClick={handleSearchToggle}
+                            className={cn(
+                                "absolute right-0.5 z-10",
+                                searchExpanded &&
+                                    "[&_svg]:text-primary",
+                            )}
+                        >
+                            <Search />
+                        </Button>
+                    </div>
+                    <Separator
+                        orientation="vertical"
+                        className="h-4!"
                     />
+
                     <Button
                         size={"icon-xs"}
                         variant={"ghost"}
-                        onClick={handleSearchToggle}
-                        className={cn(
-                            "absolute right-0.5 z-10",
-                            searchExpanded && "[&_svg]:text-primary",
-                        )}
+                        onClick={() =>
+                            toolbarRef.current?.openSettings()
+                        }
                     >
-                        <Search />
+                        <Settings className="size-3.5" />
                     </Button>
                 </div>
-                <Separator orientation="vertical" className="h-4!" />
-                {/* Removed settings button from here as it's better placed in the toolbar header or handled via context if needed. Currently settings are in CardToolbar. */}
-            </div>
+            )}
 
             {/* ── Table ── */}
             <EmployeeTable
@@ -761,10 +779,12 @@ const EmployeeTableDashboard = ({
 
 interface CardWidgetListProps {
     initialEmployees: GetEmployeesResult;
+    editMode?: boolean;
 }
 
 const CardWidgetList = ({
     initialEmployees,
+    editMode = false,
 }: CardWidgetListProps) => {
     const toolbarRef = useRef<CardToolbarRef>(null);
 
@@ -980,6 +1000,10 @@ const CardWidgetList = ({
             settingsContent={settingsContent}
         >
             <EmployeeTableDashboard
+                editMode={editMode}
+                toolbarRef={
+                    toolbarRef as React.RefObject<CardToolbarRef>
+                }
                 employees={employees}
                 isLoading={isLoading}
                 globalOffset={globalOffset}

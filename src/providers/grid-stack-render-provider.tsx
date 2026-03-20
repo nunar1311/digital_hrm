@@ -119,7 +119,7 @@ export function GridStackRenderProvider({
         }
     }, [initialOptions, gridStack, setGridStack, initGrid]);
 
-    // Toggle gs-static class based on editMode
+    // Toggle drag/resize and gs-static class based on editMode
     useEffect(() => {
         if (!gridStack) return;
 
@@ -131,6 +131,12 @@ export function GridStackRenderProvider({
                 el.classList.add("gs-static");
             }
         });
+
+        if (editMode) {
+            gridStack.enable();
+        } else {
+            gridStack.disable();
+        }
     }, [editMode, gridStack]);
 
     // Ref to store previous layout for undo
@@ -245,10 +251,11 @@ export function GridStackRenderProvider({
                             ) || null
                         );
                     },
+                    editMode,
                 }),
                 // ! gridStack is required to reinitialize the grid when the options change
                 // eslint-disable-next-line react-hooks/exhaustive-deps
-                [gridStack, renderTick],
+                [gridStack, renderTick, editMode],
             )}
         >
             <div ref={containerRef} className="grid-stack w-full">

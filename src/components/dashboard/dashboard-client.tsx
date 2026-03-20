@@ -7,7 +7,13 @@ import {
     useEffect,
     useMemo,
 } from "react";
-import { Maximize2, Minimize2, RefreshCw } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+    Clock7,
+    Maximize2,
+    Minimize2,
+    RefreshCw,
+} from "lucide-react";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 import { Button } from "../ui/button";
@@ -20,14 +26,24 @@ import DashboardMain from "./dashboard-main";
 import { PdfExportOverlay } from "./pdf-export-overlay";
 import { GridStackProvider } from "@/providers/grid-stack-provider";
 import { GridStackRenderProvider } from "@/providers/grid-stack-render-provider";
+import { FullscreenCardProvider } from "@/contexts/fullscreen-card-context";
 import { GridStackOptions } from "gridstack";
 import AddCardDialog from "./add-card-dialog";
+import {
+    getDashboardStats,
+    getAttendanceTrend,
+    getDepartmentDistribution,
+} from "@/app/(protected)/dashboard/actions";
 import type {
     DashboardStats,
     AttendanceTrendItem,
     DepartmentDistributionItem,
 } from "@/app/(protected)/dashboard/actions";
 import type { GetEmployeesResult } from "@/app/(protected)/employees/actions";
+import { cn } from "@/lib/utils";
+import { Separator } from "../ui/separator";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 
 interface DashboardClientProps {
     initialStats: DashboardStats;
@@ -39,16 +55,71 @@ interface DashboardClientProps {
 const DashboardClient = ({
     initialStats,
     initialEmployees,
-    attendanceTrendData,
-    departmentData,
+    attendanceTrendData: attendanceTrendDataProp,
+    departmentData: departmentDataProp,
 }: DashboardClientProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const mainRef = useRef<HTMLDivElement>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [editMode, setEditMode] = useState(false);
+    const queryClient = useQueryClient();
 
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState("");
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [autoRefresh, setAutoRefresh] = useState(() => {
+        if (typeof window !== "undefined") {
+            return (
+                localStorage.getItem("dashboard-auto-refresh") ===
+                "true"
+            );
+        }
+        return false;
+    });
+    const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Save auto-refresh to localStorage
+    useEffect(() => {
+        localStorage.setItem(
+            "dashboard-auto-refresh",
+            String(autoRefresh),
+        );
+    }, [autoRefresh]);
+
+    // TanStack Query for dashboard data
+    const { data: stats = initialStats } = useQuery({
+        queryKey: ["dashboard-stats"],
+        queryFn: getDashboardStats,
+        initialData: initialStats,
+        staleTime: 30 * 1000, // 30 seconds
+    });
+
+    const { data: attendanceTrendData = attendanceTrendDataProp } =
+        useQuery({
+            queryKey: ["dashboard-attendance-trend"],
+            queryFn: getAttendanceTrend,
+            initialData: attendanceTrendDataProp,
+            staleTime: 30 * 1000,
+        });
+
+    const { data: departmentData = departmentDataProp } = useQuery({
+        queryKey: ["dashboard-department-distribution"],
+        queryFn: getDepartmentDistribution,
+        initialData: departmentDataProp,
+        staleTime: 30 * 1000,
+    });
+
+    // Check if any query is fetching
+    const isRefetching =
+        queryClient.isFetching({
+            queryKey: ["dashboard-stats"],
+        }) > 0 ||
+        queryClient.isFetching({
+            queryKey: ["dashboard-attendance-trend"],
+        }) > 0 ||
+        queryClient.isFetching({
+            queryKey: ["dashboard-department-distribution"],
+        }) > 0;
 
     const toggleFullscreen = useCallback(async () => {
         try {
@@ -77,6 +148,7 @@ const DashboardClient = ({
             return;
         }
 
+        // Export PDF
         const exportPdf = async () => {
             setExportProgress("Đang chuẩn bị dữ liệu...");
             await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -212,6 +284,25 @@ const DashboardClient = ({
         }
     }, []);
 
+    const handleRefresh = useCallback(async () => {
+        try {
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: ["dashboard-stats"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["dashboard-attendance-trend"],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ["dashboard-department-distribution"],
+                }),
+            ]);
+            setLastUpdated(new Date());
+        } catch {
+            toast.error("Không thể làm mới dữ liệu");
+        }
+    }, [queryClient]);
+
     useEffect(() => {
         const handleFullscreenChange = () => {
             setIsFullscreen(Boolean(document.fullscreenElement));
@@ -254,9 +345,9 @@ const DashboardClient = ({
                         name: "totalEmployees",
                         props: {
                             title: "Tổng nhân viên",
-                            total: initialStats.totalEmployees,
+                            total: stats.totalEmployees,
                             label: "nhân viên",
-                            percentage: initialStats.totalPercentage,
+                            percentage: stats.totalPercentage,
                         },
                     }),
                 },
@@ -270,10 +361,9 @@ const DashboardClient = ({
                         name: "totalEmployeesWorking",
                         props: {
                             title: "Tổng nhân viên đang làm việc",
-                            total: initialStats.totalEmployeesWorking,
+                            total: stats.totalEmployeesWorking,
                             label: "nhân viên",
-                            percentage:
-                                initialStats.workingPercentage,
+                            percentage: stats.workingPercentage,
                         },
                     }),
                 },
@@ -287,9 +377,9 @@ const DashboardClient = ({
                         name: "newEmployees",
                         props: {
                             title: "Tổng nhân viên mới",
-                            total: initialStats.newEmployees,
+                            total: stats.newEmployees,
                             label: "nhân viên mới",
-                            percentage: initialStats.newPercentage,
+                            percentage: stats.newPercentage,
                         },
                     }),
                 },
@@ -303,10 +393,9 @@ const DashboardClient = ({
                         name: "resignedEmployees",
                         props: {
                             title: "Tổng nhân viên nghỉ",
-                            total: initialStats.resignedEmployees,
+                            total: stats.resignedEmployees,
                             label: "nhân viên nghỉ",
-                            percentage:
-                                initialStats.resignedPercentage,
+                            percentage: stats.resignedPercentage,
                         },
                     }),
                 },
@@ -354,96 +443,176 @@ const DashboardClient = ({
             attendanceTrendData,
             departmentData,
             initialEmployees,
-            initialStats.newEmployees,
-            initialStats.newPercentage,
-            initialStats.resignedEmployees,
-            initialStats.resignedPercentage,
-            initialStats.totalEmployees,
-            initialStats.totalEmployeesWorking,
-            initialStats.totalPercentage,
-            initialStats.workingPercentage,
+            stats.newEmployees,
+            stats.newPercentage,
+            stats.resignedEmployees,
+            stats.resignedPercentage,
+            stats.totalEmployees,
+            stats.totalEmployeesWorking,
+            stats.totalPercentage,
+            stats.workingPercentage,
         ],
     );
+
+    // Auto-refresh timer (60 seconds)
+    useEffect(() => {
+        if (autoRefresh) {
+            autoRefreshTimerRef.current = setInterval(() => {
+                queryClient.invalidateQueries({
+                    queryKey: ["dashboard-stats"],
+                });
+                queryClient.invalidateQueries({
+                    queryKey: ["dashboard-attendance-trend"],
+                });
+                queryClient.invalidateQueries({
+                    queryKey: ["dashboard-department-distribution"],
+                });
+                setLastUpdated(new Date());
+            }, 60 * 1000);
+        } else {
+            if (autoRefreshTimerRef.current) {
+                clearInterval(autoRefreshTimerRef.current);
+                autoRefreshTimerRef.current = null;
+            }
+        }
+
+        return () => {
+            if (autoRefreshTimerRef.current) {
+                clearInterval(autoRefreshTimerRef.current);
+                autoRefreshTimerRef.current = null;
+            }
+        };
+    }, [autoRefresh, queryClient]);
 
     return (
         <GridStackProvider
             initialOptions={gridOptions}
             editMode={editMode}
         >
-            <div
-                ref={containerRef}
-                className="h-[calc(100vh-3rem)] flex flex-col overflow-hidden min-h-0"
-            >
-                <section className="flex flex-col overflow-hidden min-h-0">
-                    <header className="border-b h-12 flex items-center justify-between px-2">
-                        <h2 className="font-semibold">
-                            Bảng điều khiển
-                        </h2>
-
-                        <div className="shrink-0 flex items-center gap-x-2">
-                            <DashboardOption
-                                onPrint={handleExportPdf}
-                                isExporting={isExporting}
-                            />
-                            <DashboardDownload
-                                onPrint={handleExportPdf}
-                                isExporting={isExporting}
-                            />
-                            <Button
-                                onClick={toggleFullscreen}
-                                tooltip={
-                                    isFullscreen
-                                        ? "Thoát toàn màn hình"
-                                        : "Mở bảng điều khiển trên toàn màn hình"
-                                }
-                                size={"icon-sm"}
-                                variant={"ghost"}
-                            >
-                                {isFullscreen ? (
-                                    <Minimize2 />
-                                ) : (
-                                    <Maximize2 />
-                                )}
-                            </Button>
-                        </div>
-                    </header>
-                    <nav className="flex items-center justify-between p-2 border-b h-10">
-                        <div className="flex items-center gap-x-2">
-                            <Switch
-                                id="edit-mode"
-                                checked={editMode}
-                                onCheckedChange={setEditMode}
-                                className="h-4 w-6"
-                            />
-                            <Label htmlFor="edit-mode">
-                                Chế độ chỉnh sửa
-                            </Label>
-                        </div>
-                        <div className="flex items-center gap-x-2">
-                            <Button variant="ghost" size="xs">
-                                <RefreshCw />
-                                Làm mới
-                            </Button>
-
-                            <AddCardDialog />
-                        </div>
-                    </nav>
-                </section>
-                <main
-                    ref={mainRef}
-                    data-dashboard-export
-                    className="flex flex-1 min-h-0 overflow-auto"
+            <FullscreenCardProvider>
+                <div
+                    ref={containerRef}
+                    className="h-[calc(100vh-3rem)] flex flex-col overflow-hidden min-h-0"
                 >
-                    <GridStackRenderProvider>
-                        <DashboardMain />
-                    </GridStackRenderProvider>
-                </main>
-                <PdfExportOverlay
-                    isOpen={isExporting}
-                    progress={exportProgress}
-                    onCancel={() => setIsExporting(false)}
-                />
-            </div>
+                    <section className="flex flex-col overflow-hidden min-h-0">
+                        <header className="border-b h-12 flex items-center justify-between px-2">
+                            <h2 className="font-semibold">
+                                Bảng điều khiển
+                            </h2>
+
+                            <div className="shrink-0 flex items-center gap-x-2">
+                                <DashboardOption
+                                    onPrint={handleExportPdf}
+                                    isExporting={isExporting}
+                                />
+                                <DashboardDownload
+                                    onPrint={handleExportPdf}
+                                    isExporting={isExporting}
+                                />
+                                <Button
+                                    onClick={toggleFullscreen}
+                                    tooltip={
+                                        isFullscreen
+                                            ? "Thoát toàn màn hình"
+                                            : "Mở bảng điều khiển trên toàn màn hình"
+                                    }
+                                    size={"icon-sm"}
+                                    variant={"ghost"}
+                                >
+                                    {isFullscreen ? (
+                                        <Minimize2 />
+                                    ) : (
+                                        <Maximize2 />
+                                    )}
+                                </Button>
+                            </div>
+                        </header>
+                        <nav className="flex items-center justify-between p-2 border-b h-10">
+                            <div className="flex items-center gap-x-2">
+                                <Switch
+                                    id="edit-mode"
+                                    checked={editMode}
+                                    onCheckedChange={setEditMode}
+                                    className="h-4 w-6"
+                                />
+                                <Label htmlFor="edit-mode">
+                                    Chế độ chỉnh sửa
+                                </Label>
+                            </div>
+                            <div className="flex items-center gap-x-2">
+                                <Button
+                                    variant="ghost"
+                                    size="xs"
+                                    onClick={handleRefresh}
+                                    disabled={isRefetching}
+                                >
+                                    <RefreshCw
+                                        className={cn(
+                                            isRefetching &&
+                                                "animate-spin",
+                                        )}
+                                    />
+
+                                    {isRefetching
+                                        ? "Đang tải..."
+                                        : `Làm mới ${
+                                              lastUpdated
+                                                  ? formatDistanceToNow(
+                                                        lastUpdated,
+                                                        {
+                                                            addSuffix: true,
+                                                            locale: vi,
+                                                        },
+                                                    )
+                                                  : "vừa xong"
+                                          }`}
+                                </Button>
+
+                                <Button
+                                    variant={
+                                        autoRefresh
+                                            ? "outline"
+                                            : "ghost"
+                                    }
+                                    size="xs"
+                                    onClick={() =>
+                                        setAutoRefresh(!autoRefresh)
+                                    }
+                                    className={cn(
+                                        autoRefresh &&
+                                            "text-primary hover:text-primary bg-primary/10 hover:bg-primary/10",
+                                    )}
+                                >
+                                    <Clock7 />
+                                    Tự động làm mới:{" "}
+                                    {autoRefresh ? "Bật" : "Tắt"}
+                                </Button>
+
+                                <Separator
+                                    orientation="vertical"
+                                    className="h-4!"
+                                />
+
+                                <AddCardDialog />
+                            </div>
+                        </nav>
+                    </section>
+                    <main
+                        ref={mainRef}
+                        data-dashboard-export
+                        className="flex flex-1 min-h-0 overflow-auto"
+                    >
+                        <GridStackRenderProvider>
+                            <DashboardMain />
+                        </GridStackRenderProvider>
+                    </main>
+                    <PdfExportOverlay
+                        isOpen={isExporting}
+                        progress={exportProgress}
+                        onCancel={() => setIsExporting(false)}
+                    />
+                </div>
+            </FullscreenCardProvider>
         </GridStackProvider>
     );
 };

@@ -7,6 +7,7 @@ interface CardWidgetCalculationProps {
     total: number;
     label: string;
     percentage: number;
+    editMode?: boolean;
 }
 
 const CardWidgetCalculation = ({

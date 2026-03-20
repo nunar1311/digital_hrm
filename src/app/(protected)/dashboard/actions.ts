@@ -28,7 +28,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     await requirePermission(Permission.DASHBOARD_VIEW);
 
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfMonth = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1,
+    );
     const startOfPrevMonth = new Date(
         now.getFullYear(),
         now.getMonth() - 1,
@@ -95,7 +99,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     ]);
 
     const pct = (current: number, previous: number) =>
-        previous === 0 ? (current > 0 ? 100 : 0) : ((current - previous) / previous) * 100;
+        previous === 0
+            ? current > 0
+                ? 100
+                : 0
+            : ((current - previous) / previous) * 100;
 
     return {
         totalEmployees,
@@ -121,7 +129,7 @@ export async function getDashboardEmployees(
 // ─── Types: Chart Data ───────────────────────────────────────────────────────
 
 export interface AttendanceTrendItem {
-    month: string;       // "Th01", "Th02", ...
+    month: string; // "Th01", "Th02", ...
     onTime: number;
     late: number;
 }
@@ -135,20 +143,40 @@ export interface DepartmentDistributionItem {
 // ─── getAttendanceTrend ──────────────────────────────────────────────────────
 
 const MONTH_LABELS = [
-    "Th01", "Th02", "Th03", "Th04", "Th05", "Th06",
-    "Th07", "Th08", "Th09", "Th10", "Th11", "Th12",
+    "Th01",
+    "Th02",
+    "Th03",
+    "Th04",
+    "Th05",
+    "Th06",
+    "Th07",
+    "Th08",
+    "Th09",
+    "Th10",
+    "Th11",
+    "Th12",
 ];
 
-export async function getAttendanceTrend(): Promise<AttendanceTrendItem[]> {
+export async function getAttendanceTrend(): Promise<
+    AttendanceTrendItem[]
+> {
     await requirePermission(Permission.DASHBOARD_VIEW);
 
     const now = new Date();
-    
+
     // Build 12 months range (current month + 11 previous)
     const months: { start: Date; end: Date; label: string }[] = [];
     for (let i = 11; i >= 0; i--) {
-        const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        const start = new Date(
+            now.getFullYear(),
+            now.getMonth() - i,
+            1,
+        );
+        const end = new Date(
+            now.getFullYear(),
+            now.getMonth() - i + 1,
+            1,
+        );
         months.push({
             start,
             end,
@@ -190,9 +218,12 @@ const CHART_COLORS = [
     "var(--chart-3)",
     "var(--chart-4)",
     "var(--chart-5)",
+    "var(--chart-6)",
 ];
 
-export async function getDepartmentDistribution(): Promise<DepartmentDistributionItem[]> {
+export async function getDepartmentDistribution(): Promise<
+    DepartmentDistributionItem[]
+> {
     await requirePermission(Permission.DASHBOARD_VIEW);
 
     const departments = await prisma.department.findMany({
@@ -235,10 +266,9 @@ export async function getDepartmentDistribution(): Promise<DepartmentDistributio
         items.push({
             department: "Chưa phân bổ",
             count: noDeptCount,
-            fill: "var(--chart-5)",
+            fill: "var(--chart-0)",
         });
     }
 
     return items;
 }
-

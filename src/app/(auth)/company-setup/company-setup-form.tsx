@@ -1,7 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Building2, Loader2, MapPin, Phone, Globe, FileText, Banknote } from "lucide-react";
+import {
+    Building2,
+    Loader2,
+    MapPin,
+    Phone,
+    Globe,
+    FileText,
+    Banknote,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -42,7 +50,10 @@ const setupSchema = z.object({
         .string()
         .min(2, "Tên công ty phải có ít nhất 2 ký tự"),
     companyCode: z.string().optional(),
-    companyEmail: z.string().email("Email không hợp lệ").or(z.literal("")),
+    companyEmail: z
+        .string()
+        .email("Email không hợp lệ")
+        .or(z.literal("")),
     companyPhone: z.string().optional(),
     companyTaxCode: z.string().optional(),
     companyAddress: z.string().optional(),
@@ -50,7 +61,10 @@ const setupSchema = z.object({
     companyDistrict: z.string().optional(),
     companyCity: z.string().optional(),
     companyCountry: z.string().min(1, "Vui lòng chọn quốc gia"),
-    companyWebsite: z.string().url("URL không hợp lệ").or(z.literal("")),
+    companyWebsite: z
+        .string()
+        .url("URL không hợp lệ")
+        .or(z.literal("")),
     companyDescription: z.string().optional(),
     companyIndustry: z.string().optional(),
     companyFoundedDate: z.string().optional(),
@@ -173,7 +187,7 @@ export function CompanySetupForm() {
     const isPending = createMutation.isPending;
 
     return (
-        <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <Card className="w-3xl sm:max-h-[90vh] overflow-y-auto">
             <CardHeader className="space-y-1 text-center">
                 <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                     <Building2 className="size-8" />
@@ -182,7 +196,8 @@ export function CompanySetupForm() {
                     Tạo hồ sơ công ty
                 </CardTitle>
                 <CardDescription>
-                    Thiết lập thông tin công ty để bắt đầu sử dụng hệ thống
+                    Thiết lập thông tin công ty để bắt đầu sử dụng hệ
+                    thống
                 </CardDescription>
             </CardHeader>
 
@@ -203,13 +218,17 @@ export function CompanySetupForm() {
                                         <FormItem>
                                             <FormLabel>
                                                 Tên công ty{" "}
-                                                <span className="text-destructive">*</span>
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="Tên công ty"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -221,12 +240,16 @@ export function CompanySetupForm() {
                                     name="companyCode"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Mã công ty</FormLabel>
+                                            <FormLabel>
+                                                Mã công ty
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="Mã số doanh nghiệp"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -238,13 +261,17 @@ export function CompanySetupForm() {
                                     name="companyEmail"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Email công ty</FormLabel>
+                                            <FormLabel>
+                                                Email công ty
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     type="email"
                                                     placeholder="contact@company.com"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -256,12 +283,16 @@ export function CompanySetupForm() {
                                     name="companyPhone"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Điện thoại</FormLabel>
+                                            <FormLabel>
+                                                Điện thoại
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="024-xxxx-xxxx"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -273,21 +304,36 @@ export function CompanySetupForm() {
                                     name="companyIndustry"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Ngành nghề</FormLabel>
+                                            <FormLabel>
+                                                Ngành nghề
+                                            </FormLabel>
                                             <Select
                                                 value={field.value}
-                                                onValueChange={field.onChange}
+                                                onValueChange={
+                                                    field.onChange
+                                                }
                                                 disabled={isPending}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Chọn ngành nghề" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {INDUSTRY_OPTIONS.map((opt) => (
-                                                        <SelectItem key={opt.value} value={opt.value}>
-                                                            {opt.label}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {INDUSTRY_OPTIONS.map(
+                                                        (opt) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    opt.value
+                                                                }
+                                                                value={
+                                                                    opt.value
+                                                                }
+                                                            >
+                                                                {
+                                                                    opt.label
+                                                                }
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -299,21 +345,36 @@ export function CompanySetupForm() {
                                     name="companyEmployeeCount"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Quy mô nhân sự</FormLabel>
+                                            <FormLabel>
+                                                Quy mô nhân sự
+                                            </FormLabel>
                                             <Select
                                                 value={field.value}
-                                                onValueChange={field.onChange}
+                                                onValueChange={
+                                                    field.onChange
+                                                }
                                                 disabled={isPending}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Chọn quy mô" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {EMPLOYEE_COUNT_OPTIONS.map((opt) => (
-                                                        <SelectItem key={opt.value} value={opt.value}>
-                                                            {opt.label}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {EMPLOYEE_COUNT_OPTIONS.map(
+                                                        (opt) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    opt.value
+                                                                }
+                                                                value={
+                                                                    opt.value
+                                                                }
+                                                            >
+                                                                {
+                                                                    opt.label
+                                                                }
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -325,12 +386,16 @@ export function CompanySetupForm() {
                                     name="companyWebsite"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Website</FormLabel>
+                                            <FormLabel>
+                                                Website
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="https://company.com"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -342,12 +407,16 @@ export function CompanySetupForm() {
                                     name="companyFoundedDate"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Ngày thành lập</FormLabel>
+                                            <FormLabel>
+                                                Ngày thành lập
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     type="date"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -360,7 +429,9 @@ export function CompanySetupForm() {
                                 name="companyDescription"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Mô tả công ty</FormLabel>
+                                        <FormLabel>
+                                            Mô tả công ty
+                                        </FormLabel>
                                         <FormControl>
                                             <Textarea
                                                 {...field}
@@ -389,12 +460,16 @@ export function CompanySetupForm() {
                                     name="companyAddress"
                                     render={({ field }) => (
                                         <FormItem className="sm:col-span-2">
-                                            <FormLabel>Địa chỉ</FormLabel>
+                                            <FormLabel>
+                                                Địa chỉ
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="Số nhà, đường, phường/xã..."
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -406,12 +481,16 @@ export function CompanySetupForm() {
                                     name="companyWard"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Phường/Xã</FormLabel>
+                                            <FormLabel>
+                                                Phường/Xã
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="Phường/Xã"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -423,12 +502,16 @@ export function CompanySetupForm() {
                                     name="companyDistrict"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Quận/Huyện</FormLabel>
+                                            <FormLabel>
+                                                Quận/Huyện
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="Quận/Huyện"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -440,21 +523,36 @@ export function CompanySetupForm() {
                                     name="companyCity"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Tỉnh/Thành phố</FormLabel>
+                                            <FormLabel>
+                                                Tỉnh/Thành phố
+                                            </FormLabel>
                                             <Select
                                                 value={field.value}
-                                                onValueChange={field.onChange}
+                                                onValueChange={
+                                                    field.onChange
+                                                }
                                                 disabled={isPending}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Chọn tỉnh/TP" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {CITY_OPTIONS.map((opt) => (
-                                                        <SelectItem key={opt.value} value={opt.value}>
-                                                            {opt.label}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {CITY_OPTIONS.map(
+                                                        (opt) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    opt.value
+                                                                }
+                                                                value={
+                                                                    opt.value
+                                                                }
+                                                            >
+                                                                {
+                                                                    opt.label
+                                                                }
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -468,22 +566,37 @@ export function CompanySetupForm() {
                                         <FormItem>
                                             <FormLabel>
                                                 Quốc gia{" "}
-                                                <span className="text-destructive">*</span>
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
                                             </FormLabel>
                                             <Select
                                                 value={field.value}
-                                                onValueChange={field.onChange}
+                                                onValueChange={
+                                                    field.onChange
+                                                }
                                                 disabled={isPending}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Chọn quốc gia" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {COUNTRY_OPTIONS.map((opt) => (
-                                                        <SelectItem key={opt.value} value={opt.value}>
-                                                            {opt.label}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {COUNTRY_OPTIONS.map(
+                                                        (opt) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    opt.value
+                                                                }
+                                                                value={
+                                                                    opt.value
+                                                                }
+                                                            >
+                                                                {
+                                                                    opt.label
+                                                                }
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -507,12 +620,16 @@ export function CompanySetupForm() {
                                     name="companyTaxCode"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Mã số thuế</FormLabel>
+                                            <FormLabel>
+                                                Mã số thuế
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="Mã số thuế"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -524,12 +641,16 @@ export function CompanySetupForm() {
                                     name="companyBusinessLicense"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Giấy phép KD số</FormLabel>
+                                            <FormLabel>
+                                                Giấy phép KD số
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="Số đăng ký KD"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -553,12 +674,16 @@ export function CompanySetupForm() {
                                     name="companyBankName"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Tên ngân hàng</FormLabel>
+                                            <FormLabel>
+                                                Tên ngân hàng
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="Ngân hàng..."
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -570,12 +695,16 @@ export function CompanySetupForm() {
                                     name="companyBankAccount"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Số tài khoản</FormLabel>
+                                            <FormLabel>
+                                                Số tài khoản
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
                                                     placeholder="Số tài khoản"
-                                                    disabled={isPending}
+                                                    disabled={
+                                                        isPending
+                                                    }
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -596,7 +725,9 @@ export function CompanySetupForm() {
                                     <FormControl>
                                         <Checkbox
                                             checked={field.value}
-                                            onCheckedChange={field.onChange}
+                                            onCheckedChange={
+                                                field.onChange
+                                            }
                                             disabled={isPending}
                                         />
                                     </FormControl>
@@ -605,7 +736,9 @@ export function CompanySetupForm() {
                                         <a
                                             href="#"
                                             className="text-primary hover:underline"
-                                            onClick={(e) => e.preventDefault()}
+                                            onClick={(e) =>
+                                                e.preventDefault()
+                                            }
                                         >
                                             Điều khoản sử dụng
                                         </a>{" "}
@@ -613,7 +746,9 @@ export function CompanySetupForm() {
                                         <a
                                             href="#"
                                             className="text-primary hover:underline"
-                                            onClick={(e) => e.preventDefault()}
+                                            onClick={(e) =>
+                                                e.preventDefault()
+                                            }
                                         >
                                             Chính sách bảo mật
                                         </a>
@@ -628,7 +763,9 @@ export function CompanySetupForm() {
                         <Button
                             type="submit"
                             className="w-full"
-                            disabled={!form.formState.isValid || isPending}
+                            disabled={
+                                !form.formState.isValid || isPending
+                            }
                         >
                             {isPending && (
                                 <Loader2 className="size-4 animate-spin mr-2" />

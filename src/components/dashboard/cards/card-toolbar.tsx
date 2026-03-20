@@ -3,6 +3,7 @@
 import {
     useState,
     useRef,
+    useEffect,
     forwardRef,
     useImperativeHandle,
 } from "react";
@@ -27,6 +28,8 @@ import { useGridStackWidgetContext } from "@/contexts/grid-stack-widget-context"
 import { useClickOutside } from "@mantine/hooks";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { cardRegistry } from "@/contexts/fullscreen-card-registry";
+import { useFullscreenCardContext } from "@/contexts/fullscreen-card-context";
 
 export interface CardToolbarRef {
     openSettings: () => void;
@@ -48,6 +51,7 @@ const CardToolbar = forwardRef<
     const { widget } = useGridStackWidgetContext() ?? {
         widget: null,
     };
+    const { openFullscreen } = useFullscreenCardContext();
 
     const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -59,6 +63,28 @@ const CardToolbar = forwardRef<
         openSettings: () => setSettingsOpen(true),
         closeSettings: () => setSettingsOpen(false),
     }));
+
+    // Register this card in the registry when title/content changes
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!widget?.id) return;
+        cardRegistry.register({
+            id: widget.id,
+            title,
+            content: <div ref={contentRef}>{children}</div>,
+        });
+        return () => {
+            cardRegistry.unregister(widget.id);
+        };
+    }, [widget?.id, title, children]);
+
+    const handleOpenFullscreen = () => {
+        if (!widget?.id) return;
+        const allCards = cardRegistry.getAll();
+        const idx = allCards.findIndex((c) => c.id === widget.id);
+        openFullscreen(idx >= 0 ? idx : 0);
+    };
 
     return (
         <Card className="h-full gap-0 py-0 group/card [--toolbar-height:40px] [--toolbar-row-height:40px] overflow-hidden relative">
@@ -79,7 +105,7 @@ const CardToolbar = forwardRef<
 
                         {/* Actions */}
                         <div
-                            className={`flex items-center self-end justify-between shrink h-full max-w-[94%] z-11 ${!editMode ? "invisible" : " group-hover/card:visible"}`}
+                            className={`flex items-center self-end justify-between shrink h-full max-w-[94%] z-11 `}
                         >
                             <div className="flex shrink min-w-0 items-center justify-end ml-4">
                                 <div className="flex items-center gap-1">
@@ -89,6 +115,7 @@ const CardToolbar = forwardRef<
                                         onClick={() =>
                                             setSettingsOpen(true)
                                         }
+                                        className={`${!editMode ? "hidden" : " group-hover/card:flex invisible group-hover/card:visible"}`}
                                     >
                                         <Settings className="size-3.5" />
                                     </Button>
@@ -96,6 +123,11 @@ const CardToolbar = forwardRef<
                                     <Button
                                         variant="ghost"
                                         size="icon-xs"
+                                        tooltip={
+                                            "Xem ở chế độ toàn màn hình"
+                                        }
+                                        onClick={handleOpenFullscreen}
+                                        className="group-hover/card:opacity-100 opacity-0"
                                     >
                                         <Maximize2 className="size-3.5" />
                                     </Button>
@@ -105,6 +137,7 @@ const CardToolbar = forwardRef<
                                             <Button
                                                 variant="ghost"
                                                 size="icon-xs"
+                                                className={`${!editMode ? "hidden" : " group-hover/card:flex invisible group-hover/card:visible"}`}
                                             >
                                                 <MoreHorizontal className="size-3.5" />
                                             </Button>

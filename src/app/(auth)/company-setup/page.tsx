@@ -6,5 +6,9 @@ export const metadata: Metadata = {
 };
 
 export default function CompanySetupPage() {
-    return <CompanySetupForm />;
+    return (
+        <div className="flex items-center justify-center h-screen w-3xl mx-auto">
+            <CompanySetupForm />
+        </div>
+    );
 }
