@@ -12,11 +12,21 @@ import {
 import { Button } from "../ui/button";
 import { ArrowDownToLine, Mail, MoreHorizontal } from "lucide-react";
 
-const DashboardOption = ({ onPrint }: { onPrint: () => void }) => {
+const DashboardOption = ({
+    onPrint,
+    isExporting,
+}: {
+    onPrint: () => void;
+    isExporting?: boolean;
+}) => {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-sm">
+                <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={isExporting}
+                >
                     <MoreHorizontal />
                 </Button>
             </DropdownMenuTrigger>
@@ -26,18 +36,21 @@ const DashboardOption = ({ onPrint }: { onPrint: () => void }) => {
                         <ArrowDownToLine /> Chế độ xem dạng xuất
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent>
-                        <DropdownMenuItem onClick={onPrint}>
+                        <DropdownMenuItem
+                            onClick={onPrint}
+                            disabled={isExporting}
+                        >
                             <ArrowDownToLine />
                             Tải PDF
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem disabled={isExporting}>
                             <Mail />
                             Xuất PDF sang Email
                         </DropdownMenuItem>
                     </DropdownMenuSubContent>
                 </DropdownMenuSub>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="justify-center bg-primary hover:bg-primary!">
+                <DropdownMenuItem className="justify-center bg-primary hover:bg-primary! text-white focus:text-white">
                     Chia sẻ & Quyền
                 </DropdownMenuItem>
             </DropdownMenuContent>

@@ -1,6 +1,5 @@
 import { toast as sonnerToast } from "sonner";
 import type { ToastT } from "sonner";
-import { XIcon } from "lucide-react";
 
 export const toast = (
     type: ToastT["type"],
@@ -10,12 +9,8 @@ export const toast = (
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     sonnerToast[type](message, {
-        cancel: {
-            label: <XIcon className="size-4" />,
-            onclick: () => {},
-        },
         cancelButtonStyle: {
-            backgroundColor: "transparent",
+            backgroundColor: "#ffffff",
             color: "var(--foreground)",
             height: "20px",
             width: "20px",

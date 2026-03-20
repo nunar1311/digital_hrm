@@ -1,6 +1,7 @@
 import {
     PropsWithChildren,
     useCallback,
+    useEffect,
     useLayoutEffect,
     useMemo,
     useRef,
@@ -14,6 +15,7 @@ import {
 } from "gridstack";
 import { GridStackRenderContext } from "../contexts/grid-stack-render-context";
 import isEqual from "react-fast-compare";
+import { toast } from "@/utils/toast";
 
 // WeakMap to store widget containers for each grid instance
 export const gridWidgetContainersMap = new WeakMap<
@@ -27,6 +29,8 @@ export function GridStackRenderProvider({
     const {
         _gridStack: { value: gridStack, set: setGridStack },
         initialOptions,
+        editMode,
+        saveOptions,
     } = useGridStackContext();
 
     const widgetContainersRef = useRef<Map<string, HTMLElement>>(
@@ -34,6 +38,7 @@ export function GridStackRenderProvider({
     );
     const containerRef = useRef<HTMLDivElement>(null);
     const optionsRef = useRef<GridStackOptions>(initialOptions);
+    const gridInitializedRef = useRef(false);
     const [renderTick, forceRerender] = useReducer(
         (value) => value + 1,
         0,
@@ -44,28 +49,33 @@ export function GridStackRenderProvider({
             element: HTMLElement,
             widget: GridStackWidget & { grid?: GridStack },
         ) => {
-            if (widget.id && widget.grid) {
-                // Get or create the widget container map for this grid instance
-                let containers = gridWidgetContainersMap.get(
-                    widget.grid,
-                );
-                if (!containers) {
-                    containers = new Map<string, HTMLElement>();
-                    gridWidgetContainersMap.set(
-                        widget.grid,
-                        containers,
-                    );
-                }
-                containers.set(widget.id, element);
-
-                // Also update the local ref for backward compatibility
+            console.log(
+                "[GridStackRenderProvider] renderCB called for widget:",
+                widget.id,
+                "element:",
+                !!element,
+            );
+            if (widget.id) {
+                // Always store in local ref for backward compatibility
                 widgetContainersRef.current.set(widget.id, element);
 
-                if (widget.lazyLoad || optionsRef.current.lazyLoad) {
-                    // We need to force a re-render, since React has
-                    // already eagerly rendered all widgets in the grid
-                    forceRerender();
+                // Also store in grid instance map if grid is available
+                if (widget.grid) {
+                    let containers = gridWidgetContainersMap.get(
+                        widget.grid,
+                    );
+                    if (!containers) {
+                        containers = new Map<string, HTMLElement>();
+                        gridWidgetContainersMap.set(
+                            widget.grid,
+                            containers,
+                        );
+                    }
+                    containers.set(widget.id, element);
                 }
+
+                // Force a re-render to ensure GridStackRender picks up the new container
+                forceRerender();
             }
         },
         [],
@@ -94,29 +104,122 @@ export function GridStackRenderProvider({
             !isEqual(initialOptions, optionsRef.current) &&
             gridStack
         ) {
+            // Options changed, need to recreate grid
             try {
                 gridStack.removeAll(false);
                 gridStack.destroy(false);
                 widgetContainersRef.current.clear();
-                // Clean up the WeakMap entry for this grid instance
                 gridWidgetContainersMap.delete(gridStack);
                 optionsRef.current = initialOptions;
-                setGridStack(initGrid());
+                gridInitializedRef.current = false;
+                setGridStack(null);
             } catch (e) {
                 console.error("Error reinitializing gridstack", e);
             }
         }
-    }, [initialOptions, gridStack, initGrid, setGridStack]);
+    }, [initialOptions, gridStack, setGridStack, initGrid]);
+
+    // Toggle gs-static class based on editMode
+    useEffect(() => {
+        if (!gridStack) return;
+
+        const items = gridStack.getGridItems();
+        items.forEach((el) => {
+            if (editMode) {
+                el.classList.remove("gs-static");
+            } else {
+                el.classList.add("gs-static");
+            }
+        });
+    }, [editMode, gridStack]);
+
+    // Ref to store previous layout for undo
+    const previousLayoutRef = useRef<GridStackWidget[]>([]);
+
+    // Save layout BEFORE drag/resize starts
+    useEffect(() => {
+        if (!gridStack || !editMode) return;
+
+        const handleDragOrResizeStart = () => {
+            const layout = gridStack.save() as GridStackWidget[];
+            if (Array.isArray(layout)) {
+                previousLayoutRef.current = layout;
+            }
+        };
+
+        gridStack.on("dragstart", handleDragOrResizeStart);
+        gridStack.on("resizestart", handleDragOrResizeStart);
+
+        return () => {
+            gridStack.off("dragstart");
+            gridStack.off("resizestart");
+        };
+    }, [gridStack, editMode]);
+
+    // Listen to GridStack change events and show undo toast
+    useEffect(() => {
+        if (!gridStack || !editMode) return;
+
+        const handleChange = (
+            _event: Event,
+            items: GridStackWidget[],
+        ) => {
+            if (!items || items.length === 0) return;
+            if (previousLayoutRef.current.length === 0) return;
+
+            // Auto-save to localStorage
+            saveOptions();
+
+            toast("success", "Thay đổi bố cục", {
+                action: {
+                    label: "Hoàn tác",
+                    onClick: () => {
+                        const savedLayout = previousLayoutRef.current;
+                        if (!savedLayout.length) {
+                            console.log("[Undo] No saved layout");
+                            return;
+                        }
+
+                        // Remove all and reload saved layout
+                        gridStack.removeAll(false);
+
+                        // Small delay to ensure remove is complete
+                        setTimeout(() => {
+                            gridStack.load(savedLayout);
+                        }, 50);
+                    },
+                },
+            });
+        };
+
+        gridStack.on("change", handleChange);
+
+        return () => {
+            gridStack.off("change");
+        };
+    }, [gridStack, editMode, saveOptions]);
 
     useLayoutEffect(() => {
-        if (!gridStack) {
+        if (
+            !gridStack &&
+            containerRef.current &&
+            !gridInitializedRef.current
+        ) {
+            gridInitializedRef.current = true;
+            // Update optionsRef before init
+            optionsRef.current = initialOptions;
+
             try {
-                setGridStack(initGrid());
+                const grid = initGrid();
+
+                if (grid) {
+                    setGridStack(grid);
+                }
             } catch (e) {
                 console.error("Error initializing gridstack", e);
             }
         }
-    }, [gridStack, initGrid, setGridStack]);
+    }, [gridStack, initGrid, setGridStack, initialOptions]);
 
     return (
         <GridStackRenderContext.Provider
@@ -148,8 +251,8 @@ export function GridStackRenderProvider({
                 [gridStack, renderTick],
             )}
         >
-            <div ref={containerRef}>
-                {gridStack ? children : null}
+            <div ref={containerRef} className="grid-stack w-full">
+                {children}
             </div>
         </GridStackRenderContext.Provider>
     );

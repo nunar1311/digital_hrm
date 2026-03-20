@@ -7,7 +7,9 @@ import React, { createContext, useContext } from "react";
 
 export const GridStackContext = createContext<{
     initialOptions: GridStackOptions;
+    savedLayout: GridStackWidget[] | null;
     gridStack: GridStack | null;
+    editMode: boolean;
     addWidget: (
         widget: GridStackWidget & {
             id: Required<GridStackWidget>["id"];
@@ -30,6 +32,8 @@ export const GridStackContext = createContext<{
         | GridStackOptions
         | GridStackWidget[]
         | undefined;
+    loadLayout: (layout: GridStackWidget[]) => void;
+    syncWidgetMetaMap: (widgets: GridStackWidget[]) => void;
     removeAll: () => void;
     _gridStack: {
         value: GridStack | null;

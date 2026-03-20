@@ -131,13 +131,22 @@ export async function createCompanyProfile(data: SetupFormData) {
         { key: "company.companyLogo", value: "" },
     ];
 
-    await prisma.systemSetting.createMany({
-        data: companySettings.map((s) => ({
-            key: s.key,
-            value: s.value,
-            group: "company",
-        })),
-    });
+    await prisma.$transaction(
+        companySettings.map((s) =>
+            prisma.systemSetting.upsert({
+                where: { key: s.key },
+                update: {
+                    value: s.value,
+                    group: "company",
+                },
+                create: {
+                    key: s.key,
+                    value: s.value,
+                    group: "company",
+                },
+            })
+        )
+    );
 
     emitToAll("company:updated", { changes: validated });
 

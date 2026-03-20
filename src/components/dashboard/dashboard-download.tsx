@@ -10,9 +10,10 @@ import { ArrowDownToLine, Mail } from "lucide-react";
 
 interface DashboardDownloadProps {
     onPrint?: () => void;
+    isExporting?: boolean;
 }
 
-const DashboardDownload = ({ onPrint }: DashboardDownloadProps) => {
+const DashboardDownload = ({ onPrint, isExporting }: DashboardDownloadProps) => {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -20,16 +21,17 @@ const DashboardDownload = ({ onPrint }: DashboardDownloadProps) => {
                     tooltip={"Xuất dữ liệu PDF"}
                     variant="ghost"
                     size="icon-sm"
+                    disabled={isExporting}
                 >
                     <ArrowDownToLine />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onPrint}>
+                <DropdownMenuItem onClick={onPrint} disabled={isExporting}>
                     <ArrowDownToLine />
                     Tải PDF
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem disabled={isExporting}>
                     <Mail />
                     Xuất PDF sang Email
                 </DropdownMenuItem>
