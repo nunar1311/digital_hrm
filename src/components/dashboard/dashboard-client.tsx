@@ -87,13 +87,15 @@ const DashboardClient = ({
     }, [autoRefresh]);
 
     // TanStack Query for dashboard data
-    const { data: stats = initialStats, isRefetching: isRefetchingStats } =
-        useQuery({
-            queryKey: ["dashboard-stats"],
-            queryFn: getDashboardStats,
-            initialData: initialStats,
-            staleTime: 30 * 1000, // 30 seconds
-        });
+    const {
+        data: stats = initialStats,
+        isRefetching: isRefetchingStats,
+    } = useQuery({
+        queryKey: ["dashboard-stats"],
+        queryFn: getDashboardStats,
+        initialData: initialStats,
+        staleTime: 30 * 1000, // 30 seconds
+    });
 
     const {
         data: attendanceTrendData = attendanceTrendDataProp,
@@ -490,7 +492,13 @@ const DashboardClient = ({
             <FullscreenCardProvider>
                 <div
                     ref={containerRef}
-                    className="h-[calc(100vh-3rem)] flex flex-col overflow-hidden min-h-0"
+                    className={cn(
+                        "flex flex-col overflow-hidden min-h-0 bg-background text-foreground",
+                        /* Trình duyệt fullscreen: vùng trống + nền trong suốt → thường thấy màu đen */
+                        isFullscreen
+                            ? "h-screen min-h-screen w-full "
+                            : "h-[calc(100vh-3rem)]",
+                    )}
                 >
                     <section className="flex flex-col overflow-hidden min-h-0">
                         <header className="border-b h-12 flex items-center justify-between px-2">
@@ -580,6 +588,7 @@ const DashboardClient = ({
                                         autoRefresh &&
                                             "text-primary hover:text-primary bg-primary/10 hover:bg-primary/10",
                                     )}
+                                    suppressHydrationWarning
                                 >
                                     <Clock7 />
                                     Tự động làm mới:{" "}

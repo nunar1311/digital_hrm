@@ -354,6 +354,44 @@ export async function deleteEmployee(id: string) {
 }
 
 /**
+ * Cập nhật phòng ban của nhân viên (chuyển phòng ban)
+ */
+export async function updateEmployeeDepartment(
+    employeeId: string,
+    departmentId: string,
+) {
+    await requirePermission(Permission.EMPLOYEE_UPDATE);
+
+    const employee = await prisma.user.update({
+        where: { id: employeeId },
+        data: { departmentId },
+    });
+
+    revalidatePath("/employees");
+    revalidatePath("/departments");
+    return employee;
+}
+
+/**
+ * Cập nhật phòng ban của nhiều nhân viên (batch chuyển phòng ban)
+ */
+export async function updateEmployeesDepartment(
+    employeeIds: string[],
+    departmentId: string,
+) {
+    await requirePermission(Permission.EMPLOYEE_UPDATE);
+
+    const employees = await prisma.user.updateMany({
+        where: { id: { in: employeeIds } },
+        data: { departmentId },
+    });
+
+    revalidatePath("/employees");
+    revalidatePath("/departments");
+    return employees.count;
+}
+
+/**
  * Lấy danh sách tất cả nhân viên cho dropdown
  */
 export async function getAllEmployees() {

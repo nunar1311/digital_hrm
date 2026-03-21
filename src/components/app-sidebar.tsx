@@ -26,8 +26,6 @@ import {
 } from "@/components/ui/collapsible";
 import { sidebarNav } from "@/config/sidebar-nav";
 import { useAuth } from "@/hooks/use-auth";
-import Logo from "./logo";
-import { Button } from "./ui/button";
 
 export function AppSidebar() {
     const pathname = usePathname();

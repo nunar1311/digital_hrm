@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import {
     ChevronLeft,
     ChevronRight,
+    PanelRightOpen,
     RefreshCcw,
     X,
 } from "lucide-react";
@@ -25,6 +26,11 @@ import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cardRegistry } from "./fullscreen-card-registry";
 import { cn } from "@/lib/utils";
+import {
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 interface FullscreenCardContextValue {
     fullscreenOpen: boolean;
@@ -33,7 +39,11 @@ interface FullscreenCardContextValue {
     closeFullscreen: () => void;
     nextCard: () => void;
     prevCard: () => void;
-    currentCard: { title: string; content: React.ReactNode } | null;
+    currentCard: {
+        id: string;
+        title: string;
+        content?: React.ReactNode;
+    } | null;
     totalCards: number;
     prevTitle: string | undefined;
     nextTitle: string | undefined;
@@ -65,7 +75,8 @@ export function FullscreenCardProvider({
     );
     const [isRefreshing, setIsRefreshing] = useState(false);
     const queryClient = useQueryClient();
-
+    const [cardSettingsPanelOpen, setCardSettingsPanelOpen] =
+        useState(false);
     useEffect(() => {
         const unsub = cardRegistry.subscribe(() => {
             setCards([...cardRegistry.getAll()]);
@@ -237,6 +248,17 @@ export function FullscreenCardProvider({
                             <Button
                                 size="icon-sm"
                                 variant="ghost"
+                                onClick={() =>
+                                    setCardSettingsPanelOpen(
+                                        !cardSettingsPanelOpen,
+                                    )
+                                }
+                            >
+                                <PanelRightOpen />
+                            </Button>
+                            <Button
+                                size="icon-sm"
+                                variant="ghost"
                                 onClick={closeFullscreen}
                             >
                                 <X className="size-5" />
@@ -245,9 +267,26 @@ export function FullscreenCardProvider({
                     </div>
 
                     {/* Dialog content */}
-                    <div className="flex-1 min-h-0 min-w-0 overflow-auto mt-2 px-6 py-4 border rounded-lg">
-                        {currentCard?.content}
-                    </div>
+                    <ResizablePanelGroup
+                        orientation="horizontal"
+                        className="flex-1 min-h-0 min-w-0 flex overflow-auto mt-2 border rounded-lg"
+                    >
+                        <ResizablePanel
+                            defaultSize={80}
+                            minSize={30}
+                            className="flex-1 p-6"
+                        >
+                            {currentCard?.content}
+                        </ResizablePanel>
+                        {cardSettingsPanelOpen && (
+                            <>
+                                <ResizableHandle />
+                                <ResizablePanel defaultSize={20}>
+                                    Coming soon
+                                </ResizablePanel>
+                            </>
+                        )}
+                    </ResizablePanelGroup>
                 </DialogContent>
             </Dialog>
         </FullscreenCardContext.Provider>

@@ -147,7 +147,7 @@ const CardToolbar = forwardRef<
                                         <Maximize2 className="size-3.5" />
                                     </Button>
 
-                                    <DropdownMenu>
+                                    <DropdownMenu modal={false}>
                                         <DropdownMenuTrigger asChild>
                                             <Button
                                                 variant="ghost"

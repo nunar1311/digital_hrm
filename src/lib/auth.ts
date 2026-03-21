@@ -33,7 +33,7 @@ export const auth = betterAuth({
             defaultRole: "employee",
         }),
 
-        // Plugin organization: phòng ban, roles
+        // Plugin organization: Công ty, chi nhánh
         organization({
             allowUserToCreateOrganization: false,
         }),

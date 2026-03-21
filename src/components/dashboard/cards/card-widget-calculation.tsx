@@ -34,23 +34,27 @@ const CardWidgetCalculation = ({
     return (
         <CardToolbar title={title}>
             <div
-                className="flex flex-1 flex-col items-start justify-center gap-4 w-full h-full hover:bg-muted rounded-lg p-4 cursor-pointer"
+                className="flex flex-1 flex-col items-center justify-center gap-4 w-full h-full hover:bg-muted rounded-lg p-4 cursor-pointer"
                 onClick={handleClick}
             >
-                <div className="flex items-center justify-between w-full gap-2">
-                    <span className="text-5xl font-bold truncate">
+                <div className="flex flex-col items-center justify-between w-full gap-2">
+                    <span className="md:text-5xl text-xl font-bold">
                         {total.toLocaleString("vi-VN")}
                     </span>
+                    <p className="text-lg md:text-sm">{label}</p>
+                </div>
+
+                {percentage !== 0 && (
                     <div
                         className={cn(
-                            "flex items-center justify-between px-2 gap-x-2 bg-emerald-500/20 h-6 text-emerald-500 rounded-lg max-w-fit",
+                            "flex items-center justify-between px-2 gap-x-2 rounded-lg max-w-fit text-xs md:text-sm",
                         )}
                     >
-                        <TrendingUp className="size-4" /> +
-                        {percentage.toFixed(1)}%
+                        {/* Up or down */}
+                        {percentage > 0 ? "Tăng" : "Giảm"}{" "}
+                        {percentage.toFixed(1)}% so với tháng trước
                     </div>
-                </div>
-                <p>{label}</p>
+                )}
             </div>
         </CardToolbar>
     );

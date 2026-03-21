@@ -1,6 +1,4 @@
-import { AppSidebar } from "@/components/app-sidebar";
 import {
-    SidebarInset,
     SidebarProvider,
 } from "@/components/ui/sidebar";
 import { AppHeader } from "@/components/app-header";
@@ -11,6 +9,10 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import SidebarMind from "@/components/sidebar-mind";
 import BannerNotification from "@/components/banner-notification";
+import {
+    SidebarContextProvider,
+    SidebarSlot,
+} from "@/contexts/sidebar-context";
 
 export default async function ProtectedLayout({
     children,
@@ -39,26 +41,27 @@ export default async function ProtectedLayout({
                 session.session.activeOrganizationId ?? undefined
             }
         >
-            <div className="h-screen flex flex-col overflow-hidden [--header-height:calc(--spacing(10))]">
-                <SidebarProvider className="flex flex-col h-full">
-                    <div className="shrink-0">
-                        <AppHeader />
-                    </div>
-
-                    <div className="flex flex-1 overflow-hidden mb-1.5">
-                        <SidebarMind />
-                        <div className="border rounded-lg flex-1 flex overflow-hidden relative mr-1.5">
-                            <AppSidebar />
-                            <SidebarInset className="overflow-hidden flex-1 relative min-h-0">
-                                <BannerNotification />
-                                <main className="h-full overflow-hidden">
-                                    {children}
-                                </main>
-                            </SidebarInset>
+            <SidebarContextProvider>
+                <div className="h-screen flex flex-col overflow-hidden [--header-height:calc(--spacing(10))]">
+                    <SidebarProvider className="flex flex-col h-full">
+                        <div className="shrink-0">
+                            <AppHeader />
                         </div>
-                    </div>
-                </SidebarProvider>
-            </div>
+
+                        <div className="flex flex-1 overflow-hidden mb-1.5">
+                            <SidebarMind />
+                            <div className="border rounded-lg flex-1 flex overflow-hidden relative mr-1.5">
+                                <SidebarSlot className="overflow-hidden flex-1 relative min-h-0">
+                                    <BannerNotification />
+                                    <main className="h-full overflow-hidden">
+                                        {children}
+                                    </main>
+                                </SidebarSlot>
+                            </div>
+                        </div>
+                    </SidebarProvider>
+                </div>
+            </SidebarContextProvider>
         </SocketWrapper>
     );
 }

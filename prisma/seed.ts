@@ -170,6 +170,7 @@ async function seed() {
         update: {},
         create: {
             name: "Ban Giám đốc",
+            logo: "Building2",
             code: "BGD",
             description: "Ban lãnh đạo công ty",
             managerId: directorUser?.id ?? null,
@@ -182,6 +183,7 @@ async function seed() {
     const departments = [
         {
             name: "Phòng Nhân sự",
+            logo: "Users",
             code: "HR",
             description: "Quản lý nhân sự và tuyển dụng",
             managerId: hrManagerUser?.id,
@@ -189,6 +191,7 @@ async function seed() {
         },
         {
             name: "Phòng Kỹ thuật",
+            logo: "Code",
             code: "TECH",
             description: "Phát triển phần mềm và công nghệ",
             managerId: deptManagerUser?.id,
@@ -196,6 +199,7 @@ async function seed() {
         },
         {
             name: "Phòng Kinh doanh",
+            logo: "Briefcase",
             code: "SALES",
             description: "Kinh doanh và chăm sóc khách hàng",
             managerId: null,
@@ -203,6 +207,7 @@ async function seed() {
         },
         {
             name: "Phòng Tài chính - Kế toán",
+            logo: "Wallet",
             code: "FIN",
             description: "Quản lý tài chính và kế toán",
             managerId: accountantUser?.id,
@@ -210,6 +215,7 @@ async function seed() {
         },
         {
             name: "Phòng Marketing",
+            logo: "Megaphone",
             code: "MKT",
             description: "Marketing và truyền thông",
             managerId: null,
@@ -217,6 +223,7 @@ async function seed() {
         },
         {
             name: "Phòng IT & Hạ tầng",
+            logo: "Monitor",
             code: "IT",
             description: "Quản trị hệ thống và hạ tầng CNTT",
             managerId: itAdminUser?.id,
@@ -400,17 +407,59 @@ async function seed() {
     }
 
     // ─── Update user departmentId and jobTitle ───
-    console.log("\n🔗 Linking users to departments and positions...\n");
-    const userDeptLinks: { email: string; deptCode: string; positionCode: string }[] = [
-        { email: "admin@company.vn", deptCode: "BGD", positionCode: "POS-IT-ADMIN" },
-        { email: "director@company.vn", deptCode: "BGD", positionCode: "POS-DIR" },
-        { email: "hr.manager@company.vn", deptCode: "HR", positionCode: "POS-HR-MGR" },
-        { email: "hr.staff@company.vn", deptCode: "HR", positionCode: "POS-HR-STAFF" },
-        { email: "dept.manager@company.vn", deptCode: "TECH", positionCode: "POS-TECH-MGR" },
-        { email: "team.leader@company.vn", deptCode: "TECH", positionCode: "POS-TECH-TL" },
-        { email: "employee@company.vn", deptCode: "TECH", positionCode: "POS-TECH-DEV" },
-        { email: "accountant@company.vn", deptCode: "FIN", positionCode: "POS-FIN-MGR" },
-        { email: "it.admin@company.vn", deptCode: "IT", positionCode: "POS-IT-ADMIN" },
+    console.log(
+        "\n🔗 Linking users to departments and positions...\n",
+    );
+    const userDeptLinks: {
+        email: string;
+        deptCode: string;
+        positionCode: string;
+    }[] = [
+        {
+            email: "admin@company.vn",
+            deptCode: "BGD",
+            positionCode: "POS-IT-ADMIN",
+        },
+        {
+            email: "director@company.vn",
+            deptCode: "BGD",
+            positionCode: "POS-DIR",
+        },
+        {
+            email: "hr.manager@company.vn",
+            deptCode: "HR",
+            positionCode: "POS-HR-MGR",
+        },
+        {
+            email: "hr.staff@company.vn",
+            deptCode: "HR",
+            positionCode: "POS-HR-STAFF",
+        },
+        {
+            email: "dept.manager@company.vn",
+            deptCode: "TECH",
+            positionCode: "POS-TECH-MGR",
+        },
+        {
+            email: "team.leader@company.vn",
+            deptCode: "TECH",
+            positionCode: "POS-TECH-TL",
+        },
+        {
+            email: "employee@company.vn",
+            deptCode: "TECH",
+            positionCode: "POS-TECH-DEV",
+        },
+        {
+            email: "accountant@company.vn",
+            deptCode: "FIN",
+            positionCode: "POS-FIN-MGR",
+        },
+        {
+            email: "it.admin@company.vn",
+            deptCode: "IT",
+            positionCode: "POS-IT-ADMIN",
+        },
     ];
 
     for (const link of userDeptLinks) {
@@ -428,7 +477,9 @@ async function seed() {
                     jobTitleId: position?.id,
                 },
             });
-            console.log(`  ✅ ${link.email} → ${link.deptCode} (${link.positionCode})`);
+            console.log(
+                `  ✅ ${link.email} → ${link.deptCode} (${link.positionCode})`,
+            );
         }
     }
 
@@ -436,26 +487,98 @@ async function seed() {
     console.log("\n🏢 Seeding company settings...\n");
 
     const companySettings = [
-        { key: "company.companyName", value: "Công ty Công nghệ Digital HRM", group: "company" },
-        { key: "company.companyCode", value: "DHRM", group: "company" },
-        { key: "company.companyEmail", value: "info@digital-hrm.vn", group: "company" },
-        { key: "company.companyPhone", value: "028 1234 5678", group: "company" },
+        {
+            key: "company.companyName",
+            value: "Công ty Công nghệ Digital HRM",
+            group: "company",
+        },
+        {
+            key: "company.companyCode",
+            value: "DHRM",
+            group: "company",
+        },
+        {
+            key: "company.companyEmail",
+            value: "info@digital-hrm.vn",
+            group: "company",
+        },
+        {
+            key: "company.companyPhone",
+            value: "028 1234 5678",
+            group: "company",
+        },
         { key: "company.companyFax", value: "", group: "company" },
-        { key: "company.companyTaxCode", value: "0123456789", group: "company" },
-        { key: "company.companyAddress", value: "123 Đường Nguyễn Trãi", group: "company" },
-        { key: "company.companyWard", value: "Phường Bến Thành", group: "company" },
-        { key: "company.companyDistrict", value: "Quận 1", group: "company" },
-        { key: "company.companyCity", value: "Hồ Chí Minh", group: "company" },
-        { key: "company.companyCountry", value: "Vietnam", group: "company" },
-        { key: "company.companyWebsite", value: "https://digital-hrm.vn", group: "company" },
-        { key: "company.companyDescription", value: "Công ty chuyên cung cấp giải pháp quản lý nhân sự hàng đầu Việt Nam", group: "company" },
+        {
+            key: "company.companyTaxCode",
+            value: "0123456789",
+            group: "company",
+        },
+        {
+            key: "company.companyAddress",
+            value: "123 Đường Nguyễn Trãi",
+            group: "company",
+        },
+        {
+            key: "company.companyWard",
+            value: "Phường Bến Thành",
+            group: "company",
+        },
+        {
+            key: "company.companyDistrict",
+            value: "Quận 1",
+            group: "company",
+        },
+        {
+            key: "company.companyCity",
+            value: "Hồ Chí Minh",
+            group: "company",
+        },
+        {
+            key: "company.companyCountry",
+            value: "Vietnam",
+            group: "company",
+        },
+        {
+            key: "company.companyWebsite",
+            value: "https://digital-hrm.vn",
+            group: "company",
+        },
+        {
+            key: "company.companyDescription",
+            value: "Công ty chuyên cung cấp giải pháp quản lý nhân sự hàng đầu Việt Nam",
+            group: "company",
+        },
         { key: "company.companyLogo", value: "", group: "company" },
-        { key: "company.companyIndustry", value: "technology", group: "company" },
-        { key: "company.companyFoundedDate", value: "2020-01-15", group: "company" },
-        { key: "company.companyEmployeeCount", value: "51-100", group: "company" },
-        { key: "company.companyBusinessLicense", value: "0123456789", group: "company" },
-        { key: "company.companyBankAccount", value: "1234567890", group: "company" },
-        { key: "company.companyBankName", value: "Ngân hàng TMCP Ngoại thương Việt Nam (VCB)", group: "company" },
+        {
+            key: "company.companyIndustry",
+            value: "technology",
+            group: "company",
+        },
+        {
+            key: "company.companyFoundedDate",
+            value: "2020-01-15",
+            group: "company",
+        },
+        {
+            key: "company.companyEmployeeCount",
+            value: "51-100",
+            group: "company",
+        },
+        {
+            key: "company.companyBusinessLicense",
+            value: "0123456789",
+            group: "company",
+        },
+        {
+            key: "company.companyBankAccount",
+            value: "1234567890",
+            group: "company",
+        },
+        {
+            key: "company.companyBankName",
+            value: "Ngân hàng TMCP Ngoại thương Việt Nam (VCB)",
+            group: "company",
+        },
     ];
 
     for (const setting of companySettings) {

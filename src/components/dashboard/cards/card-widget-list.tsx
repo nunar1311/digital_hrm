@@ -7,11 +7,7 @@ import {
     useRef,
     useEffect,
 } from "react";
-import {
-    useQuery,
-    useInfiniteQuery,
-    useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import {
     flexRender,
     getCoreRowModel,
@@ -56,10 +52,7 @@ import {
     Users,
     RefreshCw,
     Settings,
-    Edit,
-    ChevronRight,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useClickOutside, useMergedRef } from "@mantine/hooks";
 import { cn } from "@/lib/utils";
 import CardToolbar, { type CardToolbarRef } from "./card-toolbar";
@@ -185,7 +178,6 @@ interface EmployeeTableProps {
 function EmployeeTable({
     employees,
     isLoading,
-    globalOffset,
     onViewEmployee,
     sorting,
     columnVisibility,
@@ -384,7 +376,7 @@ function EmployeeTable({
                 enableSorting: false,
             },
         ],
-        [globalOffset, onViewEmployee, wrapText],
+        [onViewEmployee, wrapText],
     );
 
     // TanStack Table's useReactTable() returns unstable functions — known limitation.
@@ -414,7 +406,7 @@ function EmployeeTable({
     };
 
     return (
-        <div className="relative flex flex-col h-full overflow-hidden rounded">
+        <div className="relative flex flex-col h-full overflow-hidden ">
             {/* Sticky Header */}
             <div className="shrink-0 overflow-x-auto z-10 relative">
                 <Table className="text-xs">

@@ -104,6 +104,35 @@ export interface ConfigUpdatedEvent {
     changes: Record<string, unknown>;
 }
 
+// ─── Employee Events ───────────────────────────────────────────────
+
+export interface EmployeeCreatedEvent {
+    employeeId: string;
+    employeeName: string;
+    departmentId: string;
+    departmentName: string;
+}
+
+export interface EmployeeUpdatedEvent {
+    employeeId: string;
+    employeeName: string;
+    changes: Record<string, unknown>;
+}
+
+export interface EmployeeDeletedEvent {
+    employeeId: string;
+    employeeName: string;
+}
+
+export interface EmployeeDepartmentChangedEvent {
+    employeeId: string;
+    employeeName: string;
+    previousDepartmentId: string;
+    previousDepartmentName: string;
+    newDepartmentId: string;
+    newDepartmentName: string;
+}
+
 // === Org-Chart / Department Events ===
 
 export interface DepartmentCreatedEvent {
@@ -199,6 +228,12 @@ export interface AssetReturnedEvent {
 
 // === Server → Client Events ===
 export interface ServerToClientEvents {
+    "employee:created": (data: EmployeeCreatedEvent) => void;
+    "employee:updated": (data: EmployeeUpdatedEvent) => void;
+    "employee:deleted": (data: EmployeeDeletedEvent) => void;
+    "employee:department-changed": (
+        data: EmployeeDepartmentChangedEvent,
+    ) => void;
     "attendance:check-in": (data: AttendanceCheckInEvent) => void;
     "attendance:check-out": (data: AttendanceCheckOutEvent) => void;
     "attendance:updated": (data: AttendanceUpdatedEvent) => void;

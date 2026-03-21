@@ -13,9 +13,12 @@ interface DashboardDownloadProps {
     isExporting?: boolean;
 }
 
-const DashboardDownload = ({ onPrint, isExporting }: DashboardDownloadProps) => {
+const DashboardDownload = ({
+    onPrint,
+    isExporting,
+}: DashboardDownloadProps) => {
     return (
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
                 <Button
                     tooltip={"Xuất dữ liệu PDF"}
@@ -27,7 +30,10 @@ const DashboardDownload = ({ onPrint, isExporting }: DashboardDownloadProps) => 
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onPrint} disabled={isExporting}>
+                <DropdownMenuItem
+                    onClick={onPrint}
+                    disabled={isExporting}
+                >
                     <ArrowDownToLine />
                     Tải PDF
                 </DropdownMenuItem>

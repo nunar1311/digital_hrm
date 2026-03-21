@@ -60,8 +60,10 @@ const SettingSidebar = () => {
             collapsible="offcanvas"
             className="absolute h-full! group/sidebar"
         >
-            <SidebarHeader>
-                <h3 className="text-lg font-bold">Tất cả cài đặt</h3>
+            <SidebarHeader className="flex-row h-[44px] items-center justify-between">
+                <div className="group-data-[collapsible=icon]:hidden px-2 font-bold">
+                    Tất cả cài đặt
+                </div>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
