@@ -140,6 +140,17 @@ export interface DepartmentDistributionItem {
     fill: string;
 }
 
+export interface TurnoverTrendItem {
+    month: string;
+    turnoverRate: number;
+}
+
+export interface GenderDistributionItem {
+    gender: string;
+    count: number;
+    fill: string;
+}
+
 // ─── getAttendanceTrend ──────────────────────────────────────────────────────
 
 const MONTH_LABELS = [
@@ -269,6 +280,128 @@ export async function getDepartmentDistribution(): Promise<
             fill: "var(--chart-0)",
         });
     }
+
+    return items;
+}
+
+// ─── getTurnoverRateTrend ────────────────────────────────────────────────────
+
+export async function getTurnoverRateTrend(): Promise<TurnoverTrendItem[]> {
+    await requirePermission(Permission.DASHBOARD_VIEW);
+
+    const now = new Date();
+
+    // Build 12 months range (current month + 11 previous)
+    const months: { start: Date; end: Date; label: string }[] = [];
+    for (let i = 11; i >= 0; i--) {
+        const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        months.push({
+            start,
+            end,
+            label: MONTH_LABELS[start.getMonth()]!,
+        });
+    }
+
+    const baseWhere = { employeeCode: { not: null } } as const;
+
+    const results = await Promise.all(
+        months.map(async ({ start, end, label }) => {
+            // Count employees who resigned in this month
+            const resignedCount = await prisma.user.count({
+                where: {
+                    ...baseWhere,
+                    employeeStatus: "TERMINATED",
+                    resignDate: { gte: start, lt: end },
+                },
+            });
+
+            // Count average active employees during this month
+            // (Active at start of month + Active at end of month) / 2
+            // Simplification: Employees who joined before the end of the month and didn't resign before the start
+            const activeCountStart = await prisma.user.count({
+                where: {
+                    ...baseWhere,
+                    hireDate: { lt: start },
+                    OR: [
+                        { employeeStatus: "ACTIVE" },
+                        { resignDate: { gte: start } },
+                    ],
+                },
+            });
+
+            const activeCountEnd = await prisma.user.count({
+                where: {
+                    ...baseWhere,
+                    hireDate: { lt: end },
+                    OR: [
+                        { employeeStatus: "ACTIVE" },
+                        { resignDate: { gte: end } },
+                    ],
+                },
+            });
+
+            const averageActiveCount = (activeCountStart + activeCountEnd) / 2;
+
+            // Turnover Rate formula: (Resigned Count / Average Active Count) * 100
+            const turnoverRate =
+                averageActiveCount > 0
+                    ? Number(((resignedCount / averageActiveCount) * 100).toFixed(2))
+                    : 0;
+
+            return { month: label, turnoverRate };
+        }),
+    );
+
+    return results;
+}
+
+// ─── getGenderDistribution ───────────────────────────────────────────────────
+
+export async function getGenderDistribution(): Promise<GenderDistributionItem[]> {
+    await requirePermission(Permission.DASHBOARD_VIEW);
+
+    const baseWhere = {
+        employeeCode: { not: null },
+        employeeStatus: { not: "TERMINATED" },
+    } as const;
+
+    const [maleCount, femaleCount, otherCount, unknownCount] = await Promise.all([
+        prisma.user.count({ where: { ...baseWhere, gender: "MALE" } }),
+        prisma.user.count({ where: { ...baseWhere, gender: "FEMALE" } }),
+        prisma.user.count({ where: { ...baseWhere, gender: "OTHER" } }),
+        prisma.user.count({ where: { ...baseWhere, gender: null } }),
+    ]);
+
+    const items: GenderDistributionItem[] = [];
+
+    if (maleCount > 0)
+        items.push({
+            gender: "Nam",
+            count: maleCount,
+            fill: "var(--chart-1)",
+        });
+
+    if (femaleCount > 0)
+        items.push({
+            gender: "Nữ",
+            count: femaleCount,
+            fill: "var(--chart-2)",
+        });
+
+    if (otherCount > 0)
+        items.push({
+            gender: "Khác",
+            count: otherCount,
+            fill: "var(--chart-3)",
+        });
+
+    if (unknownCount > 0)
+        items.push({
+            gender: "Chưa xác định",
+            count: unknownCount,
+            fill: "var(--chart-4)",
+        });
 
     return items;
 }

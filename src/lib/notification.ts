@@ -299,10 +299,23 @@ export async function sendNotificationToUser(
       emailTypes.includes(data.type);
 
     if (shouldSendEmail) {
+      const { render } = await import("@react-email/components");
+      const NotificationEmail = (await import("@/components/emails/notification-email")).default;
+      
+      const emailHtml = await render(
+        NotificationEmail({
+          employeeName: user.name || "bạn",
+          title: data.title,
+          content: data.content,
+          link: data.link,
+        })
+      );
+
       await sendEmail({
         to: user.email,
         subject: data.title,
         body: data.content,
+        html: emailHtml,
       });
     }
   }
@@ -324,7 +337,7 @@ export async function notifyLeaveApproved(
     title: "Đơn nghỉ phép đã được duyệt",
     content: `Đơn nghỉ ${data.leaveType} từ ${data.startDate} đến ${data.endDate} đã được duyệt.`,
     link: "/leaves/requests",
-    sendEmail: true,
+    sendEmail: false, // Prevent duplicate emails, sendTemplatedEmail will handle this
     sendBrowser: true,
   });
 
@@ -358,7 +371,7 @@ export async function notifyOvertimeApproved(
     title: "Đơn tăng ca đã được duyệt",
     content: `Đơn tăng ca ngày ${data.date} từ ${data.startTime} đến ${data.endTime} đã được duyệt.`,
     link: "/attendance/overtime",
-    sendEmail: true,
+    sendEmail: false, // Prevent duplicate emails, sendTemplatedEmail will handle this
     sendBrowser: true,
   });
 
@@ -391,7 +404,7 @@ export async function notifyPayslipReady(
     title: "Phiếu lương đã sẵn sàng",
     content: `Phiếu lương tháng ${data.month}/${data.year} đã sẵn sàng. Vui lòng đăng nhập để xem chi tiết.`,
     link: "/payroll/payslips",
-    sendEmail: true,
+    sendEmail: false, // Prevent duplicate emails, sendTemplatedEmail will handle this
     sendBrowser: true,
   });
 

@@ -7,6 +7,8 @@ import CardChartPie from "./cards/card-chart-pie";
 import CardChartAreaInteractive from "./cards/card-chart-area-interactive";
 import CardWidgetCalculation from "./cards/card-widget-calculation";
 import CardWidgetList from "./cards/card-widget-list";
+import CardChartTurnoverRate from "./cards/card-chart-turnover-rate";
+import CardChartGender from "./cards/card-chart-gender";
 
 const DashboardMain = () => {
     return (
@@ -14,6 +16,8 @@ const DashboardMain = () => {
             componentMap={{
                 cardChartPie: CardChartPie,
                 cardChartAreaInteractive: CardChartAreaInteractive,
+                cardChartTurnoverRate: CardChartTurnoverRate,
+                cardChartGender: CardChartGender,
                 totalEmployees: CardWidgetCalculation,
                 totalEmployeesWorking: CardWidgetCalculation,
                 newEmployees: CardWidgetCalculation,

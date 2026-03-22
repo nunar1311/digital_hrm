@@ -55,18 +55,24 @@ export async function getCompanyInfo() {
         companyBankName: "",
     };
 
-    const settings = await prisma.systemSetting.findMany({
-        where: {
-            key: {
-                startsWith: "company.",
-            },
-        },
-    });
+    const company = await prisma.organization.findFirst();
+    
+    let metadata: Record<string, string> = {};
+    if (company?.metadata) {
+        try {
+            metadata = JSON.parse(company.metadata);
+        } catch (e) {
+            console.error("Failed to parse company metadata", e);
+        }
+    }
 
-    const result: Record<string, string> = { ...DEFAULT_COMPANY_INFO };
-    for (const setting of settings) {
-        const key = setting.key.replace("company.", "");
-        result[key] = setting.value;
+    const result: Record<string, string> = { ...DEFAULT_COMPANY_INFO, ...metadata };
+    
+    if (company) {
+        if (company.name) result.companyName = company.name;
+        if (company.email !== undefined && company.email !== null) result.companyEmail = company.email;
+        if (company.logo !== undefined && company.logo !== null) result.companyLogo = company.logo;
+        if (company.country !== undefined && company.country !== null) result.companyCountry = company.country;
     }
 
     return result;
@@ -90,32 +96,38 @@ async function checkCanEdit(): Promise<boolean> {
 export async function updateCompanyInfo(data: Record<string, unknown>) {
     const session = await requirePermission(Permission.SETTINGS_SYSTEM);
 
-    const oldSettings = await prisma.systemSetting.findMany({
-        where: {
-            key: { startsWith: "company." },
-        },
-    });
-
-    const oldMap: Record<string, string> = {};
-    for (const s of oldSettings) {
-        oldMap[s.key.replace("company.", "")] = s.value;
+    const company = await prisma.organization.findFirst();
+    if (!company) {
+        throw new Error("Không tìm thấy thông tin công ty");
     }
+
+    let metadata: Record<string, any> = {};
+    if (company.metadata) {
+        try {
+            metadata = JSON.parse(company.metadata);
+        } catch (e) {}
+    }
+
+    const oldData = { ...metadata, companyName: company.name, companyEmail: company.email, companyCountry: company.country, companyLogo: company.logo };
 
     const updates = Object.entries(data).filter(([, v]) => v !== undefined && v !== "" && v !== null);
 
     for (const [key, value] of updates) {
-        await prisma.systemSetting.upsert({
-            where: { key: `company.${key}` },
-            create: {
-                key: `company.${key}`,
-                value: String(value),
-                group: "company",
-            },
-            update: {
-                value: String(value),
-            },
-        });
+        metadata[key] = value;
     }
+
+    const updateData: any = {
+        metadata: JSON.stringify(metadata)
+    };
+
+    if (data.companyName) updateData.name = String(data.companyName);
+    if (data.companyEmail !== undefined) updateData.email = String(data.companyEmail);
+    if (data.companyCountry) updateData.country = String(data.companyCountry);
+
+    await prisma.organization.update({
+        where: { id: company.id },
+        data: updateData
+    });
 
     await prisma.auditLog.create({
         data: {
@@ -123,7 +135,7 @@ export async function updateCompanyInfo(data: Record<string, unknown>) {
             userName: session.user.name,
             action: "UPDATE",
             entity: "CompanyInfo",
-            oldData: JSON.parse(JSON.stringify(oldMap)),
+            oldData: JSON.parse(JSON.stringify(oldData)),
             newData: JSON.parse(JSON.stringify(data)),
         },
     });
@@ -170,21 +182,16 @@ export async function uploadCompanyLogo(formData: FormData) {
 
     const logoUrl = `/uploads/company/${fileName}`;
 
-    const oldLogoSetting = await prisma.systemSetting.findUnique({
-        where: { key: "company.companyLogo" },
-    });
-    const oldLogo = oldLogoSetting?.value ?? "";
+    const company = await prisma.organization.findFirst();
+    if (!company) {
+        throw new Error("Không tìm thấy thông tin công ty");
+    }
 
-    await prisma.systemSetting.upsert({
-        where: { key: "company.companyLogo" },
-        create: {
-            key: "company.companyLogo",
-            value: logoUrl,
-            group: "company",
-        },
-        update: {
-            value: logoUrl,
-        },
+    const oldLogo = company.logo || "";
+
+    await prisma.organization.update({
+        where: { id: company.id },
+        data: { logo: logoUrl },
     });
 
     await prisma.auditLog.create({
@@ -207,19 +214,17 @@ export async function uploadCompanyLogo(formData: FormData) {
 export async function deleteCompanyLogo() {
     const session = await requirePermission(Permission.SETTINGS_SYSTEM);
 
-    const logoSetting = await prisma.systemSetting.findUnique({
-        where: { key: "company.companyLogo" },
-    });
+    const company = await prisma.organization.findFirst();
 
-    if (!logoSetting?.value) {
+    if (!company?.logo) {
         throw new Error("Không có logo để xóa");
     }
 
-    const oldLogo = logoSetting.value;
+    const oldLogo = company.logo;
 
-    await prisma.systemSetting.update({
-        where: { key: "company.companyLogo" },
-        data: { value: "" },
+    await prisma.organization.update({
+        where: { id: company.id },
+        data: { logo: null },
     });
 
     const { unlink } = await import("fs/promises");

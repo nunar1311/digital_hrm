@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@/generated/prisma/client";
 import { EmailData, EmailTemplateData } from "./types/notification";
 
 const SMTP_HOST = process.env.SMTP_HOST || "";
@@ -21,7 +20,7 @@ export async function sendEmail(data: EmailData): Promise<{
         subject: data.subject,
         body: data.body,
         templateCode: data.templateCode,
-        metadata: data.metadata as Prisma.InputJsonValue,
+        metadata: data.metadata,
         status: "PENDING",
       },
     });
@@ -137,17 +136,29 @@ export async function sendTemplatedEmail(
     body = body.replaceAll(placeholder, value);
   }
 
+  const generatedHtml = template.bodyHtml
+    ? Object.entries(variables).reduce(
+        (html, [key, value]) => html.replaceAll(`{{${key}}}`, value),
+        template.bodyHtml
+      )
+    : body;
+
+  const { render } = await import("@react-email/components");
+  const NotificationEmail = (await import("@/components/emails/notification-email")).default;
+
+  const finalHtml = await render(
+    NotificationEmail({
+      employeeName: variables.employeeName || "bạn",
+      title: subject,
+      content: generatedHtml,
+    })
+  );
+
   return sendEmail({
     to,
     subject,
     body,
-    html: template.bodyHtml
-      ? Object.entries(variables).reduce(
-          (html, [key, value]) =>
-            html.replaceAll(`{{${key}}}`, value),
-          template.bodyHtml!
-        )
-      : undefined,
+    html: finalHtml,
     templateCode,
     metadata: variables,
   });
