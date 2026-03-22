@@ -47,7 +47,7 @@ export interface GetEmployeesResult {
  * Lấy danh sách nhân viên với pagination, search, filter, sort
  */
 export async function getEmployees(
-    params: GetEmployeesParams
+    params: GetEmployeesParams,
 ): Promise<GetEmployeesResult> {
     await requirePermission(Permission.EMPLOYEE_VIEW_ALL);
 
@@ -85,7 +85,12 @@ export async function getEmployees(
         where.OR = [
             { name: { contains: search, mode: "insensitive" } },
             { fullName: { contains: search, mode: "insensitive" } },
-            { employeeCode: { contains: search, mode: "insensitive" } },
+            {
+                employeeCode: {
+                    contains: search,
+                    mode: "insensitive",
+                },
+            },
             { email: { contains: search, mode: "insensitive" } },
             { phone: { contains: search, mode: "insensitive" } },
         ];
@@ -323,7 +328,7 @@ export async function updateEmployee(
         university: string;
         avatar: string;
         notes: string;
-    }>
+    }>,
 ) {
     await requirePermission(Permission.EMPLOYEE_UPDATE);
 
@@ -490,4 +495,216 @@ export async function getDepartmentOptions() {
     });
 
     return departments;
+}
+
+/**
+ * Tạo mã nhân viên tự động theo format EMP-xxx
+ */
+export async function generateEmployeeCode(): Promise<string> {
+    const lastEmployee = await prisma.user.findFirst({
+        where: { employeeCode: { startsWith: "EMP-" } },
+        orderBy: { employeeCode: "desc" },
+        select: { employeeCode: true },
+    });
+
+    const nextNum = lastEmployee?.employeeCode
+        ? parseInt(lastEmployee.employeeCode.replace("EMP-", "")) + 1
+        : 1;
+
+    return `EMP-${String(nextNum).padStart(3, "0")}`;
+}
+
+/**
+ * Batch import nhân viên từ file Excel/CSV
+ */
+export async function importEmployeesBatch(
+    rows: Record<string, unknown>[],
+): Promise<{ success: number; failed: number; errors: string[] }> {
+    await requirePermission(Permission.EMPLOYEE_CREATE);
+
+    const errors: string[] = [];
+    let success = 0;
+    let failed = 0;
+
+    for (const row of rows) {
+        try {
+            const fullName = String(row["Họ và tên"] || "").trim();
+            const nationalId = String(
+                row["CCCD"] || row["Mã nhân viên"] || "",
+            ).trim();
+
+            if (!fullName) {
+                errors.push(`Thiếu "Họ và tên" - dòng bị bỏ qua`);
+                failed++;
+                continue;
+            }
+
+            // Generate employee code
+            const employeeCode = await generateEmployeeCode();
+
+            // Generate email from name if not provided
+            let email = String(row["Email"] || "").trim();
+            if (!email) {
+                const slug = fullName
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/\s+/g, ".")
+                    .replace(/[^a-z0-9.]/g, "");
+                email = `${slug}.${employeeCode.toLowerCase()}@placeholder.local`;
+            }
+
+            // Parse dates
+            const dateOfBirth = parseDate(
+                String(row["Ngày sinh"] || ""),
+            );
+            const nationalIdDate = parseDate(
+                String(row["Ngày cấp CCCD"] || ""),
+            );
+            const hireDate = parseDate(
+                String(row["Ngày vào làm"] || ""),
+            );
+
+            // Map gender
+            const genderMap: Record<string, string> = {
+                "Nam": "MALE",
+                "Nữ": "FEMALE",
+                "Khác": "OTHER",
+            };
+            const genderRaw = String(row["Giới tính"] || "").trim();
+            const gender =
+                genderMap[genderRaw] || genderRaw || undefined;
+
+            // Map education
+            const educationMap: Record<string, string> = {
+                THPT: "HIGHSCHOOL",
+                "Cao đẳng": "COLLEGE",
+                "Đại học": "BACHELOR",
+                "Thạc sĩ": "MASTER",
+                "Tiến sĩ": "PHD",
+            };
+            const educationRaw = String(row["Trình độ"] || "").trim();
+            const educationLevel =
+                educationMap[educationRaw] ||
+                educationRaw ||
+                undefined;
+
+            // Map employment type
+            const employmentTypeMap: Record<string, string> = {
+                "Toàn thời gian": "FULL_TIME",
+                "Bán thời gian": "PART_TIME",
+                "Hợp đồng": "CONTRACT",
+                "Thực tập": "INTERN",
+            };
+            const employmentRaw = String(
+                row["Loại hình"] || "",
+            ).trim();
+            const employmentType =
+                employmentTypeMap[employmentRaw] ||
+                employmentRaw ||
+                "FULL_TIME";
+
+            // Map status
+            const statusMap: Record<string, string> = {
+                "Đang làm": "ACTIVE",
+                "Nghỉ phép": "ON_LEAVE",
+                "Đã nghỉ": "RESIGNED",
+                "Đã chấm dứt": "TERMINATED",
+            };
+            const statusRaw = String(row["Trạng thái"] || "").trim();
+            const employeeStatus =
+                statusMap[statusRaw] || statusRaw || "ACTIVE";
+
+            await prisma.user.create({
+                data: {
+                    name: fullName,
+                    email,
+                    employeeCode,
+                    fullName,
+                    nationalId: nationalId || undefined,
+                    dateOfBirth,
+                    gender,
+                    nationalIdDate,
+                    nationalIdPlace:
+                        String(row["Nơi cấp CCCD"] || "").trim() ||
+                        undefined,
+                    phone:
+                        String(row["Số điện thoại"] || "").trim() ||
+                        undefined,
+                    personalEmail:
+                        String(row["Email cá nhân"] || "").trim() ||
+                        undefined,
+                    address:
+                        String(row["Địa chỉ"] || "").trim() ||
+                        undefined,
+                    nationality:
+                        String(
+                            row["Quốc tịch"] || "Việt Nam",
+                        ).trim() || "Việt Nam",
+                    ethnicity:
+                        String(row["Dân tộc"] || "Kinh").trim() ||
+                        "Kinh",
+                    religion:
+                        String(row["Tôn giáo"] || "").trim() ||
+                        undefined,
+                    maritalStatus:
+                        String(
+                            row["Tình trạng hôn nhân"] || "",
+                        ).trim() || undefined,
+                    departmentId:
+                        String(row["Phòng ban"] || "").trim() ||
+                        undefined,
+                    position:
+                        String(row["Chức vụ"] || "").trim() ||
+                        undefined,
+                    employmentType,
+                    employeeStatus,
+                    hireDate,
+                    educationLevel,
+                    major:
+                        String(row["Chuyên ngành"] || "").trim() ||
+                        undefined,
+                    university:
+                        String(row["Trường"] || "").trim() ||
+                        undefined,
+                    bankName:
+                        String(row["Ngân hàng"] || "").trim() ||
+                        undefined,
+                    bankAccount:
+                        String(row["Số tài khoản"] || "").trim() ||
+                        undefined,
+                    taxCode:
+                        String(row["Mã số thuế"] || "").trim() ||
+                        undefined,
+                },
+            });
+            success++;
+        } catch (err) {
+            failed++;
+            const error = err as Error;
+            errors.push(`Lỗi dòng: ${error.message}`);
+        }
+    }
+
+    revalidatePath("/employees");
+    return { success, failed, errors };
+}
+
+function parseDate(dateStr: string): Date | undefined {
+    if (!dateStr || dateStr === "null" || dateStr === "undefined")
+        return undefined;
+    const str = String(dateStr).trim();
+    if (!str) return undefined;
+    // Handle dd/MM/yyyy
+    const parts = str.split("/");
+    if (parts.length === 3) {
+        const [day, month, year] = parts.map(Number);
+        if (day && month && year) {
+            return new Date(year, month - 1, day);
+        }
+    }
+    // Try ISO fallback
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return d;
+    return undefined;
 }

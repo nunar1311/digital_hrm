@@ -18,7 +18,7 @@ import {
     deleteEmployee,
     type GetEmployeesResult,
     type EmployeeListItem,
-} from "@/app/(protected)/employees/actions";
+} from "./actions";
 import { PAGE_SIZE } from "@/app/(protected)/departments/constants";
 import { useSocketEvents } from "@/hooks/use-socket-event";
 import { Button } from "@/components/ui/button";
@@ -39,8 +39,8 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MoveEmployeesDialog } from "@/components/departments/move-employees-dialog";
-import { AddEmployeesToDepartmentDialog } from "@/components/departments/add-employees-dialog";
 import { TableSettingsPanel } from "@/components/ui/table-settings-panel";
+import { AddEmployeeDialog } from "@/components/employees/add-employee-dialog";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -95,15 +95,7 @@ const STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
     { value: "TERMINATED", label: "Sa thải" },
 ];
 
-interface DepartmentEmployeesClientProps {
-    departmentId: string;
-    departmentName: string;
-}
-
-export function DepartmentEmployeesClient({
-    departmentId,
-    departmentName,
-}: DepartmentEmployeesClientProps) {
+export function EmployeesClient() {
     const queryClient = useQueryClient();
 
     // Search state
@@ -132,6 +124,7 @@ export function DepartmentEmployeesClient({
     const [columnVisibility, setColumnVisibility] = useState<
         Record<string, boolean>
     >({
+        select: true,
         employeeCode: true,
         fullName: true,
         position: true,
@@ -187,7 +180,6 @@ export function DepartmentEmployeesClient({
             {
                 pageSize: PAGE_SIZE,
                 search,
-                departmentId,
                 status: statusFilter,
             },
         ],
@@ -196,7 +188,6 @@ export function DepartmentEmployeesClient({
                 page: pageParam as number,
                 pageSize: PAGE_SIZE,
                 search,
-                departmentId,
                 status: statusFilter,
             }),
         initialPageParam: 1,
@@ -213,15 +204,15 @@ export function DepartmentEmployeesClient({
 
     const total = employeesData?.pages[0]?.total ?? 0;
 
-    // Infinite scroll: intersection observer to load more when scrolling to bottom
     const tableContainerRef = useRef<HTMLDivElement>(null);
 
+    // Infinite scroll: intersection observer to load more when scrolling to bottom
     useEffect(() => {
         const container = tableContainerRef.current;
         if (!container) return;
 
         const sentinel = document.getElementById(
-            "dept-infinite-scroll-sentinel",
+            "infinite-scroll-sentinel",
         );
         if (!sentinel) return;
 
@@ -236,14 +227,12 @@ export function DepartmentEmployeesClient({
                     fetchNextPage();
                 }
             },
-            { root: container, rootMargin: "0px", threshold: 0.1 },
+            { root: container, rootMargin: "400px", threshold: 0.1 },
         );
 
         observer.observe(sentinel);
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-    // ─── Delete handler ───
     const handleDeleteConfirm = useCallback(async () => {
         if (!deleteTarget) return;
 
@@ -407,7 +396,7 @@ export function DepartmentEmployeesClient({
             },
             {
                 accessorKey: "position",
-                header: "Chức vụ",
+                header: "Chức vụ / Phòng ban",
                 cell: ({ row }) => (
                     <Link
                         href={`/employees/${row.original.id}`}
@@ -415,6 +404,9 @@ export function DepartmentEmployeesClient({
                     >
                         <div className="font-medium">
                             {row.original.position || "Chưa rõ"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            {row.original.departmentName || "Chưa rõ"}
                         </div>
                     </Link>
                 ),
@@ -471,11 +463,6 @@ export function DepartmentEmployeesClient({
             <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative">
                 {/* Header */}
                 <section>
-                    <header className="p-2 flex items-center h-10 border-b">
-                        <h1 className="font-bold truncate">
-                            {departmentName}
-                        </h1>
-                    </header>
                     <div className="flex items-center justify-end gap-2 px-2 py-2">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -509,7 +496,6 @@ export function DepartmentEmployeesClient({
                                 align="end"
                                 className="w-56"
                             >
-                                {/* Filter by Status */}
                                 <DropdownMenuLabel className="text-xs text-muted-foreground">
                                     Trạng thái
                                 </DropdownMenuLabel>
@@ -621,7 +607,7 @@ export function DepartmentEmployeesClient({
                             },
                             {
                                 key: "position",
-                                label: "Chức vụ",
+                                label: "Chức vụ / Phòng ban",
                                 icon: BadgeCheck,
                             },
                             {
@@ -642,7 +628,7 @@ export function DepartmentEmployeesClient({
                         wrapText={wrapText}
                         setWrapText={setWrapText}
                         disabledColumnIndices={[2]}
-                        hiddenColumnIndices={[0]}
+                        hiddenColumnIndices={[]}
                     />
                 </section>
 
@@ -818,7 +804,7 @@ export function DepartmentEmployeesClient({
 
                         {/* Infinite scroll sentinel */}
                         <div
-                            id="dept-infinite-scroll-sentinel"
+                            id="infinite-scroll-sentinel"
                             className="h-px"
                         />
 
@@ -835,7 +821,7 @@ export function DepartmentEmployeesClient({
                         {/* Summary */}
                         {!isLoadingEmployees &&
                             employees.length > 0 && (
-                                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-2 py-2 border-t shrink-0 bg-background">
+                                <div className="absolute bottom-0 left-0 right-0 bg-background flex items-center justify-between px-2 py-2 border-t shrink-0">
                                     <p className="text-xs text-muted-foreground">
                                         Hiển thị{" "}
                                         <strong>
@@ -936,8 +922,8 @@ export function DepartmentEmployeesClient({
                 open={moveDialogOpen}
                 onClose={() => setMoveDialogOpen(false)}
                 selectedIds={Array.from(selectedIds)}
-                currentDepartmentId={departmentId}
-                currentDepartmentName={departmentName}
+                currentDepartmentId=""
+                currentDepartmentName="Tất cả phòng ban"
                 onMoved={() => {
                     queryClient.invalidateQueries({
                         queryKey: ["employees"],
@@ -946,17 +932,10 @@ export function DepartmentEmployeesClient({
                 }}
             />
 
-            {/* Add Employees To Department Dialog */}
-            <AddEmployeesToDepartmentDialog
+            {/* Add Employee Dialog */}
+            <AddEmployeeDialog
                 open={addEmployeesOpen}
-                onOpenChange={setAddEmployeesOpen}
-                departmentId={departmentId}
-                departmentName={departmentName}
-                onAssigned={() => {
-                    queryClient.invalidateQueries({
-                        queryKey: ["employees"],
-                    });
-                }}
+                onClose={() => setAddEmployeesOpen(false)}
             />
         </div>
     );

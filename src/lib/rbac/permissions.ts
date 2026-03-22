@@ -38,6 +38,7 @@ export enum Permission {
     EMPLOYEE_CREATE = "employee:create",
     EMPLOYEE_EDIT = "employee:edit",
     EMPLOYEE_DELETE = "employee:delete",
+    EMPLOYEE_UPDATE = "employee:update",
     EMPLOYEE_IMPORT = "employee:import",
     EMPLOYEE_EXPORT = "employee:export",
 

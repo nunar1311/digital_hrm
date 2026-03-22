@@ -411,6 +411,7 @@ export function DepartmentsClient() {
                         onLoadMore={handleFetchNextPage}
                         columnVisibility={columnVisibility}
                         onColumnVisibilityChange={setColumnVisibility}
+                        totalDepartments={departmentsData?.pages[0]?.total ?? 0}
                     />
                 </section>
             </div>

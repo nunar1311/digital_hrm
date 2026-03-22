@@ -54,7 +54,10 @@ interface DepartmentTableProps {
     isFetchingNextPage?: boolean;
     onLoadMore?: () => void;
     columnVisibility?: Record<string, boolean>;
-    onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void;
+    onColumnVisibilityChange?: (
+        visibility: Record<string, boolean>,
+    ) => void;
+    totalDepartments: number;
 }
 
 export function DepartmentTable({
@@ -68,6 +71,7 @@ export function DepartmentTable({
     onLoadMore,
     columnVisibility = {},
     onColumnVisibilityChange,
+    totalDepartments,
 }: DepartmentTableProps) {
     const columns = useMemo<ColumnDef<DepartmentListItem>[]>(
         () => [
@@ -403,6 +407,21 @@ export function DepartmentTable({
                     isFetchingNextPage={!!isFetchingNextPage}
                     onLoadMore={onLoadMore}
                 />
+            )}
+
+            {/* Summary */}
+            {!isLoading && data.length > 0 && (
+                <div className="absolute bottom-0 left-0 right-0 bg-background flex items-center justify-between px-2 py-2 border-t shrink-0">
+                    <p className="text-xs text-muted-foreground">
+                        Hiển thị <strong>{data.length}</strong> /{" "}
+                        <strong>{totalDepartments}</strong> phòng ban
+                    </p>
+                    {!hasNextPage && data.length < totalDepartments && (
+                        <span className="text-xs text-muted-foreground">
+                            Đã tải hết
+                        </span>
+                    )}
+                </div>
             )}
         </div>
     );

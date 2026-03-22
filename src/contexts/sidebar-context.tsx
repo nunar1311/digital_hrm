@@ -11,6 +11,7 @@ import type { DepartmentNode } from "@/types/org-chart";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import DepartmentSidebar from "@/components/departments/department-sidebar";
+import EmployeeSidebar from "@/components/employees/employee-sidebar";
 
 interface SidebarContextValue {
     departmentTree: DepartmentNode[];
@@ -66,6 +67,12 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
         ) {
             return "departments";
         }
+        if (
+            pathname === "/employees" ||
+            pathname.startsWith("/employees/")
+        ) {
+            return "employees";
+        }
         return "default";
     }, [pathname]);
 
@@ -74,6 +81,9 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
             return (
                 <DepartmentSidebar departmentTree={departmentTree} />
             );
+        }
+        if (sidebarType === "employees") {
+            return <EmployeeSidebar />;
         }
         return <AppSidebar />;
     }, [sidebarType, departmentTree]);
