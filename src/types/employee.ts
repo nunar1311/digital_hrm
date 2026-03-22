@@ -27,7 +27,6 @@ export interface Employee {
     // Thông tin công việc
     departmentId: string | null;
     positionId: string | null;
-    jobTitleId: string | null;
     managerId: string | null;
     employmentType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERN';
     status: 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED' | 'TERMINATED';

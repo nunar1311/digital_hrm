@@ -127,7 +127,7 @@ export function EmployeesClient() {
         select: true,
         employeeCode: true,
         fullName: true,
-        position: true,
+        positionName: true,
         phone: true,
         employeeStatus: true,
     });
@@ -395,7 +395,7 @@ export function EmployeesClient() {
                 },
             },
             {
-                accessorKey: "position",
+                accessorKey: "positionName",
                 header: "Chức vụ / Phòng ban",
                 cell: ({ row }) => (
                     <Link
@@ -403,7 +403,7 @@ export function EmployeesClient() {
                         className="hover:text-foreground"
                     >
                         <div className="font-medium">
-                            {row.original.position || "Chưa rõ"}
+                            {row.original.positionName || "Chưa rõ"}
                         </div>
                         <div className="text-xs text-muted-foreground">
                             {row.original.departmentName || "Chưa rõ"}
@@ -606,8 +606,9 @@ export function EmployeesClient() {
                                 icon: User,
                             },
                             {
-                                key: "position",
+                                key: "positionName",
                                 label: "Chức vụ / Phòng ban",
+
                                 icon: BadgeCheck,
                             },
                             {

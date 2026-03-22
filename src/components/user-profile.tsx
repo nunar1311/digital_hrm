@@ -36,7 +36,6 @@ import { offset } from "@floating-ui/dom";
 import "shepherd.js/dist/css/shepherd.css";
 import "./shepherd.css";
 import ThemePreset from "./themes/theme-preset";
-import { NotificationBell } from "./notifications/notification-bell";
 
 const UserProfile = () => {
     const router = useRouter();

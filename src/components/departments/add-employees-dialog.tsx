@@ -293,13 +293,13 @@ export function AddEmployeesToDepartmentDialog({
                                             emp.fullName || emp.name;
 
                                         return (
-                                            <button
+                                            <div
                                                 key={emp.id}
                                                 onClick={() =>
                                                     toggleOne(emp.id)
                                                 }
                                                 className={cn(
-                                                    "w-full flex items-start gap-2.5 px-2 py-2 rounded-md text-left transition-all",
+                                                    "w-full flex items-center cursor-pointer gap-2.5 px-2 py-2 rounded-md text-left transition-all",
                                                     isSelected
                                                         ? "bg-primary/10 border border-primary/30"
                                                         : "hover:bg-muted/60 border border-transparent",
@@ -344,12 +344,12 @@ export function AddEmployeesToDepartmentDialog({
                                                         </span>
                                                         <span>·</span>
                                                         <span className="truncate">
-                                                            {emp.position ||
+                                                            {(emp.position as { name?: string } | null)?.name ||
                                                                 "Chưa rõ"}
                                                         </span>
                                                     </div>
                                                 </div>
-                                            </button>
+                                            </div>
                                         );
                                     })
                                 )}
@@ -505,7 +505,8 @@ function EmployeeDetail({
                         {displayName}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                        {employee.position || "Chưa có chức vụ"}
+                        {(employee.position as { name?: string } | null)?.name ||
+                            "Chưa có chức vụ"}
                     </p>
                 </div>
                 <Badge variant="outline" className="text-xs">
@@ -586,7 +587,8 @@ function MultipleEmployeesList({
                                     </p>
                                     <p className="text-xs text-muted-foreground">
                                         {emp.employeeCode || "---"} ·{" "}
-                                        {emp.position || "Chưa rõ"}
+                                        {(emp.position as { name?: string } | null)?.name ||
+                                            "Chưa rõ"}
                                     </p>
                                 </div>
                                 <Button

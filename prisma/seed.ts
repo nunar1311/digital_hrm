@@ -19,7 +19,6 @@ const auth = betterAuth({
         additionalFields: {
             employeeCode: { type: "string", required: false },
             departmentId: { type: "string", required: false },
-            position: { type: "string", required: false },
             hrmRole: { type: "string", defaultValue: "EMPLOYEE" },
         },
     },
@@ -32,7 +31,6 @@ const DEMO_USERS = [
         password: "Admin@123",
         hrmRole: "SUPER_ADMIN",
         employeeCode: "SA-001",
-        position: "Quản trị hệ thống",
     },
     {
         name: "Nguyễn Văn Giám Đốc",
@@ -40,7 +38,6 @@ const DEMO_USERS = [
         password: "Director@123",
         hrmRole: "DIRECTOR",
         employeeCode: "DIR-001",
-        position: "Giám đốc",
     },
     {
         name: "Trần Thị HR Manager",
@@ -48,7 +45,6 @@ const DEMO_USERS = [
         password: "HrManager@123",
         hrmRole: "HR_MANAGER",
         employeeCode: "HR-001",
-        position: "Trưởng phòng Nhân sự",
     },
     {
         name: "Lê Văn HR Staff",
@@ -56,7 +52,6 @@ const DEMO_USERS = [
         password: "HrStaff@123",
         hrmRole: "HR_STAFF",
         employeeCode: "HR-002",
-        position: "Nhân viên Nhân sự",
     },
     {
         name: "Phạm Văn Trưởng Phòng",
@@ -64,7 +59,6 @@ const DEMO_USERS = [
         password: "DeptManager@123",
         hrmRole: "DEPT_MANAGER",
         employeeCode: "DM-001",
-        position: "Trưởng phòng Kỹ thuật",
     },
     {
         name: "Hoàng Thị Team Leader",
@@ -72,7 +66,6 @@ const DEMO_USERS = [
         password: "TeamLeader@123",
         hrmRole: "TEAM_LEADER",
         employeeCode: "TL-001",
-        position: "Trưởng nhóm Frontend",
     },
     {
         name: "Vũ Văn Nhân Viên",
@@ -80,7 +73,6 @@ const DEMO_USERS = [
         password: "Employee@123",
         hrmRole: "EMPLOYEE",
         employeeCode: "EMP-001",
-        position: "Lập trình viên",
     },
     {
         name: "Đỗ Thị Kế Toán",
@@ -88,7 +80,6 @@ const DEMO_USERS = [
         password: "Accountant@123",
         hrmRole: "ACCOUNTANT",
         employeeCode: "ACC-001",
-        position: "Kế toán trưởng",
     },
     {
         name: "Ngô Văn IT Admin",
@@ -96,7 +87,6 @@ const DEMO_USERS = [
         password: "ItAdmin@123",
         hrmRole: "IT_ADMIN",
         employeeCode: "IT-001",
-        position: "Quản trị IT",
     },
 ];
 
@@ -112,7 +102,6 @@ async function seed() {
                     password: user.password,
                     hrmRole: user.hrmRole,
                     employeeCode: user.employeeCode,
-                    position: user.position,
                 },
             });
 
@@ -289,41 +278,50 @@ async function seed() {
     // ─── Seed Positions ───
     console.log("\n💼 Seeding positions...\n");
 
-    const positions = [
-        { name: "Giám đốc", code: "POS-DIR", departmentId: bgd.id, level: 1 },
-        { name: "Phó Giám đốc", code: "POS-VDIR", departmentId: bgd.id, level: 2 },
-        { name: "Trưởng phòng Nhân sự", code: "POS-HR-MGR", departmentId: deptMap["HR"], level: 1 },
-        { name: "Nhân viên Nhân sự", code: "POS-HR-STAFF", departmentId: deptMap["HR"], level: 2 },
-        { name: "Trưởng phòng Kỹ thuật", code: "POS-TECH-MGR", departmentId: deptMap["TECH"], level: 1 },
-        { name: "Trưởng nhóm", code: "POS-TECH-TL", departmentId: deptMap["TECH"], level: 2 },
-        { name: "Lập trình viên", code: "POS-TECH-DEV", departmentId: deptMap["TECH"], level: 3 },
-        { name: "Kỹ sư QA", code: "POS-TECH-QA", departmentId: deptMap["TECH"], level: 3 },
-        { name: "Trưởng phòng Kinh doanh", code: "POS-SALES-MGR", departmentId: deptMap["SALES"], level: 1 },
-        { name: "Nhân viên Kinh doanh", code: "POS-SALES-STAFF", departmentId: deptMap["SALES"], level: 2 },
-        { name: "Trưởng nhóm Kinh doanh", code: "POS-SALES-TL", departmentId: deptMap["SALES"], level: 2 },
-        { name: "Kế toán trưởng", code: "POS-FIN-MGR", departmentId: deptMap["FIN"], level: 1 },
-        { name: "Kế toán viên", code: "POS-FIN-STAFF", departmentId: deptMap["FIN"], level: 2 },
-        { name: "Trưởng phòng Marketing", code: "POS-MKT-MGR", departmentId: deptMap["MKT"], level: 1 },
-        { name: "Nhân viên Marketing", code: "POS-MKT-STAFF", departmentId: deptMap["MKT"], level: 2 },
-        { name: "Quản trị hệ thống", code: "POS-IT-ADMIN", departmentId: deptMap["IT"], level: 1 },
-        { name: "Nhân viên IT Support", code: "POS-IT-STAFF", departmentId: deptMap["IT"], level: 2 },
+    const positionDefs = [
+        { name: "Giám đốc", code: "POS-DIR", authority: "DIRECTOR", departmentId: bgd.id, level: 1, sortOrder: 1, minSalary: 50000000, maxSalary: 100000000, description: "Đại diện pháp luật, điều hành toàn bộ hoạt động công ty" },
+        { name: "Phó Giám đốc", code: "POS-VDIR", authority: "DEPUTY", departmentId: bgd.id, level: 2, sortOrder: 2, minSalary: 40000000, maxSalary: 80000000, description: "Hỗ trợ Giám đốc trong việc điều hành" },
+        { name: "Trưởng phòng Nhân sự", code: "POS-HR-MGR", authority: "MANAGER", departmentId: deptMap["HR"], level: 3, sortOrder: 10, minSalary: 25000000, maxSalary: 50000000, description: "Quản lý toàn bộ hoạt động nhân sự" },
+        { name: "Nhân viên Nhân sự", code: "POS-HR-STAFF", authority: "STAFF", departmentId: deptMap["HR"], level: 6, sortOrder: 11, minSalary: 10000000, maxSalary: 20000000, description: "Thực hiện các công tác nhân sự hàng ngày" },
+        { name: "Trưởng phòng Kỹ thuật", code: "POS-TECH-MGR", authority: "MANAGER", departmentId: deptMap["TECH"], level: 3, sortOrder: 20, minSalary: 30000000, maxSalary: 60000000, description: "Quản lý bộ phận kỹ thuật và phát triển phần mềm" },
+        { name: "Trưởng nhóm", code: "POS-TECH-TL", authority: "TEAM_LEAD", departmentId: deptMap["TECH"], level: 5, sortOrder: 21, minSalary: 20000000, maxSalary: 35000000, description: "Điều phối công việc của nhóm phát triển" },
+        { name: "Lập trình viên", code: "POS-TECH-DEV", authority: "STAFF", departmentId: deptMap["TECH"], level: 6, sortOrder: 22, minSalary: 12000000, maxSalary: 30000000, description: "Phát triển và bảo trì phần mềm" },
+        { name: "Kỹ sư QA", code: "POS-TECH-QA", authority: "STAFF", departmentId: deptMap["TECH"], level: 6, sortOrder: 23, minSalary: 10000000, maxSalary: 25000000, description: "Kiểm thử và đảm bảo chất lượng phần mềm" },
+        { name: "Trưởng phòng Kinh doanh", code: "POS-SALES-MGR", authority: "MANAGER", departmentId: deptMap["SALES"], level: 3, sortOrder: 30, minSalary: 25000000, maxSalary: 55000000, description: "Quản lý bộ phận kinh doanh" },
+        { name: "Nhân viên Kinh doanh", code: "POS-SALES-STAFF", authority: "STAFF", departmentId: deptMap["SALES"], level: 6, sortOrder: 31, minSalary: 8000000, maxSalary: 20000000, description: "Tìm kiếm và chăm sóc khách hàng" },
+        { name: "Trưởng nhóm Kinh doanh", code: "POS-SALES-TL", authority: "TEAM_LEAD", departmentId: deptMap["SALES"], level: 5, sortOrder: 32, minSalary: 15000000, maxSalary: 30000000, description: "Điều phối nhóm kinh doanh" },
+        { name: "Kế toán trưởng", code: "POS-FIN-MGR", authority: "MANAGER", departmentId: deptMap["FIN"], level: 3, sortOrder: 40, minSalary: 25000000, maxSalary: 50000000, description: "Quản lý toàn bộ hoạt động tài chính - kế toán" },
+        { name: "Kế toán viên", code: "POS-FIN-STAFF", authority: "STAFF", departmentId: deptMap["FIN"], level: 6, sortOrder: 41, minSalary: 8000000, maxSalary: 18000000, description: "Thực hiện nghiệp vụ kế toán" },
+        { name: "Trưởng phòng Marketing", code: "POS-MKT-MGR", authority: "MANAGER", departmentId: deptMap["MKT"], level: 3, sortOrder: 50, minSalary: 25000000, maxSalary: 50000000, description: "Quản lý hoạt động marketing" },
+        { name: "Nhân viên Marketing", code: "POS-MKT-STAFF", authority: "STAFF", departmentId: deptMap["MKT"], level: 6, sortOrder: 51, minSalary: 8000000, maxSalary: 20000000, description: "Thực hiện các hoạt động marketing" },
+        { name: "Quản trị hệ thống", code: "POS-IT-ADMIN", authority: "MANAGER", departmentId: deptMap["IT"], level: 3, sortOrder: 60, minSalary: 20000000, maxSalary: 45000000, description: "Quản trị hệ thống CNTT và bảo mật" },
+        { name: "Nhân viên IT Support", code: "POS-IT-STAFF", authority: "STAFF", departmentId: deptMap["IT"], level: 6, sortOrder: 61, minSalary: 8000000, maxSalary: 20000000, description: "Hỗ trợ kỹ thuật và bảo trì hệ thống" },
+        { name: "Thực tập sinh", code: "POS-INTERN", authority: "INTERN", departmentId: null, level: 7, sortOrder: 99, minSalary: 4000000, maxSalary: 8000000, description: "Thực tập sinh" },
     ];
 
-    for (const pos of positions) {
-        await prisma.position.upsert({
+    const posMap: Record<string, string> = {};
+    for (const pos of positionDefs) {
+        const created = await prisma.position.upsert({
             where: { code: pos.code },
             update: {},
             create: {
                 name: pos.name,
                 code: pos.code,
+                authority: pos.authority,
                 departmentId: pos.departmentId,
                 level: pos.level,
+                sortOrder: pos.sortOrder,
+                minSalary: pos.minSalary,
+                maxSalary: pos.maxSalary,
+                description: pos.description,
+                status: "ACTIVE",
             },
         });
+        posMap[pos.code] = created.id;
         console.log(`  ✅ ${pos.name} (${pos.code})`);
     }
 
-    // ─── Update user departmentId and jobTitle ───
+    // ─── Update user departmentId and positionId ───
     console.log("\n🔗 Linking users to departments and positions...\n");
     const userDeptLinks: { email: string; deptCode: string; positionCode: string }[] = [
         { email: "admin@company.vn", deptCode: "BGD", positionCode: "POS-IT-ADMIN" },
@@ -343,7 +341,7 @@ async function seed() {
         if (dept || position) {
             await prisma.user.updateMany({
                 where: { email: link.email },
-                data: { departmentId: dept?.id, jobTitleId: position?.id },
+                data: { departmentId: dept?.id, positionId: position?.id },
             });
             console.log(`  ✅ ${link.email} → ${link.deptCode} (${link.positionCode})`);
         }
@@ -591,8 +589,7 @@ async function seedEmployees() {
                     name: emp.name,
                     employeeCode: emp.code,
                     departmentId: deptId,
-                    jobTitleId: posId,
-                    position: emp.pos,
+                    positionId: posId,
                     hrmRole: emp.role,
                     gender: emp.gender,
                     dateOfBirth: new Date(emp.dob),

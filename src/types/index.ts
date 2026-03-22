@@ -3,7 +3,12 @@
 // =============================================================================
 
 // Organization
-export type { Department, Position, JobTitle } from './department';
+export type {
+    Department,
+    Position,
+    PositionAuthority,
+    PositionStatus,
+} from './department';
 
 // Employee
 export type {

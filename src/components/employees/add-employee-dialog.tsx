@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
     useMutation,
     useQuery,
@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
     createEmployee,
+    checkNationalIdExists,
     generateEmployeeCode,
     importEmployeesBatch,
     getDepartmentOptions,
@@ -65,6 +66,9 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { SidebarMenuButton } from "../ui/sidebar";
+import { cn } from "@/lib/utils";
+import { Textarea } from "../ui/textarea";
+import { PositionDropdown } from "../positions/position-dropdown";
 
 // ─── Zod Schema ─────────────────────────────────────────────────────────────
 
@@ -84,7 +88,7 @@ const addEmployeeSchema = z.object({
     religion: z.string().optional(),
     maritalStatus: z.string().optional(),
     departmentId: z.string().optional(),
-    position: z.string().optional(),
+    positionId: z.string().optional(),
     employmentType: z.string().optional(),
     hireDate: z.date().optional(),
     probationEnd: z.date().optional(),
@@ -505,7 +509,7 @@ export function AddEmployeeDialog({
             religion: "",
             maritalStatus: undefined,
             departmentId: undefined,
-            position: "",
+            positionId: "",
             employmentType: "FULL_TIME",
             hireDate: new Date(),
             probationEnd: new Date(),
@@ -537,7 +541,7 @@ export function AddEmployeeDialog({
                 religion: "",
                 maritalStatus: undefined,
                 departmentId: undefined,
-                position: "",
+                positionId: "",
                 employmentType: "FULL_TIME",
                 hireDate: new Date(),
                 probationEnd: new Date(),
@@ -556,9 +560,62 @@ export function AddEmployeeDialog({
         }
     }, [open, form]);
 
+    // ── Debounced CCCD existence check ──
+    const cccdDebounceTimer = useRef<ReturnType<
+        typeof setTimeout
+    > | null>(null);
+    const [cccdStatus, setCccdStatus] = useState<
+        "idle" | "checking" | "exists" | "available"
+    >("idle");
+    const [cccdExistsName, setCccdExistsName] = useState<string>("");
+
+    const nationalId = form.watch("nationalId");
+
+    useEffect(() => {
+        const currentNationalId = form.getValues("nationalId");
+        if (!currentNationalId || currentNationalId.length < 9) {
+            setCccdStatus("idle");
+            setCccdExistsName("");
+            return;
+        }
+        setCccdStatus("checking");
+
+        if (cccdDebounceTimer.current)
+            clearTimeout(cccdDebounceTimer.current);
+        cccdDebounceTimer.current = setTimeout(async () => {
+            try {
+                const result =
+                    await checkNationalIdExists(currentNationalId);
+                if (result.exists) {
+                    setCccdStatus("exists");
+                    setCccdExistsName(result.employeeName || "");
+                } else {
+                    setCccdStatus("available");
+                    setCccdExistsName("");
+                }
+            } catch {
+                setCccdStatus("idle");
+            }
+        }, 600);
+    }, [nationalId, form]);
+
+    // Clear CCCD status when dialog closes
+    useEffect(() => {
+        if (!open) {
+            setCccdStatus("idle");
+            setCccdExistsName("");
+        }
+    }, [open]);
+
     // ── Create employee mutation ──
     const createMutation = useMutation({
         mutationFn: async (data: AddEmployeeFormValues) => {
+            if (cccdStatus === "exists") {
+                throw new Error(
+                    `CCCD ${data.nationalId} đã được đăng ký cho nhân viên khác. Vui lòng kiểm tra lại.`,
+                );
+            }
+
             const email =
                 data.personalEmail ||
                 `${data.fullName.toLowerCase().replace(/\s+/g, ".")}.${employeeCode.toLowerCase()}@placeholder.local`;
@@ -582,7 +639,7 @@ export function AddEmployeeDialog({
                 religion: data.religion,
                 maritalStatus: data.maritalStatus,
                 departmentId: data.departmentId,
-                position: data.position,
+                positionId: data.positionId,
                 employmentType: data.employmentType,
                 hireDate: data.hireDate
                     ? new Date(data.hireDate)
@@ -670,7 +727,7 @@ export function AddEmployeeDialog({
                     !o && !isPending && handleClose()
                 }
             >
-                <DialogContent className="sm:max-w-3xl h-[90vh] flex flex-col p-0 gap-0">
+                <DialogContent className="sm:max-w-3xl h-[75vh] max-h-[75vh] flex flex-col p-0 gap-0">
                     {/* Header */}
                     <div className="px-6 pt-6 pb-4 border-b shrink-0">
                         <div className="flex items-center justify-between">
@@ -682,15 +739,6 @@ export function AddEmployeeDialog({
                                     Nhập thông tin nhân viên hoặc
                                     import từ file Excel
                                 </DialogDescription>
-                            </div>
-                            {/* Employee code badge */}
-                            <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-lg border shrink-0">
-                                <span className="text-xs text-muted-foreground">
-                                    Mã NV:
-                                </span>
-                                <span className="font-mono font-semibold text-sm text-foreground">
-                                    {employeeCode || "---"}
-                                </span>
                             </div>
                         </div>
                     </div>
@@ -708,6 +756,8 @@ export function AddEmployeeDialog({
                                         <SidebarMenuButton
                                             key={section.key}
                                             isActive={isActive}
+                                            disabled
+                                            className="disabled:opacity-100"
                                             onClick={() =>
                                                 setActiveSection(
                                                     section.key,
@@ -747,26 +797,56 @@ export function AddEmployeeDialog({
                         {/* Content area */}
                         <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
                             <Form {...form}>
-                                <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0">
+                                <form
+                                    onSubmit={onSubmit}
+                                    className="flex flex-col flex-1 min-h-0"
+                                >
                                     {/* Scrollable content */}
                                     <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
                                         {/* ── Section 1: Thông tin cơ bản ── */}
                                         {activeSection ===
                                             "basic" && (
-                                            <Card>
-                                                <CardHeader>
-                                                    <CardTitle className="text-base flex items-center gap-2">
-                                                        <User className="h-4 w-4 text-primary" />
-                                                        Thông tin cơ
-                                                        bản
-                                                    </CardTitle>
-                                                    <CardDescription>
-                                                        Thông tin cá
-                                                        nhân bắt buộc
-                                                        của nhân viên
-                                                    </CardDescription>
-                                                </CardHeader>
-                                                <CardContent className="space-y-4">
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex flex-col items-start">
+                                                        <h3 className="text-base font-semibold">
+                                                            Thông tin
+                                                            cơ bản
+                                                        </h3>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Thông tin
+                                                            cá nhân
+                                                            bắt buộc
+                                                            của nhân
+                                                            viên
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Employee code badge */}
+                                                    <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-lg border shrink-0">
+                                                        <span className="text-xs text-muted-foreground">
+                                                            Mã NV:
+                                                        </span>
+                                                        <span className="font-mono font-semibold text-sm text-foreground">
+                                                            {employeeCode ||
+                                                                "---"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {cccdStatus ===
+                                                    "exists" &&
+                                                    cccdExistsName && (
+                                                        <p className="text-xs text-destructive">
+                                                            CCCD đã
+                                                            tồn tại:{" "}
+                                                            <span className="font-medium">
+                                                                {
+                                                                    cccdExistsName
+                                                                }
+                                                            </span>
+                                                        </p>
+                                                    )}
+                                                <div className="space-y-4">
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <FormField
                                                             control={
@@ -787,11 +867,10 @@ export function AddEmployeeDialog({
                                                                     </FormLabel>
                                                                     <FormControl>
                                                                         <Input
-                                                                            placeholder="Nguyễn Văn A"
+                                                                            placeholder="Nhập họ và tên"
                                                                             {...field}
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -821,7 +900,6 @@ export function AddEmployeeDialog({
                                                                             }
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -844,12 +922,45 @@ export function AddEmployeeDialog({
                                                                         </span>
                                                                     </FormLabel>
                                                                     <FormControl>
-                                                                        <Input
-                                                                            placeholder="079123456789"
-                                                                            {...field}
-                                                                        />
+                                                                        <div className="relative">
+                                                                            <Input
+                                                                                maxLength={
+                                                                                    12
+                                                                                }
+                                                                                minLength={
+                                                                                    9
+                                                                                }
+                                                                                placeholder="Nhập số CCCD"
+                                                                                {...field}
+                                                                                className={
+                                                                                    cccdStatus ===
+                                                                                    "exists"
+                                                                                        ? "pr-10 border-destructive focus-visible:ring-destructive"
+                                                                                        : cccdStatus ===
+                                                                                            "available"
+                                                                                          ? "pr-10 border-green-500 focus-visible:ring-green-500/50"
+                                                                                          : cccdStatus ===
+                                                                                              "checking"
+                                                                                            ? "pr-10"
+                                                                                            : "pr-10"
+                                                                                }
+                                                                            />
+                                                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                                                {cccdStatus ===
+                                                                                    "checking" && (
+                                                                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                                                                )}
+                                                                                {cccdStatus ===
+                                                                                    "exists" && (
+                                                                                    <AlertCircle className="h-4 w-4 text-destructive" />
+                                                                                )}
+                                                                                {cccdStatus ===
+                                                                                    "available" && (
+                                                                                    <CheckCircle className="h-4 w-4 text-green-500" />
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -875,7 +986,7 @@ export function AddEmployeeDialog({
                                                                         }
                                                                     >
                                                                         <FormControl>
-                                                                            <SelectTrigger>
+                                                                            <SelectTrigger className="w-full">
                                                                                 <SelectValue placeholder="Chọn giới tính" />
                                                                             </SelectTrigger>
                                                                         </FormControl>
@@ -891,7 +1002,6 @@ export function AddEmployeeDialog({
                                                                             </SelectItem>
                                                                         </SelectContent>
                                                                     </Select>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -922,7 +1032,6 @@ export function AddEmployeeDialog({
                                                                             }
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -942,17 +1051,16 @@ export function AddEmployeeDialog({
                                                                     </FormLabel>
                                                                     <FormControl>
                                                                         <Input
-                                                                            placeholder="TP. Hồ Chí Minh"
+                                                                            placeholder="Nhập nơi cấp CCCD"
                                                                             {...field}
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
                                                     </div>
 
-                                                    <div className="grid grid-cols-3 gap-4">
+                                                    <div className="grid grid-cols-2 gap-4">
                                                         <FormField
                                                             control={
                                                                 form.control
@@ -968,10 +1076,10 @@ export function AddEmployeeDialog({
                                                                     </FormLabel>
                                                                     <FormControl>
                                                                         <Input
+                                                                            placeholder="Nhập quốc tịch"
                                                                             {...field}
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -990,32 +1098,10 @@ export function AddEmployeeDialog({
                                                                     </FormLabel>
                                                                     <FormControl>
                                                                         <Input
+                                                                            placeholder="Nhập dân tộc"
                                                                             {...field}
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
-                                                                </FormItem>
-                                                            )}
-                                                        />
-                                                        <FormField
-                                                            control={
-                                                                form.control
-                                                            }
-                                                            name="religion"
-                                                            render={({
-                                                                field,
-                                                            }) => (
-                                                                <FormItem>
-                                                                    <FormLabel>
-                                                                        Tôn
-                                                                        giáo
-                                                                    </FormLabel>
-                                                                    <FormControl>
-                                                                        <Input
-                                                                            {...field}
-                                                                        />
-                                                                    </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1046,7 +1132,7 @@ export function AddEmployeeDialog({
                                                                         }
                                                                     >
                                                                         <FormControl>
-                                                                            <SelectTrigger>
+                                                                            <SelectTrigger className="w-full">
                                                                                 <SelectValue placeholder="Chọn" />
                                                                             </SelectTrigger>
                                                                         </FormControl>
@@ -1069,32 +1155,53 @@ export function AddEmployeeDialog({
                                                                             </SelectItem>
                                                                         </SelectContent>
                                                                     </Select>
-                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name="religion"
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        Tôn
+                                                                        giáo
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            placeholder="Nhập tôn giáo"
+                                                                            {...field}
+                                                                        />
+                                                                    </FormControl>
                                                                 </FormItem>
                                                             )}
                                                         />
                                                     </div>
-                                                </CardContent>
-                                            </Card>
+                                                </div>
+                                            </div>
                                         )}
 
                                         {/* ── Section 2: Công việc ── */}
                                         {activeSection === "work" && (
-                                            <Card>
-                                                <CardHeader>
-                                                    <CardTitle className="text-base flex items-center gap-2">
-                                                        <Briefcase className="h-4 w-4 text-primary" />
+                                            <div className="space-y-4">
+                                                <div className="flex flex-col items-start">
+                                                    <h3 className="text-base font-semibold">
                                                         Thông tin công
                                                         việc
-                                                    </CardTitle>
-                                                    <CardDescription>
+                                                    </h3>
+                                                    <p className="text-sm text-muted-foreground">
                                                         Phòng ban,
                                                         chức vụ và
                                                         trạng thái
                                                         nhân viên
-                                                    </CardDescription>
-                                                </CardHeader>
-                                                <CardContent className="space-y-4">
+                                                    </p>
+                                                </div>
+                                                <div className="space-y-4">
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <FormField
                                                             control={
@@ -1118,7 +1225,7 @@ export function AddEmployeeDialog({
                                                                         }
                                                                     >
                                                                         <FormControl>
-                                                                            <SelectTrigger>
+                                                                            <SelectTrigger className="w-full">
                                                                                 <SelectValue placeholder="Chọn phòng ban" />
                                                                             </SelectTrigger>
                                                                         </FormControl>
@@ -1143,7 +1250,6 @@ export function AddEmployeeDialog({
                                                                             )}
                                                                         </SelectContent>
                                                                     </Select>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1151,7 +1257,7 @@ export function AddEmployeeDialog({
                                                             control={
                                                                 form.control
                                                             }
-                                                            name="position"
+                                                            name="positionId"
                                                             render={({
                                                                 field,
                                                             }) => (
@@ -1161,12 +1267,13 @@ export function AddEmployeeDialog({
                                                                         vụ
                                                                     </FormLabel>
                                                                     <FormControl>
-                                                                        <Input
-                                                                            placeholder="Nhân viên, Trưởng phòng..."
-                                                                            {...field}
+                                                                        <PositionDropdown
+                                                                            value={field.value}
+                                                                            onValueChange={field.onChange}
+                                                                            placeholder="Chọn chức vụ"
+                                                                            className="w-full"
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1195,7 +1302,7 @@ export function AddEmployeeDialog({
                                                                         }
                                                                     >
                                                                         <FormControl>
-                                                                            <SelectTrigger>
+                                                                            <SelectTrigger className="w-full">
                                                                                 <SelectValue placeholder="Chọn loại hình" />
                                                                             </SelectTrigger>
                                                                         </FormControl>
@@ -1220,7 +1327,6 @@ export function AddEmployeeDialog({
                                                                             </SelectItem>
                                                                         </SelectContent>
                                                                     </Select>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1246,7 +1352,7 @@ export function AddEmployeeDialog({
                                                                         }
                                                                     >
                                                                         <FormControl>
-                                                                            <SelectTrigger>
+                                                                            <SelectTrigger className="w-full">
                                                                                 <SelectValue placeholder="Chọn trạng thái" />
                                                                             </SelectTrigger>
                                                                         </FormControl>
@@ -1267,7 +1373,6 @@ export function AddEmployeeDialog({
                                                                             </SelectItem>
                                                                         </SelectContent>
                                                                     </Select>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1298,7 +1403,6 @@ export function AddEmployeeDialog({
                                                                             }
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1327,32 +1431,30 @@ export function AddEmployeeDialog({
                                                                             }
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
                                                     </div>
-                                                </CardContent>
-                                            </Card>
+                                                </div>
+                                            </div>
                                         )}
 
                                         {/* ── Section 3: Liên hệ & Học vấn ── */}
                                         {activeSection ===
                                             "contact" && (
-                                            <Card>
-                                                <CardHeader>
-                                                    <CardTitle className="text-base flex items-center gap-2">
-                                                        <Contact className="h-4 w-4 text-primary" />
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <h3 className="text-base font-semibold">
                                                         Liên hệ & Học
                                                         vấn
-                                                    </CardTitle>
-                                                    <CardDescription>
+                                                    </h3>
+                                                    <p className="text-sm text-muted-foreground">
                                                         Thông tin liên
                                                         lạc và trình
                                                         độ học vấn
-                                                    </CardDescription>
-                                                </CardHeader>
-                                                <CardContent className="space-y-4">
+                                                    </p>
+                                                </div>
+                                                <div className="space-y-4">
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <FormField
                                                             control={
@@ -1367,14 +1469,16 @@ export function AddEmployeeDialog({
                                                                         Số
                                                                         điện
                                                                         thoại
+                                                                        <span className="text-destructive">
+                                                                            *
+                                                                        </span>
                                                                     </FormLabel>
                                                                     <FormControl>
                                                                         <Input
-                                                                            placeholder="0901234567"
+                                                                            placeholder="Nhập số điện thoại"
                                                                             {...field}
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1391,15 +1495,17 @@ export function AddEmployeeDialog({
                                                                         Email
                                                                         cá
                                                                         nhân
+                                                                        <span className="text-destructive">
+                                                                            *
+                                                                        </span>
                                                                     </FormLabel>
                                                                     <FormControl>
                                                                         <Input
                                                                             type="email"
-                                                                            placeholder="email@example.com"
+                                                                            placeholder="Nhập email"
                                                                             {...field}
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1419,17 +1525,39 @@ export function AddEmployeeDialog({
                                                                     chỉ
                                                                 </FormLabel>
                                                                 <FormControl>
-                                                                    <Input
-                                                                        placeholder="123 Đường ABC, Quận 1, TP.HCM"
+                                                                    <Textarea
+                                                                        placeholder="Nhập địa chỉ"
                                                                         {...field}
                                                                     />
                                                                 </FormControl>
-                                                                <FormMessage />
                                                             </FormItem>
                                                         )}
                                                     />
 
-                                                    <div className="grid grid-cols-3 gap-4">
+                                                    <FormField
+                                                        control={
+                                                            form.control
+                                                        }
+                                                        name="university"
+                                                        render={({
+                                                            field,
+                                                        }) => (
+                                                            <FormItem>
+                                                                <FormLabel>
+                                                                    Trường
+                                                                    học
+                                                                </FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        placeholder="Nhập trường học"
+                                                                        {...field}
+                                                                    />
+                                                                </FormControl>
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <div className="grid grid-cols-2 gap-4">
                                                         <FormField
                                                             control={
                                                                 form.control
@@ -1452,7 +1580,7 @@ export function AddEmployeeDialog({
                                                                         }
                                                                     >
                                                                         <FormControl>
-                                                                            <SelectTrigger>
+                                                                            <SelectTrigger className="w-full">
                                                                                 <SelectValue placeholder="Chọn" />
                                                                             </SelectTrigger>
                                                                         </FormControl>
@@ -1478,32 +1606,10 @@ export function AddEmployeeDialog({
                                                                             </SelectItem>
                                                                         </SelectContent>
                                                                     </Select>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
-                                                        <FormField
-                                                            control={
-                                                                form.control
-                                                            }
-                                                            name="university"
-                                                            render={({
-                                                                field,
-                                                            }) => (
-                                                                <FormItem>
-                                                                    <FormLabel>
-                                                                        Trường
-                                                                    </FormLabel>
-                                                                    <FormControl>
-                                                                        <Input
-                                                                            placeholder="ĐH Bách Khoa"
-                                                                            {...field}
-                                                                        />
-                                                                    </FormControl>
-                                                                    <FormMessage />
-                                                                </FormItem>
-                                                            )}
-                                                        />
+
                                                         <FormField
                                                             control={
                                                                 form.control
@@ -1519,37 +1625,35 @@ export function AddEmployeeDialog({
                                                                     </FormLabel>
                                                                     <FormControl>
                                                                         <Input
-                                                                            placeholder="CNTT"
+                                                                            placeholder="Nhập chuyên ngành"
                                                                             {...field}
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
                                                     </div>
-                                                </CardContent>
-                                            </Card>
+                                                </div>
+                                            </div>
                                         )}
 
                                         {/* ── Section 4: Tài khoản ngân hàng ── */}
                                         {activeSection ===
                                             "banking" && (
-                                            <Card>
-                                                <CardHeader>
-                                                    <CardTitle className="text-base flex items-center gap-2">
-                                                        <CreditCard className="h-4 w-4 text-primary" />
+                                            <div>
+                                                <div>
+                                                    <h3 className="text-base font-semibold">
                                                         Tài khoản ngân
                                                         hàng
-                                                    </CardTitle>
-                                                    <CardDescription>
+                                                    </h3>
+                                                    <p className="text-sm text-muted-foreground">
                                                         Thông tin tài
                                                         khoản để nhận
                                                         lương và mã số
                                                         thuế
-                                                    </CardDescription>
-                                                </CardHeader>
-                                                <CardContent className="space-y-4">
+                                                    </p>
+                                                </div>
+                                                <div className="space-y-4">
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <FormField
                                                             control={
@@ -1570,7 +1674,6 @@ export function AddEmployeeDialog({
                                                                             {...field}
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1594,7 +1697,6 @@ export function AddEmployeeDialog({
                                                                             {...field}
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
@@ -1621,13 +1723,12 @@ export function AddEmployeeDialog({
                                                                             {...field}
                                                                         />
                                                                     </FormControl>
-                                                                    <FormMessage />
                                                                 </FormItem>
                                                             )}
                                                         />
                                                     </div>
-                                                </CardContent>
-                                            </Card>
+                                                </div>
+                                            </div>
                                         )}
 
                                         {/* Scrollable inner div ends; footer nav below stays inside <form> */}
@@ -1639,11 +1740,17 @@ export function AddEmployeeDialog({
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            onClick={handlePrevSection}
-                                            disabled={
-                                                isFirstSection || isPending
+                                            onClick={
+                                                handlePrevSection
                                             }
-                                            className="gap-1"
+                                            disabled={
+                                                isFirstSection ||
+                                                isPending
+                                            }
+                                            className={cn(
+                                                isFirstSection &&
+                                                    "invisible",
+                                            )}
                                         >
                                             <ArrowLeft className="h-4 w-4" />
                                             Trước
@@ -1655,10 +1762,13 @@ export function AddEmployeeDialog({
                                                 <button
                                                     key={s.key}
                                                     onClick={() =>
-                                                        setActiveSection(s.key)
+                                                        setActiveSection(
+                                                            s.key,
+                                                        )
                                                     }
                                                     className={`h-2 rounded-full transition-all ${
-                                                        activeSection === s.key
+                                                        activeSection ===
+                                                        s.key
                                                             ? "w-5 bg-primary"
                                                             : "w-2 bg-muted-foreground/30"
                                                     }`}
@@ -1679,17 +1789,16 @@ export function AddEmployeeDialog({
                                                         Đang lưu...
                                                     </>
                                                 ) : (
-                                                    <>
-                                                        <CheckCircle className="h-4 w-4" />
-                                                        Tạo nhân viên
-                                                    </>
+                                                    "Tạo nhân viên"
                                                 )}
                                             </Button>
                                         ) : (
                                             <Button
                                                 type="button"
                                                 size="sm"
-                                                onClick={handleNextSection}
+                                                onClick={
+                                                    handleNextSection
+                                                }
                                                 disabled={isPending}
                                                 className="gap-1"
                                             >

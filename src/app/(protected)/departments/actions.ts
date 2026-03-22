@@ -1,9 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth-session";
 import { Permission } from "@/lib/rbac/permissions";
-import { revalidatePath } from "next/cache";
 import type {
     DepartmentListItem,
     DepartmentStats,
@@ -74,12 +74,19 @@ export async function getDepartments(
                     sortOrder,
             },
             include: {
-                manager: {
+                users: {
+                    where: { employeeStatus: "ACTIVE" },
+                    orderBy: [
+                        { position: { level: "asc" } },
+                        { departmentRole: "asc" },
+                    ],
+                    take: 1,
                     select: {
                         id: true,
                         name: true,
                         image: true,
                         position: true,
+                        departmentRole: true,
                     },
                 },
                 parent: {
@@ -115,6 +122,20 @@ export async function getDepartments(
         employeeCounts.map((e) => [e.departmentId, e._count.id]),
     );
 
+    // Auto-determine manager: user with lowest position.level in department (HEAD as tiebreaker)
+    const getAutoManager = (dept: {
+        users: { id: string; name: string; image: string | null; position: { name: string } | null; departmentRole: string }[];
+    }) => {
+        const topUser = dept.users[0];
+        if (!topUser) return null;
+        return {
+            id: topUser.id,
+            name: topUser.name,
+            image: topUser.image,
+            position: topUser.position?.name ?? null,
+        };
+    };
+
     // Transform to list items
     const items: DepartmentListItem[] = departments.map((dept) => ({
         id: dept.id,
@@ -127,14 +148,7 @@ export async function getDepartments(
         parentId: dept.parentId,
         secondaryParentIds: dept.secondaryParentIds,
         managerId: dept.managerId,
-        manager: dept.manager
-            ? {
-                  id: dept.manager.id,
-                  name: dept.manager.name,
-                  image: dept.manager.image,
-                  position: dept.manager.position,
-              }
-            : null,
+        manager: getAutoManager(dept),
         employeeCount: employeeCountMap.get(dept.id) || 0,
         positionCount: dept._count.positions,
         children: [],
@@ -187,12 +201,19 @@ export async function getAllDepartments(): Promise<
     const departments = await prisma.department.findMany({
         orderBy: { sortOrder: "asc" },
         include: {
-            manager: {
+            users: {
+                where: { employeeStatus: "ACTIVE" },
+                orderBy: [
+                    { position: { level: "asc" } },
+                    { departmentRole: "asc" },
+                ],
+                take: 1,
                 select: {
                     id: true,
                     name: true,
                     image: true,
                     position: true,
+                    departmentRole: true,
                 },
             },
             parent: {
@@ -225,6 +246,20 @@ export async function getAllDepartments(): Promise<
         employeeCounts.map((e) => [e.departmentId, e._count.id]),
     );
 
+    // Auto-determine manager: user with lowest position.level in department (HEAD as tiebreaker)
+    const getAutoManager = (dept: {
+        users: { id: string; name: string; image: string | null; position: { name: string } | null; departmentRole: string }[];
+    }) => {
+        const topUser = dept.users[0];
+        if (!topUser) return null;
+        return {
+            id: topUser.id,
+            name: topUser.name,
+            image: topUser.image,
+            position: topUser.position?.name ?? null,
+        };
+    };
+
     return departments.map((dept) => ({
         id: dept.id,
         name: dept.name,
@@ -236,14 +271,7 @@ export async function getAllDepartments(): Promise<
         parentId: dept.parentId,
         secondaryParentIds: dept.secondaryParentIds,
         managerId: dept.managerId,
-        manager: dept.manager
-            ? {
-                  id: dept.manager.id,
-                  name: dept.manager.name,
-                  image: dept.manager.image,
-                  position: dept.manager.position,
-              }
-            : null,
+        manager: getAutoManager(dept),
         employeeCount: employeeCountMap.get(dept.id) || 0,
         positionCount: dept._count.positions,
         children: [],
@@ -308,7 +336,7 @@ export async function getDepartmentById(
                   id: dept.manager.id,
                   name: dept.manager.name,
                   image: dept.manager.image,
-                  position: dept.manager.position,
+                  position: dept.manager.position?.name ?? null,
               }
             : null,
         employeeCount,
@@ -363,6 +391,7 @@ export async function getDepartmentEmployees(
                 employeeCode: true,
                 position: true,
                 hrmRole: true,
+                departmentRole: true,
                 createdAt: true,
             },
         }),
@@ -400,11 +429,108 @@ export async function getPotentialManagers(): Promise<
             id: true,
             name: true,
             employeeCode: true,
-            position: true,
+            position: { select: { name: true } },
             image: true,
         },
         orderBy: { name: "asc" },
     });
 
-    return employees;
+    return employees.map((e) => ({
+        id: e.id,
+        name: e.name,
+        employeeCode: e.employeeCode,
+        position: e.position?.name ?? null,
+        image: e.image,
+    }));
+}
+
+/**
+ * Cập nhật vai trò phòng ban của nhân viên
+ * Ràng buộc: mỗi phòng ban chỉ có 1 Trưởng phòng và 1 Phó phòng
+ * - Khi đặt HEAD: tìm HEAD cũ trong phòng, hạ xuống MEMBER, set Department.managerId
+ * - Khi đặt DEPUTY: tìm DEPUTY cũ trong phòng, hạ xuống MEMBER
+ * - Khi đặt MEMBER: nếu là HEAD cũ thì xóa Department.managerId
+ */
+export async function updateDepartmentRole(
+    employeeId: string,
+    departmentId: string,
+    role: "HEAD" | "DEPUTY" | "MEMBER",
+): Promise<{ success: boolean; error?: string }> {
+    await requirePermission(Permission.EMPLOYEE_EDIT);
+
+    const employee = await prisma.user.findFirst({
+        where: { id: employeeId, departmentId },
+    });
+    if (!employee) {
+        return {
+            success: false,
+            error: "Nhân viên không thuộc phòng ban này",
+        };
+    }
+
+    // Nếu đã giữ vai trò này rồi thì bỏ qua
+    if (employee.departmentRole === role) {
+        return { success: true };
+    }
+
+    // --- Hạ HEAD cũ khi thay thế bằng HEAD mới ---
+    if (role === "HEAD") {
+        const currentHead = await prisma.user.findFirst({
+            where: {
+                departmentId,
+                departmentRole: "HEAD",
+                id: { not: employeeId },
+            },
+        });
+        if (currentHead) {
+            await prisma.user.update({
+                where: { id: currentHead.id },
+                data: { departmentRole: "MEMBER" },
+            });
+        }
+    }
+
+    if (role === "DEPUTY") {
+        // Hạ DEPUTY cũ xuống MEMBER
+        const currentDeputy = await prisma.user.findFirst({
+            where: {
+                departmentId,
+                departmentRole: "DEPUTY",
+                id: { not: employeeId },
+            },
+        });
+        if (currentDeputy) {
+            await prisma.user.update({
+                where: { id: currentDeputy.id },
+                data: { departmentRole: "MEMBER" },
+            });
+        }
+    }
+
+    // --- Cập nhật vai trò mới ---
+    await prisma.user.update({
+        where: { id: employeeId },
+        data: { departmentRole: role },
+    });
+
+    // Sync Department.managerId cho HEAD
+    if (role === "HEAD") {
+        await prisma.department.update({
+            where: { id: departmentId },
+            data: { managerId: employeeId },
+        });
+    } else if (
+        employee.departmentRole === "HEAD" ||
+        (await prisma.department.findUnique({ where: { id: departmentId } }))
+            ?.managerId === employeeId
+    ) {
+        await prisma.department.update({
+            where: { id: departmentId },
+            data: { managerId: null },
+        });
+    }
+
+    revalidatePath(`/departments/${departmentId}`);
+    revalidatePath("/employees");
+    return { success: true };
 }

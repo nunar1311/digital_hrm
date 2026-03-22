@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { EmailData, EmailTemplateData } from "./types/notification";
 
 const SMTP_HOST = process.env.SMTP_HOST || "";
@@ -20,7 +21,7 @@ export async function sendEmail(data: EmailData): Promise<{
         subject: data.subject,
         body: data.body,
         templateCode: data.templateCode,
-        metadata: data.metadata as Record<string, unknown> | undefined,
+        metadata: data.metadata as Prisma.InputJsonValue,
         status: "PENDING",
       },
     });

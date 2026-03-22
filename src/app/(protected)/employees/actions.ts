@@ -26,13 +26,15 @@ export interface EmployeeListItem {
     email: string;
     image: string | null;
     phone: string | null;
-    position: string | null;
+    positionId: string | null;
+    positionName: string | null;
     departmentId: string | null;
     departmentName: string | null;
     employmentType: string | null;
     employeeStatus: string | null;
     hireDate: Date | null;
     gender: string | null;
+    departmentRole: string | null;
 }
 
 export interface GetEmployeesResult {
@@ -112,6 +114,14 @@ export async function getEmployees(
                         name: true,
                     },
                 },
+                position: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true,
+                        authority: true,
+                    },
+                },
             },
         }),
         prisma.user.count({ where }),
@@ -126,13 +136,17 @@ export async function getEmployees(
         email: emp.email,
         image: emp.image,
         phone: emp.phone,
-        position: emp.position,
+        positionId: emp.position?.id ?? null,
+        positionName: emp.position?.name ?? null,
         departmentId: emp.departmentId,
         departmentName: emp.department?.name || null,
         employmentType: emp.employmentType,
         employeeStatus: emp.employeeStatus,
         hireDate: emp.hireDate,
         gender: emp.gender,
+        departmentRole:
+            (emp as unknown as { departmentRole?: string | null })
+                .departmentRole ?? null,
     }));
 
     return {
@@ -169,7 +183,15 @@ export async function getEmployeeById(id: string) {
                     name: true,
                     employeeCode: true,
                     image: true,
-                    position: true,
+                    position: { select: { id: true, name: true } },
+                },
+            },
+            position: {
+                select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                    authority: true,
                 },
             },
         },
@@ -187,13 +209,35 @@ export async function getEmployeeById(id: string) {
             name: true,
             employeeCode: true,
             image: true,
-            position: true,
+            position: { select: { id: true, name: true } },
         },
     });
 
     return {
         ...employee,
         directReports,
+        userId: id,
+        status: employee.employeeStatus,
+    };
+}
+
+/**
+ * Kiểm tra CCCD đã tồn tại trong hệ thống hay chưa
+ */
+export async function checkNationalIdExists(
+    nationalId: string,
+): Promise<{ exists: boolean; employeeName?: string }> {
+    if (!nationalId || nationalId.length < 9) {
+        return { exists: false };
+    }
+    const user = await prisma.user.findFirst({
+        where: { nationalId },
+        select: { fullName: true, name: true },
+    });
+    if (!user) return { exists: false };
+    return {
+        exists: true,
+        employeeName: user.fullName || user.name,
     };
 }
 
@@ -219,8 +263,7 @@ export async function createEmployee(data: {
     ethnicity?: string;
     maritalStatus?: string;
     departmentId?: string;
-    position?: string;
-    jobTitleId?: string;
+    positionId?: string;
     managerId?: string;
     employmentType?: string;
     employeeStatus?: string;
@@ -260,8 +303,7 @@ export async function createEmployee(data: {
             ethnicity: data.ethnicity,
             maritalStatus: data.maritalStatus,
             departmentId: data.departmentId,
-            position: data.position,
-            jobTitleId: data.jobTitleId,
+            positionId: data.positionId,
             managerId: data.managerId,
             employmentType: data.employmentType,
             employeeStatus: data.employeeStatus || "ACTIVE",
@@ -309,8 +351,7 @@ export async function updateEmployee(
         ethnicity: string;
         maritalStatus: string;
         departmentId: string;
-        position: string;
-        jobTitleId: string;
+        positionId: string;
         managerId: string;
         employmentType: string;
         employeeStatus: string;
@@ -389,7 +430,8 @@ export async function updateEmployeesDepartment(
 
     const employees = await prisma.user.updateMany({
         where: { id: { in: employeeIds } },
-        data: { departmentId },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: { departmentId, departmentRole: "MEMBER" } as any,
     });
 
     revalidatePath("/employees");
@@ -425,7 +467,7 @@ export async function getAllEmployees() {
             name: true,
             employeeCode: true,
             image: true,
-            position: true,
+            position: { select: { id: true, name: true } },
             departmentId: true,
         },
     });
@@ -466,7 +508,7 @@ export async function getAssignableEmployees(search?: string) {
             fullName: true,
             employeeCode: true,
             image: true,
-            position: true,
+            position: { select: { id: true, name: true } },
             phone: true,
             email: true,
             dateOfBirth: true,
@@ -567,9 +609,9 @@ export async function importEmployeesBatch(
 
             // Map gender
             const genderMap: Record<string, string> = {
-                "Nam": "MALE",
-                "Nữ": "FEMALE",
-                "Khác": "OTHER",
+                Nam: "MALE",
+                Nữ: "FEMALE",
+                Khác: "OTHER",
             };
             const genderRaw = String(row["Giới tính"] || "").trim();
             const gender =
@@ -654,7 +696,7 @@ export async function importEmployeesBatch(
                     departmentId:
                         String(row["Phòng ban"] || "").trim() ||
                         undefined,
-                    position:
+                    positionId:
                         String(row["Chức vụ"] || "").trim() ||
                         undefined,
                     employmentType,

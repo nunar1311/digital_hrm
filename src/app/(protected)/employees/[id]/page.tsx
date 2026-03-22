@@ -49,7 +49,7 @@ export default async function EmployeeProfilePage({
 
     const displayName = employee.fullName || employee.name;
     const displayPosition =
-        employee.position || "Chưa cập nhật chức vụ";
+        (employee.position as { name?: string } | null)?.name || "Chưa cập nhật chức vụ";
     const displayDepartment =
         employee.department?.name || "Chưa cập nhật";
 
@@ -184,11 +184,11 @@ export default async function EmployeeProfilePage({
                 </TabsContent>
 
                 <TabsContent value="contracts">
-                    <ContractsTab />
+                    <ContractsTab employeeId={resolvedParams.id} />
                 </TabsContent>
 
                 <TabsContent value="timeline">
-                    <TimelineTab />
+                    <TimelineTab employeeId={resolvedParams.id} />
                 </TabsContent>
             </Tabs>
         </div>

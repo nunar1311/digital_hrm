@@ -36,8 +36,12 @@ import {
     Phone,
     CircleDot,
     Loader2,
+    Crown,
+    Shield,
+    MoreHorizontal,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RoleDropdown } from "@/components/departments/role-dropdown";
 import { MoveEmployeesDialog } from "@/components/departments/move-employees-dialog";
 import { AddEmployeesToDepartmentDialog } from "@/components/departments/add-employees-dialog";
 import { TableSettingsPanel } from "@/components/ui/table-settings-panel";
@@ -134,9 +138,10 @@ export function DepartmentEmployeesClient({
     >({
         employeeCode: true,
         fullName: true,
-        position: true,
+        positionName: true,
         phone: true,
         employeeStatus: true,
+        departmentRole: true,
     });
 
     // Settings panel state
@@ -175,6 +180,7 @@ export function DepartmentEmployeesClient({
         },
     );
 
+    // ─── Delete handler ───
     const {
         data: employeesData,
         isLoading: isLoadingEmployees,
@@ -406,7 +412,7 @@ export function DepartmentEmployeesClient({
                 },
             },
             {
-                accessorKey: "position",
+                accessorKey: "positionName",
                 header: "Chức vụ",
                 cell: ({ row }) => (
                     <Link
@@ -414,7 +420,7 @@ export function DepartmentEmployeesClient({
                         className="hover:text-foreground"
                     >
                         <div className="font-medium">
-                            {row.original.position || "Chưa rõ"}
+                            {row.original.positionName || "Chưa rõ"}
                         </div>
                     </Link>
                 ),
@@ -450,8 +456,76 @@ export function DepartmentEmployeesClient({
                     </Link>
                 ),
             },
+            {
+                accessorKey: "departmentRole",
+                header: "Vai trò",
+                cell: ({ row }) => {
+                    const role =
+                        (row.original.departmentRole as
+                            | "HEAD"
+                            | "DEPUTY"
+                            | "MEMBER") || "MEMBER";
+                    const config = {
+                        HEAD: {
+                            label: "Trưởng phòng",
+                            icon: Crown,
+                            cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                        },
+                        DEPUTY: {
+                            label: "Phó phòng",
+                            icon: Shield,
+                            cls: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+                        },
+                        MEMBER: {
+                            label: "Nhân viên",
+                            icon: User,
+                            cls: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+                        },
+                    }[role];
+                    const Icon = config.icon;
+                    return (
+                        <span
+                            className={cn(
+                                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+                                config.cls,
+                            )}
+                        >
+                            <Icon className="h-3 w-3 shrink-0" />
+                            {config.label}
+                        </span>
+                    );
+                },
+            },
+            {
+                id: "actions",
+                header: "",
+                cell: ({ row }) => (
+                    <div className="flex items-center justify-end gap-1">
+                        <RoleDropdown
+                            employeeId={row.original.id}
+                            currentRole={
+                                row.original.departmentRole ||
+                                "MEMBER"
+                            }
+                            departmentId={departmentId}
+                            employeeName={
+                                row.original.fullName ||
+                                row.original.name
+                            }
+                        />
+                    </div>
+                ),
+                size: 80,
+                enableSorting: false,
+            },
         ],
-        [selectedIds, toggleAll, toggleOne, employees.length],
+        [
+            selectedIds,
+            toggleAll,
+            toggleOne,
+            employees.length,
+            departmentId,
+        ],
     );
 
     // eslint-disable-next-line react-hooks/incompatible-library
@@ -575,12 +649,10 @@ export function DepartmentEmployeesClient({
                                 <Search />
                             </Button>
                         </div>
-
                         <Separator
                             orientation="vertical"
                             className="h-4!"
                         />
-
                         <Button
                             variant={"outline"}
                             size={"xs"}
@@ -596,55 +668,64 @@ export function DepartmentEmployeesClient({
                             Nhân viên
                         </Button>
                     </div>
-
-                    {/* Settings Panel */}
-                    <TableSettingsPanel
-                        open={settingsOpen}
-                        onClose={setSettingsOpen}
-                        columnVisibility={columnVisibility}
-                        setColumnVisibility={setColumnVisibility}
-                        columnOptions={[
-                            {
-                                key: "select",
-                                label: "Chọn",
-                                icon: Checkbox,
-                            },
-                            {
-                                key: "employeeCode",
-                                label: "Mã NV",
-                                icon: BadgeCheck,
-                            },
-                            {
-                                key: "fullName",
-                                label: "Họ và tên",
-                                icon: User,
-                            },
-                            {
-                                key: "position",
-                                label: "Chức vụ",
-                                icon: BadgeCheck,
-                            },
-                            {
-                                key: "phone",
-                                label: "SĐT / Email",
-                                icon: Phone,
-                            },
-                            {
-                                key: "employeeStatus",
-                                label: "Trạng thái",
-                                icon: CircleDot,
-                            },
-                        ]}
-                        showEmptyDepartments={showEmptyDepartments}
-                        setShowEmptyDepartments={
-                            setShowEmptyDepartments
-                        }
-                        wrapText={wrapText}
-                        setWrapText={setWrapText}
-                        disabledColumnIndices={[2]}
-                        hiddenColumnIndices={[0]}
-                    />
                 </section>
+
+                {/* Settings Panel */}
+                <TableSettingsPanel
+                    open={settingsOpen}
+                    onClose={setSettingsOpen}
+                    columnVisibility={columnVisibility}
+                    setColumnVisibility={setColumnVisibility}
+                    columnOptions={[
+                        {
+                            key: "select",
+                            label: "Chọn",
+                            icon: Checkbox,
+                        },
+                        {
+                            key: "employeeCode",
+                            label: "Mã NV",
+                            icon: BadgeCheck,
+                        },
+                        {
+                            key: "fullName",
+                            label: "Họ và tên",
+                            icon: User,
+                        },
+                        {
+                            key: "position",
+                            label: "Chức vụ",
+
+                            icon: BadgeCheck,
+                        },
+                        {
+                            key: "phone",
+                            label: "SĐT / Email",
+                            icon: Phone,
+                        },
+                        {
+                            key: "employeeStatus",
+                            label: "Trạng thái",
+                            icon: CircleDot,
+                        },
+                        {
+                            key: "departmentRole",
+                            label: "Vai trò",
+                            icon: Crown,
+                        },
+                        {
+                            key: "actions",
+                            label: "Hành động",
+                            icon: MoreHorizontal,
+                        },
+                    ]}
+                    showEmptyDepartments={showEmptyDepartments}
+                    setShowEmptyDepartments={setShowEmptyDepartments}
+                    wrapText={wrapText}
+                    setWrapText={setWrapText}
+                    disabledColumnIndices={[2]}
+                    hiddenColumnIndices={[0]}
+                />
 
                 {/* Table */}
                 <section className="flex-1 relative h-full min-h-0 overflow-hidden">

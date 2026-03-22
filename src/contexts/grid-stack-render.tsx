@@ -75,7 +75,10 @@ const WidgetMemo = memo(
                 value={{ widget: { id } }}
             >
                 {createPortal(
-                    <WidgetComponent {...componentData.props} editMode={editMode} />,
+                    <WidgetComponent
+                        {...componentData.props}
+                        editMode={editMode}
+                    />,
                     widgetContainer,
                 )}
             </GridStackWidgetContext.Provider>
@@ -88,7 +91,8 @@ export function GridStackRender(props: {
     componentMap: ComponentMap;
 }) {
     const { _rawWidgetMetaMap } = useGridStackContext();
-    const { getWidgetContainer, editMode } = useGridStackRenderContext();
+    const { getWidgetContainer, editMode } =
+        useGridStackRenderContext();
     const parsedCache = useRef<Map<string, ParsedComponentData>>(
         new Map(),
     );

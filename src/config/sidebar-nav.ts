@@ -68,6 +68,12 @@ export const sidebarNav: NavGroup[] = [
                 icon: Building2,
                 permissions: [Permission.DEPT_VIEW],
             },
+            {
+                title: "Chức vụ",
+                url: "/positions",
+                icon: Briefcase,
+                permissions: [Permission.POSITION_VIEW_ALL],
+            },
         ],
     },
     {
