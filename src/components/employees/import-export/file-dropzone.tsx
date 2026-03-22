@@ -119,7 +119,7 @@ export function FileDropzone({ onFileParsed, onClear, isLoading }: FileDropzoneP
             onDrop={handleDrop}
             onClick={() => !selectedFile && inputRef.current?.click()}
         >
-            <CardContent className="flex flex-col items-center justify-center py-10 gap-4">
+            <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
                 <label htmlFor="excel-file-input" className="sr-only">Tải lên file Excel</label>
                 <input
                     ref={inputRef}
@@ -132,15 +132,15 @@ export function FileDropzone({ onFileParsed, onClear, isLoading }: FileDropzoneP
                     aria-label="Chọn file Excel để nhập"
                 />
 
-                {isParsing || isLoading ? (
+                {(isParsing || isLoading) ? (
                     <>
-                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
-                        <p className="text-sm text-muted-foreground">Đang xử lý file...</p>
+                        <div className="animate-spin rounded-full h-8 w-8 border-3 border-primary border-t-transparent" />
+                        <p className="text-xs text-muted-foreground">Đang xử lý file...</p>
                     </>
                 ) : selectedFile ? (
                     <>
-                        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-background border">
-                            <FileSpreadsheet className="h-8 w-8 text-green-600 dark:text-green-400 shrink-0" />
+                        <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-background border">
+                            <FileSpreadsheet className="h-6 w-6 text-green-600 dark:text-green-400 shrink-0" />
                             <div className="min-w-0">
                                 <p className="font-medium text-sm truncate">{selectedFile.name}</p>
                                 <p className="text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
@@ -158,24 +158,23 @@ export function FileDropzone({ onFileParsed, onClear, isLoading }: FileDropzoneP
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground">Nhấn vào nút × để chọn file khác</p>
                     </>
                 ) : (
                     <>
                         <div className={cn(
-                            'rounded-full p-4 transition-colors',
+                            'rounded-full p-3 transition-colors',
                             isDragging
                                 ? 'bg-primary/10 text-primary'
                                 : 'bg-muted text-muted-foreground',
                         )}>
-                            <Upload className="h-8 w-8" />
+                            <Upload className="h-6 w-6" />
                         </div>
                         <div className="text-center">
-                            <p className="font-medium">
+                            <p className="text-sm font-medium">
                                 Kéo thả file vào đây hoặc{' '}
                                 <span className="text-primary underline underline-offset-4">chọn file</span>
                             </p>
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-0.5">
                                 Hỗ trợ: .xlsx, .xls, .csv
                             </p>
                         </div>

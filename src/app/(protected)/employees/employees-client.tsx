@@ -41,6 +41,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { MoveEmployeesDialog } from "@/components/departments/move-employees-dialog";
 import { TableSettingsPanel } from "@/components/ui/table-settings-panel";
 import { AddEmployeeDialog } from "@/components/employees/add-employee-dialog";
+import { ExportEmployeesDialog } from "@/components/employees/import-export/export-employees-dialog";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -134,6 +135,7 @@ export function EmployeesClient() {
 
     // Settings panel state
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [exportOpen, setExportOpen] = useState(false);
     const [showEmptyDepartments, setShowEmptyDepartments] =
         useState(false);
     const [wrapText, setWrapText] = useState(false);
@@ -463,124 +465,143 @@ export function EmployeesClient() {
             <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative">
                 {/* Header */}
                 <section>
-                    <div className="flex items-center justify-end gap-2 px-2 py-2">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant={
-                                        statusFilter !== "ALL"
-                                            ? "outline"
-                                            : "ghost"
-                                    }
-                                    size="xs"
-                                    className={cn(
-                                        statusFilter !== "ALL" &&
-                                            "bg-primary/10 border-primary text-primary hover:text-primary",
-                                    )}
-                                >
-                                    <ListFilter />
-                                    {statusFilter !== "ALL" && (
-                                        <span className="ml-1 text-xs">
-                                            {
-                                                STATUS_OPTIONS.find(
-                                                    (s) =>
-                                                        s.value ===
-                                                        statusFilter,
-                                                )?.label
-                                            }
-                                        </span>
-                                    )}
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                align="end"
-                                className="w-56"
-                            >
-                                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                                    Trạng thái
-                                </DropdownMenuLabel>
-                                <DropdownMenuRadioGroup
-                                    value={statusFilter}
-                                    onValueChange={(value) =>
-                                        setStatusFilter(
-                                            value as EmployeeStatus,
-                                        )
-                                    }
-                                >
-                                    {STATUS_OPTIONS.map((option) => (
-                                        <DropdownMenuCheckboxItem
-                                            key={option.value}
-                                            checked={
-                                                statusFilter ===
-                                                option.value
-                                            }
-                                            onCheckedChange={() =>
-                                                setStatusFilter(
-                                                    option.value as EmployeeStatus,
-                                                )
-                                            }
-                                            className="text-sm"
-                                        >
-                                            {option.label}
-                                        </DropdownMenuCheckboxItem>
-                                    ))}
-                                </DropdownMenuRadioGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        {/* Search */}
-                        <div
-                            className="relative flex items-center"
-                            ref={mergedSearchRef}
-                        >
-                            <Input
-                                ref={searchInputRef}
-                                value={search}
-                                onChange={(e) =>
-                                    setSearch(e.target.value)
-                                }
-                                onKeyDown={handleSearchKeyDown}
-                                placeholder="Tìm kiếm nhân viên..."
-                                className={cn(
-                                    "h-7 text-xs transition-all duration-300 ease-in-out pr-6",
-                                    searchExpanded
-                                        ? "w-50 opacity-100 pl-3"
-                                        : "w-0 opacity-0 pl-0",
-                                )}
-                            />
-
-                            <Button
-                                size={"icon-xs"}
-                                variant={"ghost"}
-                                onClick={handleSearchToggle}
-                                className={cn(
-                                    "absolute right-0.5 z-10",
-                                    searchExpanded &&
-                                        "[&_svg]:text-primary",
-                                )}
-                            >
-                                <Search />
-                            </Button>
-                        </div>
-
-                        <Separator
-                            orientation="vertical"
-                            className="h-4!"
-                        />
-
+                    <header className="p-2 flex items-center h-10 border-b">
+                        <h1 className="font-bold">
+                            Tất cả nhân viên
+                        </h1>
+                    </header>
+                    <div className="flex items-center justify-between gap-2 px-2 py-2">
                         <Button
                             variant={"outline"}
                             size={"xs"}
-                            onClick={() => setSettingsOpen(true)}
+                            onClick={() => setExportOpen(true)}
                         >
-                            <Settings />
+                            Xuất file Excel
                         </Button>
-                        <Button
-                            size={"xs"}
-                            onClick={() => setAddEmployeesOpen(true)}
-                        >
-                            <Plus />
-                            Nhân viên
-                        </Button>
+
+                        <div className="flex items-center gap-2">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant={
+                                            statusFilter !== "ALL"
+                                                ? "outline"
+                                                : "ghost"
+                                        }
+                                        size="xs"
+                                        className={cn(
+                                            statusFilter !== "ALL" &&
+                                                "bg-primary/10 border-primary text-primary hover:text-primary",
+                                        )}
+                                    >
+                                        <ListFilter />
+                                        {statusFilter !== "ALL" && (
+                                            <span className="ml-1 text-xs">
+                                                {
+                                                    STATUS_OPTIONS.find(
+                                                        (s) =>
+                                                            s.value ===
+                                                            statusFilter,
+                                                    )?.label
+                                                }
+                                            </span>
+                                        )}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="w-56"
+                                >
+                                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                                        Trạng thái
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuRadioGroup
+                                        value={statusFilter}
+                                        onValueChange={(value) =>
+                                            setStatusFilter(
+                                                value as EmployeeStatus,
+                                            )
+                                        }
+                                    >
+                                        {STATUS_OPTIONS.map(
+                                            (option) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={option.value}
+                                                    checked={
+                                                        statusFilter ===
+                                                        option.value
+                                                    }
+                                                    onCheckedChange={() =>
+                                                        setStatusFilter(
+                                                            option.value as EmployeeStatus,
+                                                        )
+                                                    }
+                                                    className="text-sm"
+                                                >
+                                                    {option.label}
+                                                </DropdownMenuCheckboxItem>
+                                            ),
+                                        )}
+                                    </DropdownMenuRadioGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            {/* Search */}
+                            <div
+                                className="relative flex items-center"
+                                ref={mergedSearchRef}
+                            >
+                                <Input
+                                    ref={searchInputRef}
+                                    value={search}
+                                    onChange={(e) =>
+                                        setSearch(e.target.value)
+                                    }
+                                    onKeyDown={handleSearchKeyDown}
+                                    placeholder="Tìm kiếm nhân viên..."
+                                    className={cn(
+                                        "h-7 text-xs transition-all duration-300 ease-in-out pr-6",
+                                        searchExpanded
+                                            ? "w-50 opacity-100 pl-3"
+                                            : "w-0 opacity-0 pl-0",
+                                    )}
+                                />
+
+                                <Button
+                                    size={"icon-xs"}
+                                    variant={"ghost"}
+                                    onClick={handleSearchToggle}
+                                    className={cn(
+                                        "absolute right-0.5 z-10",
+                                        searchExpanded &&
+                                            "[&_svg]:text-primary",
+                                    )}
+                                >
+                                    <Search />
+                                </Button>
+                            </div>
+
+                            <Separator
+                                orientation="vertical"
+                                className="h-4!"
+                            />
+
+                            <Button
+                                variant={"outline"}
+                                size={"xs"}
+                                onClick={() => setSettingsOpen(true)}
+                            >
+                                <Settings />
+                            </Button>
+                            <Button
+                                size={"xs"}
+                                onClick={() =>
+                                    setAddEmployeesOpen(true)
+                                }
+                            >
+                                <Plus />
+                                Nhân viên
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Settings Panel */}
@@ -937,6 +958,14 @@ export function EmployeesClient() {
             <AddEmployeeDialog
                 open={addEmployeesOpen}
                 onClose={() => setAddEmployeesOpen(false)}
+            />
+
+            {/* Export Employees Dialog */}
+            <ExportEmployeesDialog
+                open={exportOpen}
+                onOpenChange={setExportOpen}
+                search={search}
+                status={statusFilter}
             />
         </div>
     );

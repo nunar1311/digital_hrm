@@ -365,7 +365,11 @@ export function DepartmentsClient() {
                         columnVisibility={columnVisibility}
                         setColumnVisibility={setColumnVisibility}
                         columnOptions={[
-                            { key: "select", label: "Chọn", icon: Checkbox },
+                            {
+                                key: "select",
+                                label: "Chọn",
+                                icon: Checkbox,
+                            },
                             {
                                 key: "employee",
                                 label: "Tên phòng ban",
@@ -382,8 +386,16 @@ export function DepartmentsClient() {
                                 label: "Số NV",
                                 icon: Users,
                             },
-                            { key: "parent", label: "Phòng ban cha", icon: ArrowUp },
-                            { key: "status", label: "Trạng thái", icon: CircleDot },
+                            {
+                                key: "parent",
+                                label: "Phòng ban cha",
+                                icon: ArrowUp,
+                            },
+                            {
+                                key: "status",
+                                label: "Trạng thái",
+                                icon: CircleDot,
+                            },
                         ]}
                         hiddenColumnIndices={[0]}
                         defaultVisibleColumns={{
@@ -411,7 +423,9 @@ export function DepartmentsClient() {
                         onLoadMore={handleFetchNextPage}
                         columnVisibility={columnVisibility}
                         onColumnVisibilityChange={setColumnVisibility}
-                        totalDepartments={departmentsData?.pages[0]?.total ?? 0}
+                        totalDepartments={
+                            departmentsData?.pages[0]?.total ?? 0
+                        }
                     />
                 </section>
             </div>

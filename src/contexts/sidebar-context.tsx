@@ -11,14 +11,16 @@ import type { DepartmentNode } from "@/types/org-chart";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import DepartmentSidebar from "@/components/departments/department-sidebar";
-import EmployeeSidebar from "@/components/employees/employee-sidebar";
+import AttendanceSidebar from "@/components/attendance/attendance-sidebar";
 
 interface SidebarContextValue {
     departmentTree: DepartmentNode[];
     setDepartmentTree: (tree: DepartmentNode[]) => void;
 }
 
-const SidebarContext = createContext<SidebarContextValue | null>(null);
+const SidebarContext = createContext<SidebarContextValue | null>(
+    null,
+);
 
 export function useAppSidebar() {
     const ctx = useContext(SidebarContext);
@@ -37,7 +39,9 @@ interface SidebarContextProviderProps {
 export function SidebarContextProvider({
     children,
 }: SidebarContextProviderProps) {
-    const [departmentTree, setDepartmentTree] = useState<DepartmentNode[]>([]);
+    const [departmentTree, setDepartmentTree] = useState<
+        DepartmentNode[]
+    >([]);
 
     const value = useMemo<SidebarContextValue>(
         () => ({ departmentTree, setDepartmentTree }),
@@ -56,7 +60,10 @@ interface SidebarSlotProps {
     className?: string;
 }
 
-export function SidebarSlot({ children, className }: SidebarSlotProps) {
+export function SidebarSlot({
+    children,
+    className,
+}: SidebarSlotProps) {
     const pathname = usePathname();
     const { departmentTree } = useAppSidebar();
 
@@ -73,6 +80,12 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
         ) {
             return "employees";
         }
+        if (
+            pathname === "/attendance" ||
+            pathname.startsWith("/attendance/")
+        ) {
+            return "attendance";
+        }
         return "default";
     }, [pathname]);
 
@@ -82,8 +95,8 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
                 <DepartmentSidebar departmentTree={departmentTree} />
             );
         }
-        if (sidebarType === "employees") {
-            return <EmployeeSidebar />;
+        if (sidebarType === "attendance") {
+            return <AttendanceSidebar />;
         }
         return <AppSidebar />;
     }, [sidebarType, departmentTree]);
@@ -93,7 +106,8 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
             {sidebarContent}
             <SidebarInset
                 className={
-                    className ?? "overflow-hidden flex-1 relative min-h-0"
+                    className ??
+                    "overflow-hidden flex-1 relative min-h-0"
                 }
             >
                 {children}

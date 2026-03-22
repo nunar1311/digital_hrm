@@ -33,8 +33,9 @@ export function AppSidebar() {
 
     const isSettings = pathname.includes("/settings");
     const isDashboard = pathname.includes("/dashboard");
+    const isEmployees = pathname.includes("/employees");
 
-    if (isSettings || isDashboard) {
+    if (isSettings || isDashboard || isEmployees) {
         return null;
     }
 

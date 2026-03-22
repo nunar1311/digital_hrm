@@ -732,6 +732,99 @@ export async function importEmployeesBatch(
     return { success, failed, errors };
 }
 
+/**
+ * Xuất danh sách nhân viên ra Excel
+ * Lấy tất cả nhân viên (không phân trang) theo filter hiện tại
+ */
+export async function exportEmployees(params: {
+    search?: string;
+    departmentId?: string;
+    status?: string;
+    employmentType?: string;
+}) {
+    await requirePermission(Permission.EMPLOYEE_VIEW_ALL);
+
+    const { search, departmentId, status = "ALL", employmentType } = params;
+
+    const where: Record<string, unknown> = {
+        employeeCode: { not: null },
+    };
+
+    if (status !== "ALL") {
+        where.employeeStatus = status;
+    }
+
+    if (departmentId && departmentId !== "ALL") {
+        where.departmentId = departmentId;
+    }
+
+    if (employmentType && employmentType !== "ALL") {
+        where.employmentType = employmentType;
+    }
+
+    if (search) {
+        where.OR = [
+            { name: { contains: search, mode: "insensitive" } },
+            { fullName: { contains: search, mode: "insensitive" } },
+            { employeeCode: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+            { phone: { contains: search, mode: "insensitive" } },
+        ];
+    }
+
+    const employees = await prisma.user.findMany({
+        where,
+        orderBy: { name: "asc" },
+        include: {
+            department: {
+                select: { id: true, name: true },
+            },
+            position: {
+                select: { id: true, name: true, code: true },
+            },
+        },
+    });
+
+    return employees.map((emp) => ({
+        id: emp.id,
+        employeeCode: emp.employeeCode,
+        fullName: emp.fullName,
+        name: emp.name,
+        email: emp.email,
+        phone: emp.phone,
+        positionId: emp.position?.id ?? null,
+        positionName: emp.position?.name ?? null,
+        departmentId: emp.departmentId,
+        departmentName: emp.department?.name ?? null,
+        employmentType: emp.employmentType,
+        employeeStatus: emp.employeeStatus,
+        hireDate: emp.hireDate,
+        dateOfBirth: emp.dateOfBirth,
+        gender: emp.gender,
+        address: emp.address,
+        personalEmail: emp.personalEmail,
+        nationalId: emp.nationalId,
+        nationalIdDate: emp.nationalIdDate,
+        nationalIdPlace: emp.nationalIdPlace,
+        bankName: emp.bankName,
+        bankAccount: emp.bankAccount,
+        bankBranch: emp.bankBranch,
+        socialInsuranceNo: emp.socialInsuranceNo,
+        healthInsuranceNo: emp.healthInsuranceNo,
+        taxCode: emp.taxCode,
+        educationLevel: emp.educationLevel,
+        major: emp.major,
+        university: emp.university,
+        maritalStatus: emp.maritalStatus,
+        ethnicity: emp.ethnicity,
+        religion: emp.religion,
+        nationality: emp.nationality,
+        avatar: emp.image,
+        notes: emp.notes,
+        createdAt: emp.createdAt?.toISOString() ?? null,
+    }));
+}
+
 function parseDate(dateStr: string): Date | undefined {
     if (!dateStr || dateStr === "null" || dateStr === "undefined")
         return undefined;

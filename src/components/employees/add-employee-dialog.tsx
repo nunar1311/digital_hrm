@@ -54,17 +54,18 @@ import {
     Loader2,
     CreditCard,
     FileSpreadsheet,
+    Download,
+    FileText,
+    ChevronDown,
+    ChevronUp,
 } from "lucide-react";
 import { FileDropzone } from "@/components/employees/import-export/file-dropzone";
-import type { ParsedImportResult } from "@/lib/excel-utils";
-import { DatePicker } from "@/components/ui/date-picker";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+    parseExcelFile,
+    downloadEmployeeImportTemplate,
+    type ParsedImportResult,
+} from "@/lib/excel-utils";
+import { DatePicker } from "@/components/ui/date-picker";
 import { SidebarMenuButton } from "../ui/sidebar";
 import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
@@ -172,6 +173,8 @@ function ImportEmployeeSheet({
     >(null);
     const [importErrors, setImportErrors] = useState<string[]>([]);
     const [isImporting, setIsImporting] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [guideOpen, setGuideOpen] = useState(false);
 
     const importMutation = useMutation({
         mutationFn: async (rows: Record<string, unknown>[]) => {
@@ -231,6 +234,18 @@ function ImportEmployeeSheet({
         onClose();
     }, [handleClear, onClose]);
 
+    const handleDownloadTemplate = useCallback(async () => {
+        setIsDownloading(true);
+        try {
+            await downloadEmployeeImportTemplate();
+            toast.success("Đã tải file mẫu thành công");
+        } catch {
+            toast.error("Không thể tải file mẫu");
+        } finally {
+            setIsDownloading(false);
+        }
+    }, []);
+
     return (
         <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
             <DialogContent className="sm:max-w-2xl">
@@ -246,6 +261,168 @@ function ImportEmployeeSheet({
                 </DialogHeader>
 
                 <div className="space-y-4">
+                    {/* Action bar */}
+                    <div className="flex items-center justify-between gap-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleDownloadTemplate}
+                            disabled={isDownloading || isImporting}
+                            className="gap-1.5"
+                        >
+                            {isDownloading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="h-4 w-4" />
+                            )}
+                            Tải file mẫu
+                        </Button>
+                    </div>
+
+                    {/* Guide accordion */}
+                    <div className="border rounded-lg overflow-hidden">
+                        <button
+                            onClick={() => setGuideOpen(!guideOpen)}
+                            className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+                        >
+                            <span className="flex items-center gap-2 text-sm font-medium">
+                                <FileText className="h-4 w-4 text-primary" />
+                                Hướng dẫn nhập dữ liệu
+                            </span>
+                            {guideOpen ? (
+                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                        </button>
+                        {guideOpen && (
+                            <div className="px-4 pb-4 border-t">
+                                <div className="pt-3 space-y-4">
+                                    {/* Required columns */}
+                                    <div>
+                                        <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
+                                            <span className="text-destructive">
+                                                *
+                                            </span>{" "}
+                                            Cột bắt buộc:
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                            <span className="text-xs">
+                                                <strong>
+                                                    Mã nhân viên
+                                                </strong>{" "}
+                                                — duy nhất, không
+                                                trùng
+                                            </span>
+                                            <span className="text-xs">
+                                                <strong>
+                                                    Họ và tên
+                                                </strong>{" "}
+                                                — bắt buộc
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Optional columns */}
+                                    <div>
+                                        <p className="text-xs font-semibold text-foreground mb-2">
+                                            Cột tùy chọn:
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                            <span>
+                                                Ngày sinh{" "}
+                                                <span className="text-[10px] text-muted-foreground/70">
+                                                    (dd/MM/yyyy)
+                                                </span>
+                                            </span>
+                                            <span>
+                                                Giới tính{" "}
+                                                <span className="text-[10px] text-muted-foreground/70">
+                                                    (Nam/Nữ/Khác)
+                                                </span>
+                                            </span>
+                                            <span>Số điện thoại</span>
+                                            <span>Email</span>
+                                            <span>Địa chỉ</span>
+                                            <span>Phòng ban</span>
+                                            <span>Chức vụ</span>
+                                            <span>
+                                                Loại hình{" "}
+                                                <span className="text-[10px] text-muted-foreground/70">
+                                                    (Toàn thời
+                                                    gian/Bán thời
+                                                    gian/Hợp đồng/Thực
+                                                    tập)
+                                                </span>
+                                            </span>
+                                            <span>
+                                                Ngày vào làm{" "}
+                                                <span className="text-[10px] text-muted-foreground/70">
+                                                    (dd/MM/yyyy)
+                                                </span>
+                                            </span>
+                                            <span>
+                                                Trạng thái{" "}
+                                                <span className="text-[10px] text-muted-foreground/70">
+                                                    (Đang làm/Nghỉ
+                                                    phép/Đã nghỉ)
+                                                </span>
+                                            </span>
+                                            <span>Ngân hàng</span>
+                                            <span>Số tài khoản</span>
+                                            <span>
+                                                Trình độ{" "}
+                                                <span className="text-[10px] text-muted-foreground/70">
+                                                    (THPT/Cao đẳng/Đại
+                                                    học/Thạc sĩ)
+                                                </span>
+                                            </span>
+                                            <span>Trường</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Tips */}
+                                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-md p-3">
+                                        <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-1.5">
+                                            Lưu ý khi nhập:
+                                        </p>
+                                        <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-0.5 list-disc list-inside">
+                                            <li>
+                                                Tên cột phải{" "}
+                                                <strong>
+                                                    chính xác
+                                                </strong>{" "}
+                                                như mẫu (có dấu, viết
+                                                hoa đúng)
+                                            </li>
+                                            <li>
+                                                Không chỉnh sửa dòng
+                                                tiêu đề (dòng 1)
+                                            </li>
+                                            <li>
+                                                Ngày sinh / Ngày vào
+                                                làm: định dạng{" "}
+                                                <strong>
+                                                    dd/MM/yyyy
+                                                </strong>
+                                            </li>
+                                            <li>
+                                                Số điện thoại: bắt đầu
+                                                bằng{" "}
+                                                <strong>0</strong>,
+                                                10–11 số
+                                            </li>
+                                            <li>
+                                                Nên dùng file mẫu để
+                                                đảm bảo đúng định dạng
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {!importResult && (
                         <FileDropzone
                             onFileParsed={handleFileParsed}
@@ -784,12 +961,13 @@ export function AddEmployeeDialog({
                                 <Button
                                     variant="outline"
                                     className="w-full justify-start gap-2 text-sm"
-                                    onClick={() =>
-                                        setImportOpen(true)
-                                    }
+                                    onClick={() => {
+                                        setImportOpen(true);
+                                        handleClose();
+                                    }}
                                 >
                                     <Upload className="h-4 w-4" />
-                                    Import file Excel
+                                    Nhập từ file Excel
                                 </Button>
                             </div>
                         </div>
@@ -1268,8 +1446,12 @@ export function AddEmployeeDialog({
                                                                     </FormLabel>
                                                                     <FormControl>
                                                                         <PositionDropdown
-                                                                            value={field.value}
-                                                                            onValueChange={field.onChange}
+                                                                            value={
+                                                                                field.value
+                                                                            }
+                                                                            onValueChange={
+                                                                                field.onChange
+                                                                            }
                                                                             placeholder="Chọn chức vụ"
                                                                             className="w-full"
                                                                         />

@@ -287,7 +287,8 @@ function EmployeeTable({
                 ),
             },
             {
-                accessorKey: "position",
+                accessorKey: "positionName",
+                id: "position",
                 header: "Chức vụ",
                 cell: ({ row }) => (
                     <span
@@ -298,7 +299,7 @@ function EmployeeTable({
                                 : "truncate max-w-25",
                         )}
                     >
-                        {row.original.position || (
+                        {row.original.positionName || (
                             <span className="text-muted-foreground italic">
                                 —
                             </span>

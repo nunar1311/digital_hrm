@@ -184,6 +184,76 @@ export function parseExcelFile(file: File): Promise<ParsedImportResult> {
     });
 }
 
+// ─── Template ─────────────────────────────────────────────────────────────────
+
+export async function downloadEmployeeImportTemplate() {
+    const XLSX = await import('xlsx');
+
+    const templateRows = [
+        {
+            'Mã nhân viên': 'NV001',
+            'Họ và tên': 'Nguyễn Văn A',
+            'Ngày sinh': '01/01/1995',
+            'Giới tính': 'Nam',
+            'Số điện thoại': '0901234567',
+            'Email': 'nguyenvana@email.com',
+            'Địa chỉ': '123 Đường ABC, Quận 1, TP.HCM',
+            'Phòng ban': 'Phòng Nhân sự',
+            'Chức vụ': 'Nhân viên',
+            'Loại hình': 'Toàn thời gian',
+            'Ngày vào làm': '01/03/2026',
+            'Trạng thái': 'Đang làm',
+            'Ngân hàng': 'Vietcombank',
+            'Số tài khoản': '1234567890',
+            'Trình độ': 'Đại học',
+            'Trường': 'ĐH Bách Khoa TP.HCM',
+        },
+        {
+            'Mã nhân viên': 'NV002',
+            'Họ và tên': 'Trần Thị B',
+            'Ngày sinh': '15/05/1998',
+            'Giới tính': 'Nữ',
+            'Số điện thoại': '0912345678',
+            'Email': 'tranthib@email.com',
+            'Địa chỉ': '456 Đường XYZ, Quận 3, TP.HCM',
+            'Phòng ban': 'Phòng Kế toán',
+            'Chức vụ': 'Kế toán viên',
+            'Loại hình': 'Toàn thời gian',
+            'Ngày vào làm': '15/03/2026',
+            'Trạng thái': 'Đang làm',
+            'Ngân hàng': 'ACB',
+            'Số tài khoản': '0987654321',
+            'Trình độ': 'Cao đẳng',
+            'Trường': 'CĐ Kinh tế TP.HCM',
+        },
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateRows);
+
+    worksheet['!cols'] = [
+        { wch: 14 },  // Mã NV
+        { wch: 22 },  // Họ và tên
+        { wch: 13 },  // Ngày sinh
+        { wch: 10 },  // Giới tính
+        { wch: 15 },  // SĐT
+        { wch: 25 },  // Email
+        { wch: 35 },  // Địa chỉ
+        { wch: 18 },  // Phòng ban
+        { wch: 18 },  // Chức vụ
+        { wch: 16 },  // Loại hình
+        { wch: 15 },  // Ngày vào
+        { wch: 12 },  // Trạng thái
+        { wch: 16 },  // Ngân hàng
+        { wch: 16 },  // Số TK
+        { wch: 12 },  // Trình độ
+        { wch: 25 },  // Trường
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Mau nhan vien');
+    XLSX.writeFile(workbook, 'mau-nhap-nhan-vien.xlsx');
+}
+
 // ─── Validation ─────────────────────────────────────────────────────────────
 
 export interface ValidationError {
