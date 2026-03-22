@@ -53,6 +53,8 @@ interface DepartmentTableProps {
     hasNextPage?: boolean;
     isFetchingNextPage?: boolean;
     onLoadMore?: () => void;
+    columnVisibility?: Record<string, boolean>;
+    onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void;
 }
 
 export function DepartmentTable({
@@ -64,6 +66,8 @@ export function DepartmentTable({
     hasNextPage,
     isFetchingNextPage,
     onLoadMore,
+    columnVisibility = {},
+    onColumnVisibilityChange,
 }: DepartmentTableProps) {
     const columns = useMemo<ColumnDef<DepartmentListItem>[]>(
         () => [
@@ -281,6 +285,16 @@ export function DepartmentTable({
         columns,
         getCoreRowModel: getCoreRowModel(),
         enableRowSelection: true,
+        state: {
+            columnVisibility,
+        },
+        onColumnVisibilityChange: (updater) => {
+            const newVisibility =
+                typeof updater === "function"
+                    ? updater(columnVisibility)
+                    : updater;
+            onColumnVisibilityChange?.(newVisibility);
+        },
     });
 
     return (

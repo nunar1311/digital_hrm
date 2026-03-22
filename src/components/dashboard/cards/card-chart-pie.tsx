@@ -44,9 +44,9 @@ const CardChartPie = ({ departmentData }: CardChartPieProps) => {
                                 <ChartTooltipContent hideLabel />
                             }
                         />
-                        <ChartLegend
+                        {/* <ChartLegend
                             content={<ChartLegendContent />}
-                        />
+                        /> */}
                         <Pie
                             data={departmentData}
                             dataKey="count"

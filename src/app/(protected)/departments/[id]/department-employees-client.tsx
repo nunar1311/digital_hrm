@@ -19,14 +19,21 @@ import { Button } from "@/components/ui/button";
 import {
     Search,
     Settings,
-    UserPlus,
     Trash2,
     ArrowRight,
     X,
     ListFilter,
+    Plus,
+    Users,
+    User,
+    BadgeCheck,
+    Phone,
+    CircleDot,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MoveEmployeesDialog } from "@/components/departments/move-employees-dialog";
+import { AddEmployeesToDepartmentDialog } from "@/components/departments/add-employees-dialog";
+import { TableSettingsPanel } from "@/components/ui/table-settings-panel";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -56,7 +63,7 @@ import {
     useReactTable,
     type ColumnDef,
 } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     DropdownMenu,
@@ -108,6 +115,7 @@ export function DepartmentEmployeesClient({
         new Set(),
     );
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+    const [addEmployeesOpen, setAddEmployeesOpen] = useState(false);
     const [batchDeleteTarget, setBatchDeleteTarget] = useState<
         string[] | null
     >(null);
@@ -124,6 +132,12 @@ export function DepartmentEmployeesClient({
         phone: true,
         employeeStatus: true,
     });
+
+    // Settings panel state
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [showEmptyDepartments, setShowEmptyDepartments] =
+        useState(false);
+    const [wrapText, setWrapText] = useState(false);
 
     // Click outside to close search
     const clickOutsideRef = useClickOutside(() => {
@@ -306,6 +320,7 @@ export function DepartmentEmployeesClient({
                         onCheckedChange={() =>
                             toggleOne(row.original.id)
                         }
+                        className="opacity-0 group-hover/row:opacity-100 transition-opacity data-[state=checked]:opacity-100"
                         aria-label={`Chọn ${row.original.name || row.original.fullName}`}
                         onClick={(e) => e.stopPropagation()}
                     />
@@ -530,14 +545,69 @@ export function DepartmentEmployeesClient({
                             className="h-4!"
                         />
 
-                        <Button variant={"outline"} size={"xs"}>
+                        <Button
+                            variant={"outline"}
+                            size={"xs"}
+                            onClick={() => setSettingsOpen(true)}
+                        >
                             <Settings />
                         </Button>
-                        <Button size={"xs"}>
-                            <UserPlus />
-                            Thêm nhân viên
+                        <Button
+                            size={"xs"}
+                            onClick={() => setAddEmployeesOpen(true)}
+                        >
+                            <Plus />
+                            Nhân viên
                         </Button>
                     </div>
+
+                    {/* Settings Panel */}
+                    <TableSettingsPanel
+                        open={settingsOpen}
+                        onClose={setSettingsOpen}
+                        columnVisibility={columnVisibility}
+                        setColumnVisibility={setColumnVisibility}
+                        columnOptions={[
+                            {
+                                key: "select",
+                                label: "Chọn",
+                                icon: Checkbox,
+                            },
+                            {
+                                key: "employeeCode",
+                                label: "Mã NV",
+                                icon: BadgeCheck,
+                            },
+                            {
+                                key: "fullName",
+                                label: "Họ và tên",
+                                icon: User,
+                            },
+                            {
+                                key: "position",
+                                label: "Chức vụ",
+                                icon: BadgeCheck,
+                            },
+                            {
+                                key: "phone",
+                                label: "SĐT / Email",
+                                icon: Phone,
+                            },
+                            {
+                                key: "employeeStatus",
+                                label: "Trạng thái",
+                                icon: CircleDot,
+                            },
+                        ]}
+                        showEmptyDepartments={showEmptyDepartments}
+                        setShowEmptyDepartments={
+                            setShowEmptyDepartments
+                        }
+                        wrapText={wrapText}
+                        setWrapText={setWrapText}
+                        disabledColumnIndices={[2]}
+                        hiddenColumnIndices={[0]}
+                    />
                 </section>
 
                 {/* Table */}
@@ -585,137 +655,127 @@ export function DepartmentEmployeesClient({
                         </div>
                     )}
                     <div className="h-full flex flex-col">
-                        <div className="flex-1 overflow-auto">
-                            <Table>
-                                <TableHeader>
-                                    {table
-                                        .getHeaderGroups()
-                                        .map((headerGroup) => (
-                                            <TableRow
-                                                key={headerGroup.id}
-                                                className="hover:bg-transparent"
-                                            >
-                                                {headerGroup.headers.map(
-                                                    (header) => (
-                                                        <TableHead
-                                                            className={cn(
-                                                                "h-7 px-2 select-none z-10 relative",
-                                                                header
-                                                                    .column
-                                                                    .id ===
-                                                                    "actions"
-                                                                    ? "text-right"
-                                                                    : "",
-                                                            )}
-                                                            key={
-                                                                header.id
-                                                            }
+                        <Table>
+                            <TableHeader>
+                                {table
+                                    .getHeaderGroups()
+                                    .map((headerGroup) => (
+                                        <TableRow
+                                            key={headerGroup.id}
+                                            className="hover:bg-transparent"
+                                        >
+                                            {headerGroup.headers.map(
+                                                (header) => (
+                                                    <TableHead
+                                                        className={cn(
+                                                            "h-7 px-2 select-none z-10 relative",
+                                                            header
+                                                                .column
+                                                                .id ===
+                                                                "actions"
+                                                                ? "text-right"
+                                                                : "",
+                                                        )}
+                                                        key={
+                                                            header.id
+                                                        }
+                                                    >
+                                                        {header.isPlaceholder
+                                                            ? null
+                                                            : flexRender(
+                                                                  header
+                                                                      .column
+                                                                      .columnDef
+                                                                      .header,
+                                                                  header.getContext(),
+                                                              )}
+                                                    </TableHead>
+                                                ),
+                                            )}
+                                        </TableRow>
+                                    ))}
+                            </TableHeader>
+                            <TableBody>
+                                {isLoadingEmployees ? (
+                                    Array.from({ length: 8 }).map(
+                                        (_, i) => (
+                                            <TableRow key={i}>
+                                                {columns.map(
+                                                    (col, j) => (
+                                                        <TableCell
+                                                            key={j}
+                                                            style={{
+                                                                width: col.size,
+                                                            }}
+                                                            className="p-2"
                                                         >
-                                                            {header.isPlaceholder
-                                                                ? null
-                                                                : flexRender(
-                                                                      header
-                                                                          .column
-                                                                          .columnDef
-                                                                          .header,
-                                                                      header.getContext(),
-                                                                  )}
-                                                        </TableHead>
+                                                            <Skeleton className="h-4 w-full" />
+                                                        </TableCell>
                                                     ),
                                                 )}
                                             </TableRow>
-                                        ))}
-                                </TableHeader>
-                                <TableBody>
-                                    {isLoadingEmployees ? (
-                                        Array.from({ length: 8 }).map(
-                                            (_, i) => (
-                                                <TableRow key={i}>
-                                                    {columns.map(
-                                                        (col, j) => (
-                                                            <TableCell
-                                                                key={
-                                                                    j
-                                                                }
-                                                                style={{
-                                                                    width: col.size,
-                                                                }}
-                                                                className="p-2"
-                                                            >
-                                                                <Skeleton className="h-4 w-full" />
-                                                            </TableCell>
-                                                        ),
-                                                    )}
-                                                </TableRow>
-                                            ),
-                                        )
-                                    ) : table.getRowModel().rows
-                                          ?.length ? (
-                                        table
-                                            .getRowModel()
-                                            .rows.map((row) => (
-                                                <TableRow
-                                                    key={row.id}
-                                                    className="hover:bg-muted/50 transition-colors"
-                                                >
-                                                    {row
-                                                        .getVisibleCells()
-                                                        .map(
-                                                            (
-                                                                cell,
-                                                            ) => (
-                                                                <TableCell
-                                                                    key={
-                                                                        cell.id
-                                                                    }
-                                                                >
-                                                                    {flexRender(
-                                                                        cell
-                                                                            .column
-                                                                            .columnDef
-                                                                            .cell,
-                                                                        cell.getContext(),
-                                                                    )}
-                                                                </TableCell>
-                                                            ),
-                                                        )}
-                                                </TableRow>
-                                            ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={
-                                                    columns.length + 1
-                                                }
-                                                className="h-32 text-center text-muted-foreground"
+                                        ),
+                                    )
+                                ) : table.getRowModel().rows
+                                      ?.length ? (
+                                    table
+                                        .getRowModel()
+                                        .rows.map((row) => (
+                                            <TableRow
+                                                key={row.id}
+                                                className="group/row cursor-default"
                                             >
-                                                <div className="flex flex-col items-center justify-center gap-2">
-                                                    <Users className="h-8 w-8 text-muted-foreground/50" />
-                                                    <p>
-                                                        Không tìm thấy
-                                                        nhân viên nào.
-                                                    </p>
-                                                    {search && (
-                                                        <Button
-                                                            variant="link"
-                                                            onClick={() =>
-                                                                setSearch(
-                                                                    "",
-                                                                )
+                                                {row
+                                                    .getVisibleCells()
+                                                    .map((cell) => (
+                                                        <TableCell
+                                                            key={
+                                                                cell.id
                                                             }
-                                                            className="mt-2"
                                                         >
-                                                            Xóa tìm
-                                                            kiếm
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                                            {flexRender(
+                                                                cell
+                                                                    .column
+                                                                    .columnDef
+                                                                    .cell,
+                                                                cell.getContext(),
+                                                            )}
+                                                        </TableCell>
+                                                    ))}
+                                            </TableRow>
+                                        ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={
+                                                columns.length + 1
+                                            }
+                                            className="h-32 text-center text-muted-foreground"
+                                        >
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                <Users className="h-8 w-8 text-muted-foreground/50" />
+                                                <p>
+                                                    Không tìm thấy
+                                                    nhân viên nào.
+                                                </p>
+                                                {search && (
+                                                    <Button
+                                                        variant="link"
+                                                        onClick={() =>
+                                                            setSearch(
+                                                                "",
+                                                            )
+                                                        }
+                                                    >
+                                                        Xóa tìm kiếm
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
 
                         {/* Pagination */}
                         {totalPages > 1 && (
@@ -906,6 +966,19 @@ export function DepartmentEmployeesClient({
                         queryKey: ["employees"],
                     });
                     setSelectedIds(new Set());
+                }}
+            />
+
+            {/* Add Employees To Department Dialog */}
+            <AddEmployeesToDepartmentDialog
+                open={addEmployeesOpen}
+                onOpenChange={setAddEmployeesOpen}
+                departmentId={departmentId}
+                departmentName={departmentName}
+                onAssigned={() => {
+                    queryClient.invalidateQueries({
+                        queryKey: ["employees"],
+                    });
                 }}
             />
         </div>

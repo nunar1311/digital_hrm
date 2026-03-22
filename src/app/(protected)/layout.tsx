@@ -1,6 +1,4 @@
-import {
-    SidebarProvider,
-} from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppHeader } from "@/components/app-header";
 import { SocketWrapper } from "@/components/socket-wrapper";
 import { auth } from "@/lib/auth";

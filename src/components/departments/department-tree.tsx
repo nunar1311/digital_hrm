@@ -13,6 +13,13 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
     ChevronRight,
     Building2,
     Code,
@@ -49,6 +56,11 @@ import {
     Layers,
     Boxes,
     Package,
+    MoreHorizontal,
+    Eye,
+    PlusCircle,
+    Pencil,
+    Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -153,63 +165,133 @@ const DepartmentTree = ({
         <SidebarMenuItem>
             <Collapsible open={isOpen || searchForceOpen}>
                 <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                        className="group/tree data-[active=true]:hover:bg-primary/10! data-[active=true]:hover:text-primary!"
-                        isActive={isActive}
-                        onClick={handleClick}
-                    >
-                        {hasChildren ? (
-                            <>
-                                <div
-                                    className={cn(
-                                        buttonVariants({
-                                            variant: "ghost",
-                                            size: "icon-xs",
-                                            className:
-                                                "hover:bg-transparent!",
-                                        }),
-                                        "group-hover/tree:flex hidden",
-                                    )}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsOpen(!isOpen);
-                                    }}
-                                >
-                                    <ChevronRight
+                    <div className="group/dept relative flex items-center w-full">
+                        <SidebarMenuButton
+                            className="flex-1 data-[active=true]:hover:bg-primary/10! data-[active=true]:hover:text-primary!"
+                            isActive={isActive}
+                            onClick={handleClick}
+                        >
+                            {hasChildren ? (
+                                <>
+                                    <div
                                         className={cn(
-                                            "size-3.5 shrink-0 transition-transform duration-200",
-                                            isOpen ? "rotate-90" : "",
+                                            buttonVariants({
+                                                variant: "ghost",
+                                                size: "icon-xs",
+                                                className:
+                                                    "hover:bg-transparent!",
+                                            }),
+                                            "group-hover/dept:flex hidden",
                                         )}
-                                    />
-                                </div>
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsOpen(!isOpen);
+                                        }}
+                                    >
+                                        <ChevronRight
+                                            className={cn(
+                                                "size-3.5 shrink-0 transition-transform duration-200",
+                                                isOpen
+                                                    ? "rotate-90"
+                                                    : "",
+                                            )}
+                                        />
+                                    </div>
+                                    <div
+                                        className={cn(
+                                            buttonVariants({
+                                                variant: "ghost",
+                                                size: "icon-xs",
+                                                className:
+                                                    "hover:bg-transparent!",
+                                            }),
+                                            "group-hover/dept:hidden",
+                                        )}
+                                    >
+                                        {logoNode}
+                                    </div>
+                                </>
+                            ) : (
                                 <div
-                                    className={cn(
-                                        buttonVariants({
-                                            variant: "ghost",
-                                            size: "icon-xs",
-                                            className:
-                                                "hover:bg-transparent!",
-                                        }),
-                                        "group-hover/tree:hidden",
-                                    )}
+                                    className={buttonVariants({
+                                        variant: "ghost",
+                                        size: "icon-xs",
+                                    })}
                                 >
                                     {logoNode}
                                 </div>
-                            </>
-                        ) : (
-                            <div
-                                className={buttonVariants({
-                                    variant: "ghost",
-                                    size: "icon-xs",
-                                })}
-                            >
-                                {logoNode}
-                            </div>
-                        )}
-                        <span className="truncate flex-1 text-left">
-                            {item.name}
-                        </span>
-                    </SidebarMenuButton>
+                            )}
+                            <span className="truncate flex-1 text-left">
+                                {item.name}
+                            </span>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <div
+                                        className={cn(
+                                            buttonVariants({
+                                                variant: "ghost",
+                                                size: "icon-xs",
+                                            }),
+                                            "ml-1 opacity-0 group-hover/dept:opacity-100 focus:opacity-100 hover:bg-accent!",
+                                        )}
+                                        onClick={(e) =>
+                                            e.stopPropagation()
+                                        }
+                                    >
+                                        <MoreHorizontal className="size-3.5" />
+                                    </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    align="start"
+                                    side="right"
+                                >
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(
+                                                `/departments/${item.id}`,
+                                            );
+                                        }}
+                                    >
+                                        <Eye className="size-4 text-muted-foreground" />
+                                        <span>Xem chi tiết</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onAddChild?.(item.id);
+                                        }}
+                                    >
+                                        <PlusCircle className="size-4 text-muted-foreground" />
+                                        <span>
+                                            Thêm phòng ban con
+                                        </span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onEdit?.(item);
+                                        }}
+                                    >
+                                        <Pencil className="size-4 text-muted-foreground" />
+                                        <span>Chỉnh sửa</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        variant="destructive"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete?.(item);
+                                        }}
+                                    >
+                                        <Trash2 className="size-4" />
+                                        <span>Xóa</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </SidebarMenuButton>
+                    </div>
                 </CollapsibleTrigger>
 
                 {hasChildren && (

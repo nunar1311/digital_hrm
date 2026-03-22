@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth-session";
 import { Permission } from "@/lib/rbac/permissions";
 import { revalidatePath } from "next/cache";
+import { getIO, emitToAll } from "@/lib/socket/server";
 
 // Types
 export interface GetEmployeesParams {
@@ -388,6 +389,17 @@ export async function updateEmployeesDepartment(
 
     revalidatePath("/employees");
     revalidatePath("/departments");
+
+    const io = getIO();
+    if (io) {
+        employeeIds.forEach((empId) => {
+            emitToAll("department:employee-moved", {
+                employeeId: empId,
+                targetDepartmentId: departmentId,
+            });
+        });
+    }
+
     return employees.count;
 }
 
@@ -410,6 +422,54 @@ export async function getAllEmployees() {
             image: true,
             position: true,
             departmentId: true,
+        },
+    });
+
+    return employees;
+}
+
+/**
+ * Lấy danh sách nhân viên chưa có phòng ban (để gán vào phòng ban)
+ * Không yêu cầu quyền HR - ai cũng có thể xem nhân viên chưa được phân phòng
+ */
+export async function getAssignableEmployees(search?: string) {
+    const where: Record<string, unknown> = {
+        departmentId: null,
+    };
+
+    if (search) {
+        where.OR = [
+            { name: { contains: search, mode: "insensitive" } },
+            { fullName: { contains: search, mode: "insensitive" } },
+            {
+                employeeCode: {
+                    contains: search,
+                    mode: "insensitive",
+                },
+            },
+            { email: { contains: search, mode: "insensitive" } },
+            { phone: { contains: search, mode: "insensitive" } },
+        ];
+    }
+
+    const employees = await prisma.user.findMany({
+        where,
+        orderBy: { name: "asc" },
+        select: {
+            id: true,
+            name: true,
+            fullName: true,
+            employeeCode: true,
+            image: true,
+            position: true,
+            phone: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            nationalId: true,
+            address: true,
+            employeeStatus: true,
+            employmentType: true,
         },
     });
 

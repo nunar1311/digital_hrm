@@ -407,125 +407,106 @@ function EmployeeTable({
 
     return (
         <div className="relative flex flex-col h-full overflow-hidden ">
-            {/* Sticky Header */}
-            <div className="shrink-0 overflow-x-auto z-10 relative">
-                <Table className="text-xs">
-                    <TableHeader>
-                        {table
-                            .getHeaderGroups()
-                            .map((headerGroup) => (
-                                <TableRow
-                                    key={headerGroup.id}
-                                    className="hover:bg-transparent"
-                                >
-                                    {headerGroup.headers.map(
-                                        (header) => {
-                                            const canSort =
-                                                header.column.getCanSort();
-                                            return (
-                                                <TableHead
-                                                    key={header.id}
-                                                    className="h-7 px-2 select-none z-10 relative"
-                                                    style={{
-                                                        width: header.getSize(),
-                                                    }}
-                                                >
-                                                    {canSort ? (
-                                                        <button
-                                                            onClick={header.column.getToggleSortingHandler()}
-                                                            className="flex items-center gap-1 hover:text-foreground transition-colors"
-                                                        >
-                                                            {header.isPlaceholder
-                                                                ? null
-                                                                : flexRender(
-                                                                      header
-                                                                          .column
-                                                                          .columnDef
-                                                                          .header,
-                                                                      header.getContext(),
-                                                                  )}
-                                                            {getSortIcon(
-                                                                header
-                                                                    .column
-                                                                    .id,
-                                                            )}
-                                                        </button>
-                                                    ) : header.isPlaceholder ? null : (
-                                                        flexRender(
-                                                            header
-                                                                .column
-                                                                .columnDef
-                                                                .header,
-                                                            header.getContext(),
-                                                        )
-                                                    )}
-                                                </TableHead>
-                                            );
-                                        },
-                                    )}
-                                </TableRow>
-                            ))}
-                    </TableHeader>
-                </Table>
-            </div>
-            {/* Scrollable Body */}
-            <div className="flex-1 overflow-auto min-h-0">
-                <Table className="text-xs">
-                    <TableBody>
-                        {isLoading ? (
-                            Array.from({ length: 8 }).map((_, i) => (
-                                <TableRow key={i}>
-                                    {columns.map((_, j) => (
-                                        <TableCell
-                                            key={j}
-                                            className="p-2"
-                                        >
-                                            <Skeleton className="h-3.5 w-full" />
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : table.getRowModel().rows.length === 0 ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className="h-24 text-center"
-                                >
-                                    <div className="flex flex-col items-center gap-1.5">
-                                        <Users className="h-6 w-6 text-muted-foreground" />
-                                        <p className="text-xs text-muted-foreground">
-                                            Không có nhân viên nào
-                                        </p>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    className="group/row cursor-default"
-                                >
-                                    {row
-                                        .getVisibleCells()
-                                        .map((cell) => (
-                                            <TableCell
-                                                key={cell.id}
-                                                className="p-2"
+            <Table className="text-xs">
+                <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow
+                            key={headerGroup.id}
+                            className="hover:bg-transparent"
+                        >
+                            {headerGroup.headers.map((header) => {
+                                const canSort =
+                                    header.column.getCanSort();
+                                return (
+                                    <TableHead
+                                        key={header.id}
+                                        className="h-7 px-2 select-none z-10 relative"
+                                        style={{
+                                            width: header.getSize(),
+                                        }}
+                                    >
+                                        {canSort ? (
+                                            <button
+                                                onClick={header.column.getToggleSortingHandler()}
+                                                className="flex items-center gap-1 hover:text-foreground transition-colors"
                                             >
-                                                {flexRender(
-                                                    cell.column
-                                                        .columnDef
-                                                        .cell,
-                                                    cell.getContext(),
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                          header
+                                                              .column
+                                                              .columnDef
+                                                              .header,
+                                                          header.getContext(),
+                                                      )}
+                                                {getSortIcon(
+                                                    header.column.id,
                                                 )}
-                                            </TableCell>
-                                        ))}
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                                            </button>
+                                        ) : header.isPlaceholder ? null : (
+                                            flexRender(
+                                                header.column
+                                                    .columnDef.header,
+                                                header.getContext(),
+                                            )
+                                        )}
+                                    </TableHead>
+                                );
+                            })}
+                        </TableRow>
+                    ))}
+                </TableHeader>
+                <TableBody>
+                    {isLoading ? (
+                        Array.from({ length: 8 }).map((_, i) => (
+                            <TableRow key={i}>
+                                {columns.map((_, j) => (
+                                    <TableCell
+                                        key={j}
+                                        className="p-2"
+                                    >
+                                        <Skeleton className="h-3.5 w-full" />
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))
+                    ) : table.getRowModel().rows.length === 0 ? (
+                        <TableRow>
+                            <TableCell
+                                colSpan={columns.length}
+                                className="h-24 text-center"
+                            >
+                                <div className="flex flex-col items-center gap-1.5">
+                                    <Users className="h-6 w-6 text-muted-foreground" />
+                                    <p className="text-xs text-muted-foreground">
+                                        Không có nhân viên nào
+                                    </p>
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        table.getRowModel().rows.map((row) => (
+                            <TableRow
+                                key={row.id}
+                                className="group/row cursor-default"
+                            >
+                                {row.getVisibleCells().map((cell) => (
+                                    <TableCell
+                                        key={cell.id}
+                                        className="p-2"
+                                    >
+                                        {flexRender(
+                                            cell.column.columnDef
+                                                .cell,
+                                            cell.getContext(),
+                                        )}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))
+                    )}
+                </TableBody>
+            </Table>
         </div>
     );
 }

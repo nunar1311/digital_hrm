@@ -10,7 +10,7 @@ function Table({
     ...props
 }: React.ComponentProps<"table">) {
     return (
-        <ScrollArea>
+        <ScrollArea className="h-[calc(100%)]" disableScroll>
             <table
                 data-slot="table"
                 className={cn(
@@ -31,7 +31,10 @@ function TableHeader({
     return (
         <thead
             data-slot="table-header"
-            className={cn("sticky top-0 [&_tr]:border-b", className)}
+            className={cn(
+                "sticky top-0 bg-background [&_tr]:border-b",
+                className,
+            )}
             {...props}
         />
     );
@@ -49,9 +52,11 @@ function TableBody({
             {...props}
         >
             {children}
-            <>
-                <ScrollBar />
-            </>
+            <tr>
+                <td>
+                    <ScrollBar className="pt-[calc(1.75rem)]" />
+                </td>
+            </tr>
         </tbody>
     );
 }

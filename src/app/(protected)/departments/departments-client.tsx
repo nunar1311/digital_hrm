@@ -16,7 +16,15 @@ import type {
 import { PAGE_SIZE } from "./constants";
 import { useSocketEvents } from "@/hooks/use-socket-event";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Settings } from "lucide-react";
+import { ListFilter, Plus, Search, Settings } from "lucide-react";
+import {
+    Building2,
+    Hash,
+    Users,
+    ArrowUp,
+    CircleDot,
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -31,6 +39,24 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useClickOutside, useMergedRef } from "@mantine/hooks";
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { STATUS_LABELS } from "@/components/org-chart/org-chart-constants";
+import { TableSettingsPanel } from "@/components/ui/table-settings-panel";
+
+type DepartmentStatus = "ALL" | "ACTIVE" | "INACTIVE";
+
+const STATUS_OPTIONS: { value: DepartmentStatus; label: string }[] = [
+    { value: "ALL", label: "Tất cả" },
+    { value: "ACTIVE", label: STATUS_LABELS.ACTIVE },
+    { value: "INACTIVE", label: STATUS_LABELS.INACTIVE },
+];
 
 export function DepartmentsClient() {
     const queryClient = useQueryClient();
@@ -58,6 +84,23 @@ export function DepartmentsClient() {
     // Delete confirmation state
     const [deleteTarget, setDeleteTarget] =
         useState<DepartmentListItem | null>(null);
+
+    // Filter state
+    const [statusFilter, setStatusFilter] =
+        useState<DepartmentStatus>("ALL");
+    const [columnVisibility, setColumnVisibility] = useState<
+        Record<string, boolean>
+    >({
+        employee: true,
+        code: true,
+        manager: true,
+        employeeCount: true,
+        parent: true,
+        status: true,
+    });
+
+    // Settings panel state
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
     // Real-time: invalidate queries when department events occur
     useSocketEvents(
@@ -97,7 +140,7 @@ export function DepartmentsClient() {
                 page: pageParam as number,
                 pageSize: PAGE_SIZE,
                 search,
-                status: "ALL",
+                status: statusFilter,
                 parentId: undefined,
             } as GetDepartmentsParams),
         initialPageParam: 1,
@@ -198,8 +241,75 @@ export function DepartmentsClient() {
                         </h1>
                     </header>
                     <div className="flex items-center justify-end gap-2 px-2 py-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant={
+                                        statusFilter !== "ALL"
+                                            ? "outline"
+                                            : "ghost"
+                                    }
+                                    size="xs"
+                                    className={cn(
+                                        statusFilter !== "ALL" &&
+                                            "bg-primary/10 border-primary text-primary hover:text-primary",
+                                    )}
+                                >
+                                    <ListFilter />
+                                    {statusFilter !== "ALL" && (
+                                        <span className="ml-1 text-xs">
+                                            {
+                                                STATUS_OPTIONS.find(
+                                                    (s) =>
+                                                        s.value ===
+                                                        statusFilter,
+                                                )?.label
+                                            }
+                                        </span>
+                                    )}
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                align="end"
+                                className="w-56"
+                            >
+                                {/* Filter by Status */}
+                                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                                    Trạng thái
+                                </DropdownMenuLabel>
+                                <DropdownMenuRadioGroup
+                                    value={statusFilter}
+                                    onValueChange={(value) =>
+                                        setStatusFilter(
+                                            value as DepartmentStatus,
+                                        )
+                                    }
+                                >
+                                    {STATUS_OPTIONS.map((option) => (
+                                        <DropdownMenuCheckboxItem
+                                            key={option.value}
+                                            checked={
+                                                statusFilter ===
+                                                option.value
+                                            }
+                                            onCheckedChange={() =>
+                                                setStatusFilter(
+                                                    option.value as DepartmentStatus,
+                                                )
+                                            }
+                                            className="text-sm"
+                                        >
+                                            {option.label}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         {/* Search */}
-                        <div className="relative flex items-center" ref={mergedSearchRef}>
+                        <div
+                            className="relative flex items-center"
+                            ref={mergedSearchRef}
+                        >
                             <Input
                                 ref={searchInputRef}
                                 value={search}
@@ -235,7 +345,11 @@ export function DepartmentsClient() {
                             className="h-4!"
                         />
 
-                        <Button variant={"outline"} size={"xs"}>
+                        <Button
+                            variant={"outline"}
+                            size={"xs"}
+                            onClick={() => setSettingsOpen(true)}
+                        >
                             <Settings />
                         </Button>
                         <Button size={"xs"}>
@@ -243,6 +357,45 @@ export function DepartmentsClient() {
                             Phòng ban
                         </Button>
                     </div>
+
+                    {/* Settings Panel */}
+                    <TableSettingsPanel
+                        open={settingsOpen}
+                        onClose={setSettingsOpen}
+                        columnVisibility={columnVisibility}
+                        setColumnVisibility={setColumnVisibility}
+                        columnOptions={[
+                            { key: "select", label: "Chọn", icon: Checkbox },
+                            {
+                                key: "employee",
+                                label: "Tên phòng ban",
+                                icon: Building2,
+                            },
+                            { key: "code", label: "Mã", icon: Hash },
+                            {
+                                key: "manager",
+                                label: "Trưởng phòng",
+                                icon: Users,
+                            },
+                            {
+                                key: "employeeCount",
+                                label: "Số NV",
+                                icon: Users,
+                            },
+                            { key: "parent", label: "Phòng ban cha", icon: ArrowUp },
+                            { key: "status", label: "Trạng thái", icon: CircleDot },
+                        ]}
+                        hiddenColumnIndices={[0]}
+                        defaultVisibleColumns={{
+                            select: true,
+                            employee: true,
+                            code: false,
+                            manager: false,
+                            employeeCount: true,
+                            parent: false,
+                            status: false,
+                        }}
+                    />
                 </section>
 
                 {/* Table */}
@@ -256,6 +409,8 @@ export function DepartmentsClient() {
                         hasNextPage={!!hasNextPage}
                         isFetchingNextPage={!!isFetchingNextPage}
                         onLoadMore={handleFetchNextPage}
+                        columnVisibility={columnVisibility}
+                        onColumnVisibilityChange={setColumnVisibility}
                     />
                 </section>
             </div>

@@ -144,7 +144,6 @@ async function seed() {
     // ─── Seed Departments ───
     console.log("\n🏢 Seeding departments...\n");
 
-    // Find users by email for manager assignment
     const directorUser = await prisma.user.findUnique({
         where: { email: "director@company.vn" },
     });
@@ -164,7 +163,6 @@ async function seed() {
         where: { email: "team.leader@company.vn" },
     });
 
-    // Create root department
     const bgd = await prisma.department.upsert({
         where: { code: "BGD" },
         update: {},
@@ -179,7 +177,6 @@ async function seed() {
     });
     console.log("  ✅ Ban Giám đốc (BGD)");
 
-    // Create child departments
     const departments = [
         {
             name: "Phòng Nhân sự",
@@ -249,7 +246,6 @@ async function seed() {
         console.log(`  ✅ ${dept.name} (${dept.code})`);
     }
 
-    // Create sub-departments under TECH
     const techSubDepts = [
         {
             name: "Nhóm Frontend",
@@ -294,102 +290,23 @@ async function seed() {
     console.log("\n💼 Seeding positions...\n");
 
     const positions = [
-        {
-            name: "Giám đốc",
-            code: "POS-DIR",
-            departmentId: bgd.id,
-            level: 1,
-        },
-        {
-            name: "Phó Giám đốc",
-            code: "POS-VDIR",
-            departmentId: bgd.id,
-            level: 2,
-        },
-        {
-            name: "Trưởng phòng Nhân sự",
-            code: "POS-HR-MGR",
-            departmentId: deptMap["HR"],
-            level: 1,
-        },
-        {
-            name: "Nhân viên Nhân sự",
-            code: "POS-HR-STAFF",
-            departmentId: deptMap["HR"],
-            level: 2,
-        },
-        {
-            name: "Trưởng phòng Kỹ thuật",
-            code: "POS-TECH-MGR",
-            departmentId: deptMap["TECH"],
-            level: 1,
-        },
-        {
-            name: "Trưởng nhóm",
-            code: "POS-TECH-TL",
-            departmentId: deptMap["TECH"],
-            level: 2,
-        },
-        {
-            name: "Lập trình viên",
-            code: "POS-TECH-DEV",
-            departmentId: deptMap["TECH"],
-            level: 3,
-        },
-        {
-            name: "Kỹ sư QA",
-            code: "POS-TECH-QA",
-            departmentId: deptMap["TECH"],
-            level: 3,
-        },
-        {
-            name: "Trưởng phòng Kinh doanh",
-            code: "POS-SALES-MGR",
-            departmentId: deptMap["SALES"],
-            level: 1,
-        },
-        {
-            name: "Nhân viên Kinh doanh",
-            code: "POS-SALES-STAFF",
-            departmentId: deptMap["SALES"],
-            level: 2,
-        },
-        {
-            name: "Kế toán trưởng",
-            code: "POS-FIN-MGR",
-            departmentId: deptMap["FIN"],
-            level: 1,
-        },
-        {
-            name: "Kế toán viên",
-            code: "POS-FIN-STAFF",
-            departmentId: deptMap["FIN"],
-            level: 2,
-        },
-        {
-            name: "Trưởng phòng Marketing",
-            code: "POS-MKT-MGR",
-            departmentId: deptMap["MKT"],
-            level: 1,
-        },
-        {
-            name: "Nhân viên Marketing",
-            code: "POS-MKT-STAFF",
-            departmentId: deptMap["MKT"],
-            level: 2,
-        },
-        {
-            name: "Quản trị hệ thống",
-            code: "POS-IT-ADMIN",
-            departmentId: deptMap["IT"],
-            level: 1,
-        },
-        {
-            name: "Nhân viên IT Support",
-            code: "POS-IT-STAFF",
-            departmentId: deptMap["IT"],
-            level: 2,
-        },
+        { name: "Giám đốc", code: "POS-DIR", departmentId: bgd.id, level: 1 },
+        { name: "Phó Giám đốc", code: "POS-VDIR", departmentId: bgd.id, level: 2 },
+        { name: "Trưởng phòng Nhân sự", code: "POS-HR-MGR", departmentId: deptMap["HR"], level: 1 },
+        { name: "Nhân viên Nhân sự", code: "POS-HR-STAFF", departmentId: deptMap["HR"], level: 2 },
+        { name: "Trưởng phòng Kỹ thuật", code: "POS-TECH-MGR", departmentId: deptMap["TECH"], level: 1 },
+        { name: "Trưởng nhóm", code: "POS-TECH-TL", departmentId: deptMap["TECH"], level: 2 },
+        { name: "Lập trình viên", code: "POS-TECH-DEV", departmentId: deptMap["TECH"], level: 3 },
+        { name: "Kỹ sư QA", code: "POS-TECH-QA", departmentId: deptMap["TECH"], level: 3 },
+        { name: "Trưởng phòng Kinh doanh", code: "POS-SALES-MGR", departmentId: deptMap["SALES"], level: 1 },
+        { name: "Nhân viên Kinh doanh", code: "POS-SALES-STAFF", departmentId: deptMap["SALES"], level: 2 },
+        { name: "Trưởng nhóm Kinh doanh", code: "POS-SALES-TL", departmentId: deptMap["SALES"], level: 2 },
+        { name: "Kế toán trưởng", code: "POS-FIN-MGR", departmentId: deptMap["FIN"], level: 1 },
+        { name: "Kế toán viên", code: "POS-FIN-STAFF", departmentId: deptMap["FIN"], level: 2 },
+        { name: "Trưởng phòng Marketing", code: "POS-MKT-MGR", departmentId: deptMap["MKT"], level: 1 },
+        { name: "Nhân viên Marketing", code: "POS-MKT-STAFF", departmentId: deptMap["MKT"], level: 2 },
+        { name: "Quản trị hệ thống", code: "POS-IT-ADMIN", departmentId: deptMap["IT"], level: 1 },
+        { name: "Nhân viên IT Support", code: "POS-IT-STAFF", departmentId: deptMap["IT"], level: 2 },
     ];
 
     for (const pos of positions) {
@@ -407,79 +324,28 @@ async function seed() {
     }
 
     // ─── Update user departmentId and jobTitle ───
-    console.log(
-        "\n🔗 Linking users to departments and positions...\n",
-    );
-    const userDeptLinks: {
-        email: string;
-        deptCode: string;
-        positionCode: string;
-    }[] = [
-        {
-            email: "admin@company.vn",
-            deptCode: "BGD",
-            positionCode: "POS-IT-ADMIN",
-        },
-        {
-            email: "director@company.vn",
-            deptCode: "BGD",
-            positionCode: "POS-DIR",
-        },
-        {
-            email: "hr.manager@company.vn",
-            deptCode: "HR",
-            positionCode: "POS-HR-MGR",
-        },
-        {
-            email: "hr.staff@company.vn",
-            deptCode: "HR",
-            positionCode: "POS-HR-STAFF",
-        },
-        {
-            email: "dept.manager@company.vn",
-            deptCode: "TECH",
-            positionCode: "POS-TECH-MGR",
-        },
-        {
-            email: "team.leader@company.vn",
-            deptCode: "TECH",
-            positionCode: "POS-TECH-TL",
-        },
-        {
-            email: "employee@company.vn",
-            deptCode: "TECH",
-            positionCode: "POS-TECH-DEV",
-        },
-        {
-            email: "accountant@company.vn",
-            deptCode: "FIN",
-            positionCode: "POS-FIN-MGR",
-        },
-        {
-            email: "it.admin@company.vn",
-            deptCode: "IT",
-            positionCode: "POS-IT-ADMIN",
-        },
+    console.log("\n🔗 Linking users to departments and positions...\n");
+    const userDeptLinks: { email: string; deptCode: string; positionCode: string }[] = [
+        { email: "admin@company.vn", deptCode: "BGD", positionCode: "POS-IT-ADMIN" },
+        { email: "director@company.vn", deptCode: "BGD", positionCode: "POS-DIR" },
+        { email: "hr.manager@company.vn", deptCode: "HR", positionCode: "POS-HR-MGR" },
+        { email: "hr.staff@company.vn", deptCode: "HR", positionCode: "POS-HR-STAFF" },
+        { email: "dept.manager@company.vn", deptCode: "TECH", positionCode: "POS-TECH-MGR" },
+        { email: "team.leader@company.vn", deptCode: "TECH", positionCode: "POS-TECH-TL" },
+        { email: "employee@company.vn", deptCode: "TECH", positionCode: "POS-TECH-DEV" },
+        { email: "accountant@company.vn", deptCode: "FIN", positionCode: "POS-FIN-MGR" },
+        { email: "it.admin@company.vn", deptCode: "IT", positionCode: "POS-IT-ADMIN" },
     ];
 
     for (const link of userDeptLinks) {
-        const dept = await prisma.department.findUnique({
-            where: { code: link.deptCode },
-        });
-        const position = await prisma.position.findUnique({
-            where: { code: link.positionCode },
-        });
+        const dept = await prisma.department.findUnique({ where: { code: link.deptCode } });
+        const position = await prisma.position.findUnique({ where: { code: link.positionCode } });
         if (dept || position) {
             await prisma.user.updateMany({
                 where: { email: link.email },
-                data: {
-                    departmentId: dept?.id,
-                    jobTitleId: position?.id,
-                },
+                data: { departmentId: dept?.id, jobTitleId: position?.id },
             });
-            console.log(
-                `  ✅ ${link.email} → ${link.deptCode} (${link.positionCode})`,
-            );
+            console.log(`  ✅ ${link.email} → ${link.deptCode} (${link.positionCode})`);
         }
     }
 
@@ -487,93 +353,29 @@ async function seed() {
     console.log("\n🏢 Seeding company settings...\n");
 
     const companySettings = [
-        {
-            key: "company.companyName",
-            value: "Công ty Công nghệ Digital HRM",
-            group: "company",
-        },
-        {
-            key: "company.companyCode",
-            value: "DHRM",
-            group: "company",
-        },
-        {
-            key: "company.companyEmail",
-            value: "info@digital-hrm.vn",
-            group: "company",
-        },
-        {
-            key: "company.companyPhone",
-            value: "028 1234 5678",
-            group: "company",
-        },
+        { key: "company.companyName", value: "Công ty Công nghệ Digital HRM", group: "company" },
+        { key: "company.companyCode", value: "DHRM", group: "company" },
+        { key: "company.companyEmail", value: "info@digital-hrm.vn", group: "company" },
+        { key: "company.companyPhone", value: "028 1234 5678", group: "company" },
         { key: "company.companyFax", value: "", group: "company" },
-        {
-            key: "company.companyTaxCode",
-            value: "0123456789",
-            group: "company",
-        },
-        {
-            key: "company.companyAddress",
-            value: "123 Đường Nguyễn Trãi",
-            group: "company",
-        },
-        {
-            key: "company.companyWard",
-            value: "Phường Bến Thành",
-            group: "company",
-        },
-        {
-            key: "company.companyDistrict",
-            value: "Quận 1",
-            group: "company",
-        },
-        {
-            key: "company.companyCity",
-            value: "Hồ Chí Minh",
-            group: "company",
-        },
-        {
-            key: "company.companyCountry",
-            value: "Vietnam",
-            group: "company",
-        },
-        {
-            key: "company.companyWebsite",
-            value: "https://digital-hrm.vn",
-            group: "company",
-        },
+        { key: "company.companyTaxCode", value: "0123456789", group: "company" },
+        { key: "company.companyAddress", value: "123 Đường Nguyễn Trãi", group: "company" },
+        { key: "company.companyWard", value: "Phường Bến Thành", group: "company" },
+        { key: "company.companyDistrict", value: "Quận 1", group: "company" },
+        { key: "company.companyCity", value: "Hồ Chí Minh", group: "company" },
+        { key: "company.companyCountry", value: "Vietnam", group: "company" },
+        { key: "company.companyWebsite", value: "https://digital-hrm.vn", group: "company" },
         {
             key: "company.companyDescription",
             value: "Công ty chuyên cung cấp giải pháp quản lý nhân sự hàng đầu Việt Nam",
             group: "company",
         },
         { key: "company.companyLogo", value: "", group: "company" },
-        {
-            key: "company.companyIndustry",
-            value: "technology",
-            group: "company",
-        },
-        {
-            key: "company.companyFoundedDate",
-            value: "2020-01-15",
-            group: "company",
-        },
-        {
-            key: "company.companyEmployeeCount",
-            value: "51-100",
-            group: "company",
-        },
-        {
-            key: "company.companyBusinessLicense",
-            value: "0123456789",
-            group: "company",
-        },
-        {
-            key: "company.companyBankAccount",
-            value: "1234567890",
-            group: "company",
-        },
+        { key: "company.companyIndustry", value: "technology", group: "company" },
+        { key: "company.companyFoundedDate", value: "2020-01-15", group: "company" },
+        { key: "company.companyEmployeeCount", value: "51-100", group: "company" },
+        { key: "company.companyBusinessLicense", value: "0123456789", group: "company" },
+        { key: "company.companyBankAccount", value: "1234567890", group: "company" },
         {
             key: "company.companyBankName",
             value: "Ngân hàng TMCP Ngoại thương Việt Nam (VCB)",
@@ -590,6 +392,9 @@ async function seed() {
         console.log(`  ✅ ${setting.key}`);
     }
 
+    // ─── Seed 100 Employees ───
+    await seedEmployees();
+
     console.log("\n🎉 Seed hoàn tất!");
     console.log("\n📋 Thông tin đăng nhập:");
     console.log("─".repeat(60));
@@ -597,6 +402,292 @@ async function seed() {
         console.log(`  ${user.email.padEnd(25)} | ${user.password}`);
     }
     console.log("─".repeat(60));
+}
+
+// ─── Seed 100 Employees ───
+async function seedEmployees() {
+    console.log("\n👥 Seeding 100 employees...\n");
+
+    const allDepts = await prisma.department.findMany();
+    const allPositions = await prisma.position.findMany();
+
+    const deptMap: Record<string, string> = {};
+    for (const d of allDepts) deptMap[d.code] = d.id;
+
+    const posMap: Record<string, string> = {};
+    for (const p of allPositions) posMap[p.code] = p.id;
+
+    const positionsByCode: Record<string, string> = {
+        "POS-DIR": posMap["POS-DIR"] ?? "",
+        "POS-VDIR": posMap["POS-VDIR"] ?? "",
+        "POS-HR-MGR": posMap["POS-HR-MGR"] ?? "",
+        "POS-HR-STAFF": posMap["POS-HR-STAFF"] ?? "",
+        "POS-TECH-MGR": posMap["POS-TECH-MGR"] ?? "",
+        "POS-TECH-TL": posMap["POS-TECH-TL"] ?? "",
+        "POS-TECH-DEV": posMap["POS-TECH-DEV"] ?? "",
+        "POS-TECH-QA": posMap["POS-TECH-QA"] ?? "",
+        "POS-SALES-MGR": posMap["POS-SALES-MGR"] ?? "",
+        "POS-SALES-STAFF": posMap["POS-SALES-STAFF"] ?? "",
+        "POS-SALES-TL": posMap["POS-SALES-TL"] ?? "",
+        "POS-FIN-MGR": posMap["POS-FIN-MGR"] ?? "",
+        "POS-FIN-STAFF": posMap["POS-FIN-STAFF"] ?? "",
+        "POS-MKT-MGR": posMap["POS-MKT-MGR"] ?? "",
+        "POS-MKT-STAFF": posMap["POS-MKT-STAFF"] ?? "",
+        "POS-IT-ADMIN": posMap["POS-IT-ADMIN"] ?? "",
+        "POS-IT-STAFF": posMap["POS-IT-STAFF"] ?? "",
+    };
+
+    const techFEId = deptMap["TECH-FE"];
+    const techBEId = deptMap["TECH-BE"];
+    const techQAId = deptMap["TECH-QA"];
+
+    const employees = [
+        // BGD
+        { code: "EMP-002", name: "Phạm Minh Tuấn", gender: "MALE", dept: "BGD", pos: "POS-VDIR", role: "DIRECTOR", dob: "1980-03-15", phone: "0902123456", nationalId: "025080001234", hire: "2018-06-01", type: "FULL_TIME" },
+        { code: "EMP-003", name: "Đặng Hoàng Nam", gender: "MALE", dept: "BGD", pos: "POS-VDIR", role: "DIRECTOR", dob: "1982-07-22", phone: "0902123457", nationalId: "025080001235", hire: "2019-01-15", type: "FULL_TIME" },
+        // TECH
+        { code: "EMP-004", name: "Trần Đức Anh", gender: "MALE", dept: "TECH", pos: "POS-TECH-MGR", role: "DEPT_MANAGER", dob: "1985-04-10", phone: "0903123456", nationalId: "025080001236", hire: "2017-03-20", type: "FULL_TIME" },
+        { code: "EMP-005", name: "Lê Thị Thu Hà", gender: "FEMALE", dept: "TECH", pos: "POS-TECH-TL", role: "TEAM_LEADER", dob: "1988-09-05", phone: "0903123457", nationalId: "025080001237", hire: "2018-07-01", type: "FULL_TIME" },
+        { code: "EMP-006", name: "Nguyễn Văn Hùng", gender: "MALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1992-11-20", phone: "0903123458", nationalId: "025080001238", hire: "2019-09-15", type: "FULL_TIME" },
+        { code: "EMP-007", name: "Phạm Thị Lan", gender: "FEMALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1994-02-14", phone: "0903123459", nationalId: "025080001239", hire: "2020-01-10", type: "FULL_TIME" },
+        { code: "EMP-008", name: "Vũ Minh Khoa", gender: "MALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1995-06-30", phone: "0903123460", nationalId: "025080001240", hire: "2020-05-20", type: "FULL_TIME" },
+        { code: "EMP-009", name: "Hoàng Thị Mai", gender: "FEMALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1993-08-17", phone: "0903123461", nationalId: "025080001241", hire: "2020-03-01", type: "FULL_TIME" },
+        { code: "EMP-010", name: "Đỗ Văn Quang", gender: "MALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1996-12-08", phone: "0903123462", nationalId: "025080001242", hire: "2021-02-15", type: "FULL_TIME" },
+        { code: "EMP-011", name: "Bùi Thị Hương", gender: "FEMALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1997-05-25", phone: "0903123463", nationalId: "025080001243", hire: "2021-06-01", type: "FULL_TIME" },
+        { code: "EMP-012", name: "Trịnh Văn Toàn", gender: "MALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1991-03-12", phone: "0903123464", nationalId: "025080001244", hire: "2019-11-20", type: "FULL_TIME" },
+        { code: "EMP-013", name: "Lưu Thị Ngọc", gender: "FEMALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1998-07-09", phone: "0903123465", nationalId: "025080001245", hire: "2022-01-10", type: "FULL_TIME" },
+        { code: "EMP-014", name: "Ngô Minh Đức", gender: "MALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1994-10-03", phone: "0903123466", nationalId: "025080001246", hire: "2020-08-25", type: "FULL_TIME" },
+        { code: "EMP-015", name: "Phan Thị Thanh", gender: "FEMALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1999-01-28", phone: "0903123467", nationalId: "025080001247", hire: "2022-07-15", type: "FULL_TIME" },
+        { code: "EMP-016", name: "Cao Văn Minh", gender: "MALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1996-04-18", phone: "0903123468", nationalId: "025080001248", hire: "2021-10-01", type: "FULL_TIME" },
+        { code: "EMP-017", name: "Trần Văn Sơn", gender: "MALE", dept: "TECH", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1993-09-07", phone: "0903123469", nationalId: "025080001249", hire: "2020-04-20", type: "FULL_TIME" },
+        // TECH-FE
+        { code: "EMP-018", name: "Nguyễn Thị Lan", gender: "FEMALE", dept: "TECH-FE", pos: "POS-TECH-TL", role: "TEAM_LEADER", dob: "1989-12-01", phone: "0904123456", nationalId: "025080001250", hire: "2018-09-10", type: "FULL_TIME" },
+        { code: "EMP-019", name: "Lê Hoàng Long", gender: "MALE", dept: "TECH-FE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1995-03-15", phone: "0904123457", nationalId: "025080001251", hire: "2020-11-01", type: "FULL_TIME" },
+        { code: "EMP-020", name: "Trần Thị Hồng", gender: "FEMALE", dept: "TECH-FE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1997-06-22", phone: "0904123458", nationalId: "025080001252", hire: "2021-08-15", type: "FULL_TIME" },
+        { code: "EMP-021", name: "Phạm Văn Kiên", gender: "MALE", dept: "TECH-FE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1998-02-08", phone: "0904123459", nationalId: "025080001253", hire: "2022-03-01", type: "FULL_TIME" },
+        { code: "EMP-022", name: "Vũ Thị Phương", gender: "FEMALE", dept: "TECH-FE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1996-08-30", phone: "0904123460", nationalId: "025080001254", hire: "2021-05-20", type: "FULL_TIME" },
+        { code: "EMP-023", name: "Đặng Minh Tuấn", gender: "MALE", dept: "TECH-FE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1999-11-14", phone: "0904123461", nationalId: "025080001255", hire: "2023-02-10", type: "FULL_TIME" },
+        { code: "EMP-024", name: "Hoàng Thị Thúy", gender: "FEMALE", dept: "TECH-FE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1994-07-25", phone: "0904123462", nationalId: "025080001256", hire: "2020-10-01", type: "FULL_TIME" },
+        { code: "EMP-025", name: "Nguyễn Văn Bảo", gender: "MALE", dept: "TECH-FE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1997-01-09", phone: "0904123463", nationalId: "025080001257", hire: "2022-06-15", type: "FULL_TIME" },
+        // TECH-BE
+        { code: "EMP-026", name: "Trần Văn Dũng", gender: "MALE", dept: "TECH-BE", pos: "POS-TECH-TL", role: "TEAM_LEADER", dob: "1987-05-18", phone: "0905123456", nationalId: "025080001258", hire: "2017-11-01", type: "FULL_TIME" },
+        { code: "EMP-027", name: "Phạm Thị Hà", gender: "FEMALE", dept: "TECH-BE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1994-09-03", phone: "0905123457", nationalId: "025080001259", hire: "2020-07-20", type: "FULL_TIME" },
+        { code: "EMP-028", name: "Lê Văn Minh", gender: "MALE", dept: "TECH-BE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1996-12-20", phone: "0905123458", nationalId: "025080001260", hire: "2021-03-15", type: "FULL_TIME" },
+        { code: "EMP-029", name: "Vũ Hoàng Nam", gender: "MALE", dept: "TECH-BE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1998-04-11", phone: "0905123459", nationalId: "025080001261", hire: "2022-01-25", type: "FULL_TIME" },
+        { code: "EMP-030", name: "Đỗ Thị Linh", gender: "FEMALE", dept: "TECH-BE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1995-10-05", phone: "0905123460", nationalId: "025080001262", hire: "2020-12-01", type: "FULL_TIME" },
+        { code: "EMP-031", name: "Bùi Văn Hải", gender: "MALE", dept: "TECH-BE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1993-02-28", phone: "0905123461", nationalId: "025080001263", hire: "2019-08-10", type: "FULL_TIME" },
+        { code: "EMP-032", name: "Trịnh Thị Lan", gender: "FEMALE", dept: "TECH-BE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1997-07-14", phone: "0905123462", nationalId: "025080001264", hire: "2022-04-01", type: "FULL_TIME" },
+        { code: "EMP-033", name: "Ngô Văn Trung", gender: "MALE", dept: "TECH-BE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1999-03-22", phone: "0905123463", nationalId: "025080001265", hire: "2023-01-15", type: "FULL_TIME" },
+        { code: "EMP-034", name: "Phan Hoàng Sơn", gender: "MALE", dept: "TECH-BE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1996-06-08", phone: "0905123464", nationalId: "025080001266", hire: "2021-09-01", type: "FULL_TIME" },
+        // TECH-QA
+        { code: "EMP-035", name: "Cao Thị Thu", gender: "FEMALE", dept: "TECH-QA", pos: "POS-TECH-TL", role: "TEAM_LEADER", dob: "1988-11-25", phone: "0906123456", nationalId: "025080001267", hire: "2018-04-15", type: "FULL_TIME" },
+        { code: "EMP-036", name: "Trần Văn Đạt", gender: "MALE", dept: "TECH-QA", pos: "POS-TECH-QA", role: "EMPLOYEE", dob: "1995-01-30", phone: "0906123457", nationalId: "025080001268", hire: "2020-06-01", type: "FULL_TIME" },
+        { code: "EMP-037", name: "Lê Thị Phương", gender: "FEMALE", dept: "TECH-QA", pos: "POS-TECH-QA", role: "EMPLOYEE", dob: "1997-08-12", phone: "0906123458", nationalId: "025080001269", hire: "2021-10-20", type: "FULL_TIME" },
+        { code: "EMP-038", name: "Nguyễn Hoàng Mai", gender: "FEMALE", dept: "TECH-QA", pos: "POS-TECH-QA", role: "EMPLOYEE", dob: "1994-04-06", phone: "0906123459", nationalId: "025080001270", hire: "2020-09-01", type: "FULL_TIME" },
+        { code: "EMP-039", name: "Phạm Văn Thắng", gender: "MALE", dept: "TECH-QA", pos: "POS-TECH-QA", role: "EMPLOYEE", dob: "1998-09-18", phone: "0906123460", nationalId: "025080001271", hire: "2022-08-01", type: "FULL_TIME" },
+        { code: "EMP-040", name: "Vũ Thị Kim Oanh", gender: "FEMALE", dept: "TECH-QA", pos: "POS-TECH-QA", role: "EMPLOYEE", dob: "1996-02-27", phone: "0906123461", nationalId: "025080001272", hire: "2021-07-15", type: "FULL_TIME" },
+        // HR
+        { code: "EMP-041", name: "Hoàng Văn Phúc", gender: "MALE", dept: "HR", pos: "POS-HR-MGR", role: "HR_MANAGER", dob: "1984-06-10", phone: "0907123456", nationalId: "025080001273", hire: "2017-01-10", type: "FULL_TIME" },
+        { code: "EMP-042", name: "Nguyễn Thị Hương", gender: "FEMALE", dept: "HR", pos: "POS-HR-STAFF", role: "HR_STAFF", dob: "1992-03-25", phone: "0907123457", nationalId: "025080001274", hire: "2019-05-01", type: "FULL_TIME" },
+        { code: "EMP-043", name: "Lê Thị Mai", gender: "FEMALE", dept: "HR", pos: "POS-HR-STAFF", role: "HR_STAFF", dob: "1995-07-08", phone: "0907123458", nationalId: "025080001275", hire: "2020-10-15", type: "FULL_TIME" },
+        { code: "EMP-044", name: "Trần Văn Hùng", gender: "MALE", dept: "HR", pos: "POS-HR-STAFF", role: "HR_STAFF", dob: "1993-10-30", phone: "0907123459", nationalId: "025080001276", hire: "2020-03-20", type: "FULL_TIME" },
+        { code: "EMP-045", name: "Phạm Thị Lan Anh", gender: "FEMALE", dept: "HR", pos: "POS-HR-STAFF", role: "HR_STAFF", dob: "1997-12-14", phone: "0907123460", nationalId: "025080001277", hire: "2022-02-01", type: "FULL_TIME" },
+        { code: "EMP-046", name: "Đặng Văn Tiến", gender: "MALE", dept: "HR", pos: "POS-HR-STAFF", role: "HR_STAFF", dob: "1996-05-20", phone: "0907123461", nationalId: "025080001278", hire: "2021-08-01", type: "FULL_TIME" },
+        // SALES
+        { code: "EMP-047", name: "Vũ Hoàng Dương", gender: "MALE", dept: "SALES", pos: "POS-SALES-MGR", role: "DEPT_MANAGER", dob: "1983-08-15", phone: "0908123456", nationalId: "025080001279", hire: "2016-05-01", type: "FULL_TIME" },
+        { code: "EMP-048", name: "Trịnh Thị Thu Hà", gender: "FEMALE", dept: "SALES", pos: "POS-SALES-TL", role: "TEAM_LEADER", dob: "1989-04-22", phone: "0908123457", nationalId: "025080001280", hire: "2018-03-15", type: "FULL_TIME" },
+        { code: "EMP-049", name: "Bùi Văn Đức", gender: "MALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1994-01-10", phone: "0908123458", nationalId: "025080001281", hire: "2019-10-01", type: "FULL_TIME" },
+        { code: "EMP-050", name: "Lê Thị Ngọc Mai", gender: "FEMALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1996-09-28", phone: "0908123459", nationalId: "025080001282", hire: "2020-06-20", type: "FULL_TIME" },
+        { code: "EMP-051", name: "Ngô Văn Minh", gender: "MALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1992-12-05", phone: "0908123460", nationalId: "025080001283", hire: "2019-04-15", type: "FULL_TIME" },
+        { code: "EMP-052", name: "Phan Thị Hồng Nhung", gender: "FEMALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1998-06-17", phone: "0908123461", nationalId: "025080001284", hire: "2022-01-10", type: "FULL_TIME" },
+        { code: "EMP-053", name: "Cao Văn Trung", gender: "MALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1995-03-08", phone: "0908123462", nationalId: "025080001285", hire: "2020-11-01", type: "FULL_TIME" },
+        { code: "EMP-054", name: "Trần Thị Minh Châu", gender: "FEMALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1997-10-22", phone: "0908123463", nationalId: "025080001286", hire: "2021-09-15", type: "FULL_TIME" },
+        { code: "EMP-055", name: "Phạm Văn Thành", gender: "MALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1993-07-14", phone: "0908123464", nationalId: "025080001287", hire: "2020-02-01", type: "FULL_TIME" },
+        { code: "EMP-056", name: "Vũ Thị Lan Phương", gender: "FEMALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1999-02-28", phone: "0908123465", nationalId: "025080001288", hire: "2023-03-01", type: "FULL_TIME" },
+        { code: "EMP-057", name: "Đặng Hoàng Sơn", gender: "MALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1994-11-03", phone: "0908123466", nationalId: "025080001289", hire: "2020-08-20", type: "FULL_TIME" },
+        { code: "EMP-058", name: "Hoàng Thị Thanh Tâm", gender: "FEMALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1996-08-11", phone: "0908123467", nationalId: "025080001290", hire: "2021-04-01", type: "FULL_TIME" },
+        { code: "EMP-059", name: "Lê Văn Khánh", gender: "MALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1991-05-25", phone: "0908123468", nationalId: "025080001291", hire: "2019-07-15", type: "FULL_TIME" },
+        { code: "EMP-060", name: "Trịnh Thị Xuân", gender: "FEMALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1998-01-09", phone: "0908123469", nationalId: "025080001292", hire: "2022-09-01", type: "FULL_TIME" },
+        // FIN
+        { code: "EMP-061", name: "Nguyễn Thị Thu Hồng", gender: "FEMALE", dept: "FIN", pos: "POS-FIN-MGR", role: "ACCOUNTANT", dob: "1985-09-12", phone: "0909123456", nationalId: "025080001293", hire: "2016-08-01", type: "FULL_TIME" },
+        { code: "EMP-062", name: "Phạm Văn Thọ", gender: "MALE", dept: "FIN", pos: "POS-FIN-STAFF", role: "ACCOUNTANT", dob: "1991-04-20", phone: "0909123457", nationalId: "025080001294", hire: "2019-02-15", type: "FULL_TIME" },
+        { code: "EMP-063", name: "Lê Thị Kim Thoa", gender: "FEMALE", dept: "FIN", pos: "POS-FIN-STAFF", role: "ACCOUNTANT", dob: "1994-12-03", phone: "0909123458", nationalId: "025080001295", hire: "2020-07-01", type: "FULL_TIME" },
+        { code: "EMP-064", name: "Vũ Hoàng Nam", gender: "MALE", dept: "FIN", pos: "POS-FIN-STAFF", role: "ACCOUNTANT", dob: "1993-06-18", phone: "0909123459", nationalId: "025080001296", hire: "2020-01-20", type: "FULL_TIME" },
+        { code: "EMP-065", name: "Đỗ Thị Hương Giang", gender: "FEMALE", dept: "FIN", pos: "POS-FIN-STAFF", role: "ACCOUNTANT", dob: "1997-03-30", phone: "0909123460", nationalId: "025080001297", hire: "2021-06-15", type: "FULL_TIME" },
+        { code: "EMP-066", name: "Bùi Văn Tâm", gender: "MALE", dept: "FIN", pos: "POS-FIN-STAFF", role: "ACCOUNTANT", dob: "1995-10-07", phone: "0909123461", nationalId: "025080001298", hire: "2020-09-01", type: "FULL_TIME" },
+        { code: "EMP-067", name: "Trịnh Thị Minh Ngọc", gender: "FEMALE", dept: "FIN", pos: "POS-FIN-STAFF", role: "ACCOUNTANT", dob: "1996-07-25", phone: "0909123462", nationalId: "025080001299", hire: "2021-03-01", type: "FULL_TIME" },
+        { code: "EMP-068", name: "Ngô Văn Đăng", gender: "MALE", dept: "FIN", pos: "POS-FIN-STAFF", role: "ACCOUNTANT", dob: "1992-11-14", phone: "0909123463", nationalId: "025080001300", hire: "2019-11-01", type: "FULL_TIME" },
+        { code: "EMP-069", name: "Phan Thị Thu Hà", gender: "FEMALE", dept: "FIN", pos: "POS-FIN-STAFF", role: "ACCOUNTANT", dob: "1998-05-02", phone: "0909123464", nationalId: "025080001301", hire: "2022-04-15", type: "FULL_TIME" },
+        { code: "EMP-070", name: "Cao Văn Quốc", gender: "MALE", dept: "FIN", pos: "POS-FIN-STAFF", role: "ACCOUNTANT", dob: "1994-08-19", phone: "0909123465", nationalId: "025080001302", hire: "2020-12-01", type: "FULL_TIME" },
+        { code: "EMP-071", name: "Trần Thị Thu Minh", gender: "FEMALE", dept: "FIN", pos: "POS-FIN-STAFF", role: "ACCOUNTANT", dob: "1999-01-08", phone: "0909123466", nationalId: "025080001303", hire: "2023-01-15", type: "FULL_TIME" },
+        // MKT
+        { code: "EMP-072", name: "Phạm Hoàng Minh", gender: "MALE", dept: "MKT", pos: "POS-MKT-MGR", role: "DEPT_MANAGER", dob: "1986-03-05", phone: "0910123456", nationalId: "025080001304", hire: "2017-02-01", type: "FULL_TIME" },
+        { code: "EMP-073", name: "Vũ Thị Lan Anh", gender: "FEMALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1993-09-22", phone: "0910123457", nationalId: "025080001305", hire: "2019-08-15", type: "FULL_TIME" },
+        { code: "EMP-074", name: "Đặng Văn Hải", gender: "MALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1995-12-10", phone: "0910123458", nationalId: "025080001306", hire: "2020-05-01", type: "FULL_TIME" },
+        { code: "EMP-075", name: "Hoàng Thị Ngọc Linh", gender: "FEMALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1997-06-28", phone: "0910123459", nationalId: "025080001307", hire: "2021-10-01", type: "FULL_TIME" },
+        { code: "EMP-076", name: "Lê Văn Bình", gender: "MALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1994-04-15", phone: "0910123460", nationalId: "025080001308", hire: "2020-03-20", type: "FULL_TIME" },
+        { code: "EMP-077", name: "Trịnh Thị Hồng Phượng", gender: "FEMALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1996-10-02", phone: "0910123461", nationalId: "025080001309", hire: "2021-05-15", type: "FULL_TIME" },
+        { code: "EMP-078", name: "Ngô Văn Thắng", gender: "MALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1993-01-18", phone: "0910123462", nationalId: "025080001310", hire: "2019-10-01", type: "FULL_TIME" },
+        { code: "EMP-079", name: "Phan Thị Thanh Hà", gender: "FEMALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1998-07-11", phone: "0910123463", nationalId: "025080001311", hire: "2022-06-20", type: "FULL_TIME" },
+        { code: "EMP-080", name: "Cao Hoàng Long", gender: "MALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1995-02-25", phone: "0910123464", nationalId: "025080001312", hire: "2020-11-01", type: "FULL_TIME" },
+        { code: "EMP-081", name: "Trần Thị Mỹ Duyên", gender: "FEMALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1999-08-06", phone: "0910123465", nationalId: "025080001313", hire: "2023-02-15", type: "FULL_TIME" },
+        { code: "EMP-082", name: "Phạm Văn Phong", gender: "MALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1992-11-30", phone: "0910123466", nationalId: "025080001314", hire: "2019-06-01", type: "FULL_TIME" },
+        // IT
+        { code: "EMP-083", name: "Lê Văn Thành", gender: "MALE", dept: "IT", pos: "POS-IT-ADMIN", role: "IT_ADMIN", dob: "1987-05-14", phone: "0911123456", nationalId: "025080001315", hire: "2017-04-01", type: "FULL_TIME" },
+        { code: "EMP-084", name: "Nguyễn Thị Thu Trang", gender: "FEMALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1994-10-28", phone: "0911123457", nationalId: "025080001316", hire: "2020-02-15", type: "FULL_TIME" },
+        { code: "EMP-085", name: "Phạm Văn Duy", gender: "MALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1996-03-17", phone: "0911123458", nationalId: "025080001317", hire: "2020-08-01", type: "FULL_TIME" },
+        { code: "EMP-086", name: "Vũ Thị Lan Chi", gender: "FEMALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1998-09-05", phone: "0911123459", nationalId: "025080001318", hire: "2022-01-20", type: "FULL_TIME" },
+        { code: "EMP-087", name: "Đặng Hoàng Nam", gender: "MALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1993-07-23", phone: "0911123460", nationalId: "025080001319", hire: "2019-12-01", type: "FULL_TIME" },
+        { code: "EMP-088", name: "Hoàng Văn Đức", gender: "MALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1995-01-09", phone: "0911123461", nationalId: "025080001320", hire: "2020-10-15", type: "FULL_TIME" },
+        { code: "EMP-089", name: "Lê Thị Hồng Nhung", gender: "FEMALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1997-06-20", phone: "0911123462", nationalId: "025080001321", hire: "2021-07-01", type: "FULL_TIME" },
+        { code: "EMP-090", name: "Trần Văn Khoa", gender: "MALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1994-12-12", phone: "0911123463", nationalId: "025080001322", hire: "2020-04-01", type: "FULL_TIME" },
+        { code: "EMP-091", name: "Phạm Thị Thanh Thảo", gender: "FEMALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1999-04-07", phone: "0911123464", nationalId: "025080001323", hire: "2023-01-10", type: "FULL_TIME" },
+        { code: "EMP-092", name: "Vũ Hoàng Sơn", gender: "MALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1996-08-30", phone: "0911123465", nationalId: "025080001324", hire: "2021-09-15", type: "FULL_TIME" },
+        { code: "EMP-093", name: "Nguyễn Thị Kim Oanh", gender: "FEMALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1992-02-14", phone: "0911123466", nationalId: "025080001325", hire: "2019-05-01", type: "FULL_TIME" },
+        { code: "EMP-094", name: "Lê Văn Trung", gender: "MALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1998-11-25", phone: "0911123467", nationalId: "025080001326", hire: "2022-05-01", type: "FULL_TIME" },
+        { code: "EMP-095", name: "Trịnh Thị Thu Hằng", gender: "FEMALE", dept: "IT", pos: "POS-IT-STAFF", role: "EMPLOYEE", dob: "1995-07-08", phone: "0911123468", nationalId: "025080001327", hire: "2020-11-20", type: "FULL_TIME" },
+        // Extra 6 to reach 100
+        { code: "EMP-096", name: "Bùi Văn Mạnh", gender: "MALE", dept: "TECH-BE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1997-03-21", phone: "0912123456", nationalId: "025080001328", hire: "2022-02-01", type: "FULL_TIME" },
+        { code: "EMP-097", name: "Phan Thị Lan Hương", gender: "FEMALE", dept: "SALES", pos: "POS-SALES-STAFF", role: "EMPLOYEE", dob: "1996-09-14", phone: "0912123457", nationalId: "025080001329", hire: "2021-11-01", type: "FULL_TIME" },
+        { code: "EMP-098", name: "Cao Thị Thu Hà", gender: "FEMALE", dept: "MKT", pos: "POS-MKT-STAFF", role: "EMPLOYEE", dob: "1994-05-28", phone: "0912123458", nationalId: "025080001330", hire: "2020-06-15", type: "FULL_TIME" },
+        { code: "EMP-099", name: "Ngô Văn Hoàng", gender: "MALE", dept: "TECH-FE", pos: "POS-TECH-DEV", role: "EMPLOYEE", dob: "1998-01-17", phone: "0912123459", nationalId: "025080001331", hire: "2022-10-01", type: "FULL_TIME" },
+        { code: "EMP-100", name: "Trần Thị Mỹ Linh", gender: "FEMALE", dept: "HR", pos: "POS-HR-STAFF", role: "HR_STAFF", dob: "1999-10-05", phone: "0912123460", nationalId: "025080001332", hire: "2023-04-01", type: "FULL_TIME" },
+    ];
+
+    const techMgr = await prisma.user.findFirst({ where: { hrmRole: "DEPT_MANAGER", departmentId: deptMap["TECH"] } });
+    const salesMgr = await prisma.user.findFirst({ where: { hrmRole: "DEPT_MANAGER", departmentId: deptMap["SALES"] } });
+    const mktMgr = await prisma.user.findFirst({ where: { hrmRole: "DEPT_MANAGER", departmentId: deptMap["MKT"] } });
+    const defaultManagerId = techMgr?.id ?? null;
+
+    const streetNames = ["Nguyễn Trãi", "Lê Lợi", "Trần Hưng Đạo", "Võ Văn Tần", "Pasteur", "Điện Biên Phủ", "Nam Kỳ Khởi Nghĩa", "Hoàng Sa"];
+    const hashStr = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return Math.abs(h); };
+
+    let created = 0;
+    let skipped = 0;
+
+    for (const emp of employees) {
+        const deptId = deptMap[emp.dept];
+        const posId = positionsByCode[emp.pos] || positionsByCode["POS-TECH-DEV"];
+
+        let managerId = defaultManagerId;
+        if (emp.pos === "POS-TECH-TL" || emp.pos === "POS-SALES-TL") {
+            if (deptId === techFEId || deptId === techBEId || deptId === techQAId) managerId = techMgr?.id ?? null;
+            else if (deptId === deptMap["SALES"]) managerId = salesMgr?.id ?? null;
+            else managerId = mktMgr?.id ?? null;
+        } else if (["DEPT_MANAGER", "HR_MANAGER", "ACCOUNTANT", "IT_ADMIN", "DIRECTOR", "SUPER_ADMIN"].includes(emp.role) || emp.pos === "POS-VDIR") {
+            managerId = null;
+        }
+
+        const email = emp.code.toLowerCase() + "@company.vn";
+        const dobParts = emp.dob.split("-");
+        const idx = hashStr(emp.code);
+
+        try {
+            await prisma.user.upsert({
+                where: { email },
+                update: {},
+                create: {
+                    email,
+                    name: emp.name,
+                    employeeCode: emp.code,
+                    departmentId: deptId,
+                    jobTitleId: posId,
+                    position: emp.pos,
+                    hrmRole: emp.role,
+                    gender: emp.gender,
+                    dateOfBirth: new Date(emp.dob),
+                    phone: emp.phone,
+                    nationalId: emp.nationalId,
+                    nationalIdDate: new Date(parseInt(dobParts[0]) + 20, parseInt(dobParts[1]) - 1, 15),
+                    nationalIdPlace: "TP. Hồ Chí Minh",
+                    hireDate: new Date(emp.hire),
+                    ethnicity: "Kinh",
+                    nationality: "Việt Nam",
+                    educationLevel: ["Đại học", "Cao đẳng", "Thạc sĩ", "Đại học", "Đại học"][idx % 5],
+                    maritalStatus: ["Độc thân", "Đã kết hôn", "Độc thân", "Đã kết hôn"][idx % 4],
+                    religion: ["Không", "Phật giáo", "Công giáo", "Cao Đài", "Không"][idx % 5],
+                    employeeStatus: ["ACTIVE", "ACTIVE", "ACTIVE", "ACTIVE", "PROBATION"][idx % 5],
+                    employmentType: emp.type,
+                    permanentAddress: `${(idx % 200) + 1} Đường ${streetNames[idx % streetNames.length]}, Quận ${(idx % 10) + 1}, TP. Hồ Chí Minh`,
+                    address: `${(idx % 200) + 1} Đường ${streetNames[idx % streetNames.length]}, Quận ${(idx % 10) + 1}, TP. Hồ Chí Minh`,
+                    personalEmail: `${emp.code.toLowerCase()}@gmail.com`,
+                    managerId,
+                    emailVerified: true,
+                },
+            });
+            created++;
+            if (created % 20 === 0) console.log(`  📊 Đã tạo ${created} nhân viên...`);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            if (msg.includes("already exists") || msg.includes("unique constraint")) skipped++;
+            else console.error(`  ❌ ${emp.code} ${emp.name}: ${msg}`);
+        }
+    }
+    console.log(`\n  ✅ Đã tạo ${created} nhân viên`);
+    if (skipped > 0) console.log(`  ⏭️  Đã bỏ qua ${skipped} nhân viên (đã tồn tại)`);
+
+    // Salary
+    console.log("\n💰 Seeding salaries...\n");
+    const salaryRanges: Record<string, { min: number; max: number }> = {
+        "POS-DIR": { min: 40000000, max: 60000000 },
+        "POS-VDIR": { min: 30000000, max: 45000000 },
+        "POS-HR-MGR": { min: 25000000, max: 35000000 },
+        "POS-TECH-MGR": { min: 28000000, max: 40000000 },
+        "POS-SALES-MGR": { min: 25000000, max: 35000000 },
+        "POS-FIN-MGR": { min: 25000000, max: 35000000 },
+        "POS-MKT-MGR": { min: 25000000, max: 35000000 },
+        "POS-TECH-TL": { min: 18000000, max: 25000000 },
+        "POS-SALES-TL": { min: 15000000, max: 22000000 },
+        "POS-HR-STAFF": { min: 8000000, max: 14000000 },
+        "POS-TECH-DEV": { min: 12000000, max: 25000000 },
+        "POS-TECH-QA": { min: 10000000, max: 18000000 },
+        "POS-SALES-STAFF": { min: 7000000, max: 15000000 },
+        "POS-FIN-STAFF": { min: 8000000, max: 15000000 },
+        "POS-MKT-STAFF": { min: 7000000, max: 14000000 },
+        "POS-IT-ADMIN": { min: 15000000, max: 25000000 },
+        "POS-IT-STAFF": { min: 8000000, max: 18000000 },
+    };
+    for (const emp of employees) {
+        const user = await prisma.user.findUnique({ where: { email: emp.code.toLowerCase() + "@company.vn" } });
+        if (!user) continue;
+        const range = salaryRanges[emp.pos] ?? { min: 8000000, max: 15000000 };
+        const idx = hashStr(emp.code + "salary");
+        const baseSalary = Math.round(range.min + ((range.max - range.min) * (idx % 100)) / 100);
+        try {
+            await prisma.salary.upsert({
+                where: { userId: user.id },
+                update: { baseSalary },
+                create: { userId: user.id, baseSalary, effectiveDate: new Date(emp.hire) },
+            });
+        } catch {}
+    }
+    console.log(`  ✅ Đã seed lương cho ${employees.length} nhân viên`);
+
+    // Shift assignment
+    console.log("\n🕐 Seeding shift assignments...\n");
+    const defaultShift = await prisma.shift.findFirst({ where: { isDefault: true } });
+    if (defaultShift) {
+        for (const emp of employees) {
+            const user = await prisma.user.findUnique({ where: { email: emp.code.toLowerCase() + "@company.vn" } });
+            if (!user) continue;
+            try {
+                await prisma.shiftAssignment.upsert({
+                    where: { id: `${user.id}-default` },
+                    update: {},
+                    create: { id: `${user.id}-default`, userId: user.id, shiftId: defaultShift.id, startDate: new Date(emp.hire) },
+                });
+            } catch {}
+        }
+        console.log(`  ✅ Đã gán ca làm việc cho ${employees.length} nhân viên`);
+    }
+
+    const totalUsers = await prisma.user.count();
+    const totalDepts = await prisma.department.count();
+    const totalPositions = await prisma.position.count();
+    console.log("\n📊 Tổng kết sau seed:");
+    console.log(`   - Tổng users: ${totalUsers}`);
+    console.log(`   - Departments: ${totalDepts}`);
+    console.log(`   - Positions: ${totalPositions}`);
 }
 
 seed()
