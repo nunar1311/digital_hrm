@@ -71,9 +71,9 @@ model User {
   notificationPreference   NotificationPreference?   @relation(fields: [notificationPreferenceId], references: [id])
   notificationPreferenceId String?
   emailLogs                EmailLog[]
+  position                 Position?                @relation(fields: [positionId], references: [id])
 
   @@map("users")
-  positions Position[]
 }
 
 model Session {
