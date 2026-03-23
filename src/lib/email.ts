@@ -20,7 +20,7 @@ export async function sendEmail(data: EmailData): Promise<{
         subject: data.subject,
         body: data.body,
         templateCode: data.templateCode,
-        metadata: data.metadata,
+        metadata: data.metadata as any,
         status: "PENDING",
       },
     });

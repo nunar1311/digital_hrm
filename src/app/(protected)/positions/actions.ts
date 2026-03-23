@@ -9,8 +9,10 @@ import type {
     PositionDetail,
     GetPositionsParams,
     GetPositionsResult,
+    PositionListItem,
 } from "./types";
-import { createPositionSchema, updatePositionSchema } from "./schemas";
+import { CreatePositionInput, createPositionSchema, UpdatePositionInput, updatePositionSchema } from "./schemas";
+import z from "zod";
 
 // =============================================
 // QUERY FUNCTIONS

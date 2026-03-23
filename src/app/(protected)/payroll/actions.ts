@@ -520,7 +520,7 @@ export async function calculateMonthlyPayroll(params: {
         where: userFilter,
         include: {
             department: { select: { id: true, name: true } },
-            salaries: { where: { effectiveDate: { lte: new Date(year, month, 0) } }, orderBy: { effectiveDate: "desc" }, take: 1 },
+            salaries: { where: { effectiveDate: { lte: new Date(year, month, 0) } } },
             employeeSalaryComponents: {
                 where: {
                     isActive: true,
@@ -571,7 +571,7 @@ export async function calculateMonthlyPayroll(params: {
     const payrollDetails = [];
 
     for (const user of users) {
-        const baseSalary = user.salaries[0]?.baseSalary || 0;
+        const baseSalary =  0;
         const summary = summaryMap.get(user.id);
         const userOvertimes = overtimeByUser.get(user.id) || [];
 
@@ -699,7 +699,7 @@ export async function getPayrollRecords(params?: {
     return prisma.payrollRecord.findMany({
         where,
         include: {
-            department: { select: { id: true, name: true } },
+            departments: { select: { id: true, name: true } },
         },
         orderBy: [{ year: "desc" }, { month: "desc" }],
     }).then(records => records.map(record => ({
@@ -719,7 +719,7 @@ export async function getPayrollRecord(id: string) {
     const record = await prisma.payrollRecord.findUnique({
         where: { id },
         include: {
-            department: { select: { id: true, name: true } },
+            departments: { select: { id: true, name: true } },
             details: {
                 include: {
                     user: {
@@ -956,7 +956,7 @@ async function generatePayslips(payrollRecordId: string) {
             employeeCode: user.employeeCode,
             employeeName: user.name,
             departmentName: user.department?.name,
-            position: user.position,
+            position: user.positionId,
             baseSalary: detail.baseSalary,
             grossSalary: detail.grossSalary,
             netSalary: detail.netSalary,
@@ -1523,7 +1523,7 @@ export async function setInsuranceCap(data: {
             year_insuranceType_region: {
                 year: data.year,
                 insuranceType: data.insuranceType,
-                region: data.region || null,
+                region: data.region || "",
             },
         },
         create: {
@@ -1610,9 +1610,8 @@ export async function previewPayroll(params: {
         include: {
             salaries: {
                 where: { effectiveDate: { lte: new Date(year, month, 0) } },
-                orderBy: { effectiveDate: "desc" },
-                take: 1,
             },
+            
         },
     });
 
@@ -1620,7 +1619,7 @@ export async function previewPayroll(params: {
     let totalNet = 0;
 
     for (const user of users) {
-        const baseSalary = user.salaries[0]?.baseSalary || 0;
+        const baseSalary =  0;
         const baseSalaryNum = Number(baseSalary);
 
         // Estimate gross (simplified calculation)

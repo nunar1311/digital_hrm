@@ -35,11 +35,8 @@ import { useGridStackContext } from "@/contexts/grid-stack-context";
 import { Input } from "../ui/input";
 import { cn } from "@/lib/utils";
 import type {
-  DashboardStats,
-  AttendanceTrendItem,
-  DepartmentDistributionItem,
-  TurnoverTrendItem,
-  GenderDistributionItem,
+  DashboardStats, AttendanceTrendItem, DepartmentDistributionItem,
+  TurnoverTrendItem, GenderDistributionItem, TodayAttendanceSummary,
 } from "@/app/(protected)/dashboard/actions";
 import type { GetEmployeesResult } from "@/app/(protected)/employees/actions";
 
@@ -50,6 +47,7 @@ interface AddCardDialogProps {
   turnoverTrendData: TurnoverTrendItem[];
   genderData: GenderDistributionItem[];
   initialEmployees: GetEmployeesResult;
+  todayAttendanceData: TodayAttendanceSummary;
 }
 
 // Map color strings to tailwind classes
@@ -291,12 +289,7 @@ const categories = [
 ];
 
 const AddCardDialog = ({
-  stats,
-  attendanceTrendData,
-  departmentData,
-  turnoverTrendData,
-  genderData,
-  initialEmployees,
+  stats, attendanceTrendData, departmentData, turnoverTrendData, genderData, initialEmployees, todayAttendanceData,
 }: AddCardDialogProps) => {
   const { addWidget } = useGridStackContext();
   const [open, setOpen] = useState(false);
@@ -405,24 +398,14 @@ const AddCardDialog = ({
         });
         break;
       case "gender-chart":
-        content = JSON.stringify({
-          name: "cardChartGender",
-          props: { genderData },
-        });
-        break;
+        content = JSON.stringify({ name: "cardChartGender", props: { genderData } }); break;
       case "list-employees":
-        content = JSON.stringify({
-          name: "listEmployees",
-          props: { initialEmployees },
-        });
-        break;
+        content = JSON.stringify({ name: "listEmployees", props: { initialEmployees } }); break;
+      case "mock-timesheet-summary":
+        content = JSON.stringify({ name: "cardTimesheetSummary", props: { summaryData: todayAttendanceData } }); break;
       default:
         // Mock cards
-        content = JSON.stringify({
-          name: "cardComingSoon",
-          props: { title: template.name },
-        });
-        break;
+        content = JSON.stringify({ name: "cardComingSoon", props: { title: template.name } }); break;
     }
 
     addWidget({
@@ -570,7 +553,7 @@ const AddCardDialog = ({
                         {/* Card preview mock visual inside the banner */}
                         <div className="bg-white/20 backdrop-blur w-full h-[85%] rounded-lg border border-white/20 flex flex-col items-center justify-center p-3 relative shadow-sm overflow-hidden mt-1">
                           {/* Decorate the mock visual a bit */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent"></div>
+                          <div className="absolute inset-0 bg-linear-to-t from-black/5 to-transparent"></div>
                           <Icon
                             className="w-10 h-10 text-white drop-shadow-md opacity-90 relative z-10"
                             strokeWidth={1.5}

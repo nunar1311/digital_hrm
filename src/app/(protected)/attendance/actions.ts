@@ -2785,7 +2785,11 @@ export async function getUsersPaginated({
                 employeeCode: true,
                 departmentId: true,
                 image: true,
-                positionId: true,
+                position: {
+                    select: {
+                        departmentId: true,
+                    },
+                },
             },
         }),
         prisma.user.count({ where }),
@@ -2796,7 +2800,7 @@ export async function getUsersPaginated({
         id: user.id,
         name: user.name,
         employeeCode: user.employeeCode,
-        departmentId: user.departmentId ?? null,
+        departmentId: user.departmentId ?? user.position?.departmentId ?? null,
         image: user.image,
     }));
 

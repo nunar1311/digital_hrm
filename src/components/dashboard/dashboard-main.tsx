@@ -10,6 +10,7 @@ import CardWidgetList from "./cards/card-widget-list";
 import CardChartTurnoverRate from "./cards/card-chart-turnover-rate";
 import CardChartGender from "./cards/card-chart-gender";
 import CardComingSoon from "./cards/card-coming-soon";
+import CardTimesheetSummary from "./cards/card-timesheet-summary";
 
 const DashboardMain = () => {
     return (
@@ -25,6 +26,7 @@ const DashboardMain = () => {
                 resignedEmployees: CardWidgetCalculation,
                 listEmployees: CardWidgetList,
                 cardComingSoon: CardComingSoon,
+                cardTimesheetSummary: CardTimesheetSummary,
             }}
         />
     );

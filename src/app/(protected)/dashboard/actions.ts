@@ -22,6 +22,13 @@ export interface DashboardStats {
     resignedPercentage: number;
 }
 
+export interface TodayAttendanceSummary {
+    present: number;
+    late: number;
+    absent: number;
+    leave: number;
+}
+
 // ─── getDashboardStats ───────────────────────────────────────────────────────
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -219,6 +226,43 @@ export async function getAttendanceTrend(): Promise<
     );
 
     return results;
+}
+
+// ─── getTodayAttendanceSummary ───────────────────────────────────────────────
+
+export async function getTodayAttendanceSummary(): Promise<TodayAttendanceSummary> {
+    await requirePermission(Permission.DASHBOARD_VIEW);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [present, late, leave, totalActive] = await Promise.all([
+        prisma.attendance.count({
+            where: { date: { gte: today, lt: tomorrow }, status: "PRESENT", lateMinutes: 0 },
+        }),
+        prisma.attendance.count({
+            where: { date: { gte: today, lt: tomorrow }, status: "PRESENT", lateMinutes: { gt: 0 } },
+        }),
+        prisma.attendance.count({
+            where: { date: { gte: today, lt: tomorrow }, status: { in: ["LEAVE", "UNPAID_LEAVE"] } },
+        }),
+        prisma.user.count({
+            where: { employeeCode: { not: null }, employeeStatus: "ACTIVE" },
+        }),
+    ]);
+
+    // calculate absent based on total active minus those accounted for.
+    // this is a simplified metric for the dashboard summary.
+    const absent = Math.max(0, totalActive - (present + late + leave));
+
+    return {
+        present,
+        late,
+        leave,
+        absent,
+    };
 }
 
 // ─── getDepartmentDistribution ───────────────────────────────────────────────

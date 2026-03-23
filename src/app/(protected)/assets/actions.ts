@@ -332,7 +332,7 @@ export async function updateAsset(
 
     const validated = assetSchema.partial().parse(data);
 
-    const updateData: Record<string, unknown> = { ...validated };
+    const updateData: Record<string, any> = { ...validated };
 
     if (validated.purchaseDate) {
         updateData.purchaseDate = new Date(validated.purchaseDate);
@@ -360,7 +360,7 @@ export async function updateAsset(
             action: "UPDATE",
             entity: "Asset",
             entityId: item.id,
-            newData: updateData,
+            newData: updateData ,
         },
     });
 
@@ -392,6 +392,10 @@ export async function deleteAsset(id: string) {
 
     const asset = await prisma.asset.findUnique({ where: { id } });
 
+    if (!asset) {
+        throw new Error("Tài sản không tồn tại");
+    }
+
     await prisma.asset.delete({ where: { id } });
 
     await prisma.auditLog.create({
@@ -401,17 +405,15 @@ export async function deleteAsset(id: string) {
             action: "DELETE",
             entity: "Asset",
             entityId: id,
-            oldData: asset
-                ? { name: asset.name, code: asset.code }
-                : null,
+            oldData: { name: asset.name, code: asset.code },
         },
     });
 
     // Emit socket event
     emitToAll("asset:deleted", {
         assetId: id,
-        assetName: asset?.name || "",
-        assetCode: asset?.code || "",
+        assetName: asset.name,
+        assetCode: asset.code,
     });
 
     revalidatePath("/assets");

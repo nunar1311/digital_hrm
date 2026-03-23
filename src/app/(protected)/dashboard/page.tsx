@@ -6,12 +6,13 @@ import {
     getDepartmentDistribution,
     getTurnoverRateTrend,
     getGenderDistribution,
+    getTodayAttendanceSummary,
 } from "./actions";
 
 const PAGE_SIZE = 20;
 
 export default async function DashboardPage() {
-    const [stats, initialEmployees, attendanceTrendData, departmentData, turnoverTrendData, genderData] =
+    const [stats, initialEmployees, attendanceTrendData, departmentData, turnoverTrendData, genderData, todayAttendanceData] =
         await Promise.all([
             getDashboardStats(),
             getDashboardEmployees({ page: 1, pageSize: PAGE_SIZE }),
@@ -19,6 +20,7 @@ export default async function DashboardPage() {
             getDepartmentDistribution(),
             getTurnoverRateTrend(),
             getGenderDistribution(),
+            getTodayAttendanceSummary(),
         ]);
 
     return (
@@ -29,6 +31,7 @@ export default async function DashboardPage() {
             departmentData={departmentData}
             turnoverTrendData={turnoverTrendData}
             genderData={genderData}
+            todayAttendanceData={todayAttendanceData}
         />
     );
 }

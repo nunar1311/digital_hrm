@@ -302,7 +302,7 @@ export async function getCandidates(
             orderBy: { createdAt: "desc" },
             include: {
                 jobPosting: { select: { id: true, title: true } },
-                candidateTags: true,
+                CandidateToCandidateTag: true,
             },
         }),
         prisma.candidate.count({ where }),
@@ -334,7 +334,7 @@ export async function getCandidates(
             tags: item.tags,
             createdAt: item.createdAt.toISOString(),
             updatedAt: item.updatedAt.toISOString(),
-            candidateTags: item.candidateTags,
+            candidateTags: item.CandidateToCandidateTag,
         })),
         total,
         page,
@@ -351,7 +351,7 @@ export async function getCandidatesByJobPosting(jobPostingId: string) {
         orderBy: { createdAt: "desc" },
         include: {
             jobPosting: { select: { id: true, title: true } },
-            candidateTags: true,
+            CandidateToCandidateTag: true,
         },
     });
 
@@ -380,7 +380,7 @@ export async function getCandidatesByJobPosting(jobPostingId: string) {
         tags: item.tags,
         createdAt: item.createdAt.toISOString(),
         updatedAt: item.updatedAt.toISOString(),
-        candidateTags: item.candidateTags,
+        candidateTags: item.CandidateToCandidateTag,
     }));
 }
 
@@ -436,7 +436,7 @@ export async function getCandidateById(id: string) {
         where: { id },
         include: {
             jobPosting: { select: { id: true, title: true } },
-            candidateTags: true,
+            CandidateToCandidateTag: true,
             interviews: {
                 orderBy: { scheduledDate: "desc" },
                 include: {
@@ -473,7 +473,7 @@ export async function getCandidateById(id: string) {
         tags: item.tags,
         createdAt: item.createdAt.toISOString(),
         updatedAt: item.updatedAt.toISOString(),
-        candidateTags: item.candidateTags,
+        candidateTags: item.CandidateToCandidateTag,
         interviews: item.interviews.map((interview) => ({
             id: interview.id,
             candidateId: interview.candidateId,

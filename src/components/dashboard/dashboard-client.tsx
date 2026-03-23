@@ -24,6 +24,7 @@ import {
   getDepartmentDistribution,
   getTurnoverRateTrend,
   getGenderDistribution,
+  getTodayAttendanceSummary,
 } from "@/app/(protected)/dashboard/actions";
 import type {
   DashboardStats,
@@ -31,6 +32,7 @@ import type {
   DepartmentDistributionItem,
   TurnoverTrendItem,
   GenderDistributionItem,
+  TodayAttendanceSummary,
 } from "@/app/(protected)/dashboard/actions";
 import type { GetEmployeesResult } from "@/app/(protected)/employees/actions";
 import { cn } from "@/lib/utils";
@@ -45,6 +47,7 @@ interface DashboardClientProps {
   departmentData: DepartmentDistributionItem[];
   turnoverTrendData: TurnoverTrendItem[];
   genderData: GenderDistributionItem[];
+  todayAttendanceData: TodayAttendanceSummary;
 }
 
 const DashboardClient = ({
@@ -54,8 +57,8 @@ const DashboardClient = ({
   departmentData: departmentDataProp,
   turnoverTrendData: turnoverTrendDataProp,
   genderData: genderDataProp,
+  todayAttendanceData: todayAttendanceDataProp,
 }: DashboardClientProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -126,21 +129,29 @@ const DashboardClient = ({
     staleTime: 30 * 1000,
   });
 
+  const {
+    data: todayAttendanceData = todayAttendanceDataProp,
+    isRefetching: isRefetchingToday,
+  } = useQuery({
+    queryKey: ["dashboard-today-attendance"],
+    queryFn: getTodayAttendanceSummary,
+    initialData: todayAttendanceDataProp,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
   // Check if any query is refetching
   const isRefetching =
     isRefetchingStats ||
     isRefetchingTrend ||
     isRefetchingDept ||
     isRefetchingTurnover ||
-    isRefetchingGender;
+    isRefetchingGender ||
+    isRefetchingToday;
 
   const toggleFullscreen = useCallback(async () => {
     try {
-      const container = containerRef.current;
-      if (!container) return;
-
       if (!document.fullscreenElement) {
-        await container.requestFullscreen();
+        await document.documentElement.requestFullscreen();
       } else {
         await document.exitFullscreen();
       }
@@ -516,11 +527,9 @@ const DashboardClient = ({
     <GridStackProvider initialOptions={gridOptions} editMode={editMode}>
       <FullscreenCardProvider>
         <div
-          ref={containerRef}
           className={cn(
-            "flex flex-col overflow-hidden min-h-0 bg-background text-foreground",
-            /* Trình duyệt fullscreen: vùng trống + nền trong suốt → thường thấy màu đen */
-            isFullscreen ? "h-screen min-h-screen w-full " : "h-[calc(100%)]",
+            "flex flex-col bg-background text-foreground",
+            isFullscreen ? "fixed inset-0 z-40" : "h-[calc(100%)] overflow-hidden min-h-0",
           )}
         >
           <section className="flex flex-col overflow-hidden min-h-0">
@@ -604,6 +613,7 @@ const DashboardClient = ({
                   turnoverTrendData={turnoverTrendData}
                   genderData={genderData}
                   initialEmployees={initialEmployees}
+                  todayAttendanceData={todayAttendanceData}
                 />
               </div>
             </nav>
