@@ -430,7 +430,15 @@ export async function getAttendanceStats(
     } else {
         // Lấy tháng hiện tại
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        endDate = new Date(
+            now.getFullYear(),
+            now.getMonth() + 1,
+            0,
+            23,
+            59,
+            59,
+            999,
+        );
     }
 
     // Lấy holidays trong khoảng thời gian
@@ -447,7 +455,11 @@ export async function getAttendanceStats(
     for (const h of holidays) {
         const start = new Date(h.date);
         const end = h.endDate ? new Date(h.endDate) : start;
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        for (
+            let d = new Date(start);
+            d <= end;
+            d.setDate(d.getDate() + 1)
+        ) {
             holidayDates.add(d.toISOString().split("T")[0]);
         }
     }
@@ -464,7 +476,10 @@ export async function getAttendanceStats(
     let totalWorkDays = 0;
     const current = new Date(startDate);
     while (current <= endDate) {
-        if (current.getDay() !== 0 && !holidayDates.has(current.toISOString().split("T")[0])) {
+        if (
+            current.getDay() !== 0 &&
+            !holidayDates.has(current.toISOString().split("T")[0])
+        ) {
             totalWorkDays++;
         }
         current.setDate(current.getDate() + 1);
@@ -507,18 +522,25 @@ export async function getAttendanceStats(
     const holidayDays = holidayDates.size;
 
     // Tính tỷ lệ (chỉ tính trên ngày làm việc thực tế)
-    const onTimeRate = totalWorkDays > 0 
-        ? Math.round((presentDays / totalWorkDays) * 100 * 10) / 10 
-        : 0;
-    const lateRate = totalWorkDays > 0 
-        ? Math.round((lateDays / totalWorkDays) * 100 * 10) / 10 
-        : 0;
-    const earlyLeaveRate = totalWorkDays > 0 
-        ? Math.round((earlyLeaveDays / totalWorkDays) * 100 * 10) / 10 
-        : 0;
-    const absentRate = totalWorkDays > 0 
-        ? Math.round((absentDays / totalWorkDays) * 100 * 10) / 10 
-        : 0;
+    const onTimeRate =
+        totalWorkDays > 0
+            ? Math.round((presentDays / totalWorkDays) * 100 * 10) /
+              10
+            : 0;
+    const lateRate =
+        totalWorkDays > 0
+            ? Math.round((lateDays / totalWorkDays) * 100 * 10) / 10
+            : 0;
+    const earlyLeaveRate =
+        totalWorkDays > 0
+            ? Math.round(
+                  (earlyLeaveDays / totalWorkDays) * 100 * 10,
+              ) / 10
+            : 0;
+    const absentRate =
+        totalWorkDays > 0
+            ? Math.round((absentDays / totalWorkDays) * 100 * 10) / 10
+            : 0;
 
     return {
         userId,
@@ -895,31 +917,34 @@ export async function deleteShift(id: string) {
 export async function assignShift(
     userId: string,
     shiftId: string,
-    startDate: string,
-    endDate?: string,
+    startDate: Date,
+    endDate?: Date,
 ) {
     await requirePermission(Permission.ATTENDANCE_SHIFT_MANAGE);
 
     // Lấy thông tin ca để kiểm tra thời gian
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
+    const shift = await prisma.shift.findUnique({
+        where: { id: shiftId },
+    });
     if (!shift) throw new Error("Không tìm thấy ca làm việc");
 
-    const startDateObj = new Date(startDate);
-    const endDateObj = endDate ? new Date(endDate) : new Date("2099-12-31");
+    const startDateObj = startDate;
+    const endDateObj = endDate;
 
     // Kiểm tra trùng lịch với ca đơn lẻ
-    const existingSingleShift = await prisma.shiftAssignment.findFirst({
-        where: {
-            userId,
-            shiftId: { not: null },
-            startDate: { lte: endDateObj },
-            OR: [
-                { endDate: null },
-                { endDate: { gte: startDateObj } },
-            ],
-        },
-        include: { shift: true },
-    });
+    const existingSingleShift =
+        await prisma.shiftAssignment.findFirst({
+            where: {
+                userId,
+                shiftId: { not: null },
+                startDate: { lte: endDateObj },
+                OR: [
+                    { endDate: null },
+                    { endDate: { gte: startDateObj } },
+                ],
+            },
+            include: { shift: true },
+        });
     if (existingSingleShift) {
         throw new Error(
             `Nhân viên đã có ca "${existingSingleShift.shift?.name}" trong khoảng thời gian này`,
@@ -969,8 +994,8 @@ export async function assignShift(
 export async function assignWorkCycle(
     userId: string,
     workCycleId: string,
-    cycleStartDate: string,
-    endDate?: string,
+    cycleStartDate: Date,
+    endDate?: Date,
 ) {
     await requirePermission(Permission.ATTENDANCE_SHIFT_MANAGE);
 
@@ -981,22 +1006,23 @@ export async function assignWorkCycle(
     if (!cycle) throw new Error("Không tìm thấy chu kỳ làm việc");
     if (!cycle.isActive) throw new Error("Chu kỳ đã bị vô hiệu hóa");
 
-    const startDateObj = new Date(cycleStartDate);
-    const endDateObj = endDate ? new Date(endDate) : new Date("2099-12-31");
+    const startDateObj = cycleStartDate;
+    const endDateObj = endDate || new Date("2099-12-31");
 
     // Kiểm tra trùng lịch với ca đơn lẻ
-    const existingSingleShift = await prisma.shiftAssignment.findFirst({
-        where: {
-            userId,
-            shiftId: { not: null },
-            startDate: { lte: endDateObj },
-            OR: [
-                { endDate: null },
-                { endDate: { gte: startDateObj } },
-            ],
-        },
-        include: { shift: true },
-    });
+    const existingSingleShift =
+        await prisma.shiftAssignment.findFirst({
+            where: {
+                userId,
+                shiftId: { not: null },
+                startDate: { lte: endDateObj },
+                OR: [
+                    { endDate: null },
+                    { endDate: { gte: startDateObj } },
+                ],
+            },
+            include: { shift: true },
+        });
     if (existingSingleShift) {
         throw new Error(
             `Nhân viên đã có ca "${existingSingleShift.shift?.name}" trong khoảng thời gian này`,
@@ -1059,8 +1085,8 @@ export async function assignWorkCycle(
 export async function assignWorkCycleToDepartment(
     departmentId: string,
     workCycleId: string,
-    cycleStartDate: string,
-    endDate?: string,
+    cycleStartDate: Date,
+    endDate?: Date,
 ) {
     await requirePermission(Permission.ATTENDANCE_SHIFT_MANAGE);
 
@@ -1085,29 +1111,36 @@ export async function assignWorkCycleToDepartment(
         throw new Error("Phòng ban không có nhân viên nào");
     }
 
-    const endDateObj = endDate
-        ? new Date(endDate)
-        : new Date("2099-12-31");
+    const endDateObj = endDate ? endDate : new Date("2099-12-31");
 
-    const startDateObj = new Date(cycleStartDate);
+    const startDateObj = cycleStartDate;
 
     // Find users who already have an overlapping single shift assignment
-    const existingShiftAssignments = await prisma.shiftAssignment.findMany({
-        where: {
-            userId: { in: usersInDept.map((u) => u.id) },
-            shiftId: { not: null },
-            startDate: { lte: endDateObj },
-            OR: [
-                { endDate: null },
-                { endDate: { gte: startDateObj } },
-            ],
-        },
-        include: { shift: true, user: true },
-    });
+    const existingShiftAssignments =
+        await prisma.shiftAssignment.findMany({
+            where: {
+                userId: { in: usersInDept.map((u) => u.id) },
+                shiftId: { not: null },
+                startDate: { lte: endDateObj },
+                OR: [
+                    { endDate: null },
+                    { endDate: { gte: startDateObj } },
+                ],
+            },
+            include: { shift: true, user: true },
+        });
 
     if (existingShiftAssignments.length > 0) {
-        const userNames = [...new Set(existingShiftAssignments.map(a => a.user.name))];
-        const shiftNames = [...new Set(existingShiftAssignments.map(a => a.shift?.name))];
+        const userNames = [
+            ...new Set(
+                existingShiftAssignments.map((a) => a.user.name),
+            ),
+        ];
+        const shiftNames = [
+            ...new Set(
+                existingShiftAssignments.map((a) => a.shift?.name),
+            ),
+        ];
         throw new Error(
             `Có ${existingShiftAssignments.length} nhân viên đã có ca làm việc (${shiftNames.join(", ")}) trong khoảng thời gian này: ${userNames.join(", ")}`,
         );
@@ -1122,7 +1155,7 @@ export async function assignWorkCycleToDepartment(
                 startDate: { lte: endDateObj },
                 OR: [
                     { endDate: null },
-                    { endDate: { gte: new Date(cycleStartDate) } },
+                    { endDate: { gte: cycleStartDate } },
                 ],
             },
             select: { userId: true },
@@ -1146,9 +1179,9 @@ export async function assignWorkCycleToDepartment(
         data: eligibleUsers.map((u) => ({
             userId: u.id,
             workCycleId,
-            cycleStartDate: new Date(cycleStartDate),
-            startDate: new Date(cycleStartDate),
-            endDate: endDate ? new Date(endDate) : null,
+            cycleStartDate,
+            startDate: cycleStartDate,
+            endDate: endDate || null,
         })),
     });
 
@@ -2410,24 +2443,31 @@ export interface ExportAttendanceParams {
 /**
  * Export bảng công tháng ra CSV (có thể mở trong Excel)
  */
-export async function exportMonthlyAttendance(params: ExportAttendanceParams) {
+export async function exportMonthlyAttendance(
+    params: ExportAttendanceParams,
+) {
     const session = await requireAuth();
-    
+
     // Lấy dữ liệu monthly attendance
     const data = await getMonthlyAttendance(params);
-    
+
     if (!data || !data.users || data.users.length === 0) {
         throw new Error("Không có dữ liệu để xuất");
     }
 
-    const { users, attendances, holidays, daysInMonth, year, month } = data;
-    
+    const { users, attendances, holidays, daysInMonth, year, month } =
+        data;
+
     // Tạo map ngày lễ
     const holidayDates = new Set<string>();
     for (const h of holidays || []) {
         const start = new Date(h.date);
         const end = h.endDate ? new Date(h.endDate) : start;
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        for (
+            let d = new Date(start);
+            d <= end;
+            d.setDate(d.getDate() + 1)
+        ) {
             holidayDates.add(d.toISOString().split("T")[0]);
         }
     }
@@ -2435,7 +2475,9 @@ export async function exportMonthlyAttendance(params: ExportAttendanceParams) {
     // Map attendance theo userId và ngày
     const attendanceMap = new Map<string, Record<string, string>>();
     for (const att of attendances || []) {
-        const dateKey = new Date(att.date).toISOString().split("T")[0];
+        const dateKey = new Date(att.date)
+            .toISOString()
+            .split("T")[0];
         if (!attendanceMap.has(att.userId)) {
             attendanceMap.set(att.userId, {});
         }
@@ -2463,33 +2505,33 @@ export async function exportMonthlyAttendance(params: ExportAttendanceParams) {
 
     // Tạo rows
     const rows: string[][] = [];
-    
+
     for (let i = 0; i < users.length; i++) {
         const user = users[i];
         const userAttendance = attendanceMap.get(user.id) || {};
-        
+
         const row: string[] = [
             String(i + 1),
             user.employeeCode || "",
             user.name,
         ];
-        
+
         let totalWorkDays = 0;
         let lateDays = 0;
         let earlyLeaveDays = 0;
         let absentDays = 0;
-        
+
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
             const date = new Date(year, month - 1, d);
             const dayOfWeek = date.getDay();
-            
+
             let symbol = "—";
-            
+
             // Nếu là ngày lễ
             if (holidayDates.has(dateStr)) {
                 symbol = "L";
-            } 
+            }
             // Nếu là cuối tuần
             else if (dayOfWeek === 0 || dayOfWeek === 6) {
                 symbol = "—";
@@ -2497,20 +2539,30 @@ export async function exportMonthlyAttendance(params: ExportAttendanceParams) {
             // Ngày trong tương lai
             else if (date > new Date()) {
                 symbol = "—";
-            }
-            else {
+            } else {
                 const status = userAttendance[dateStr];
                 if (status) {
                     symbol = statusSymbols[status] || status;
-                    
+
                     // Đếm thống kê
-                    if (status === "PRESENT" || status === "LATE" || status === "EARLY_LEAVE" || status === "LATE_AND_EARLY") {
+                    if (
+                        status === "PRESENT" ||
+                        status === "LATE" ||
+                        status === "EARLY_LEAVE" ||
+                        status === "LATE_AND_EARLY"
+                    ) {
                         totalWorkDays++;
                     }
-                    if (status === "LATE" || status === "LATE_AND_EARLY") {
+                    if (
+                        status === "LATE" ||
+                        status === "LATE_AND_EARLY"
+                    ) {
                         lateDays++;
                     }
-                    if (status === "EARLY_LEAVE" || status === "LATE_AND_EARLY") {
+                    if (
+                        status === "EARLY_LEAVE" ||
+                        status === "LATE_AND_EARLY"
+                    ) {
                         earlyLeaveDays++;
                     }
                     if (status === "ABSENT") {
@@ -2527,15 +2579,15 @@ export async function exportMonthlyAttendance(params: ExportAttendanceParams) {
                     }
                 }
             }
-            
+
             row.push(symbol);
         }
-        
+
         row.push(String(totalWorkDays));
         row.push(String(lateDays));
         row.push(String(earlyLeaveDays));
         row.push(String(absentDays));
-        
+
         rows.push(row);
     }
 
@@ -2544,12 +2596,14 @@ export async function exportMonthlyAttendance(params: ExportAttendanceParams) {
         `BẢNG CHẤM CÔNG THÁNG ${month}/${year}`,
         "",
         headers.join(","),
-        ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+        ...rows.map((row) =>
+            row.map((cell) => `"${cell}"`).join(","),
+        ),
     ].join("\n");
 
     return {
         csvContent,
-        fileName: `bang_cong_${month}_${year}.csv`
+        fileName: `bang_cong_${month}_${year}.csv`,
     };
 }
 
@@ -2668,12 +2722,15 @@ export async function getUsers(departmentId?: string) {
         id: user.id,
         name: user.name,
         employeeCode: user.employeeCode,
-        departmentId: user.departmentId ?? user.position?.departmentId ?? null,
+        departmentId:
+            user.departmentId ?? user.position?.departmentId ?? null,
     }));
 
     // If filtering by departmentId, filter the mapped results
     if (departmentId) {
-        return mappedUsers.filter((u) => u.departmentId === departmentId);
+        return mappedUsers.filter(
+            (u) => u.departmentId === departmentId,
+        );
     }
 
     return mappedUsers;
@@ -2728,11 +2785,7 @@ export async function getUsersPaginated({
                 employeeCode: true,
                 departmentId: true,
                 image: true,
-                jobTitle: {
-                    select: {
-                        departmentId: true,
-                    },
-                },
+                positionId: true,
             },
         }),
         prisma.user.count({ where }),
@@ -2743,7 +2796,7 @@ export async function getUsersPaginated({
         id: user.id,
         name: user.name,
         employeeCode: user.employeeCode,
-        departmentId: user.departmentId ?? user.jobTitle?.departmentId ?? null,
+        departmentId: user.departmentId ?? null,
         image: user.image,
     }));
 

@@ -130,6 +130,38 @@ async function seed() {
         }
     }
 
+    // ─── Seed Authority Types ───
+    console.log("\n🏷️ Seeding authority types...\n");
+
+    const authorityTypes = [
+        { code: "EXECUTIVE", name: "HĐQT", level: 1, icon: "Crown", color: "#9333ea", bgColor: "bg-purple-100 dark:bg-purple-900/30", textColor: "text-purple-700 dark:text-purple-400", sortOrder: 1 },
+        { code: "DIRECTOR", name: "Giám đốc", level: 2, icon: "Shield", color: "#dc2626", bgColor: "bg-red-100 dark:bg-red-900/30", textColor: "text-red-700 dark:text-red-400", sortOrder: 2 },
+        { code: "MANAGER", name: "Trưởng phòng", level: 3, icon: "Shield", color: "#2563eb", bgColor: "bg-blue-100 dark:bg-blue-900/30", textColor: "text-blue-700 dark:text-blue-400", sortOrder: 3 },
+        { code: "DEPUTY", name: "Phó phòng", level: 4, icon: "Shield", color: "#16a34a", bgColor: "bg-green-100 dark:bg-green-900/30", textColor: "text-green-700 dark:text-green-400", sortOrder: 4 },
+        { code: "TEAM_LEAD", name: "Tổ trưởng", level: 5, icon: "User", color: "#9333ea", bgColor: "bg-purple-100 dark:bg-purple-900/30", textColor: "text-purple-700 dark:text-purple-400", sortOrder: 5 },
+        { code: "STAFF", name: "Nhân viên", level: 6, icon: "User", color: "#475569", bgColor: "bg-gray-100 dark:bg-gray-800", textColor: "text-gray-700 dark:text-gray-300", sortOrder: 6 },
+        { code: "INTERN", name: "Thực tập sinh", level: 7, icon: "User", color: "#ca8a04", bgColor: "bg-yellow-100 dark:bg-yellow-900/30", textColor: "text-yellow-700 dark:text-yellow-400", sortOrder: 7 },
+    ];
+
+    for (const auth of authorityTypes) {
+        await prisma.authorityType.upsert({
+            where: { code: auth.code },
+            update: {},
+            create: {
+                code: auth.code,
+                name: auth.name,
+                level: auth.level,
+                icon: auth.icon,
+                color: auth.color,
+                bgColor: auth.bgColor,
+                textColor: auth.textColor,
+                isActive: true,
+                sortOrder: auth.sortOrder,
+            },
+        });
+        console.log(`  ✅ ${auth.name} (${auth.code})`);
+    }
+
     // ─── Seed Departments ───
     console.log("\n🏢 Seeding departments...\n");
 

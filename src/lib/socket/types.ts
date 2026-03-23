@@ -89,12 +89,12 @@ export interface ShiftAssignedEvent {
     userId: string;
     shiftId?: string;
     shiftName?: string;
-    startDate?: string;
-    endDate?: string;
+    startDate?: Date;
+    endDate?: Date;
     action?: "assigned" | "removed";
     workCycleId?: string;
     cycleName?: string;
-    cycleStartDate?: string;
+    cycleStartDate?: Date;
 }
 
 // === Config Events ===
@@ -211,7 +211,7 @@ export interface AssetAssignedEvent {
     userName: string;
     assignedBy: string;
     assignedByName: string;
-    assignDate: string;
+    assignDate: Date;
     expectedReturn?: string;
 }
 
@@ -222,7 +222,7 @@ export interface AssetReturnedEvent {
     userName: string;
     returnedBy: string;
     returnedByName: string;
-    returnDate: string;
+    returnDate: Date;
     condition: "GOOD" | "DAMAGED" | "LOST";
 }
 

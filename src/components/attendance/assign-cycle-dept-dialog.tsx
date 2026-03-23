@@ -1,3 +1,10 @@
+"use client";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { format } from "date-fns";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -23,25 +30,31 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { DepartmentBasic, WorkCycle } from "../types";
-import {
-    assignCycleDeptFormSchema,
-    AssignCycleDeptFormValues,
-    dateToStr,
-    strToDate,
-} from "./shift-dialogs";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import type {
+    WorkCycle,
+    DepartmentBasic,
+} from "@/app/(protected)/attendance/types";
+import { assignWorkCycleToDepartment } from "@/app/(protected)/attendance/actions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { CyclePreview } from "@/components/attendance/cycle-preview";
+
+const assignCycleDeptSchema = z.object({
+    departmentId: z.string().min(1, "Vui lòng chọn phòng ban"),
+    workCycleId: z.string().min(1, "Vui lòng chọn chu kỳ"),
+    startDate: z.date().min(1, "Vui lòng chọn ngày bắt đầu"),
+    endDate: z.date().optional(),
+});
+
+type AssignCycleDeptFormValues = z.infer<
+    typeof assignCycleDeptSchema
+>;
 
 interface AssignCycleDeptDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     departments: DepartmentBasic[];
     workCycles: WorkCycle[];
-    onSubmit: (values: AssignCycleDeptFormValues) => void;
-    isPending: boolean;
 }
 
 export function AssignCycleDeptDialog({
@@ -49,32 +62,49 @@ export function AssignCycleDeptDialog({
     onOpenChange,
     departments,
     workCycles,
-    onSubmit,
-    isPending,
 }: AssignCycleDeptDialogProps) {
+    const queryClient = useQueryClient();
+
     const form = useForm<AssignCycleDeptFormValues>({
-        resolver: zodResolver(assignCycleDeptFormSchema),
+        resolver: zodResolver(assignCycleDeptSchema),
         defaultValues: {
             departmentId: "",
             workCycleId: "",
-            startDate: "",
-            endDate: "",
+            startDate: new Date(),
+            endDate: new Date(),
         },
     });
 
-    useEffect(() => {
-        if (open) {
-            form.reset({
-                departmentId: "",
-                workCycleId: "",
-                startDate: "",
-                endDate: "",
+    const mutation = useMutation({
+        mutationFn: async (values: AssignCycleDeptFormValues) => {
+            return assignWorkCycleToDepartment(
+                values.departmentId,
+                values.workCycleId,
+                values.startDate,
+                values.endDate || undefined,
+            );
+        },
+        onSuccess: (result) => {
+            let msg = `Đã gán chu kỳ cho ${result.assigned} nhân viên`;
+            if (result.skipped > 0) {
+                msg += ` (bỏ qua ${result.skipped} NV đã có chu kỳ)`;
+            }
+            toast.success(msg);
+            queryClient.invalidateQueries({
+                queryKey: ["attendance", "shiftAssignments"],
             });
-        }
-    }, [open, form]);
+            queryClient.invalidateQueries({
+                queryKey: ["attendance", "shifts"],
+            });
+            onOpenChange(false);
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Có lỗi xảy ra");
+        },
+    });
 
-    const departmentId = form.watch("departmentId");
     const workCycleId = form.watch("workCycleId");
+    const departmentId = form.watch("departmentId");
     const startDate = form.watch("startDate");
     const endDate = form.watch("endDate");
 
@@ -99,8 +129,10 @@ export function AssignCycleDeptDialog({
                 </DialogHeader>
                 <Form {...form}>
                     <form
-                        onSubmit={form.handleSubmit(onSubmit)}
-                        className="grid gap-4 py-4"
+                        onSubmit={form.handleSubmit((values) => {
+                            mutation.mutate(values);
+                        })}
+                        className="space-y-4"
                     >
                         <FormField
                             control={form.control}
@@ -182,10 +214,9 @@ export function AssignCycleDeptDialog({
                             )}
                         />
 
-                        <CyclePreview
-                            cycle={selectedCycle as WorkCycle}
-                        />
-                        {/* Cycle preview */}
+                        {selectedCycle && (
+                            <CyclePreview cycle={selectedCycle} />
+                        )}
 
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
@@ -201,13 +232,9 @@ export function AssignCycleDeptDialog({
                                         </FormLabel>
                                         <FormControl>
                                             <DatePicker
-                                                date={strToDate(
-                                                    field.value,
-                                                )}
-                                                setDate={(d) =>
-                                                    field.onChange(
-                                                        dateToStr(d),
-                                                    )
+                                                date={field.value}
+                                                setDate={
+                                                    field.onChange
                                                 }
                                             />
                                         </FormControl>
@@ -225,13 +252,9 @@ export function AssignCycleDeptDialog({
                                         </FormLabel>
                                         <FormControl>
                                             <DatePicker
-                                                date={strToDate(
-                                                    field.value,
-                                                )}
+                                                date={field.value}
                                                 setDate={(d) =>
-                                                    field.onChange(
-                                                        dateToStr(d),
-                                                    )
+                                                    field.onChange(d)
                                                 }
                                             />
                                         </FormControl>
@@ -256,14 +279,20 @@ export function AssignCycleDeptDialog({
                                     </strong>{" "}
                                     từ{" "}
                                     <strong className="text-foreground">
-                                        {startDate}
+                                        {format(
+                                            startDate,
+                                            "dd/MM/yyyy",
+                                        )}
                                     </strong>
                                     {endDate ? (
                                         <>
                                             {" "}
                                             đến{" "}
                                             <strong className="text-foreground">
-                                                {endDate}
+                                                {format(
+                                                    endDate,
+                                                    "dd/MM/yyyy",
+                                                )}
                                             </strong>
                                         </>
                                     ) : (
@@ -282,11 +311,11 @@ export function AssignCycleDeptDialog({
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={isPending}
+                                disabled={mutation.isPending}
                             >
-                                {isPending
-                                    ? "Đang lưu..."
-                                    : "Gán chu kỳ phòng ban"}
+                                {mutation.isPending
+                                    ? "Đang xử lý..."
+                                    : "Gán chu kỳ"}
                             </Button>
                         </DialogFooter>
                     </form>

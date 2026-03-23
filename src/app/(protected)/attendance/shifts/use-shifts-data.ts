@@ -226,8 +226,11 @@ export function useShiftsData({
     const [cycleDialogOpen, setCycleDialogOpen] = useState(false);
 
     // Track selected user and date when opening cycle dialog from calendar
-    const [assignCycleUserId, setAssignCycleUserId] = useState<string | null>(null);
-    const [assignCycleDate, setAssignCycleDate] = useState<Date | null>(null);
+    const [assignCycleUserId, setAssignCycleUserId] = useState<
+        string | null
+    >(null);
+    const [assignCycleDate, setAssignCycleDate] =
+        useState<Date | null>(null);
 
     // ─── Cycle Assignment by Department Dialog ───
     const [cycleDeptDialogOpen, setCycleDeptDialogOpen] =
@@ -242,7 +245,9 @@ export function useShiftsData({
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
     // ─── Department filter ───
-    const [departmentIds, setDepartmentIdsState] = useState<string[]>([]);
+    const [departmentIds, setDepartmentIdsState] = useState<string[]>(
+        [],
+    );
     const setDepartmentIds = useCallback((ids: string[]) => {
         setDepartmentIdsState(ids);
         setVisibleCount(PAGE_SIZE);
@@ -312,7 +317,7 @@ export function useShiftsData({
         }
         if (viewMode === "month") {
             return capitalizeFirst(
-                format(currentDate, "'Tháng' MM/yyyy", {
+                format(currentDate, "'Tháng' MM, yyyy", {
                     locale: vi,
                 }),
             );
@@ -393,7 +398,9 @@ export function useShiftsData({
         if (departmentIds.length > 0) {
             // If users have department data, filter by department
             // Otherwise, show all users (department data not yet populated)
-            const usersWithDept = result.filter((u) => u.departmentId);
+            const usersWithDept = result.filter(
+                (u) => u.departmentId,
+            );
             if (usersWithDept.length > 0) {
                 result = usersWithDept.filter((u) =>
                     departmentIds.includes(u.departmentId!),
@@ -846,8 +853,8 @@ export function useShiftsData({
     const handleAssignCycle = (values: AssignCycleFormValues) => {
         // Use selected user from calendar if available, otherwise use form value
         const userId = assignCycleUserId || values.userId;
-        const startDate = assignCycleDate 
-            ? format(assignCycleDate, "yyyy-MM-dd") 
+        const startDate = assignCycleDate
+            ? format(assignCycleDate, "yyyy-MM-dd")
             : values.startDate;
 
         assignCycleMutation.mutate({
@@ -970,7 +977,10 @@ export function useShiftsData({
         isPending,
         users,
         canManage,
-        refreshUsers: () => queryClient.invalidateQueries({ queryKey: ["attendance", "users"] }),
+        refreshUsers: () =>
+            queryClient.invalidateQueries({
+                queryKey: ["attendance", "users"],
+            }),
         assignCycleMutation,
     };
 }
