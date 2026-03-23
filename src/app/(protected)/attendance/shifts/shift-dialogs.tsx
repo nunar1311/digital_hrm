@@ -552,165 +552,6 @@ interface ShiftManageDialogProps {
     onDeleteShift: (shift: Shift) => void;
 }
 
-export function ShiftManageDialog({
-    open,
-    onOpenChange,
-    shifts,
-    onEditShift,
-    onDeleteShift,
-}: ShiftManageDialogProps) {
-    const activeShifts = shifts.filter((s) => s.isActive);
-    const inactiveShifts = shifts.filter((s) => !s.isActive);
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Quản lý ca làm việc</DialogTitle>
-                    <DialogDescription>
-                        Danh sách tất cả ca ({shifts.length} ca)
-                    </DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="max-h-[60vh]">
-                    <div className="space-y-4 pr-3">
-                        {activeShifts.length > 0 && (
-                            <div className="space-y-2">
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    Đang hoạt động (
-                                    {activeShifts.length})
-                                </p>
-                                {activeShifts.map((s) => (
-                                    <div
-                                        key={s.id}
-                                        className="flex items-center justify-between rounded-lg border p-3"
-                                    >
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-medium text-sm truncate">
-                                                    {s.name}
-                                                </span>
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="text-[10px] shrink-0"
-                                                >
-                                                    {s.code}
-                                                </Badge>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                {s.startTime} -{" "}
-                                                {s.endTime}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7"
-                                                onClick={() => {
-                                                    onOpenChange(
-                                                        false,
-                                                    );
-                                                    onEditShift(s);
-                                                }}
-                                            >
-                                                <Pencil className="h-3.5 w-3.5" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 text-destructive hover:text-destructive"
-                                                onClick={() => {
-                                                    onOpenChange(
-                                                        false,
-                                                    );
-                                                    onDeleteShift(s);
-                                                }}
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {inactiveShifts.length > 0 && (
-                            <div className="space-y-2">
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    Đã vô hiệu hóa (
-                                    {inactiveShifts.length})
-                                </p>
-                                {inactiveShifts.map((s) => (
-                                    <div
-                                        key={s.id}
-                                        className="flex items-center justify-between rounded-lg border border-dashed p-3 opacity-60"
-                                    >
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-medium text-sm truncate line-through">
-                                                    {s.name}
-                                                </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="text-[10px] shrink-0"
-                                                >
-                                                    {s.code}
-                                                </Badge>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="text-[10px] text-muted-foreground shrink-0"
-                                                >
-                                                    Tắt
-                                                </Badge>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                {s.startTime} -{" "}
-                                                {s.endTime}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7"
-                                                onClick={() => {
-                                                    onOpenChange(
-                                                        false,
-                                                    );
-                                                    onEditShift(s);
-                                                }}
-                                            >
-                                                <Pencil className="h-3.5 w-3.5" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 text-destructive hover:text-destructive"
-                                                onClick={() => {
-                                                    onOpenChange(
-                                                        false,
-                                                    );
-                                                    onDeleteShift(s);
-                                                }}
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {shifts.length === 0 && (
-                            <p className="text-center text-sm text-muted-foreground py-8">
-                                Chưa có ca nào được tạo
-                            </p>
-                        )}
-                    </div>
-                </ScrollArea>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 // ─── Delete Shift Confirmation ───
 
 interface DeleteShiftDialogProps {
@@ -879,15 +720,23 @@ export function AssignCycleDialog({
                                     </FormLabel>
                                     <FormControl>
                                         <Combobox
-                                            options={users.map((u) => ({
-                                                value: u.id,
-                                                label: u.employeeCode
-                                                    ? `${u.name} (${u.employeeCode})`
-                                                    : u.name,
-                                            }))}
-                                            value={field.value ? [field.value] : []}
+                                            options={users.map(
+                                                (u) => ({
+                                                    value: u.id,
+                                                    label: u.employeeCode
+                                                        ? `${u.name} (${u.employeeCode})`
+                                                        : u.name,
+                                                }),
+                                            )}
+                                            value={
+                                                field.value
+                                                    ? [field.value]
+                                                    : []
+                                            }
                                             onChange={(vals) =>
-                                                field.onChange(vals[0] || "")
+                                                field.onChange(
+                                                    vals[0] || "",
+                                                )
                                             }
                                             placeholder="Chọn nhân viên..."
                                         />

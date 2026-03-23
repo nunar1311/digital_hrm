@@ -1,14 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Settings2 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-    TooltipProvider,
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type {
     Shift,
     UserBasic,
@@ -24,9 +16,7 @@ import {
     AssignCycleDialog,
     DeleteShiftDialog,
     DeleteAssignmentDialog,
-    ShiftManageDialog,
 } from "./shift-dialogs";
-import Link from "next/link";
 import { format } from "date-fns";
 import { AssignCycleDeptDialog } from "./assign-cycle-dept-dialog";
 import { AssignDialog } from "./assign-shift-dialog";
@@ -46,7 +36,6 @@ export function ShiftsClient({
     departments: DepartmentBasic[];
     canManage: boolean;
 }) {
-    const [manageOpen, setManageOpen] = useState(false);
     const data = useShiftsData({
         initialShifts,
         initialWorkCycles,
@@ -58,14 +47,15 @@ export function ShiftsClient({
     return (
         <TooltipProvider>
             <div className="flex h-full flex-col gap-2">
-                {/* ─── Header ─── */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 pt-4">
-                    <div>
-                        <h1 className="text-xl font-bold tracking-tight">
-                            Quản lý phân ca
+                {/* ─── Header ─── */} {/* Header */}
+                <section className="border-b">
+                    <header className="p-2 flex items-center h-10">
+                        <h1 className="font-bold truncate">
+                            Quản lý ca làm việc
                         </h1>
-                    </div>
-                    {canManage && (
+                    </header>
+                </section>
+                {/* {canManage && (
                         <div className="flex items-center gap-2">
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -144,8 +134,7 @@ export function ShiftsClient({
                                 </TooltipContent>
                             </Tooltip>
                         </div>
-                    )}
-                </div>
+                    )} */}
                 <div className="flex items-center justify-between gap-2 px-4">
                     <ShiftNavigation
                         viewMode={data.viewMode}
@@ -154,17 +143,6 @@ export function ShiftsClient({
                         goToday={data.goToday}
                         goPrev={data.goPrev}
                         goNext={data.goNext}
-                        shifts={data.shifts}
-                        shiftColorMap={data.shiftColorMap}
-                        canManage={canManage}
-                        onEditShift={data.openEditShift}
-                        onDeleteShift={data.setDeleteTarget}
-                        totalAssignments={data.stats.totalAssignments}
-                        onManageShifts={() => setManageOpen(true)}
-                        inactiveCount={
-                            data.shifts.filter((s) => !s.isActive)
-                                .length
-                        }
                     />
                     {/* ─── Search ─── */}
                     <ShiftSearchBar
@@ -179,7 +157,6 @@ export function ShiftsClient({
                     />
                 </div>
                 {/* ─── Navigation ─── */}
-
                 {/* ─── Calendar Grid ─── */}
                 <div className="min-h-0 flex-1 overflow-hidden border-t">
                     <ShiftCalendarGrid
@@ -203,7 +180,6 @@ export function ShiftsClient({
                         workCycles={data.workCycles}
                     />
                 </div>
-
                 {/* ─── Dialogs ─── */}
                 <ShiftFormDialog
                     open={data.isShiftDialogOpen}
@@ -212,7 +188,6 @@ export function ShiftsClient({
                     onSubmit={data.handleShiftSubmit}
                     isPending={data.isPending}
                 />
-
                 <AssignDialog
                     open={data.assignDialogOpen}
                     onOpenChange={data.setAssignDialogOpen}
@@ -221,14 +196,12 @@ export function ShiftsClient({
                     onSubmit={data.handleAssign}
                     isPending={data.isPending}
                 />
-
                 <DeleteShiftDialog
                     deleteTarget={data.deleteTarget}
                     onClose={() => data.setDeleteTarget(null)}
                     onConfirm={data.handleDeleteShift}
                     isPending={data.isPending}
                 />
-
                 <DeleteAssignmentDialog
                     deleteAssignmentId={data.deleteAssignmentId}
                     onClose={() => data.setDeleteAssignmentId(null)}
@@ -240,15 +213,6 @@ export function ShiftsClient({
                     }}
                     isPending={data.removeAssignMutation.isPending}
                 />
-
-                <ShiftManageDialog
-                    open={manageOpen}
-                    onOpenChange={setManageOpen}
-                    shifts={data.shifts}
-                    onEditShift={data.openEditShift}
-                    onDeleteShift={data.setDeleteTarget}
-                />
-
                 <AssignCycleDialog
                     open={data.cycleDialogOpen}
                     onOpenChange={data.setCycleDialogOpen}
@@ -256,14 +220,18 @@ export function ShiftsClient({
                     workCycles={data.workCycles}
                     onSubmit={data.handleAssignCycle}
                     isPending={data.isPending}
-                    defaultUserId={data.assignCycleUserId || undefined}
+                    defaultUserId={
+                        data.assignCycleUserId || undefined
+                    }
                     defaultStartDate={
                         data.assignCycleDate
-                            ? format(data.assignCycleDate, "yyyy-MM-dd")
+                            ? format(
+                                  data.assignCycleDate,
+                                  "yyyy-MM-dd",
+                              )
                             : undefined
                     }
                 />
-
                 <AssignCycleDeptDialog
                     open={data.cycleDeptDialogOpen}
                     onOpenChange={data.setCycleDeptDialogOpen}

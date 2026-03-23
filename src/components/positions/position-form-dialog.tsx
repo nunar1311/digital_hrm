@@ -16,6 +16,7 @@ import {
 import { updatePositionSchema } from "@/app/(protected)/positions/schemas";
 import type { PositionListItem } from "@/app/(protected)/positions/types";
 import { getDepartments } from "@/app/(protected)/departments/actions";
+import { getAuthorityTypes } from "@/app/(protected)/authority-types/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,16 +46,6 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import z from "zod";
-
-const AUTHORITY_OPTIONS = [
-    { value: "EXECUTIVE", label: "HĐQT" },
-    { value: "DIRECTOR", label: "Giám đốc" },
-    { value: "MANAGER", label: "Trưởng phòng" },
-    { value: "DEPUTY", label: "Phó phòng" },
-    { value: "TEAM_LEAD", label: "Tổ trưởng" },
-    { value: "STAFF", label: "Nhân viên" },
-    { value: "INTERN", label: "Thực tập sinh" },
-];
 
 const STATUS_OPTIONS = [
     { value: "ACTIVE", label: "Hoạt động" },
@@ -155,6 +146,13 @@ export function PositionFormDialog({
             getAllPositions({
                 status: "ACTIVE",
             }),
+        enabled: open,
+    });
+
+    // Fetch authority types from database
+    const { data: authorityTypes = [] } = useQuery({
+        queryKey: ["authority-types"],
+        queryFn: () => getAuthorityTypes(),
         enabled: open,
     });
 
@@ -345,18 +343,18 @@ export function PositionFormDialog({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {AUTHORITY_OPTIONS.map(
+                                                {authorityTypes.map(
                                                     (opt) => (
                                                         <SelectItem
                                                             key={
-                                                                opt.value
+                                                                opt.code
                                                             }
                                                             value={
-                                                                opt.value
+                                                                opt.code
                                                             }
                                                         >
                                                             {
-                                                                opt.label
+                                                                opt.name
                                                             }
                                                         </SelectItem>
                                                     ),

@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getPositions, deletePosition } from "@/app/(protected)/positions/actions";
+import { getAuthorityTypes } from "@/app/(protected)/authority-types/actions";
 import { PositionFormDialog } from "@/components/positions/position-form-dialog";
 import type { PositionListItem } from "@/app/(protected)/positions/types";
+import type { AuthorityTypeItem } from "@/app/(protected)/authority-types/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -44,7 +46,13 @@ import {
     Loader2,
 } from "lucide-react";
 
-const AUTHORITY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+interface AuthorityColorConfig {
+    bg: string;
+    text: string;
+    label: string;
+}
+
+const DEFAULT_AUTHORITY_COLORS: Record<string, AuthorityColorConfig> = {
     EXECUTIVE: { bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-800 dark:text-red-400", label: "HĐQT" },
     DIRECTOR: { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-800 dark:text-orange-400", label: "Giám đốc" },
     MANAGER: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-800 dark:text-blue-400", label: "Trưởng phòng" },
@@ -53,6 +61,25 @@ const AUTHORITY_COLORS: Record<string, { bg: string; text: string; label: string
     STAFF: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-800 dark:text-gray-300", label: "Nhân viên" },
     INTERN: { bg: "bg-yellow-100 dark:bg-yellow-900/30", text: "text-yellow-800 dark:text-yellow-400", label: "Thực tập sinh" },
 };
+
+function getAuthorityColorConfig(
+    code: string,
+    authorityTypes: AuthorityTypeItem[],
+): AuthorityColorConfig {
+    const dbAuth = authorityTypes.find((a) => a.code === code);
+    if (dbAuth) {
+        return {
+            bg: dbAuth.bgColor ?? DEFAULT_AUTHORITY_COLORS[code]?.bg ?? "bg-gray-100 dark:bg-gray-800",
+            text: dbAuth.textColor ?? DEFAULT_AUTHORITY_COLORS[code]?.text ?? "text-gray-800 dark:text-gray-300",
+            label: dbAuth.name,
+        };
+    }
+    return DEFAULT_AUTHORITY_COLORS[code] ?? {
+        bg: "bg-gray-100 dark:bg-gray-800",
+        text: "text-gray-800 dark:text-gray-300",
+        label: code,
+    };
+}
 
 interface DepartmentPositionsSectionProps {
     departmentId: string;
@@ -68,6 +95,12 @@ export function DepartmentPositionsSection({
     const [formOpen, setFormOpen] = useState(false);
     const [editData, setEditData] = useState<PositionListItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<PositionListItem | null>(null);
+
+    // Fetch authority types from database for dynamic colors
+    const { data: authorityTypes = [] } = useQuery({
+        queryKey: ["authority-types"],
+        queryFn: () => getAuthorityTypes(),
+    });
 
     const { data, isLoading } = useQuery({
         queryKey: ["department-positions", departmentId, search],
@@ -182,11 +215,7 @@ export function DepartmentPositionsSection({
                             </TableRow>
                         ) : (
                             positions.map((position) => {
-                                const authorityConfig = AUTHORITY_COLORS[position.authority] ?? {
-                                    bg: "bg-gray-100 dark:bg-gray-800",
-                                    text: "text-gray-800 dark:text-gray-300",
-                                    label: position.authority,
-                                };
+                                const authorityConfig = getAuthorityColorConfig(position.authority, authorityTypes);
                                 return (
                                     <TableRow key={position.id} className="group/row">
                                         <TableCell className="p-2">

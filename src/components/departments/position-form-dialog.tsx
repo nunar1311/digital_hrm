@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPosition, updatePosition } from "@/app/(protected)/positions/actions";
+import { getAuthorityTypes } from "@/app/(protected)/authority-types/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,16 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import z from "zod";
-
-const AUTHORITY_OPTIONS = [
-    { value: "EXECUTIVE", label: "HĐQT", defaultLevel: 1 },
-    { value: "DIRECTOR", label: "Giám đốc", defaultLevel: 2 },
-    { value: "MANAGER", label: "Trưởng phòng", defaultLevel: 3 },
-    { value: "DEPUTY", label: "Phó phòng", defaultLevel: 4 },
-    { value: "TEAM_LEAD", label: "Tổ trưởng", defaultLevel: 5 },
-    { value: "STAFF", label: "Nhân viên", defaultLevel: 6 },
-    { value: "INTERN", label: "Thực tập sinh", defaultLevel: 7 },
-];
+import type { AuthorityTypeItem } from "@/app/(protected)/authority-types/types";
 
 const AUTHORITY_DUPLICATE_CHECK = ["MANAGER", "DEPUTY"];
 
@@ -91,14 +83,9 @@ export interface DepartmentPositionFormDialogProps {
     } | null;
 }
 
-function getDefaultLevel(authority: string): number {
-    const option = AUTHORITY_OPTIONS.find((opt) => opt.value === authority);
-    return option?.defaultLevel ?? 6;
-}
-
-function getAuthorityLabel(authority: string): string {
-    const option = AUTHORITY_OPTIONS.find((opt) => opt.value === authority);
-    return option?.label ?? authority;
+function getAuthorityLabel(authority: string, authorityTypes: AuthorityTypeItem[]): string {
+    const option = authorityTypes.find((opt) => opt.code === authority);
+    return option?.name ?? authority;
 }
 
 export function DepartmentPositionFormDialog({
@@ -110,6 +97,19 @@ export function DepartmentPositionFormDialog({
 }: DepartmentPositionFormDialogProps) {
     const queryClient = useQueryClient();
     const isEdit = !!editingPosition;
+
+    // Fetch authority types from database
+    const { data: authorityTypes = [] } = useQuery({
+        queryKey: ["authority-types"],
+        queryFn: () => getAuthorityTypes(),
+        enabled: open,
+    });
+
+    // Helper function to get default level from authority types
+    const getDefaultLevel = (authority: string): number => {
+        const option = authorityTypes.find((opt) => opt.code === authority);
+        return option?.level ?? 6;
+    };
 
     const form = useForm<PositionFormValues>({
         resolver: zodResolver(positionFormSchema),
@@ -236,7 +236,7 @@ export function DepartmentPositionFormDialog({
                     p.id !== editingId,
             );
             if (hasExisting) {
-                const label = getAuthorityLabel(values.authority);
+                const label = getAuthorityLabel(values.authority, authorityTypes);
                 toast.error(
                     `Phòng ban đã có chức vụ "${label}". Mỗi phòng ban chỉ có một chức vụ "${label}".`,
                 );
@@ -357,13 +357,13 @@ export function DepartmentPositionFormDialog({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {AUTHORITY_OPTIONS.map(
+                                                {authorityTypes.map(
                                                     (opt) => (
                                                         <SelectItem
-                                                            key={opt.value}
-                                                            value={opt.value}
+                                                            key={opt.code}
+                                                            value={opt.code}
                                                         >
-                                                            {opt.label}
+                                                            {opt.name}
                                                         </SelectItem>
                                                     ),
                                                 )}
@@ -375,7 +375,7 @@ export function DepartmentPositionFormDialog({
                                         ) && (
                                             <FormDescription className="text-amber-600">
                                                 Mỗi phòng ban chỉ có một{" "}
-                                                {getAuthorityLabel(field.value).toLowerCase()}
+                                                {getAuthorityLabel(field.value, authorityTypes).toLowerCase()}
                                             </FormDescription>
                                         )}
                                     </FormItem>

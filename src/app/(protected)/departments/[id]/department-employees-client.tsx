@@ -481,8 +481,13 @@ export function DepartmentEmployeesClient({
                     return (
                         <RoleDropdown
                             employeeId={row.original.id}
-                            currentRole={row.original.departmentRole ?? "MEMBER"}
-                            employeePositionId={row.original.positionId}
+                            currentRole={
+                                row.original.departmentRole ??
+                                "MEMBER"
+                            }
+                            // employeePosition={
+                            //     row.original.positionName
+                            // }
                             departmentId={departmentId}
                             employeeName={
                                 row.original.fullName ||

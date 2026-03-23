@@ -31,6 +31,7 @@ import type { ShiftColor, ViewMode } from "./shifts-constants";
 import { capitalizeFirst, getInitials } from "./shifts-constants";
 import { ShiftCard } from "./shift-card";
 import { AssignCycleInlineForm } from "./assign-cycle-inline-form";
+import { Badge } from "@/components/ui/badge";
 
 interface ShiftCalendarGridProps {
     visibleDays: Date[];
@@ -96,7 +97,7 @@ export function ShiftCalendarGrid({
         const el = sentinelRef.current;
         if (!el) return;
         const observer = new IntersectionObserver(handleIntersect, {
-            rootMargin: "250px",
+            rootMargin: "200px",
         });
         observer.observe(el);
         return () => observer.disconnect();
@@ -114,7 +115,7 @@ export function ShiftCalendarGrid({
                     >
                         {/* Header row */}
                         <div
-                            className="grid sticky top-0 z-30 shrink-0 border-b bg-muted/60"
+                            className="grid sticky top-0 z-30 shrink-0 border-b bg-muted"
                             style={{
                                 gridTemplateColumns: `192px repeat(${visibleDays.length}, minmax(44px, 1fr))`,
                             }}
@@ -272,7 +273,7 @@ function DayHeader({
                 "flex flex-col items-center justify-center border-r",
                 isMonthView ? "px-0.5 py-1" : "px-2 py-2",
                 today && "bg-primary/5",
-                (isSunday || isSaturday) && "bg-muted/80",
+                (isSunday || isSaturday) && "bg-muted",
             )}
         >
             <span
@@ -388,7 +389,13 @@ function EmployeeRow({
                             isMonthView ? "text-xs" : "text-sm",
                         )}
                     >
-                        {user.name}
+                        {user.name}{" "}
+                        <Badge
+                            variant="secondary"
+                            className="text-[9px] h-5"
+                        >
+                            {user.employeeCode}
+                        </Badge>
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                         {totalHours > 0
@@ -567,7 +574,7 @@ function DayCell({
                 "group/cell relative flex flex-col border-r",
                 isMonthView
                     ? "min-h-11 items-center justify-between gap-0.5 p-1"
-                    : "min-h-19 gap-1 p-1.5",
+                    : "min-h-8 gap-1 p-1.5",
                 today && "bg-primary/5",
                 (isSunday || isSaturday) && "bg-muted/40",
             )}

@@ -36,11 +36,17 @@ import {
 import { cn } from "@/lib/utils";
 import type { PositionListItem } from "@/app/(protected)/positions/types";
 import { getPositions } from "@/app/(protected)/positions/actions";
+import { getAuthorityTypes } from "@/app/(protected)/authority-types/actions";
+import type { AuthorityTypeItem } from "@/app/(protected)/authority-types/types";
 
-const AUTHORITY_COLORS: Record<
-    string,
-    { bg: string; text: string; label: string }
-> = {
+interface AuthorityColorConfig {
+    bg: string;
+    text: string;
+    label: string;
+}
+
+// Default fallback colors when authority type not found in database
+const DEFAULT_AUTHORITY_COLORS: Record<string, AuthorityColorConfig> = {
     EXECUTIVE: {
         bg: "bg-purple-100 dark:bg-purple-900/30",
         text: "text-purple-700 dark:text-purple-400",
@@ -52,18 +58,18 @@ const AUTHORITY_COLORS: Record<
         label: "Giám đốc",
     },
     MANAGER: {
-        bg: "bg-orange-100 dark:bg-orange-900/30",
-        text: "text-orange-700 dark:text-orange-400",
+        bg: "bg-blue-100 dark:bg-blue-900/30",
+        text: "text-blue-700 dark:text-blue-400",
         label: "Trưởng phòng",
     },
     DEPUTY: {
-        bg: "bg-yellow-100 dark:bg-yellow-900/30",
-        text: "text-yellow-700 dark:text-yellow-400",
+        bg: "bg-green-100 dark:bg-green-900/30",
+        text: "text-green-700 dark:text-green-400",
         label: "Phó phòng",
     },
     TEAM_LEAD: {
-        bg: "bg-blue-100 dark:bg-blue-900/30",
-        text: "text-blue-700 dark:text-blue-400",
+        bg: "bg-purple-100 dark:bg-purple-900/30",
+        text: "text-purple-700 dark:text-purple-400",
         label: "Tổ trưởng",
     },
     STAFF: {
@@ -77,6 +83,25 @@ const AUTHORITY_COLORS: Record<
         label: "Thực tập sinh",
     },
 };
+
+function getAuthorityColorConfig(
+    code: string,
+    authorityTypes: AuthorityTypeItem[],
+): AuthorityColorConfig {
+    const dbAuth = authorityTypes.find((a) => a.code === code);
+    if (dbAuth) {
+        return {
+            bg: dbAuth.bgColor ?? DEFAULT_AUTHORITY_COLORS[code]?.bg ?? "bg-gray-100 dark:bg-gray-800",
+            text: dbAuth.textColor ?? DEFAULT_AUTHORITY_COLORS[code]?.text ?? "text-gray-700 dark:text-gray-300",
+            label: dbAuth.name,
+        };
+    }
+    return DEFAULT_AUTHORITY_COLORS[code] ?? {
+        bg: "bg-gray-100 dark:bg-gray-800",
+        text: "text-gray-700 dark:text-gray-300",
+        label: code,
+    };
+}
 
 interface PositionsSectionInlineProps {
     departmentId: string;
@@ -94,6 +119,12 @@ function PositionsSectionInline({
     const [selectedIds, setSelectedIds] = useState<Set<string>>(
         new Set(),
     );
+
+    // Fetch authority types from database for dynamic colors
+    const { data: authorityTypes = [] } = useQuery({
+        queryKey: ["authority-types"],
+        queryFn: () => getAuthorityTypes(),
+    });
 
     const clearSelection = () => setSelectedIds(new Set());
 
@@ -198,9 +229,10 @@ function PositionsSectionInline({
                 header: "Cấp bậc",
                 size: 130,
                 cell: ({ row }) => {
-                    const auth =
-                        AUTHORITY_COLORS[row.original.authority] ??
-                        AUTHORITY_COLORS.STAFF;
+                    const auth = getAuthorityColorConfig(
+                        row.original.authority,
+                        authorityTypes,
+                    );
                     return (
                         <span
                             className={cn(
