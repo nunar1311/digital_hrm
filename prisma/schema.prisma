@@ -18,9 +18,9 @@ model User {
   employeeCode             String?                   @unique
   departmentId             String?
   departmentRole           String?                   @default("MEMBER")
-  hrmRole                 String                    @default("EMPLOYEE")
-  address                 String?
-  avatar                  String?
+  hrmRole                  String                    @default("EMPLOYEE")
+  address                  String?
+  avatar                   String?
   bankAccount              String?
   bankBranch               String?
   bankName                 String?
@@ -33,7 +33,7 @@ model User {
   gender                   String?
   healthInsuranceNo        String?
   hireDate                 DateTime?
-  positionId              String?
+  positionId               String?
   major                    String?
   managerId                String?
   maritalStatus            String?
@@ -189,7 +189,7 @@ model Position {
   status       String       @default("ACTIVE") // ACTIVE, INACTIVE
   sortOrder    Int          @default(0)
   createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @default(now())     @updatedAt
+  updatedAt    DateTime     @default(now()) @updatedAt
   jobPostings  JobPosting[]
   department   Department?  @relation(fields: [departmentId], references: [id])
   users        User[]
@@ -887,10 +887,13 @@ model Payslip {
   insurance       Json          @default("{}")
   tax             Json          @default("{}")
   status          String        @default("GENERATED")
+  isSecure        Boolean       @default(true)  // Yêu cầu mật khẩu để xem
+  passwordHash    String?       // Mật khẩu băm ( bcrypt )
   viewedAt        DateTime?
   downloadedAt    DateTime?
   signedBy        String?
   signedAt        DateTime?
+  sentEmailAt     DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   payrollRecord   PayrollRecord @relation(fields: [payrollRecordId], references: [id])
@@ -899,7 +902,105 @@ model Payslip {
   @@unique([userId, month, year])
   @@index([userId])
   @@index([month, year])
+  @@index([payrollRecordId])
   @@map("payslips")
+}
+
+// ==================== DYNAMIC FORMULA SYSTEM ====================
+
+model PayrollFormula {
+  id            String                  @id @default(cuid())
+  code          String                  @unique
+  name          String
+  description   String?
+  formulaType   String                  @default("EARNING") // EARNING, DEDUCTION, TAX, INSURANCE, NET
+  category      String?                 // ALLOWANCE, BONUS, OVERTIME, DISCIPLINE, etc.
+  expression    String                  // Công thức Excel-like: baseSalary + allowance * coefficient
+  variables     Json                    @default("[]") // [{name: "baseSalary", source: "SALARY"}, ...]
+  outputField   String?                 // Trường xuất ra: overtimeAmount, allowanceAmount, etc.
+  priority      Int                     @default(0) // Thứ tự tính toán
+  isActive      Boolean                 @default(true)
+  isSystem      Boolean                 @default(false) // Công thức hệ thống, không thể xóa
+  effectiveDate DateTime                @default(now())
+  createdBy     String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([formulaType])
+  @@index([isActive])
+  @@map("payroll_formulas")
+}
+
+model PayrollFormulaVariable {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  dataType    String   @default("NUMBER") // NUMBER, PERCENT, BOOLEAN, TEXT
+  source      String   @default("CONFIG") // CONFIG, ATTENDANCE, SALARY, COMPONENT, TAX, INSURANCE, CONSTANT
+  defaultValue Decimal? @db.Decimal(15, 0)
+  minValue    Decimal? @db.Decimal(15, 0)
+  maxValue    Decimal? @db.Decimal(15, 0)
+  unit        String?  // VND, %, hours, days
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([source])
+  @@map("payroll_formula_variables")
+}
+
+model PayrollApproval {
+  id              String        @id @default(cuid())
+  payrollRecordId String
+  action          String        // CREATED, SUBMITTED, APPROVED, REJECTED, PAID
+  status          String        @default("PENDING") // PENDING, APPROVED, REJECTED
+  note            String?
+  approverId      String?
+  approverName    String?
+  approvedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([payrollRecordId])
+  @@map("payroll_approvals")
+}
+
+// ==================== INSURANCE & TAX CAPS ====================
+
+model InsuranceCap {
+  id            String   @id @default(cuid())
+  year          Int
+  insuranceType String   // SOCIAL, HEALTH, UNEMPLOYMENT
+  minSalary     Decimal  @db.Decimal(15, 0)
+  maxSalary     Decimal  @db.Decimal(15, 0)
+  region        String?  // Vùng lương tối thiểu theo vùng
+  isActive      Boolean  @default(true)
+  effectiveDate DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([year, insuranceType, region])
+  @@index([year])
+  @@map("insurance_caps")
+}
+
+// ==================== STANDARD WORK DAYS ====================
+
+model StandardWorkDays {
+  id       String   @id @default(cuid())
+  year     Int
+  month    Int
+  workDays Float    @default(22) // Số ngày làm việc chuẩn tháng
+  workHours Float   @default(176) // Số giờ làm việc chuẩn tháng (22 * 8)
+  holidays Json     @default("[]") // Danh sách ngày nghỉ lễ trong tháng
+  note     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([year, month])
+  @@index([year])
+  @@map("standard_work_days")
 }
 
 model CandidateToCandidateTag {
@@ -935,34 +1036,34 @@ model Notification {
 }
 
 model NotificationPreference {
-  id                String   @id @default(cuid())
-  userId            String   @unique
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
   // Email channel
-  emailEnabled      Boolean  @default(true)
-  quietHoursEnabled Boolean  @default(false)
-  quietHoursStart   String? // "22:00"
-  quietHoursEnd     String? // "08:00"
-  notificationTypes String[] @default([]) // Email notification types (legacy - keeping for backward compatibility)
+  emailEnabled             Boolean  @default(true)
+  quietHoursEnabled        Boolean  @default(false)
+  quietHoursStart          String? // "22:00"
+  quietHoursEnd            String? // "08:00"
+  notificationTypes        String[] @default([]) // Email notification types (legacy - keeping for backward compatibility)
   // Email channel - new separate fields (matching inbox pattern)
-  emailNotificationTypes String[] @default([])
-  emailQuietHoursEnabled Boolean  @default(false)
-  emailQuietHoursStart   String?
-  emailQuietHoursEnd     String?
+  emailNotificationTypes   String[] @default([])
+  emailQuietHoursEnabled   Boolean  @default(false)
+  emailQuietHoursStart     String?
+  emailQuietHoursEnd       String?
   // Browser channel
-  browserEnabled    Boolean  @default(true)
-  browserSoundEnabled Boolean @default(true)
+  browserEnabled           Boolean  @default(true)
+  browserSoundEnabled      Boolean  @default(true)
   browserNotificationTypes String[] @default([])
   browserQuietHoursEnabled Boolean  @default(false)
   browserQuietHoursStart   String?
   browserQuietHoursEnd     String?
   // Inbox channel (separate from email - using new fields)
-  inboxNotificationTypes String[] @default([])
-  inboxQuietHoursEnabled Boolean  @default(false)
-  inboxQuietHoursStart  String? // "22:00"
-  inboxQuietHoursEnd    String? // "08:00"
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  users             User[]
+  inboxNotificationTypes   String[] @default([])
+  inboxQuietHoursEnabled   Boolean  @default(false)
+  inboxQuietHoursStart     String? // "22:00"
+  inboxQuietHoursEnd       String? // "08:00"
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  users                    User[]
 
   @@map("notification_preferences")
 }
