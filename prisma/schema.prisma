@@ -72,6 +72,8 @@ model User {
   notificationPreferenceId String?
   emailLogs                EmailLog[]
   position                 Position?                @relation(fields: [positionId], references: [id])
+  profileUpdateRequests    ProfileUpdateRequest[]
+  administrativeRequests   AdministrativeRequest[]
 
   @@map("users")
 }
@@ -998,4 +1000,40 @@ model EmailLog {
   @@index([status])
   @@index([createdAt])
   @@map("email_logs")
+}
+
+model ProfileUpdateRequest {
+  id            String    @id @default(cuid())
+  userId        String
+  requestedData Json
+  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  rejectReason  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("profile_update_requests")
+}
+
+model AdministrativeRequest {
+  id                 String    @id @default(cuid())
+  userId             String
+  type               String
+  description        String    @db.Text
+  status             String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewedBy         String?
+  reviewedAt         DateTime?
+  responseAttachment String?
+  rejectReason       String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("administrative_requests")
 }

@@ -92,9 +92,10 @@ export const DEPARTMENT_ICONS: Record<
 interface IconPickerProps {
     value: string;
     onChange: (iconName: string) => void;
+    className?: string;
 }
 
-export function IconPicker({ value, onChange }: IconPickerProps) {
+export function IconPicker({ value, onChange, className }: IconPickerProps) {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
 
@@ -119,9 +120,10 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
                 <button
                     type="button"
                     className={cn(
-                        "flex items-center gap-2 rounded-md border px-3 py-2 text-sm w-[40%]",
+                        "flex items-center gap-2 rounded-md border px-3 py-2 text-sm w-full",
                         "hover:bg-accent transition-colors bg-input/50",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        className
                     )}
                 >
                     <div className="rounded-md bg-primary/10 p-1.5">

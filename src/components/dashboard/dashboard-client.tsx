@@ -597,7 +597,14 @@ const DashboardClient = ({
 
                 <Separator orientation="vertical" className="h-4!" />
 
-                <AddCardDialog />
+                <AddCardDialog 
+                  stats={stats}
+                  attendanceTrendData={attendanceTrendData}
+                  departmentData={departmentData}
+                  turnoverTrendData={turnoverTrendData}
+                  genderData={genderData}
+                  initialEmployees={initialEmployees}
+                />
               </div>
             </nav>
           </section>
