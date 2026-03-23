@@ -2645,7 +2645,7 @@ export async function getDepartments() {
 export async function getUsers(departmentId?: string) {
     await requireAuth();
 
-    // Get users with their jobTitle to find department via position
+    // Get users with their position to find department via position
     const users = await prisma.user.findMany({
         where: departmentId ? { departmentId } : undefined,
         orderBy: { name: "asc" },
@@ -2654,7 +2654,7 @@ export async function getUsers(departmentId?: string) {
             name: true,
             employeeCode: true,
             departmentId: true,
-            jobTitle: {
+            position: {
                 select: {
                     id: true,
                     departmentId: true,
@@ -2663,12 +2663,12 @@ export async function getUsers(departmentId?: string) {
         },
     });
 
-    // Map users with departmentId from either direct field or via jobTitle
+    // Map users with departmentId from either direct field or via position
     const mappedUsers = users.map((user) => ({
         id: user.id,
         name: user.name,
         employeeCode: user.employeeCode,
-        departmentId: user.departmentId ?? user.jobTitle?.departmentId ?? null,
+        departmentId: user.departmentId ?? user.position?.departmentId ?? null,
     }));
 
     // If filtering by departmentId, filter the mapped results
