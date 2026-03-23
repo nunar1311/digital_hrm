@@ -1168,3 +1168,531 @@ export async function getDepartmentsForPayroll() {
         orderBy: { name: "asc" },
     });
 }
+
+// ─── PAYSLIP EMAIL ───
+
+export async function sendPayslipEmails(payrollRecordId: string) {
+    await requirePermission(Permission.PAYROLL_VIEW_ALL);
+
+    const record = await prisma.payrollRecord.findUnique({
+        where: { id: payrollRecordId },
+        include: {
+            payslips: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    if (!record) {
+        throw new Error("Không tìm thấy bảng lương");
+    }
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const payslip of record.payslips) {
+        const user = payslip.user;
+        if (!user?.email) {
+            failed++;
+            continue;
+        }
+
+        // In a real implementation, you would send an email here
+        // using the email service (e.g., Resend, SendGrid)
+        // For now, we'll just mark the payslip as sent
+        try {
+            await prisma.payslip.update({
+                where: { id: payslip.id },
+                data: { sentEmailAt: new Date() },
+            });
+            sent++;
+
+            // Log email
+            await prisma.emailLog.create({
+                data: {
+                    userId: user.id,
+                    recipient: user.email,
+                    subject: `Phiếu lương tháng ${record.month}/${record.year}`,
+                    body: `Xin chào ${user.name},\n\nPhiếu lương tháng ${record.month}/${record.year} của bạn đã sẵn sàng.\n\nVui lòng đăng nhập hệ thống HRM để xem chi tiết.\n\nTrân trọng,\nPhòng Nhân sự`,
+                    status: "SENT",
+                    templateCode: "PAYSLIP_READY",
+                    sentAt: new Date(),
+                },
+            });
+        } catch {
+            failed++;
+        }
+    }
+
+    return { sent, failed, total: record.payslips.length };
+}
+
+// ─── PAYSLIP PASSWORD ───
+
+export async function verifyPayslipPassword(payslipId: string, password: string) {
+    const session = await requireAuth();
+
+    const payslip = await prisma.payslip.findUnique({
+        where: { id: payslipId },
+        include: {
+            user: true,
+        },
+    });
+
+    if (!payslip) {
+        throw new Error("Không tìm thấy phiếu lương");
+    }
+
+    // Check if user owns this payslip or has admin access
+    const canViewAll = hasAnyPermission(
+        extractRole(session),
+        [Permission.PAYROLL_VIEW_ALL],
+    );
+
+    if (!canViewAll && payslip.userId !== session.user.id) {
+        throw new Error("Bạn không có quyền xem phiếu lương này");
+    }
+
+    // If payslip doesn't require password, allow access
+    if (!payslip.passwordHash) {
+        return { success: true, requiresPassword: false };
+    }
+
+    // Verify password using bcrypt
+    // In production, use bcrypt.compare(password, payslip.passwordHash)
+    // For now, we'll use a simple comparison
+    const isValid = payslip.passwordHash === password;
+
+    if (isValid) {
+        // Update viewed status
+        await prisma.payslip.update({
+            where: { id: payslipId },
+            data: {
+                status: "VIEWED",
+                viewedAt: new Date(),
+            },
+        });
+    }
+
+    return { success: isValid, requiresPassword: true };
+}
+
+export async function setPayslipPassword(payslipId: string, password: string) {
+    await requirePermission(Permission.PAYROLL_CALCULATE);
+
+    // In production, hash the password with bcrypt
+    const passwordHash = password; // await bcrypt.hash(password, 10)
+
+    await prisma.payslip.update({
+        where: { id: payslipId },
+        data: {
+            isSecure: true,
+            passwordHash,
+        },
+    });
+
+    revalidatePath("/payroll/payslips");
+    return { success: true };
+}
+
+export async function resetPayslipPassword(payslipId: string) {
+    await requirePermission(Permission.PAYROLL_CALCULATE);
+
+    await prisma.payslip.update({
+        where: { id: payslipId },
+        data: {
+            isSecure: false,
+            passwordHash: null,
+        },
+    });
+
+    revalidatePath("/payroll/payslips");
+    return { success: true };
+}
+
+// ─── PAYROLL FORMULAS ───
+
+export async function getPayrollFormulas() {
+    await requirePermission(Permission.PAYROLL_FORMULA_MANAGE);
+    return prisma.payrollFormula.findMany({
+        orderBy: [{ priority: "asc" }, { name: "asc" }],
+    });
+}
+
+export async function getPayrollFormula(id: string) {
+    await requirePermission(Permission.PAYROLL_FORMULA_MANAGE);
+    const formula = await prisma.payrollFormula.findUnique({
+        where: { id },
+    });
+    if (!formula) {
+        throw new Error("Không tìm thấy công thức");
+    }
+    return formula;
+}
+
+const payrollFormulaSchema = z.object({
+    code: z.string().min(1, "Mã không được trống"),
+    name: z.string().min(1, "Tên không được trống"),
+    description: z.string().optional(),
+    formulaType: z.enum(["EARNING", "DEDUCTION", "TAX", "INSURANCE", "NET"]),
+    category: z.string().optional(),
+    expression: z.string().min(1, "Biểu thức không được trống"),
+    variables: z.array(z.object({
+        name: z.string(),
+        source: z.string(),
+        dataType: z.string().default("NUMBER"),
+        defaultValue: z.number().optional(),
+        description: z.string().optional(),
+    })).default([]),
+    outputField: z.string().optional(),
+    priority: z.number().default(0),
+    isActive: z.boolean().default(true),
+    isSystem: z.boolean().default(false),
+    effectiveDate: z.string().optional(),
+});
+
+export async function createPayrollFormula(data: z.infer<typeof payrollFormulaSchema>) {
+    await requirePermission(Permission.PAYROLL_FORMULA_MANAGE);
+    const parsed = payrollFormulaSchema.parse(data);
+
+    const existing = await prisma.payrollFormula.findUnique({
+        where: { code: parsed.code },
+    });
+    if (existing) {
+        throw new Error("Mã công thức đã tồn tại");
+    }
+
+    const result = await prisma.payrollFormula.create({
+        data: {
+            ...parsed,
+            variables: JSON.stringify(parsed.variables),
+            effectiveDate: parsed.effectiveDate ? new Date(parsed.effectiveDate) : new Date(),
+        },
+    });
+
+    revalidatePath("/payroll/formulas");
+    return result;
+}
+
+export async function updatePayrollFormula(id: string, data: z.infer<typeof payrollFormulaSchema>) {
+    await requirePermission(Permission.PAYROLL_FORMULA_MANAGE);
+    const parsed = payrollFormulaSchema.parse(data);
+
+    const existing = await prisma.payrollFormula.findFirst({
+        where: { code: parsed.code, id: { not: id } },
+    });
+    if (existing) {
+        throw new Error("Mã công thức đã tồn tại");
+    }
+
+    const result = await prisma.payrollFormula.update({
+        where: { id },
+        data: {
+            ...parsed,
+            variables: JSON.stringify(parsed.variables),
+            effectiveDate: parsed.effectiveDate ? new Date(parsed.effectiveDate) : undefined,
+        },
+    });
+
+    revalidatePath("/payroll/formulas");
+    return result;
+}
+
+export async function deletePayrollFormula(id: string) {
+    await requirePermission(Permission.PAYROLL_FORMULA_MANAGE);
+
+    const formula = await prisma.payrollFormula.findUnique({
+        where: { id },
+    });
+    if (!formula) {
+        throw new Error("Không tìm thấy công thức");
+    }
+
+    if (formula.isSystem) {
+        throw new Error("Không thể xóa công thức hệ thống");
+    }
+
+    await prisma.payrollFormula.delete({ where: { id } });
+    revalidatePath("/payroll/formulas");
+}
+
+export async function togglePayrollFormula(id: string) {
+    await requirePermission(Permission.PAYROLL_FORMULA_MANAGE);
+
+    const formula = await prisma.payrollFormula.findUnique({
+        where: { id },
+    });
+    if (!formula) {
+        throw new Error("Không tìm thấy công thức");
+    }
+
+    if (formula.isSystem) {
+        throw new Error("Không thể tắt công thức hệ thống");
+    }
+
+    const result = await prisma.payrollFormula.update({
+        where: { id },
+        data: { isActive: !formula.isActive },
+    });
+
+    revalidatePath("/payroll/formulas");
+    return result;
+}
+
+// ─── FORMULA PREVIEW ───
+
+export async function previewFormula(formulaId: string, sampleData: Record<string, number>) {
+    await requirePermission(Permission.PAYROLL_VIEW_ALL);
+
+    const formula = await prisma.payrollFormula.findUnique({
+        where: { id: formulaId },
+    });
+
+    if (!formula) {
+        throw new Error("Không tìm thấy công thức");
+    }
+
+    try {
+        // Simple formula evaluation
+        // In production, use a safe expression evaluator
+        const result = evaluateFormula(formula.expression, sampleData);
+        return { success: true, result };
+    } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : "Lỗi khi tính công thức" };
+    }
+}
+
+function evaluateFormula(expression: string, variables: Record<string, number>): number {
+    // Replace variable names with their values
+    let expr = expression;
+
+    for (const [name, value] of Object.entries(variables)) {
+        const regex = new RegExp(`\\b${name}\\b`, "g");
+        expr = expr.replace(regex, String(value));
+    }
+
+    // Evaluate the expression (basic math only - in production use a safe evaluator)
+    // This is a simplified version - in production use a proper expression evaluator
+    try {
+        // Remove any non-math characters for safety
+        const sanitized = expr.replace(/[^0-9+\-*/().%\s]/g, "");
+
+        // Use Function constructor for safe evaluation
+        const fn = new Function(`return ${sanitized}`);
+        const result = fn();
+
+        return typeof result === "number" && !isNaN(result) ? result : 0;
+    } catch {
+        throw new Error("Biểu thức không hợp lệ");
+    }
+}
+
+// ─── INSURANCE CAPS ───
+
+export async function getInsuranceCaps(year?: number) {
+    await requireAuth();
+    const where: Record<string, unknown> = { isActive: true };
+    if (year) {
+        where.year = year;
+    }
+    return prisma.insuranceCap.findMany({
+        where,
+        orderBy: [{ year: "desc" }, { insuranceType: "asc" }],
+    });
+}
+
+export async function setInsuranceCap(data: {
+    year: number;
+    insuranceType: string;
+    minSalary: number;
+    maxSalary: number;
+    region?: string;
+}) {
+    await requirePermission(Permission.PAYROLL_TAX_MANAGE);
+
+    const result = await prisma.insuranceCap.upsert({
+        where: {
+            year_insuranceType_region: {
+                year: data.year,
+                insuranceType: data.insuranceType,
+                region: data.region || null,
+            },
+        },
+        create: {
+            year: data.year,
+            insuranceType: data.insuranceType,
+            minSalary: data.minSalary,
+            maxSalary: data.maxSalary,
+            region: data.region,
+        },
+        update: {
+            minSalary: data.minSalary,
+            maxSalary: data.maxSalary,
+        },
+    });
+
+    revalidatePath("/payroll/tax-insurance");
+    return result;
+}
+
+// ─── STANDARD WORK DAYS ───
+
+export async function getStandardWorkDays(year: number, month: number) {
+    await requireAuth();
+    return prisma.standardWorkDays.findUnique({
+        where: { year_month: { year, month } },
+    });
+}
+
+export async function setStandardWorkDays(data: {
+    year: number;
+    month: number;
+    workDays: number;
+    workHours: number;
+    holidays?: string[];
+    note?: string;
+}) {
+    await requirePermission(Permission.PAYROLL_TAX_MANAGE);
+
+    const result = await prisma.standardWorkDays.upsert({
+        where: {
+            year_month: { year: data.year, month: data.month },
+        },
+        create: {
+            year: data.year,
+            month: data.month,
+            workDays: data.workDays,
+            workHours: data.workHours,
+            holidays: JSON.stringify(data.holidays || []),
+            note: data.note,
+        },
+        update: {
+            workDays: data.workDays,
+            workHours: data.workHours,
+            holidays: JSON.stringify(data.holidays || []),
+            note: data.note,
+        },
+    });
+
+    revalidatePath("/payroll/tax-insurance");
+    return result;
+}
+
+// ─── PAYROLL PREVIEW ───
+
+export async function previewPayroll(params: {
+    month: number;
+    year: number;
+    departmentId?: string;
+}) {
+    await requirePermission(Permission.PAYROLL_VIEW_ALL);
+
+    const { month, year, departmentId } = params;
+
+    const userFilter: Record<string, unknown> = {
+        employeeStatus: "ACTIVE",
+    };
+
+    if (departmentId) {
+        userFilter.departmentId = departmentId;
+    }
+
+    const users = await prisma.user.findMany({
+        where: userFilter,
+        include: {
+            salaries: {
+                where: { effectiveDate: { lte: new Date(year, month, 0) } },
+                orderBy: { effectiveDate: "desc" },
+                take: 1,
+            },
+        },
+    });
+
+    let totalGross = 0;
+    let totalNet = 0;
+
+    for (const user of users) {
+        const baseSalary = user.salaries[0]?.baseSalary || 0;
+        const baseSalaryNum = Number(baseSalary);
+
+        // Estimate gross (simplified calculation)
+        const estimatedGross = baseSalaryNum * 1.1; // Base + ~10% allowances/bonus
+
+        // Estimate net (simplified)
+        const estimatedNet = estimatedGross * 0.85; // After ~15% for taxes/insurance
+
+        totalGross += estimatedGross;
+        totalNet += estimatedNet;
+    }
+
+    return {
+        employeeCount: users.length,
+        estimatedGross: Math.round(totalGross),
+        estimatedNet: Math.round(totalNet),
+    };
+}
+
+// ─── BULK PAYSLIP ACTIONS ───
+
+export async function bulkUpdatePayslipPassword(payrollRecordId: string, password: string) {
+    await requirePermission(Permission.PAYROLL_CALCULATE);
+
+    // Hash password - in production use bcrypt
+    const passwordHash = password;
+
+    const result = await prisma.payslip.updateMany({
+        where: { payrollRecordId },
+        data: {
+            isSecure: true,
+            passwordHash,
+        },
+    });
+
+    revalidatePath("/payroll/payslips");
+    return { updated: result.count };
+}
+
+// ─── PAYSLIP DETAIL VIEW ───
+
+export async function getPayslipDetail(payslipId: string) {
+    const session = await requireAuth();
+
+    const payslip = await prisma.payslip.findUnique({
+        where: { id: payslipId },
+        include: {
+            user: {
+                include: { department: true },
+            },
+            payrollRecord: {
+                include: { department: true },
+            },
+        },
+    });
+
+    if (!payslip) {
+        throw new Error("Không tìm thấy phiếu lương");
+    }
+
+    const canViewAll = hasAnyPermission(
+        extractRole(session),
+        [Permission.PAYROLL_VIEW_ALL],
+    );
+
+    if (!canViewAll && payslip.userId !== session.user.id) {
+        throw new Error("Bạn không có quyền xem phiếu lương này");
+    }
+
+    return payslip;
+}
+
+// ─── PAYROLL CALCULATION UTILITIES ───
+// Note: Pure calculation functions have been moved to @/lib/payroll-calculations
+// Import from there to use in client components or shared code

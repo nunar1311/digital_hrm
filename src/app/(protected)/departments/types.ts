@@ -34,3 +34,50 @@ export interface GetDepartmentsResult {
     pageSize: number;
     totalPages: number;
 }
+
+// =============================================
+// POSITION TYPES (Department-scoped)
+// =============================================
+
+export interface DepartmentPosition {
+    id: string;
+    name: string;
+    code: string;
+    authority: string;
+    level: number;
+    status: string;
+    sortOrder: number;
+    description: string | null;
+    minSalary: string | null;
+    maxSalary: string | null;
+    userCount: number;
+    holder: {
+        id: string;
+        name: string;
+        image: string | null;
+        employeeCode: string | null;
+    } | null;
+}
+
+export interface CreatePositionForDepartmentInput {
+    name: string;
+    code: string;
+    authority: string;
+    level?: number;
+    description?: string;
+    minSalary?: number;
+    maxSalary?: number;
+    sortOrder?: number;
+}
+
+export interface UpdatePositionForDepartmentInput {
+    name?: string;
+    code?: string;
+    authority?: string;
+    level?: number;
+    description?: string;
+    minSalary?: number;
+    maxSalary?: number;
+    sortOrder?: number;
+    status?: string;
+}

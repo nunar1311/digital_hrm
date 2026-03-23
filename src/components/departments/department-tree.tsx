@@ -66,6 +66,9 @@ import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import type { DepartmentNode } from "@/types/org-chart";
 import { buttonVariants } from "../ui/button";
+import {
+    ExpandedStateContext,
+} from "./department-sidebar";
 
 // ─── Static icon registry ──────────────────────────────────────────
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -143,7 +146,15 @@ const DepartmentTree = ({
     const router = useRouter();
     const pathname = usePathname();
     const hasChildren = item.children && item.children.length > 0;
-    const [isOpen, setIsOpen] = useState(level === 0);
+
+    const { expandedState } = React.useContext(ExpandedStateContext);
+
+    const [localOpen, setLocalOpen] = useState(level === 0);
+
+    const isControlled = expandedState !== null;
+    const effectiveOpen = isControlled
+        ? expandedState === "all"
+        : localOpen;
 
     const searchForceOpen = searchQuery
         ? hasMatchingDescendant(item, searchQuery)
@@ -163,7 +174,7 @@ const DepartmentTree = ({
 
     return (
         <SidebarMenuItem>
-            <Collapsible open={isOpen || searchForceOpen}>
+            <Collapsible open={effectiveOpen || searchForceOpen}>
                 <CollapsibleTrigger asChild>
                     <div className="group/dept relative flex items-center w-full">
                         <SidebarMenuButton
@@ -185,13 +196,16 @@ const DepartmentTree = ({
                                         )}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            setIsOpen(!isOpen);
+                                            if (isControlled) {
+                                                setExpandedState(null);
+                                            }
+                                            setLocalOpen((v) => !v);
                                         }}
                                     >
                                         <ChevronRight
                                             className={cn(
                                                 "size-3.5 shrink-0 transition-transform duration-200",
-                                                isOpen
+                                                effectiveOpen
                                                     ? "rotate-90"
                                                     : "",
                                             )}

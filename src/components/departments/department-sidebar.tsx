@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, {
+    useState,
+    useEffect,
+    useRef,
+    createContext,
+} from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
     Sidebar,
@@ -12,7 +17,13 @@ import {
     SidebarMenuButton,
     SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Search, X, Snowflake, Plus } from "lucide-react";
+import {
+    Search,
+    X,
+    Snowflake,
+    Plus,
+    ChevronsUpDown,
+} from "lucide-react";
 import type { DepartmentNode } from "@/types/org-chart";
 import { Button } from "@/components/ui/button";
 import { DepartmentFormDialog } from "@/components/org-chart/department-form-dialog";
@@ -33,6 +44,20 @@ import { Input } from "@/components/ui/input";
 import { useSettings } from "@/contexts/settings-context";
 import DepartmentTree from "./department-tree";
 
+// ─── Context để chia sẻ trạng thái expand/collapse ─────────────────
+type ExpandedState = "all" | "none" | null;
+
+interface ExpandedStateContextValue {
+    expandedState: ExpandedState;
+    setExpandedState: (state: ExpandedState) => void;
+}
+
+export const ExpandedStateContext =
+    createContext<ExpandedStateContextValue>({
+        expandedState: null,
+        setExpandedState: () => {},
+    });
+
 // ─── Main Sidebar Component ─────────────────────────────────────────
 interface DepartmentSidebarProps {
     departmentTree: DepartmentNode[];
@@ -45,6 +70,8 @@ const DepartmentSidebar = ({
     const router = useRouter();
     const { settings } = useSettings();
     const [searchQuery, setSearchQuery] = useState("");
+    const [expandedState, setExpandedState] =
+        useState<ExpandedState>("all");
     const [dialogState, setDialogState] = useState<{
         open: boolean;
         department: DepartmentNode | null;
@@ -107,6 +134,25 @@ const DepartmentSidebar = ({
                     </div>
                     <div className="flex items-center gap-0.5">
                         <div className="flex items-center transition-all duration-150 transform-gpu translate-x-2 group-hover:translate-x-0 gap-0.5 ease-linear opacity-0 group-hover:opacity-100">
+                            <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                tooltip={
+                                    expandedState === "all"
+                                        ? "Thu gọn tất cả"
+                                        : "Mở rộng tất cả"
+                                }
+                                onClick={() =>
+                                    setExpandedState(
+                                        expandedState === "all"
+                                            ? "none"
+                                            : "all",
+                                    )
+                                }
+                                className="group-data-[collapsible=icon]:hidden"
+                            >
+                                <ChevronsUpDown className="size-3.5" />
+                            </Button>
                             <SidebarTrigger className="group-data-[collapsible=icon]:hidden gap-0!" />
                         </div>
                     </div>
@@ -164,21 +210,30 @@ const DepartmentSidebar = ({
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
 
-                            {departmentTree.map((item) => (
-                                <DepartmentTree
-                                    key={item.id}
-                                    item={item}
-                                    searchQuery={searchQuery}
-                                    onEdit={handleEdit}
-                                    onAddChild={(id) => {
-                                        const d = departmentTree.find(
-                                            (n) => n.id === id,
-                                        );
-                                        if (d) handleEdit(d);
-                                    }}
-                                    onDelete={handleDelete}
-                                />
-                            ))}
+                            <ExpandedStateContext.Provider
+                                value={{
+                                    expandedState,
+                                    setExpandedState,
+                                }}
+                            >
+                                {departmentTree.map((item) => (
+                                    <DepartmentTree
+                                        key={item.id}
+                                        item={item}
+                                        searchQuery={searchQuery}
+                                        onEdit={handleEdit}
+                                        onAddChild={(id) => {
+                                            const d =
+                                                departmentTree.find(
+                                                    (n) =>
+                                                        n.id === id,
+                                                );
+                                            if (d) handleEdit(d);
+                                        }}
+                                        onDelete={handleDelete}
+                                    />
+                                ))}
+                            </ExpandedStateContext.Provider>
 
                             <SidebarMenuButton
                                 onClick={() => {

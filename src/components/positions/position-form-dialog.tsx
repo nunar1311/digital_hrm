@@ -13,9 +13,7 @@ import {
     updatePosition,
     getAllPositions,
 } from "@/app/(protected)/positions/actions";
-import {
-    updatePositionSchema,
-} from "@/app/(protected)/positions/schemas";
+import { updatePositionSchema } from "@/app/(protected)/positions/schemas";
 import type { PositionListItem } from "@/app/(protected)/positions/types";
 import { getDepartments } from "@/app/(protected)/departments/actions";
 import { toast } from "sonner";
@@ -67,15 +65,24 @@ interface PositionFormDialogProps {
     open: boolean;
     onClose: () => void;
     editData?: PositionListItem | null;
+    // Optional aliases for department-scoped usage
+    onOpenChange?: (open: boolean) => void;
+    editingPosition?: PositionListItem | null;
 }
 
 export function PositionFormDialog({
     open,
     onClose,
     editData,
+    onOpenChange,
+    editingPosition,
 }: PositionFormDialogProps) {
+    const resolvedEditData = editingPosition ?? editData;
+    const resolvedOnClose = onOpenChange
+        ? () => onOpenChange(false)
+        : onClose;
     const queryClient = useQueryClient();
-    const isEdit = !!editData;
+    const isEdit = !!resolvedEditData;
 
     const form = useForm<z.infer<typeof updatePositionSchema>>({
         resolver: zodResolver(updatePositionSchema),
@@ -83,10 +90,10 @@ export function PositionFormDialog({
             name: "",
             code: "",
             authority: "STAFF",
-            departmentId: "",
+            departmentId: undefined,
             level: 5,
             description: "",
-            parentId: "",
+            parentId: undefined,
             minSalary: 0,
             maxSalary: 0,
             status: "ACTIVE",
@@ -96,40 +103,40 @@ export function PositionFormDialog({
 
     // Load edit data
     useEffect(() => {
-        if (editData) {
+        if (resolvedEditData) {
             form.reset({
-                name: editData.name,
-                code: editData.code,
-                authority: editData.authority as never,
-                departmentId: editData.departmentId || "",
-                level: editData.level || 0,
-                description: editData.description || "",
-                parentId: editData.parentId || "",
-                minSalary: editData.minSalary
-                    ? Number(editData.minSalary)
+                name: resolvedEditData.name,
+                code: resolvedEditData.code,
+                authority: resolvedEditData.authority as never,
+                departmentId: resolvedEditData.departmentId ?? undefined,
+                level: resolvedEditData.level || 0,
+                description: resolvedEditData.description || "",
+                parentId: resolvedEditData.parentId ?? undefined,
+                minSalary: resolvedEditData.minSalary
+                    ? Number(resolvedEditData.minSalary)
                     : undefined,
-                maxSalary: editData.maxSalary
-                    ? Number(editData.maxSalary)
+                maxSalary: resolvedEditData.maxSalary
+                    ? Number(resolvedEditData.maxSalary)
                     : undefined,
-                status: editData.status as never,
-                sortOrder: editData.sortOrder || 0,
+                status: resolvedEditData.status as never,
+                sortOrder: resolvedEditData.sortOrder || 0,
             });
         } else {
             form.reset({
                 name: "",
                 code: "",
                 authority: "STAFF",
-                departmentId: "",
+                departmentId: undefined,
                 level: 5,
                 description: "",
-                parentId: "",
+                parentId: undefined,
                 minSalary: 0,
                 maxSalary: 0,
                 status: "ACTIVE",
                 sortOrder: 0,
             });
         }
-    }, [editData, form]);
+    }, [resolvedEditData, form]);
 
     const { data: departmentsData } = useQuery({
         queryKey: ["departments", "all"],
@@ -159,7 +166,7 @@ export function PositionFormDialog({
                 queryClient.invalidateQueries({
                     queryKey: ["positions"],
                 });
-                onClose();
+                resolvedOnClose();
             } else {
                 toast.error(result.error);
             }
@@ -183,7 +190,7 @@ export function PositionFormDialog({
                 queryClient.invalidateQueries({
                     queryKey: ["positions"],
                 });
-                onClose();
+                resolvedOnClose();
             } else {
                 toast.error(result.error);
             }
@@ -198,10 +205,10 @@ export function PositionFormDialog({
             name: values.name,
             code: values.code,
             authority: values.authority as never,
-            departmentId: values.departmentId || undefined,
+            departmentId: values.departmentId ?? undefined,
             level: Number(values.level),
             description: values.description || undefined,
-            parentId: values.parentId || undefined,
+            parentId: values.parentId ?? undefined,
             minSalary: values.minSalary
                 ? Number(values.minSalary)
                 : undefined,
@@ -228,7 +235,10 @@ export function PositionFormDialog({
     );
 
     return (
-        <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+        <Dialog
+            open={open}
+            onOpenChange={(o) => !o && resolvedOnClose()}
+        >
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
@@ -330,7 +340,7 @@ export function PositionFormDialog({
                                             value={field.value}
                                         >
                                             <FormControl>
-                                                <SelectTrigger>
+                                                <SelectTrigger className="w-full">
                                                     <SelectValue placeholder="Chọn quyền hạn" />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -381,9 +391,6 @@ export function PositionFormDialog({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="">
-                                                    Không chọn
-                                                </SelectItem>
                                                 {departmentsData?.departments?.map(
                                                     (dept: {
                                                         id: string;
@@ -426,14 +433,11 @@ export function PositionFormDialog({
                                             value={field.value}
                                         >
                                             <FormControl>
-                                                <SelectTrigger>
+                                                <SelectTrigger className="w-full">
                                                     <SelectValue placeholder="Chọn chức vụ cha (tùy chọn)" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="">
-                                                    Không chọn
-                                                </SelectItem>
                                                 {parentOptions.map(
                                                     (pos) => (
                                                         <SelectItem

@@ -9,6 +9,9 @@ import type {
     DepartmentStats,
     GetDepartmentsParams,
     GetDepartmentsResult,
+    DepartmentPosition,
+    CreatePositionForDepartmentInput,
+    UpdatePositionForDepartmentInput,
 } from "./types";
 import {
     getDepartmentTree,
@@ -124,7 +127,13 @@ export async function getDepartments(
 
     // Auto-determine manager: user with lowest position.level in department (HEAD as tiebreaker)
     const getAutoManager = (dept: {
-        users: { id: string; name: string; image: string | null; position: { name: string } | null; departmentRole: string }[];
+        users: {
+            id: string;
+            name: string;
+            image: string | null;
+            position: { name: string } | null;
+            departmentRole: string | null;
+        }[];
     }) => {
         const topUser = dept.users[0];
         if (!topUser) return null;
@@ -248,7 +257,13 @@ export async function getAllDepartments(): Promise<
 
     // Auto-determine manager: user with lowest position.level in department (HEAD as tiebreaker)
     const getAutoManager = (dept: {
-        users: { id: string; name: string; image: string | null; position: { name: string } | null; departmentRole: string }[];
+        users: {
+            id: string;
+            name: string;
+            image: string | null;
+            position: { name: string } | null;
+            departmentRole: string | null;
+        }[];
     }) => {
         const topUser = dept.users[0];
         if (!topUser) return null;
@@ -445,11 +460,11 @@ export async function getPotentialManagers(): Promise<
 }
 
 /**
- * Cập nhật vai trò phòng ban của nhân viên
+ * Cập nhật chức vụ phòng ban của nhân viên
  * Ràng buộc: mỗi phòng ban chỉ có 1 Trưởng phòng và 1 Phó phòng
- * - Khi đặt HEAD: tìm HEAD cũ trong phòng, hạ xuống MEMBER, set Department.managerId
- * - Khi đặt DEPUTY: tìm DEPUTY cũ trong phòng, hạ xuống MEMBER
- * - Khi đặt MEMBER: nếu là HEAD cũ thì xóa Department.managerId
+ * - Khi đặt HEAD: tìm Position có authority=MANAGER trong phòng ban, assign cho nhân viên
+ * - Khi đặt DEPUTY: tìm Position có authority=DEPUTY trong phòng ban, assign cho nhân viên
+ * - Khi đặt MEMBER: xóa Position MANGAER/DEPUTY khỏi nhân viên, cập nhật department.managerId
  */
 export async function updateDepartmentRole(
     employeeId: string,
@@ -458,8 +473,12 @@ export async function updateDepartmentRole(
 ): Promise<{ success: boolean; error?: string }> {
     await requirePermission(Permission.EMPLOYEE_EDIT);
 
+    // Kiểm tra nhân viên thuộc phòng ban
     const employee = await prisma.user.findFirst({
         where: { id: employeeId, departmentId },
+        include: {
+            position: { select: { id: true, authority: true } },
+        },
     });
     if (!employee) {
         return {
@@ -468,69 +487,492 @@ export async function updateDepartmentRole(
         };
     }
 
-    // Nếu đã giữ vai trò này rồi thì bỏ qua
-    if (employee.departmentRole === role) {
+    // Nếu giữ vai trò này rồi thì bỏ qua
+    if (
+        role === "HEAD" &&
+        employee.position?.authority === "MANAGER"
+    ) {
+        return { success: true };
+    }
+    if (
+        role === "DEPUTY" &&
+        employee.position?.authority === "DEPUTY"
+    ) {
+        return { success: true };
+    }
+    if (role === "MEMBER" && !employee.position) {
         return { success: true };
     }
 
-    // --- Hạ HEAD cũ khi thay thế bằng HEAD mới ---
+    // --- Xử lý HEAD: gán Position authority=MANAGER ---
     if (role === "HEAD") {
-        const currentHead = await prisma.user.findFirst({
+        // Tìm position MANAGER trong phòng ban
+        const managerPosition = await prisma.position.findFirst({
             where: {
                 departmentId,
+                authority: "MANAGER",
+                status: "ACTIVE",
+            },
+        });
+        if (!managerPosition) {
+            return {
+                success: false,
+                error: "Không tìm thấy chức vụ Trưởng phòng (MANAGER) trong phòng ban này. Vui lòng tạo chức vụ Trưởng phòng trước.",
+            };
+        }
+
+        // Gỡ position MANAGER khỏi nhân viên hiện tại giữ chức
+        // Tìm position STAFF trong phòng ban để assign, nếu không có thì xóa hết
+        const fallbackPosition = await prisma.position.findFirst({
+            where: {
+                departmentId,
+                authority: "STAFF",
+                status: "ACTIVE",
+            },
+        });
+        const currentHolder = await prisma.user.findFirst({
+            where: {
+                positionId: managerPosition.id,
+                id: { not: employeeId },
+            },
+        });
+        if (currentHolder) {
+            await prisma.user.update({
+                where: { id: currentHolder.id },
+                data: {
+                    positionId: fallbackPosition?.id ?? null,
+                    departmentRole: "MEMBER",
+                },
+            });
+        }
+
+        // Gán position mới cho nhân viên
+        await prisma.user.update({
+            where: { id: employeeId },
+            data: {
+                positionId: managerPosition.id,
                 departmentRole: "HEAD",
-                id: { not: employeeId },
             },
         });
-        if (currentHead) {
-            await prisma.user.update({
-                where: { id: currentHead.id },
-                data: { departmentRole: "MEMBER" },
-            });
-        }
-    }
 
-    if (role === "DEPUTY") {
-        // Hạ DEPUTY cũ xuống MEMBER
-        const currentDeputy = await prisma.user.findFirst({
-            where: {
-                departmentId,
-                departmentRole: "DEPUTY",
-                id: { not: employeeId },
-            },
-        });
-        if (currentDeputy) {
-            await prisma.user.update({
-                where: { id: currentDeputy.id },
-                data: { departmentRole: "MEMBER" },
-            });
-        }
-    }
-
-    // --- Cập nhật vai trò mới ---
-    await prisma.user.update({
-        where: { id: employeeId },
-        data: { departmentRole: role },
-    });
-
-    // Sync Department.managerId cho HEAD
-    if (role === "HEAD") {
+        // Sync Department.managerId
         await prisma.department.update({
             where: { id: departmentId },
             data: { managerId: employeeId },
         });
-    } else if (
-        employee.departmentRole === "HEAD" ||
-        (await prisma.department.findUnique({ where: { id: departmentId } }))
-            ?.managerId === employeeId
-    ) {
-        await prisma.department.update({
-            where: { id: departmentId },
-            data: { managerId: null },
+    }
+
+    // --- Xử lý DEPUTY: gán Position authority=DEPUTY ---
+    else if (role === "DEPUTY") {
+        const deputyPosition = await prisma.position.findFirst({
+            where: {
+                departmentId,
+                authority: "DEPUTY",
+                status: "ACTIVE",
+            },
         });
+        if (!deputyPosition) {
+            return {
+                success: false,
+                error: "Không tìm thấy chức vụ Phó phòng (DEPUTY) trong phòng ban này. Vui lòng tạo chức vụ Phó phòng trước.",
+            };
+        }
+
+        // Tìm position STAFF trong phòng ban để assign, nếu không có thì xóa hết
+        const fallbackPosition = await prisma.position.findFirst({
+            where: {
+                departmentId,
+                authority: "STAFF",
+                status: "ACTIVE",
+            },
+        });
+        const currentHolder = await prisma.user.findFirst({
+            where: {
+                positionId: deputyPosition.id,
+                id: { not: employeeId },
+            },
+        });
+        if (currentHolder) {
+            await prisma.user.update({
+                where: { id: currentHolder.id },
+                data: {
+                    positionId: fallbackPosition?.id ?? null,
+                    departmentRole: "MEMBER",
+                },
+            });
+        }
+
+        await prisma.user.update({
+            where: { id: employeeId },
+            data: {
+                positionId: deputyPosition.id,
+                departmentRole: "DEPUTY",
+            },
+        });
+    }
+
+    // --- Xử lý MEMBER: xóa position lãnh đạo ---
+    else if (role === "MEMBER") {
+        const currentPosition = await prisma.position.findUnique({
+            where: { id: employee.positionId ?? undefined },
+        });
+
+        // Gỡ position hiện tại nếu là MANAGER hoặc DEPUTY
+        if (
+            currentPosition &&
+            (currentPosition.authority === "MANAGER" ||
+                currentPosition.authority === "DEPUTY")
+        ) {
+            await prisma.user.update({
+                where: { id: employeeId },
+                data: { positionId: null, departmentRole: "MEMBER" },
+            });
+        } else {
+            await prisma.user.update({
+                where: { id: employeeId },
+                data: { departmentRole: "MEMBER" },
+            });
+        }
+
+        // Nếu nhân viên đang là trưởng phòng thì xóa managerId
+        const dept = await prisma.department.findUnique({
+            where: { id: departmentId },
+            select: { managerId: true },
+        });
+        if (dept?.managerId === employeeId) {
+            await prisma.department.update({
+                where: { id: departmentId },
+                data: { managerId: null },
+            });
+        }
     }
 
     revalidatePath(`/departments/${departmentId}`);
     revalidatePath("/employees");
     return { success: true };
+}
+
+// =============================================
+// POSITION MANAGEMENT (Department-scoped)
+// =============================================
+
+// Authority values that are constrained to 1 per department
+const UNIQUE_AUTHORITY_PER_DEPT = ["MANAGER", "DEPUTY"];
+
+/**
+ * Lấy danh sách chức vụ thuộc một phòng ban
+ */
+export async function getDepartmentPositions(
+    departmentId: string,
+): Promise<DepartmentPosition[]> {
+    await requirePermission(Permission.DEPT_VIEW);
+
+    const positions = await prisma.position.findMany({
+        where: { departmentId },
+        orderBy: [{ level: "asc" }, { sortOrder: "asc" }],
+        include: {
+            _count: { select: { users: true } },
+        },
+    });
+
+    if (positions.length === 0) {
+        return [];
+    }
+
+    // Lấy user đang giữ mỗi position
+    const positionIds = positions.map((p) => p.id);
+    const positionHolders = await prisma.user.findMany({
+        where: {
+            positionId: { in: positionIds },
+            employeeStatus: { not: "RESIGNED" },
+        },
+        select: {
+            id: true,
+            name: true,
+            image: true,
+            employeeCode: true,
+            positionId: true,
+        },
+    });
+
+    const holdersByPosition = new Map(
+        positionHolders.map((u) => [u.positionId, u]),
+    );
+
+    return positions.map((p) => ({
+        id: p.id,
+        name: p.name,
+        code: p.code,
+        authority: p.authority,
+        level: p.level,
+        status: p.status,
+        sortOrder: p.sortOrder,
+        description: p.description,
+        minSalary: p.minSalary?.toString() ?? null,
+        maxSalary: p.maxSalary?.toString() ?? null,
+        userCount: p._count.users,
+        holder: holdersByPosition.get(p.id) ?? null,
+    }));
+}
+
+/**
+ * Tạo chức vụ mới cho phòng ban
+ */
+export async function createPositionForDepartment(
+    departmentId: string,
+    data: CreatePositionForDepartmentInput,
+): Promise<{ success: true; id: string } | { success: false; error: string }> {
+    try {
+        const session = await requirePermission(Permission.POSITION_CREATE);
+
+        // Check department exists
+        const dept = await prisma.department.findUnique({
+            where: { id: departmentId },
+        });
+        if (!dept) {
+            return { success: false, error: "Phòng ban không tồn tại" };
+        }
+
+        // Check unique code
+        const existingCode = await prisma.position.findUnique({
+            where: { code: data.code },
+        });
+        if (existingCode) {
+            return { success: false, error: "Mã chức vụ đã tồn tại" };
+        }
+
+        // Check unique authority constraint (MANAGER, DEPUTY only 1 per dept)
+        if (UNIQUE_AUTHORITY_PER_DEPT.includes(data.authority)) {
+            const existingAuth = await prisma.position.findFirst({
+                where: {
+                    departmentId,
+                    authority: data.authority,
+                    status: "ACTIVE",
+                },
+            });
+            if (existingAuth) {
+                const authLabel =
+                    data.authority === "MANAGER" ? "Trưởng phòng" : "Phó phòng";
+                return {
+                    success: false,
+                    error: `Phòng ban đã có chức vụ ${authLabel}. Không thể tạo thêm.`,
+                };
+            }
+        }
+
+        // Get max sortOrder if not provided
+        let sortOrder = data.sortOrder;
+        if (sortOrder === undefined) {
+            const maxOrder = await prisma.position.aggregate({
+                where: { departmentId },
+                _max: { sortOrder: true },
+            });
+            sortOrder = (maxOrder._max.sortOrder ?? 0) + 1;
+        }
+
+        const position = await prisma.position.create({
+            data: {
+                name: data.name,
+                code: data.code,
+                authority: data.authority,
+                departmentId,
+                level: data.level ?? 1,
+                description: data.description,
+                minSalary: data.minSalary,
+                maxSalary: data.maxSalary,
+                sortOrder,
+                status: "ACTIVE",
+            },
+        });
+
+        // Audit log
+        await prisma.auditLog.create({
+            data: {
+                userId: session.user.id,
+                userName: session.user.name,
+                action: "CREATE",
+                entity: "Position",
+                entityId: position.id,
+                newData: { ...data, departmentId },
+                ipAddress: null,
+                userAgent: null,
+            },
+        });
+
+        revalidatePath(`/departments/${departmentId}`);
+        revalidatePath("/positions");
+
+        return { success: true, id: position.id };
+    } catch (err) {
+        console.error("createPositionForDepartment error:", err);
+        return { success: false, error: "Đã xảy ra lỗi khi tạo chức vụ" };
+    }
+}
+
+/**
+ * Cập nhật chức vụ trong phòng ban
+ */
+export async function updatePositionForDepartment(
+    positionId: string,
+    departmentId: string,
+    data: UpdatePositionForDepartmentInput,
+): Promise<{ success: true } | { success: false; error: string }> {
+    try {
+        const session = await requirePermission(Permission.POSITION_EDIT);
+
+        // Check position belongs to department
+        const position = await prisma.position.findFirst({
+            where: { id: positionId, departmentId },
+        });
+        if (!position) {
+            return { success: false, error: "Chức vụ không tồn tại trong phòng ban này" };
+        }
+
+        // Check unique code (if changed)
+        if (data.code && data.code !== position.code) {
+            const existingCode = await prisma.position.findFirst({
+                where: { code: data.code, NOT: { id: positionId } },
+            });
+            if (existingCode) {
+                return { success: false, error: "Mã chức vụ đã tồn tại" };
+            }
+        }
+
+        // Check unique authority constraint if changing authority
+        if (data.authority && data.authority !== position.authority) {
+            if (UNIQUE_AUTHORITY_PER_DEPT.includes(data.authority)) {
+                const existingAuth = await prisma.position.findFirst({
+                    where: {
+                        departmentId,
+                        authority: data.authority,
+                        status: "ACTIVE",
+                        NOT: { id: positionId },
+                    },
+                });
+                if (existingAuth) {
+                    const authLabel =
+                        data.authority === "MANAGER" ? "Trưởng phòng" : "Phó phòng";
+                    return {
+                        success: false,
+                        error: `Phòng ban đã có chức vụ ${authLabel}. Không thể thay đổi.`,
+                    };
+                }
+            }
+        }
+
+        const oldData = {
+            name: position.name,
+            code: position.code,
+            authority: position.authority,
+            level: position.level,
+            description: position.description,
+            minSalary: position.minSalary?.toString() ?? null,
+            maxSalary: position.maxSalary?.toString() ?? null,
+            sortOrder: position.sortOrder,
+            status: position.status,
+        };
+
+        await prisma.position.update({
+            where: { id: positionId },
+            data: {
+                ...(data.name !== undefined && { name: data.name }),
+                ...(data.code !== undefined && { code: data.code }),
+                ...(data.authority !== undefined && { authority: data.authority }),
+                ...(data.level !== undefined && { level: data.level }),
+                ...(data.description !== undefined && { description: data.description }),
+                ...(data.minSalary !== undefined && { minSalary: data.minSalary }),
+                ...(data.maxSalary !== undefined && { maxSalary: data.maxSalary }),
+                ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
+                ...(data.status !== undefined && { status: data.status }),
+            },
+        });
+
+        // Audit log
+        await prisma.auditLog.create({
+            data: {
+                userId: session.user.id,
+                userName: session.user.name,
+                action: "UPDATE",
+                entity: "Position",
+                entityId: positionId,
+                oldData: oldData as object,
+                newData: data as object,
+                ipAddress: null,
+                userAgent: null,
+            },
+        });
+
+        revalidatePath(`/departments/${departmentId}`);
+        revalidatePath("/positions");
+        revalidatePath(`/positions/${positionId}`);
+
+        return { success: true };
+    } catch (err) {
+        console.error("updatePositionForDepartment error:", err);
+        return { success: false, error: "Đã xảy ra lỗi khi cập nhật chức vụ" };
+    }
+}
+
+/**
+ * Xóa chức vụ (soft delete bằng cách đổi status = INACTIVE)
+ */
+export async function deletePositionForDepartment(
+    positionId: string,
+    departmentId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+    try {
+        const session = await requirePermission(Permission.POSITION_DELETE);
+
+        // Check position belongs to department
+        const position = await prisma.position.findFirst({
+            where: { id: positionId, departmentId },
+            include: { _count: { select: { users: true } } },
+        });
+        if (!position) {
+            return { success: false, error: "Chức vụ không tồn tại trong phòng ban này" };
+        }
+
+        // Check if position has active users
+        const activeUsers = await prisma.user.count({
+            where: {
+                positionId,
+                employeeStatus: { not: "RESIGNED" },
+            },
+        });
+
+        if (activeUsers > 0) {
+            return {
+                success: false,
+                error: `Chức vụ đang có ${activeUsers} nhân viên đang làm việc. Vui lòng chuyển nhân viên sang chức vụ khác trước khi xóa.`,
+            };
+        }
+
+        // Soft delete
+        await prisma.position.update({
+            where: { id: positionId },
+            data: { status: "INACTIVE" },
+        });
+
+        // Audit log
+        await prisma.auditLog.create({
+            data: {
+                userId: session.user.id,
+                userName: session.user.name,
+                action: "DELETE",
+                entity: "Position",
+                entityId: positionId,
+                oldData: { status: position.status } as object,
+                ipAddress: null,
+                userAgent: null,
+            },
+        });
+
+        revalidatePath(`/departments/${departmentId}`);
+        revalidatePath("/positions");
+
+        return { success: true };
+    } catch (err) {
+        console.error("deletePositionForDepartment error:", err);
+        return { success: false, error: "Đã xảy ra lỗi khi xóa chức vụ" };
+    }
 }

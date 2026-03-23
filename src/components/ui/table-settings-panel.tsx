@@ -57,7 +57,7 @@ export function TableSettingsPanel({
         <div
             ref={panelRef}
             className={cn(
-                "absolute top-10 right-0 bottom-0 flex flex-col shrink-0 transition-all duration-300 ease-in-out overflow-hidden z-20 bg-background border-l",
+                "absolute top-[69px] right-0 bottom-0 flex flex-col shrink-0 transition-all duration-300 ease-in-out overflow-hidden z-20 bg-background border-l",
                 open ? "w-72" : "w-0 border-0",
             )}
         >
@@ -82,7 +82,8 @@ export function TableSettingsPanel({
                     {hasGeneralToggles && (
                         <>
                             <div className="px-2 min-w-0 flex flex-col">
-                                {setShowEmptyDepartments !== undefined && (
+                                {setShowEmptyDepartments !==
+                                    undefined && (
                                     <div
                                         className={buttonVariants({
                                             variant: "ghost",
@@ -96,7 +97,9 @@ export function TableSettingsPanel({
                                         </Label>
                                         <Switch
                                             id="show-empty-departments"
-                                            checked={showEmptyDepartments}
+                                            checked={
+                                                showEmptyDepartments
+                                            }
                                             onCheckedChange={
                                                 setShowEmptyDepartments
                                             }
@@ -118,7 +121,9 @@ export function TableSettingsPanel({
                                         <Switch
                                             id="wrap-text"
                                             checked={wrapText}
-                                            onCheckedChange={setWrapText}
+                                            onCheckedChange={
+                                                setWrapText
+                                            }
                                         />
                                     </div>
                                 )}
@@ -132,7 +137,9 @@ export function TableSettingsPanel({
                             <span
                                 className="text-xs text-end font-medium text-muted-foreground cursor-pointer hover:underline mb-1"
                                 onClick={() =>
-                                    setColumnVisibility(defaultVisibleColumns)
+                                    setColumnVisibility(
+                                        defaultVisibleColumns,
+                                    )
                                 }
                             >
                                 Ẩn tất cả cột
@@ -157,7 +164,9 @@ export function TableSettingsPanel({
                                             "opacity-50 cursor-not-allowed",
                                         isHidden && "hidden",
                                     )}
-                                    aria-disabled={isDisabled || isHidden}
+                                    aria-disabled={
+                                        isDisabled || isHidden
+                                    }
                                 >
                                     <Label
                                         htmlFor={`column-${option.key}`}
@@ -178,10 +187,13 @@ export function TableSettingsPanel({
                                             ] ?? false
                                         }
                                         onCheckedChange={(checked) =>
-                                            setColumnVisibility((prev) => ({
-                                                ...prev,
-                                                [option.key]: checked,
-                                            }))
+                                            setColumnVisibility(
+                                                (prev) => ({
+                                                    ...prev,
+                                                    [option.key]:
+                                                        checked,
+                                                }),
+                                            )
                                         }
                                         disabled={isDisabled}
                                     />

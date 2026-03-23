@@ -145,6 +145,44 @@ export async function moveEmployeeToDepartment(
 }
 
 /**
+ * Tạo các Position mặc định cho phòng ban
+ */
+async function createDefaultPositionsForDepartment(
+    departmentId: string,
+    deptName: string,
+    deptCode: string,
+) {
+    const positions = [
+        {
+            name: `Trưởng phòng ${deptName}`,
+            code: `${deptCode}_MGR`,
+            authority: "MANAGER",
+            level: 2,
+        },
+        {
+            name: `Phó phòng ${deptName}`,
+            code: `${deptCode}_DPT`,
+            authority: "DEPUTY",
+            level: 3,
+        },
+        {
+            name: `Nhân viên ${deptName}`,
+            code: `${deptCode}_STF`,
+            authority: "STAFF",
+            level: 5,
+        },
+    ];
+
+    await prisma.position.createMany({
+        data: positions.map((p) => ({
+            ...p,
+            departmentId,
+            status: "ACTIVE",
+        })),
+    });
+}
+
+/**
  * Tạo phòng ban mới
  */
 export async function createDepartment(data: {
@@ -169,20 +207,55 @@ export async function createDepartment(data: {
             };
         }
 
-        const created = await prisma.department.create({
-            data: {
-                name: data.name,
-                code: data.code,
-                description: data.description,
-                logo: data.logo,
-                parentId: data.parentId,
-                secondaryParentIds: data.secondaryParentIds || [],
-                status: data.status || "ACTIVE",
-                managerId: data.managerId,
-            },
+        // Dùng transaction để đảm bảo atomicity: tạo department và positions cùng lúc
+        const created = await prisma.$transaction(async (tx) => {
+            const dept = await tx.department.create({
+                data: {
+                    name: data.name,
+                    code: data.code,
+                    description: data.description,
+                    logo: data.logo,
+                    parentId: data.parentId,
+                    secondaryParentIds: data.secondaryParentIds || [],
+                    status: data.status || "ACTIVE",
+                    managerId: data.managerId,
+                },
+            });
+
+            // Tạo các position mặc định cho phòng ban
+            const positions = [
+                {
+                    name: `Trưởng phòng ${data.name}`,
+                    code: `${data.code}_MGR`,
+                    authority: "MANAGER",
+                    level: 2,
+                    departmentId: dept.id,
+                    status: "ACTIVE",
+                },
+                {
+                    name: `Phó phòng ${data.name}`,
+                    code: `${data.code}_DPT`,
+                    authority: "DEPUTY",
+                    level: 3,
+                    departmentId: dept.id,
+                    status: "ACTIVE",
+                },
+                {
+                    name: `Nhân viên ${data.name}`,
+                    code: `${data.code}_STF`,
+                    authority: "STAFF",
+                    level: 5,
+                    departmentId: dept.id,
+                    status: "ACTIVE",
+                },
+            ];
+
+            await tx.position.createMany({ data: positions });
+
+            return dept;
         });
 
-        // Audit log
+        // Audit log (sau transaction để tránh lỗi)
         const session = await requireAuth();
         await prisma.auditLog.create({
             data: {
@@ -380,86 +453,119 @@ export async function applyCompanyStructureTemplate(
             };
         }
 
-        // 1. Safe cleanup
-        // Remove departmentId from all users
-        await prisma.user.updateMany({
-            where: { departmentId: { not: null } },
-            data: { departmentId: null },
-        });
+        // Dùng transaction để đảm bảo atomicity cho toàn bộ quá trình
+        await prisma.$transaction(async (tx) => {
+            // 1. Safe cleanup
+            // Remove departmentId from all users
+            await tx.user.updateMany({
+                where: { departmentId: { not: null } },
+                data: { departmentId: null },
+            });
 
-        // Remove departmentId from all positions
-        await prisma.position.updateMany({
-            where: { departmentId: { not: null } },
-            data: { departmentId: null },
-        });
+            // Remove departmentId from all positions
+            await tx.position.updateMany({
+                where: { departmentId: { not: null } },
+                data: { departmentId: null },
+            });
 
-        // Remove parentId from all departments to avoid foreign key constraints during deletion
-        await prisma.department.updateMany({
-            data: { parentId: null },
-        });
+            // Remove parentId from all departments to avoid foreign key constraints during deletion
+            await tx.department.updateMany({
+                data: { parentId: null },
+            });
 
-        // Delete all departments
-        await prisma.department.deleteMany({});
+            // Delete all departments
+            await tx.department.deleteMany({});
 
-        // 2. Recursive creation function
-        let currentSortOrder = 0;
-        const codeToIdMap = new Map<string, string>();
-        const secondaryLinks: {
-            deptId: string;
-            parentCodes: string[];
-        }[] = [];
+            // 2. Recursive creation function với auto-create positions
+            let currentSortOrder = 0;
+            const codeToIdMap = new Map<string, string>();
+            const secondaryLinks: {
+                deptId: string;
+                parentCodes: string[];
+            }[] = [];
 
-        async function createDepts(
-            depts: TemplateDepartment[],
-            parentId: string | null = null,
-        ) {
-            for (const dept of depts) {
-                const created = await prisma.department.create({
-                    data: {
-                        name: dept.name,
-                        code: dept.code,
-                        logo: dept.logo,
-                        description: dept.description,
-                        status: "ACTIVE",
-                        sortOrder: currentSortOrder++,
-                        parentId: parentId,
-                    },
-                });
+            async function createDepts(
+                depts: TemplateDepartment[],
+                parentId: string | null = null,
+            ) {
+                for (const dept of depts) {
+                    const created = await tx.department.create({
+                        data: {
+                            name: dept.name,
+                            code: dept.code,
+                            logo: dept.logo,
+                            description: dept.description,
+                            status: "ACTIVE",
+                            sortOrder: currentSortOrder++,
+                            parentId: parentId,
+                        },
+                    });
 
-                codeToIdMap.set(created.code, created.id);
+                    codeToIdMap.set(created.code, created.id);
 
-                if (
-                    dept.secondaryParentCodes &&
-                    dept.secondaryParentCodes.length > 0
-                ) {
-                    secondaryLinks.push({
-                        deptId: created.id,
-                        parentCodes: dept.secondaryParentCodes,
+                    // Tạo các position mặc định cho phòng ban
+                    const positions = [
+                        {
+                            name: `Trưởng phòng ${dept.name}`,
+                            code: `${dept.code}_MGR`,
+                            authority: "MANAGER",
+                            level: 2,
+                            departmentId: created.id,
+                            status: "ACTIVE",
+                        },
+                        {
+                            name: `Phó phòng ${dept.name}`,
+                            code: `${dept.code}_DPT`,
+                            authority: "DEPUTY",
+                            level: 3,
+                            departmentId: created.id,
+                            status: "ACTIVE",
+                        },
+                        {
+                            name: `Nhân viên ${dept.name}`,
+                            code: `${dept.code}_STF`,
+                            authority: "STAFF",
+                            level: 5,
+                            departmentId: created.id,
+                            status: "ACTIVE",
+                        },
+                    ];
+
+                    await tx.position.createMany({ data: positions });
+
+                    if (
+                        dept.secondaryParentCodes &&
+                        dept.secondaryParentCodes.length > 0
+                    ) {
+                        secondaryLinks.push({
+                            deptId: created.id,
+                            parentCodes: dept.secondaryParentCodes,
+                        });
+                    }
+
+                    if (dept.children && dept.children.length > 0) {
+                        await createDepts(dept.children, created.id);
+                    }
+                }
+            }
+
+            // 3. Start creation
+            await createDepts(template.departments);
+
+            // 4. Resolve and link secondary parents
+            for (const link of secondaryLinks) {
+                const parentIds = link.parentCodes
+                    .map((code) => codeToIdMap.get(code))
+                    .filter((id): id is string => id !== undefined);
+
+                if (parentIds.length > 0) {
+                    await tx.department.update({
+                        where: { id: link.deptId },
+                        data: { secondaryParentIds: parentIds },
                     });
                 }
-
-                if (dept.children && dept.children.length > 0) {
-                    await createDepts(dept.children, created.id);
-                }
             }
-        }
-
-        // 3. Start creation
-        await createDepts(template.departments);
-
-        // 4. Resolve and link secondary parents
-        for (const link of secondaryLinks) {
-            const parentIds = link.parentCodes
-                .map((code) => codeToIdMap.get(code))
-                .filter((id): id is string => id !== undefined);
-
-            if (parentIds.length > 0) {
-                await prisma.department.update({
-                    where: { id: link.deptId },
-                    data: { secondaryParentIds: parentIds },
-                });
-            }
-        }
+        });
 
         revalidatePath("/org-chart");
         emitToAll("department:template-applied", { templateId });

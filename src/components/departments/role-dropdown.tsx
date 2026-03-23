@@ -1,20 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import {
-    Crown,
-    Shield,
-    User,
-    Check,
-    MoreHorizontal,
-} from "lucide-react";
+    useMutation,
+    useQueryClient,
+    useQuery,
+} from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Crown, Shield, User, MoreHorizontal, Briefcase } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
-    DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -27,43 +23,29 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
-import { updateDepartmentRole } from "@/app/(protected)/departments/actions";
+import {
+    updateDepartmentRole,
+    getDepartmentPositions,
+} from "@/app/(protected)/departments/actions";
 import { Button } from "../ui/button";
+import { useState } from "react";
 
-type DepartmentRole = "HEAD" | "DEPUTY" | "MEMBER";
+interface RoleOption {
+    role: string;
+    label: string;
+    icon: typeof Crown;
+}
 
-const ROLE_CONFIG: Record<
-    DepartmentRole,
-    {
-        label: string;
-        icon: typeof Crown;
-        badgeClass: string;
-    }
-> = {
-    HEAD: {
-        label: "Trưởng phòng",
-        icon: Crown,
-        badgeClass:
-            "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    },
-    DEPUTY: {
-        label: "Phó phòng",
-        icon: Shield,
-        badgeClass:
-            "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-    },
-    MEMBER: {
-        label: "Nhân viên",
-        icon: User,
-        badgeClass:
-            "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-    },
-};
+const roleOptions: RoleOption[] = [
+    { role: "HEAD", label: "Trưởng phòng", icon: Crown },
+    { role: "DEPUTY", label: "Phó phòng", icon: Shield },
+    { role: "MEMBER", label: "Nhân viên", icon: User },
+];
 
 interface RoleDropdownProps {
     employeeId: string;
     currentRole: string;
+    employeePositionId?: string | null;
     departmentId: string;
     employeeName: string;
 }
@@ -71,38 +53,51 @@ interface RoleDropdownProps {
 export function RoleDropdown({
     employeeId,
     currentRole,
+    employeePositionId,
     departmentId,
     employeeName,
 }: RoleDropdownProps) {
     const queryClient = useQueryClient();
     const [confirmTarget, setConfirmTarget] =
-        useState<DepartmentRole | null>(null);
+        useState<string | null>(null);
 
-    const role = (currentRole as DepartmentRole) || "MEMBER";
+    const { data: positions = [] } = useQuery({
+        queryKey: ["department-positions", departmentId],
+        queryFn: () => getDepartmentPositions(departmentId),
+    });
+
+    const role = currentRole || "MEMBER";
 
     const mutation = useMutation({
-        mutationFn: ({ newRole }: { newRole: DepartmentRole }) =>
-            updateDepartmentRole(employeeId, departmentId, newRole),
+        mutationFn: ({ newRole }: { newRole: string }) =>
+            updateDepartmentRole(
+                employeeId,
+                departmentId,
+                newRole as "HEAD" | "DEPUTY" | "MEMBER",
+            ),
         onSuccess: (result) => {
             if (result.success) {
-                toast.success("Cập nhật vai trò thành công");
+                toast.success("Cập nhật chức vụ thành công");
                 queryClient.invalidateQueries({
                     queryKey: ["employees"],
                 });
+                queryClient.invalidateQueries({
+                    queryKey: ["department-positions", departmentId],
+                });
             } else {
                 toast.error(
-                    result.error || "Lỗi khi cập nhật vai trò",
+                    result.error || "Lỗi khi cập nhật chức vụ",
                 );
             }
             setConfirmTarget(null);
         },
         onError: (err) => {
-            toast.error(err.message || "Lỗi khi cập nhật vai trò");
+            toast.error(err.message || "Lỗi khi cập nhật chức vụ");
             setConfirmTarget(null);
         },
     });
 
-    const handleSelect = (newRole: DepartmentRole) => {
+    const handleSelect = (newRole: string) => {
         if (newRole !== role) {
             setConfirmTarget(newRole);
         }
@@ -116,27 +111,76 @@ export function RoleDropdown({
                         <MoreHorizontal className="h-3 w-3" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                    {(
-                        Object.keys(ROLE_CONFIG) as DepartmentRole[]
-                    ).map((r) => {
-                        const cfg = ROLE_CONFIG[r];
-                        const RIcon = cfg.icon;
-                        const isActive = r === role;
+                <DropdownMenuContent align="end" className="w-56">
+                    {/* Hiển thị từ Position nếu có */}
+                    {positions.length > 0 ? (
+                        positions.map((position) => {
+                            const RIcon =
+                                position.authority === "MANAGER" ||
+                                position.authority === "DIRECTOR" ||
+                                position.authority === "EXECUTIVE"
+                                    ? Crown
+                                    : position.authority === "DEPUTY" ||
+                                        position.authority === "TEAM_LEAD"
+                                      ? Shield
+                                      : Briefcase;
+                            const mappedRole =
+                                position.authority === "MANAGER" ||
+                                position.authority === "DIRECTOR"
+                                    ? "HEAD"
+                                    : position.authority === "DEPUTY"
+                                      ? "DEPUTY"
+                                      : "MEMBER";
 
-                        return (
-                            <DropdownMenuCheckboxItem
-                                key={r}
-                                checked={isActive}
-                                onCheckedChange={() =>
-                                    handleSelect(r)
-                                }
-                            >
-                                <RIcon className="size-3.5 shrink-0" />
-                                {cfg.label}
-                            </DropdownMenuCheckboxItem>
-                        );
-                    })}
+                            const isActive = position.id === employeePositionId;
+
+                            return (
+                                <DropdownMenuCheckboxItem
+                                    key={position.id}
+                                    checked={isActive}
+                                    onCheckedChange={(checked) => {
+                                        if (checked && mappedRole !== role) {
+                                            handleSelect(mappedRole);
+                                        }
+                                        if (!checked && isActive) {
+                                            handleSelect("MEMBER");
+                                        }
+                                    }}
+                                >
+                                    <RIcon className="size-3.5 shrink-0 mr-2" />
+                                    <span className="flex flex-col">
+                                        <span className="font-medium">
+                                            {position.name}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground capitalize">
+                                            {position.authority
+                                                .toLowerCase()
+                                                .replace("_", " ")}
+                                        </span>
+                                    </span>
+                                </DropdownMenuCheckboxItem>
+                            );
+                        })
+                    ) : (
+                        /* Fallback: hiển thị roleOptions mặc định khi không có Position */
+                        roleOptions.map((opt) => {
+                            const RIcon = opt.icon;
+                            const isActive = opt.role === role;
+
+                            return (
+                                <DropdownMenuCheckboxItem
+                                    key={opt.role}
+                                    checked={isActive}
+                                    onCheckedChange={() =>
+                                        handleSelect(opt.role)
+                                    }
+                                >
+                                    <RIcon className="size-3.5 shrink-0 mr-2" />
+                                    {opt.label}
+                                </DropdownMenuCheckboxItem>
+                            );
+                        })
+                    )}
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -148,7 +192,8 @@ export function RoleDropdown({
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
-                            {confirmTarget === "HEAD"
+                            {confirmTarget === "HEAD" ||
+                            confirmTarget === "MANAGER"
                                 ? "Xác nhận đặt Trưởng phòng"
                                 : "Xác nhận đặt Phó phòng"}
                         </AlertDialogTitle>
@@ -156,12 +201,14 @@ export function RoleDropdown({
                             <span>
                                 Bạn có chắc muốn đặt{" "}
                                 <strong>{employeeName}</strong> làm{" "}
-                                {confirmTarget === "HEAD"
+                                {confirmTarget === "HEAD" ||
+                                confirmTarget === "MANAGER"
                                     ? "Trưởng phòng"
                                     : "Phó phòng"}
                                 ?
                             </span>
-                            {confirmTarget === "HEAD" ? (
+                            {confirmTarget === "HEAD" ||
+                            confirmTarget === "MANAGER" ? (
                                 <span>
                                     Nhân viên giữ vai trò{" "}
                                     <strong>Trưởng phòng</strong> hiện

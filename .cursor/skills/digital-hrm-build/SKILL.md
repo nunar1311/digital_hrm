@@ -65,7 +65,7 @@ new Date().toLocaleTimeString("vi-VN", {
 
 **Supported timezones:** 27 popular timezones including Asia/Ho_Chi_Minh, Asia/Singapore, Asia/Tokyo, Europe/London, America/New_York
 
-## Current Status (Updated 13/03/2026)
+## Current Status (Updated 23/03/2026)
 
 ### ✅ Completed Modules
 
@@ -91,6 +91,8 @@ new Date().toLocaleTimeString("vi-VN", {
 - **Recruitment** (12 files): Kanban pipeline, candidate management, job postings, interview scheduling, calendar view, reports
 - **Assets**: 6 component files (AssetList, MyAssets, AssetFormDialog, AssetAssignDialog, AssetReturnDialog, AssetDetailSheet)
 - **Offboarding**: 7 files completing (client, table, dialog, detail, sheet, actions, types)
+- **Departments** (12 components, ~5,450 LOC): Department table, tree view, sidebar, detail sheet, toolbar, CRUD dialog, add/move/assign employees, role dropdown, positions section, position form dialog, delete position dialog
+- **Positions** (4 components, ~1,800 LOC): Positions table, position dropdown, position form dialog, positions section inline
 
 ### ❌ Modules To Build
 
@@ -251,8 +253,12 @@ digital_hrm/
 │   │   │   ├── (dashboard)/   # Dashboard overview
 │   │   │   ├── employees/     # Employee management
 │   │   │   ├── contracts/     # Labor contracts
-│   │   │   ├── departments/   # Departments
-│   │   │   ├── attendance/   # Attendance (COMPLETE)
+│   │   │   ├── departments/   # Departments (COMPLETE - 12 files)
+│   │   │   │   ├── departments-client.tsx
+│   │   │   │   ├── departments-client.tsx
+│   │   │   │   ├── actions.ts
+│   │   │   │   └── types.ts
+│   │   │   ├── attendance/    # Attendance (COMPLETE)
 │   │   │   ├── leaves/       # Leave management
 │   │   │   ├── payroll/      # Payroll
 │   │   │   ├── onboarding/   # Onboarding
@@ -269,11 +275,28 @@ digital_hrm/
 │   │   └── api/              # API routes
 │   ├── components/
 │   │   ├── ui/               # 33 shadcn/ui components
-│   │   ├── attendance/       # 8 shared components
-│   │   ├── org-chart/        # 8 components
+│   │   ├── attendance/        # 8 shared components
+│   │   ├── org-chart/         # 8 components
 │   │   ├── recruitment/       # Components
 │   │   ├── assets/           # 6 components
-│   │   └── ...
+│   │   ├── departments/       # 12 components (~5,450 LOC)
+│   │   │   ├── department-table.tsx
+│   │   │   ├── department-tree.tsx
+│   │   │   ├── department-sidebar.tsx
+│   │   │   ├── department-detail-sheet.tsx
+│   │   │   ├── department-toolbar.tsx
+│   │   │   ├── department-positions-section.tsx
+│   │   │   ├── add-employees-dialog.tsx
+│   │   │   ├── move-employees-dialog.tsx
+│   │   │   ├── employee-assign-dialog.tsx
+│   │   │   ├── role-dropdown.tsx
+│   │   │   ├── position-form-dialog.tsx
+│   │   │   └── delete-position-dialog.tsx
+│   │   └── positions/          # 4 components (~1,800 LOC)
+│   │       ├── positions-table.tsx
+│   │       ├── positions-section-inline.tsx
+│   │       ├── position-form-dialog.tsx
+│   │       └── position-dropdown.tsx
 │   ├── lib/
 │   │   ├── auth.ts           # Better Auth config
 │   │   ├── prisma.ts         # Prisma client
@@ -311,26 +334,26 @@ digital_hrm/
 
 ## Module Routes
 
-| Route          | Module      | Status      |
-| -------------- | ----------- | ----------- |
-| `/`            | Dashboard   | To build    |
-| `/org-chart`   | Org Chart   | ✅ Complete |
-| `/departments` | Departments |             |
-| `/employees`   | Employees   | To build    |
-| `/contracts`   | Contracts   | To build    |
-| `/attendance`  | Attendance  | ✅ Complete |
-| `/leaves`      | Leaves      | To build    |
-| `/payroll`     | Payroll     | To build    |
-| `/onboarding`  | Onboarding  | To build    |
-| `/offboarding` | Offboarding | ✅ Complete |
-| `/recruitment` | Recruitment | ✅ Complete |
-| `/training`    | Training    | To build    |
-| `/performance` | Performance | To build    |
-| `/rewards`     | Rewards     | To build    |
-| `/assets`      | Assets      | ✅ Complete |
-| `/reports`     | Reports     | To build    |
-| `/ess`         | ESS         | To build    |
-| `/settings`    | Settings    | Partial     |
+| Route            | Module       | Status          |
+| ---------------- | ------------ | --------------- |
+| `/`              | Dashboard    | To build        |
+| `/org-chart`     | Org Chart    | ✅ Complete     |
+| `/departments`   | Departments  | ✅ Complete      |
+| `/employees`     | Employees    | To build        |
+| `/contracts`     | Contracts    | To build        |
+| `/attendance`    | Attendance   | ✅ Complete     |
+| `/leaves`        | Leaves       | To build        |
+| `/payroll`       | Payroll      | To build        |
+| `/onboarding`    | Onboarding   | To build        |
+| `/offboarding`   | Offboarding  | ✅ Complete     |
+| `/recruitment`   | Recruitment  | ✅ Complete     |
+| `/training`      | Training     | To build        |
+| `/performance`   | Performance  | To build        |
+| `/rewards`       | Rewards      | To build        |
+| `/assets`        | Assets       | ✅ Complete     |
+| `/reports`       | Reports      | To build        |
+| `/ess`           | ESS          | To build        |
+| `/settings`      | Settings     | Partial         |
 
 ## Feature List (84 Features)
 
