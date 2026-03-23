@@ -171,6 +171,7 @@ model Department {
   positions          Position[]
   users              User[]
   payroll_records    PayrollRecord[] @relation("DepartmentToPayrollRecord")
+  payrollRecord      PayrollRecord?  @relation("PayrollRecordDepartment")
 
   @@map("departments")
 }
@@ -793,7 +794,7 @@ model PayrollRecord {
   id              String                @id @default(cuid())
   month           Int
   year            Int
-  departmentId    String?
+  departmentId    String?               @unique
   status          String                @default("DRAFT")
   totalEmployees  Int                   @default(0)
   totalGross      Decimal               @default(0) @db.Decimal(18, 0)
@@ -811,6 +812,7 @@ model PayrollRecord {
   details         PayrollRecordDetail[]
   payslips        Payslip[]
   departments     Department[]          @relation("DepartmentToPayrollRecord")
+  department      Department?           @relation("PayrollRecordDepartment", fields: [departmentId], references: [id])
 
   @@unique([month, year, departmentId])
   @@index([status])
