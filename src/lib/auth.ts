@@ -66,6 +66,8 @@ export const auth = betterAuth({
         window: 60,
         max: 100,
     },
+    // ---Trust host ---
+    trustHost: true,
 
     // ─── Trusted origins ───
     trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL!],

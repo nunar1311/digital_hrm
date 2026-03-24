@@ -7,128 +7,116 @@ import { GridStackWidget } from "gridstack";
 import { ComponentType } from "react";
 
 export interface ComponentDataType<T = object> {
-    name: string;
-    props: T;
+  name: string;
+  props: T;
 }
 
 type ParsedComponentData = ComponentDataType & {
-    error: unknown;
-    metaHash: string;
+  error: unknown;
+  metaHash: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ComponentMap = Record<string, ComponentType<any>>;
 
 function parseWeightMetaToComponentData(
-    meta: GridStackWidget,
-    cache: Map<string, ParsedComponentData>,
+  meta: GridStackWidget,
+  cache: Map<string, ParsedComponentData>,
 ): ComponentDataType & { error: unknown } {
-    const cacheKey = meta.id ?? "";
-    const metaHash = meta.content ?? "";
-    const cached = cache.get(cacheKey);
-    // Ensure componentData is immutable between renders
-    if (cached && cached.metaHash === metaHash) return cached;
+  const cacheKey = meta.id ?? "";
+  const metaHash = meta.content ?? "";
+  const cached = cache.get(cacheKey);
+  // Ensure componentData is immutable between renders
+  if (cached && cached.metaHash === metaHash) return cached;
 
-    let error = null;
-    let name = "";
-    let props = {};
-    try {
-        if (meta.content) {
-            const result = JSON.parse(meta.content) as {
-                name: string;
-                props: object;
-            };
-            name = result.name;
-            props = result.props;
-        }
-    } catch (e) {
-        error = e;
+  let error = null;
+  let name = "";
+  let props = {};
+  try {
+    if (meta.content) {
+      const result = JSON.parse(meta.content) as {
+        name: string;
+        props: object;
+      };
+      name = result.name;
+      props = result.props;
     }
-    const parsed: ParsedComponentData = {
-        name,
-        props,
-        error,
-        metaHash,
-    };
-    cache.set(cacheKey, parsed);
-    return parsed;
+  } catch (e) {
+    error = e;
+  }
+  const parsed: ParsedComponentData = {
+    name,
+    props,
+    error,
+    metaHash,
+  };
+  cache.set(cacheKey, parsed);
+  return parsed;
 }
 
 type WidgetMemoProps = {
-    id: string;
-    componentData: ComponentDataType;
-    widgetContainer: HTMLElement;
-    WidgetComponent: ComponentType<unknown>;
-    editMode: boolean;
+  id: string;
+  componentData: ComponentDataType;
+  widgetContainer: HTMLElement;
+  WidgetComponent: ComponentType<any>;
+  editMode: boolean;
 };
 
 const WidgetMemo = memo(
-    ({
-        id,
-        componentData,
-        widgetContainer,
-        WidgetComponent,
-        editMode,
-    }: WidgetMemoProps) => {
-        return (
-            <GridStackWidgetContext.Provider
-                value={{ widget: { id } }}
-            >
-                {createPortal(
-                    <WidgetComponent
-                        {...componentData.props}
-                        editMode={editMode}
-                    />,
-                    widgetContainer,
-                )}
-            </GridStackWidgetContext.Provider>
-        );
-    },
+  ({
+    id,
+    componentData,
+    widgetContainer,
+    WidgetComponent,
+    editMode,
+  }: WidgetMemoProps) => {
+    return (
+      <GridStackWidgetContext.Provider value={{ widget: { id } }}>
+        {createPortal(
+          <WidgetComponent {...componentData.props} editMode={editMode} />,
+          widgetContainer,
+        )}
+      </GridStackWidgetContext.Provider>
+    );
+  },
 );
 WidgetMemo.displayName = "WidgetMemo";
 
-export function GridStackRender(props: {
-    componentMap: ComponentMap;
-}) {
-    const { _rawWidgetMetaMap } = useGridStackContext();
-    const { getWidgetContainer, editMode } =
-        useGridStackRenderContext();
-    const parsedCache = useRef<Map<string, ParsedComponentData>>(
-        new Map(),
-    );
+export function GridStackRender(props: { componentMap: ComponentMap }) {
+  const { _rawWidgetMetaMap } = useGridStackContext();
+  const { getWidgetContainer, editMode } = useGridStackRenderContext();
+  const parsedCache = useRef<Map<string, ParsedComponentData>>(new Map());
 
-    return (
-        <>
-            {Array.from(_rawWidgetMetaMap.value.entries()).map(
-                // eslint-disable-next-line react-hooks/refs
-                ([id, meta]) => {
-                    const componentData =
-                        parseWeightMetaToComponentData(
-                            meta,
-                            parsedCache.current,
-                        );
+  return (
+    <>
+      {Array.from(_rawWidgetMetaMap.value.entries()).map(
+        // eslint-disable-next-line react-hooks/refs
+        ([id, meta]) => {
+          const componentData = parseWeightMetaToComponentData(
+            meta,
+            parsedCache.current,
+          );
 
-                    const WidgetComponent =
-                        props.componentMap[componentData.name];
+          const WidgetComponent = props.componentMap[componentData.name];
 
-                    const widgetContainer = getWidgetContainer(id);
+          const widgetContainer = getWidgetContainer(id);
 
-                    if (!widgetContainer) {
-                        return null;
-                    }
+          if (!widgetContainer) {
+            return null;
+          }
 
-                    return (
-                        <WidgetMemo
-                            id={id}
-                            key={id}
-                            componentData={componentData}
-                            widgetContainer={widgetContainer}
-                            WidgetComponent={WidgetComponent}
-                            editMode={editMode}
-                        />
-                    );
-                },
-            )}
-        </>
-    );
+          return (
+            <WidgetMemo
+              id={id}
+              key={id}
+              componentData={componentData}
+              widgetContainer={widgetContainer}
+              WidgetComponent={WidgetComponent}
+              editMode={editMode}
+            />
+          );
+        },
+      )}
+    </>
+  );
 }

@@ -100,7 +100,8 @@ export function calculateIncomeTaxDetailed(taxableIncome: number): IncomeTaxResu
         taxableIncome,
         taxAmount: Math.max(0, taxAmount),
         appliedRate: appliedBracket?.rate || 0,
-        bracketMax: appliedBracket?.max === Infinity ? null : appliedBracket?.max,
+        // bracketMax: appliedBracket?.max === Infinity ? null : appliedBracket?.max,
+        bracketMax: 0
     };
 }
 

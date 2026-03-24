@@ -13,7 +13,7 @@ const PUBLIC_PATHS = [
 ];
 const STATIC_PREFIXES = ["/_next", "/favicon.ico", "/api/auth"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // 1. Bỏ qua static files

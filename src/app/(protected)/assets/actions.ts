@@ -492,7 +492,7 @@ export async function assignAsset(data: z.infer<typeof assignSchema>) {
         userName: assignedUser?.name || "",
         assignedBy: session.user.id,
         assignedByName: session.user.name,
-        assignDate: assignment.assignDate.toISOString(),
+        assignDate: assignment.assignDate,
         expectedReturn: assignment.expectedReturn?.toISOString(),
     });
     emitToUser(validated.userId, "asset:assigned", {
@@ -502,7 +502,7 @@ export async function assignAsset(data: z.infer<typeof assignSchema>) {
         userName: assignedUser?.name || "",
         assignedBy: session.user.id,
         assignedByName: session.user.name,
-        assignDate: assignment.assignDate.toISOString(),
+        assignDate: assignment.assignDate,
         expectedReturn: assignment.expectedReturn?.toISOString(),
     });
 
@@ -581,7 +581,7 @@ export async function returnAsset(data: z.infer<typeof returnSchema>) {
         userName: assignedUser?.name || "",
         returnedBy: session.user.id,
         returnedByName: session.user.name,
-        returnDate: new Date().toISOString(),
+        returnDate: new Date(),
         condition: validated.condition || "GOOD",
     });
     emitToUser(assignment.userId, "asset:returned", {
@@ -591,7 +591,7 @@ export async function returnAsset(data: z.infer<typeof returnSchema>) {
         userName: assignedUser?.name || "",
         returnedBy: session.user.id,
         returnedByName: session.user.name,
-        returnDate: new Date().toISOString(),
+        returnDate: new Date(),
         condition: validated.condition || "GOOD",
     });
 

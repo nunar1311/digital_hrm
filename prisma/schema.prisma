@@ -74,8 +74,97 @@ model User {
   position                 Position?                @relation(fields: [positionId], references: [id])
   profileUpdateRequests    ProfileUpdateRequest[]
   administrativeRequests   AdministrativeRequest[]
+  workHistories            WorkHistory[]
+  rewards                  Reward[]
+  emergencyContacts        EmergencyContact[]
+  dependents               Dependent[]
+  timelineEvents           EmployeeTimeline[]
 
   @@map("users")
+}
+
+// ==================== HỒ SƠ 360° ====================
+
+model WorkHistory {
+  id          String    @id @default(cuid())
+  userId      String
+  company     String
+  position    String
+  startDate   DateTime
+  endDate     DateTime?
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("work_histories")
+}
+
+model Reward {
+  id           String    @id @default(cuid())
+  userId       String
+  type         String    @default("REWARD") // REWARD | DISCIPLINE
+  title        String
+  description  String?
+  amount       Decimal?  @db.Decimal(15, 0)
+  decisionDate DateTime
+  decisionNo   String?
+  status       String    @default("APPROVED") // PENDING | APPROVED | REJECTED
+  approvedBy   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@map("rewards")
+}
+
+model EmergencyContact {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  relationship String
+  phone        String
+  address      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("emergency_contacts")
+}
+
+model Dependent {
+  id           String    @id @default(cuid())
+  userId       String
+  name         String
+  relationship String    // SPOUSE | CHILD | PARENT
+  dateOfBirth  DateTime?
+  nationalId   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("dependents")
+}
+
+model EmployeeTimeline {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime
+  type        String   // HIRED, PROMOTED, DEPARTMENT_CHANGE, CONTRACT_RENEWED, SALARY_CHANGE, LEAVE, REWARD, DISCIPLINE, TRAINING, RESIGNED
+  title       String
+  description String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([date])
+  @@map("employee_timelines")
 }
 
 model Session {

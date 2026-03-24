@@ -45,8 +45,8 @@ export const defaultLightThemeStyles: ThemeStyles["light"] = {
     "chart-2": "oklch(0.704 0.191 22.216)",
     "chart-3": "oklch(0.552 0.016 285.938)",
     "chart-4": "oklch(0.205 0 0)",
-    border: "oklch(0.922 0 0)",
-    input: "oklch(0.922 0 0)",
+    "chart-5": "oklch(0.922 0 0)",
+    "chart-6": "oklch(0.704 0.191 22.216)",
 };
 
 // Default dark theme styles
@@ -70,8 +70,8 @@ export const defaultDarkThemeStyles: ThemeStyles["dark"] = {
     "chart-2": "oklch(0.704 0.191 22.216)",
     "chart-3": "oklch(0.552 0.016 285.938)",
     "chart-4": "oklch(0.205 0 0)",
-    border: "oklch(0.269 0 0)",
-    input: "oklch(0.269 0 0)",
+    "chart-5": "oklch(0.922 0 0)",
+    "chart-6": "oklch(0.704 0.191 22.216)",
 };
 
 // Default theme state

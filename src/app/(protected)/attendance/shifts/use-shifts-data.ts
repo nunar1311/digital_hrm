@@ -138,8 +138,8 @@ export interface UseShiftsDataReturn {
         mutate: (params: {
             userId: string;
             workCycleId: string;
-            cycleStartDate: string;
-            endDate?: string;
+            cycleStartDate: Date;
+            endDate?: Date;
         }) => void;
         isPending: boolean;
     };
@@ -674,14 +674,14 @@ export function useShiftsData({
         mutationFn: (params: {
             userId: string;
             shiftId: string;
-            startDate: string;
-            endDate?: string;
+            startDate: Date;
+            endDate?: Date;
         }) =>
             assignShift(
                 params.userId,
                 params.shiftId,
                 params.startDate,
-                params.endDate,
+                params.endDate ? new Date(params.endDate) : undefined,
             ),
         onSuccess: () => {
             toast.success("Phân ca thành công");
@@ -718,8 +718,8 @@ export function useShiftsData({
         mutationFn: (params: {
             userId: string;
             workCycleId: string;
-            cycleStartDate: string;
-            endDate?: string;
+            cycleStartDate: Date;
+            endDate?: Date;
         }) =>
             assignWorkCycle(
                 params.userId,
@@ -742,8 +742,8 @@ export function useShiftsData({
         mutationFn: (params: {
             departmentId: string;
             workCycleId: string;
-            cycleStartDate: string;
-            endDate?: string;
+            cycleStartDate: Date;
+            endDate?: Date;
         }) =>
             assignWorkCycleToDepartment(
                 params.departmentId,
@@ -834,18 +834,17 @@ export function useShiftsData({
             userId: values.userId,
             shiftId: values.shiftId,
             startDate: values.startDate,
-            endDate: values.endDate || undefined,
+            endDate: values.endDate,
         });
     };
 
     const handleQuickAssign = (shiftId: string) => {
         if (!quickAssignCell) return;
-        const dateStr = format(quickAssignCell.date, "yyyy-MM-dd");
         assignMutation.mutate({
             userId: quickAssignCell.userId,
             shiftId,
-            startDate: dateStr,
-            endDate: dateStr,
+            startDate: quickAssignCell.date,
+            endDate: quickAssignCell.date,
         });
     };
 
@@ -854,8 +853,8 @@ export function useShiftsData({
         // Use selected user from calendar if available, otherwise use form value
         const userId = assignCycleUserId || values.userId;
         const startDate = assignCycleDate
-            ? format(assignCycleDate, "yyyy-MM-dd")
-            : values.startDate;
+            ? assignCycleDate
+            : new Date(values.startDate);
 
         assignCycleMutation.mutate({
             userId,
