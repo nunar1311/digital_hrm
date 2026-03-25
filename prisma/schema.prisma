@@ -8,77 +8,78 @@ datasource db {
 }
 
 model User {
-  id                       String                    @id @default(cuid())
-  name                     String
-  email                    String                    @unique
-  emailVerified            Boolean                   @default(false)
-  image                    String?
-  createdAt                DateTime                  @default(now())
-  updatedAt                DateTime                  @updatedAt
-  employeeCode             String?                   @unique
-  departmentId             String?
-  departmentRole           String?                   @default("MEMBER")
-  hrmRole                  String                    @default("EMPLOYEE")
-  address                  String?
-  avatar                   String?
-  bankAccount              String?
-  bankBranch               String?
-  bankName                 String?
-  dateOfBirth              DateTime?
-  educationLevel           String?
-  employeeStatus           String?                   @default("ACTIVE")
-  employmentType           String?                   @default("FULL_TIME")
-  ethnicity                String?                   @default("Kinh")
-  fullName                 String?
-  gender                   String?
-  healthInsuranceNo        String?
-  hireDate                 DateTime?
-  positionId               String?
-  major                    String?
-  managerId                String?
-  maritalStatus            String?
-  nationalId               String?
-  nationalIdDate           DateTime?
-  nationalIdPlace          String?
-  nationality              String?                   @default("Việt Nam")
-  notes                    String?
-  permanentAddress         String?
-  personalEmail            String?
-  phone                    String?
-  probationEnd             DateTime?
-  religion                 String?
-  resignDate               DateTime?
-  socialInsuranceNo        String?
-  taxCode                  String?
-  university               String?
-  accounts                 Account[]
-  attendanceSummaries      AttendanceSummary[]
-  attendances              Attendance[]
-  managedDepartments       Department[]              @relation("DeptManager")
-  employeeSalaryComponents EmployeeSalaryComponent[]
-  members                  Member[]
-  offboardings             Offboarding[]
-  overtimeRequests         OvertimeRequest[]
-  payrollRecordDetails     PayrollRecordDetail[]
-  payslips                 Payslip[]
-  salaries                 Salary?
-  sessions                 Session[]
-  shiftAssignments         ShiftAssignment[]
-  department               Department?               @relation(fields: [departmentId], references: [id])
-  manager                  User?                     @relation("ManagerReports", fields: [managerId], references: [id])
-  reports                  User[]                    @relation("ManagerReports")
-  notifications            Notification[]
-  notificationPreference   NotificationPreference?   @relation(fields: [notificationPreferenceId], references: [id])
-  notificationPreferenceId String?
-  emailLogs                EmailLog[]
-  position                 Position?                @relation(fields: [positionId], references: [id])
-  profileUpdateRequests    ProfileUpdateRequest[]
-  administrativeRequests   AdministrativeRequest[]
-  workHistories            WorkHistory[]
-  rewards                  Reward[]
-  emergencyContacts        EmergencyContact[]
-  dependents               Dependent[]
-  timelineEvents           EmployeeTimeline[]
+  id                           String                        @id @default(cuid())
+  name                         String
+  email                        String                        @unique
+  emailVerified                Boolean                       @default(false)
+  image                        String?
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
+  employeeCode                 String?                       @unique
+  departmentId                 String?
+  departmentRole               String?                       @default("MEMBER")
+  hrmRole                      String                        @default("EMPLOYEE")
+  address                      String?
+  avatar                       String?
+  bankAccount                  String?
+  bankBranch                   String?
+  bankName                     String?
+  dateOfBirth                  DateTime?
+  educationLevel               String?
+  employeeStatus               String?                       @default("ACTIVE")
+  employmentType               String?                       @default("FULL_TIME")
+  ethnicity                    String?                       @default("Kinh")
+  fullName                     String?
+  gender                       String?
+  healthInsuranceNo            String?
+  hireDate                     DateTime?
+  positionId                   String?
+  major                        String?
+  managerId                    String?
+  maritalStatus                String?
+  nationalId                   String?
+  nationalIdDate               DateTime?
+  nationalIdPlace              String?
+  nationality                  String?                       @default("Việt Nam")
+  notes                        String?
+  permanentAddress             String?
+  personalEmail                String?
+  phone                        String?
+  probationEnd                 DateTime?
+  religion                     String?
+  resignDate                   DateTime?
+  socialInsuranceNo            String?
+  taxCode                      String?
+  university                   String?
+  accounts                     Account[]
+  attendanceSummaries          AttendanceSummary[]
+  attendances                  Attendance[]
+  managedDepartments           Department[]                  @relation("DeptManager")
+  employeeSalaryComponents     EmployeeSalaryComponent[]
+  members                      Member[]
+  offboardings                 Offboarding[]
+  overtimeRequests             OvertimeRequest[]
+  payrollRecordDetails         PayrollRecordDetail[]
+  payslips                     Payslip[]
+  salaries                     Salary?
+  sessions                     Session[]
+  shiftAssignments             ShiftAssignment[]
+  department                   Department?                   @relation(fields: [departmentId], references: [id])
+  manager                      User?                         @relation("ManagerReports", fields: [managerId], references: [id])
+  reports                      User[]                        @relation("ManagerReports")
+  notifications                Notification[]
+  notificationPreference       NotificationPreference?       @relation(fields: [notificationPreferenceId], references: [id])
+  notificationPreferenceId     String?
+  emailLogs                    EmailLog[]
+  position                     Position?                     @relation(fields: [positionId], references: [id])
+  profileUpdateRequests        ProfileUpdateRequest[]
+  administrativeRequests       AdministrativeRequest[]
+  attendanceAdjustmentRequests AttendanceAdjustmentRequest[]
+  workHistories                WorkHistory[]
+  rewards                      Reward[]
+  emergencyContacts            EmergencyContact[]
+  dependents                   Dependent[]
+  timelineEvents               EmployeeTimeline[]
 
   @@map("users")
 }
@@ -102,19 +103,19 @@ model WorkHistory {
 }
 
 model Reward {
-  id           String    @id @default(cuid())
+  id           String   @id @default(cuid())
   userId       String
-  type         String    @default("REWARD") // REWARD | DISCIPLINE
+  type         String   @default("REWARD") // REWARD | DISCIPLINE
   title        String
   description  String?
-  amount       Decimal?  @db.Decimal(15, 0)
+  amount       Decimal? @db.Decimal(15, 0)
   decisionDate DateTime
   decisionNo   String?
-  status       String    @default("APPROVED") // PENDING | APPROVED | REJECTED
+  status       String   @default("APPROVED") // PENDING | APPROVED | REJECTED
   approvedBy   String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([type])
@@ -140,7 +141,7 @@ model Dependent {
   id           String    @id @default(cuid())
   userId       String
   name         String
-  relationship String    // SPOUSE | CHILD | PARENT
+  relationship String // SPOUSE | CHILD | PARENT
   dateOfBirth  DateTime?
   nationalId   String?
   createdAt    DateTime  @default(now())
@@ -155,7 +156,7 @@ model EmployeeTimeline {
   id          String   @id @default(cuid())
   userId      String
   date        DateTime
-  type        String   // HIRED, PROMOTED, DEPARTMENT_CHANGE, CONTRACT_RENEWED, SALARY_CHANGE, LEAVE, REWARD, DISCIPLINE, TRAINING, RESIGNED
+  type        String // HIRED, PROMOTED, DEPARTMENT_CHANGE, CONTRACT_RENEWED, SALARY_CHANGE, LEAVE, REWARD, DISCIPLINE, TRAINING, RESIGNED
   title       String
   description String?
   metadata    Json?
@@ -326,35 +327,36 @@ model ShiftAssignment {
 }
 
 model Attendance {
-  id               String                 @id @default(cuid())
-  userId           String
-  date             DateTime               @db.Date
-  shiftId          String?
-  checkIn          DateTime?
-  checkOut         DateTime?
-  checkInMethod    String?
-  checkOutMethod   String?
-  checkInLocation  String?
-  checkOutLocation String?
-  checkInPhoto     String?
-  checkOutPhoto    String?
-  checkInDeviceId  String?
-  checkOutDeviceId String?
-  checkInVerified  Boolean                @default(false)
-  checkOutVerified Boolean                @default(false)
-  workHours        Float?
-  overtimeHours    Float?
-  lateMinutes      Int                    @default(0)
-  earlyMinutes     Int                    @default(0)
-  status           String                 @default("PRESENT")
-  note             String?
-  isLocked         Boolean                @default(false)
-  source           String                 @default("MANUAL")
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-  explanation      AttendanceExplanation?
-  shift            Shift?                 @relation(fields: [shiftId], references: [id])
-  user             User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String                       @id @default(cuid())
+  userId            String
+  date              DateTime                     @db.Date
+  shiftId           String?
+  checkIn           DateTime?
+  checkOut          DateTime?
+  checkInMethod     String?
+  checkOutMethod    String?
+  checkInLocation   String?
+  checkOutLocation  String?
+  checkInPhoto      String?
+  checkOutPhoto     String?
+  checkInDeviceId   String?
+  checkOutDeviceId  String?
+  checkInVerified   Boolean                      @default(false)
+  checkOutVerified  Boolean                      @default(false)
+  workHours         Float?
+  overtimeHours     Float?
+  lateMinutes       Int                          @default(0)
+  earlyMinutes      Int                          @default(0)
+  status            String                       @default("PRESENT")
+  note              String?
+  isLocked          Boolean                      @default(false)
+  source            String                       @default("MANUAL")
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  explanation       AttendanceExplanation?
+  adjustmentRequest AttendanceAdjustmentRequest?
+  shift             Shift?                       @relation(fields: [shiftId], references: [id])
+  user              User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
   @@map("attendances")
@@ -978,8 +980,8 @@ model Payslip {
   insurance       Json          @default("{}")
   tax             Json          @default("{}")
   status          String        @default("GENERATED")
-  isSecure        Boolean       @default(true)  // Yêu cầu mật khẩu để xem
-  passwordHash    String?       // Mật khẩu băm ( bcrypt )
+  isSecure        Boolean       @default(true) // Yêu cầu mật khẩu để xem
+  passwordHash    String? // Mật khẩu băm ( bcrypt )
   viewedAt        DateTime?
   downloadedAt    DateTime?
   signedBy        String?
@@ -1000,22 +1002,22 @@ model Payslip {
 // ==================== DYNAMIC FORMULA SYSTEM ====================
 
 model PayrollFormula {
-  id            String                  @id @default(cuid())
-  code          String                  @unique
+  id            String   @id @default(cuid())
+  code          String   @unique
   name          String
   description   String?
-  formulaType   String                  @default("EARNING") // EARNING, DEDUCTION, TAX, INSURANCE, NET
-  category      String?                 // ALLOWANCE, BONUS, OVERTIME, DISCIPLINE, etc.
-  expression    String                  // Công thức Excel-like: baseSalary + allowance * coefficient
-  variables     Json                    @default("[]") // [{name: "baseSalary", source: "SALARY"}, ...]
-  outputField   String?                 // Trường xuất ra: overtimeAmount, allowanceAmount, etc.
-  priority      Int                     @default(0) // Thứ tự tính toán
-  isActive      Boolean                 @default(true)
-  isSystem      Boolean                 @default(false) // Công thức hệ thống, không thể xóa
-  effectiveDate DateTime                @default(now())
+  formulaType   String   @default("EARNING") // EARNING, DEDUCTION, TAX, INSURANCE, NET
+  category      String? // ALLOWANCE, BONUS, OVERTIME, DISCIPLINE, etc.
+  expression    String // Công thức Excel-like: baseSalary + allowance * coefficient
+  variables     Json     @default("[]") // [{name: "baseSalary", source: "SALARY"}, ...]
+  outputField   String? // Trường xuất ra: overtimeAmount, allowanceAmount, etc.
+  priority      Int      @default(0) // Thứ tự tính toán
+  isActive      Boolean  @default(true)
+  isSystem      Boolean  @default(false) // Công thức hệ thống, không thể xóa
+  effectiveDate DateTime @default(now())
   createdBy     String?
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([formulaType])
   @@index([isActive])
@@ -1023,35 +1025,35 @@ model PayrollFormula {
 }
 
 model PayrollFormulaVariable {
-  id          String   @id @default(cuid())
-  code        String   @unique
-  name        String
-  description String?
-  dataType    String   @default("NUMBER") // NUMBER, PERCENT, BOOLEAN, TEXT
-  source      String   @default("CONFIG") // CONFIG, ATTENDANCE, SALARY, COMPONENT, TAX, INSURANCE, CONSTANT
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  description  String?
+  dataType     String   @default("NUMBER") // NUMBER, PERCENT, BOOLEAN, TEXT
+  source       String   @default("CONFIG") // CONFIG, ATTENDANCE, SALARY, COMPONENT, TAX, INSURANCE, CONSTANT
   defaultValue Decimal? @db.Decimal(15, 0)
-  minValue    Decimal? @db.Decimal(15, 0)
-  maxValue    Decimal? @db.Decimal(15, 0)
-  unit        String?  // VND, %, hours, days
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  minValue     Decimal? @db.Decimal(15, 0)
+  maxValue     Decimal? @db.Decimal(15, 0)
+  unit         String? // VND, %, hours, days
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([source])
   @@map("payroll_formula_variables")
 }
 
 model PayrollApproval {
-  id              String        @id @default(cuid())
+  id              String    @id @default(cuid())
   payrollRecordId String
-  action          String        // CREATED, SUBMITTED, APPROVED, REJECTED, PAID
-  status          String        @default("PENDING") // PENDING, APPROVED, REJECTED
+  action          String // CREATED, SUBMITTED, APPROVED, REJECTED, PAID
+  status          String    @default("PENDING") // PENDING, APPROVED, REJECTED
   note            String?
   approverId      String?
   approverName    String?
   approvedAt      DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([payrollRecordId])
   @@map("payroll_approvals")
@@ -1062,10 +1064,10 @@ model PayrollApproval {
 model InsuranceCap {
   id            String   @id @default(cuid())
   year          Int
-  insuranceType String   // SOCIAL, HEALTH, UNEMPLOYMENT
+  insuranceType String // SOCIAL, HEALTH, UNEMPLOYMENT
   minSalary     Decimal  @db.Decimal(15, 0)
   maxSalary     Decimal  @db.Decimal(15, 0)
-  region        String?  // Vùng lương tối thiểu theo vùng
+  region        String? // Vùng lương tối thiểu theo vùng
   isActive      Boolean  @default(true)
   effectiveDate DateTime @default(now())
   createdAt     DateTime @default(now())
@@ -1079,13 +1081,13 @@ model InsuranceCap {
 // ==================== STANDARD WORK DAYS ====================
 
 model StandardWorkDays {
-  id       String   @id @default(cuid())
-  year     Int
-  month    Int
-  workDays Float    @default(22) // Số ngày làm việc chuẩn tháng
-  workHours Float   @default(176) // Số giờ làm việc chuẩn tháng (22 * 8)
-  holidays Json     @default("[]") // Danh sách ngày nghỉ lễ trong tháng
-  note     String?
+  id        String   @id @default(cuid())
+  year      Int
+  month     Int
+  workDays  Float    @default(22) // Số ngày làm việc chuẩn tháng
+  workHours Float    @default(176) // Số giờ làm việc chuẩn tháng (22 * 8)
+  holidays  Json     @default("[]") // Danh sách ngày nghỉ lễ trong tháng
+  note      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1228,4 +1230,90 @@ model AdministrativeRequest {
   @@index([userId])
   @@index([status])
   @@map("administrative_requests")
+}
+
+// ==================== ATTENDANCE APPROVAL PROCESS ====================
+
+model AttendanceApprovalProcess {
+  id                    String                   @id @default(cuid())
+  name                  String                   @default("Quy trình duyệt chấm công")
+  isActive              Boolean                  @default(true)
+  // Advanced settings
+  sendEmailReminder     Boolean                  @default(false)
+  skipDuplicateApprover Boolean                  @default(true)
+  skipSelfApprover      Boolean                  @default(true)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  steps                 AttendanceApprovalStep[]
+
+  @@map("attendance_approval_processes")
+}
+
+model AttendanceApprovalStep {
+  id        String                    @id @default(cuid())
+  processId String
+  process   AttendanceApprovalProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  stepOrder Int
+  stepType  String // "APPROVER" | "CONDITION"
+
+  // Loại người duyệt (khi stepType = APPROVER)
+  approverType      String? // "DIRECT_MANAGER" | "MANAGER_LEVEL" | "DEPT_HEAD" | "CUSTOM_LIST"
+  managerLevel      Int? // Cấp quản lý (1, 2, 3...)
+  approvalMethod    String? // "ALL_MUST_APPROVE" | "FIRST_APPROVES"
+  customApproverIds String? // JSON array of user IDs
+
+  // Điều kiện (khi stepType = CONDITION)
+  conditionType     String? // "DEPARTMENT" | "WORKGROUP" | "PAYROLL_COMPANY" | "OTHER"
+  conditionField    String?
+  conditionOperator String?
+  conditionValues   String? // JSON array of values
+
+  // Priority cho conditions (null = "OTHER" fallback)
+  priority Int?
+
+  // Điều kiện bỏ qua
+  skipIfNoApproverFound Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([processId])
+  @@index([stepOrder])
+  @@map("attendance_approval_steps")
+}
+
+model AttendanceAdjustmentRequest {
+  id           String     @id @default(cuid())
+  attendanceId String @unique
+  attendance   Attendance @relation(fields: [attendanceId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+
+  // Thông tin điều chỉnh
+  date         DateTime @db.Date
+  checkInTime  String?
+  checkOutTime String?
+  reason       String
+  attachment   String?
+
+  // Trạng thái & luồng duyệt
+  status      String @default("PENDING") // PENDING | APPROVED | REJECTED | AUTO_APPROVED | CANCELLED
+  currentStep Int    @default(1)
+
+  // Approval chain
+  approvalChain Json? // [{stepOrder, approverId, approverName, action, actionAt, note}]
+
+  // Rejection info
+  rejectedBy     String?
+  rejectedAt     DateTime?
+  rejectedReason String?
+
+  // Auto-approve reason
+  autoApprovedReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("attendance_adjustment_requests")
 }

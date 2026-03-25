@@ -402,6 +402,103 @@ export interface AttendanceRecordsResult {
     pageSize: number;
 }
 
+// ─── Attendance Approval Process Types ──────────────────────────────
+
+export type ApproverType =
+    | "DIRECT_MANAGER"
+    | "MANAGER_LEVEL"
+    | "DEPT_HEAD"
+    | "CUSTOM_LIST";
+
+export type ApprovalMethod = "ALL_MUST_APPROVE" | "FIRST_APPROVES";
+
+export type ConditionType =
+    | "DEPARTMENT"
+    | "WORKGROUP"
+    | "PAYROLL_COMPANY"
+    | "OTHER";
+
+export type StepType = "APPROVER" | "CONDITION";
+
+export interface ApprovalStep {
+    id?: string;
+    stepOrder: number;
+    stepType: StepType;
+    // Approver config
+    approverType?: ApproverType;
+    managerLevel?: number;
+    approvalMethod?: ApprovalMethod;
+    customApproverIds?: string[];
+    // Condition config
+    conditionType?: ConditionType;
+    conditionField?: string;
+    conditionOperator?: string;
+    conditionValues?: string[];
+    priority?: number;
+    // Skip logic
+    skipIfNoApproverFound?: boolean;
+}
+
+export interface AdvancedSettings {
+    sendEmailReminder: boolean;
+    skipDuplicateApprover: boolean;
+    skipSelfApprover: boolean;
+}
+
+export interface ApprovalProcessConfig {
+    id?: string;
+    name: string;
+    isActive: boolean;
+    steps: ApprovalStep[];
+    advancedSettings: AdvancedSettings;
+}
+
+// ─── Attendance Adjustment Request Types ──────────────────────────
+
+export type AdjustmentStatus =
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+    | "AUTO_APPROVED"
+    | "CANCELLED";
+
+export interface ApprovalChainEntry {
+    stepOrder: number;
+    approverId: string;
+    approverName: string;
+    action?: "PENDING" | "APPROVED" | "REJECTED" | "SKIPPED";
+    actionAt?: string;
+    note?: string;
+}
+
+export interface AttendanceAdjustmentRequest {
+    id: string;
+    attendanceId: string;
+    userId: string;
+    userName: string;
+    userAvatar?: string;
+    departmentName: string;
+    date: string;
+    checkInTime?: string;
+    checkOutTime?: string;
+    reason: string;
+    attachment?: string;
+    status: AdjustmentStatus;
+    currentStep: number;
+    approvalChain: ApprovalChainEntry[];
+    rejectedBy?: string;
+    rejectedAt?: string;
+    rejectedReason?: string;
+    autoApprovedReason?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface AdjustmentRequestsPage {
+    items: AttendanceAdjustmentRequest[];
+    nextCursor: string | null;
+}
+
 // ─── Attendance Statistics ─---
 
 export interface AttendanceStats {

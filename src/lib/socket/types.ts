@@ -77,6 +77,41 @@ export interface ExplanationApprovedEvent {
     status: string;
 }
 
+// === Attendance Adjustment Events ===
+
+export interface AdjustmentRequestedEvent {
+    requestId: string;
+    userId: string;
+    userName: string;
+    date: string;
+    attendanceId: string;
+    status: string;
+}
+
+export interface AdjustmentApprovedEvent {
+    requestId: string;
+    userId: string;
+    approvedBy: string;
+    approvedByName: string;
+    stepOrder: number;
+    status: string;
+}
+
+export interface AdjustmentRejectedEvent {
+    requestId: string;
+    userId: string;
+    rejectedBy: string;
+    rejectedByName: string;
+    reason: string;
+    stepOrder: number;
+}
+
+export interface AdjustmentAutoApprovedEvent {
+    requestId: string;
+    userId: string;
+    reason: string;
+}
+
 // === Shift Events ===
 
 export interface ShiftUpdatedEvent {
@@ -249,6 +284,21 @@ export interface ServerToClientEvents {
         data: ExplanationSubmittedEvent,
     ) => void;
     "explanation:approved": (data: ExplanationApprovedEvent) => void;
+    "attendance:adjustment:requested": (
+        data: AdjustmentRequestedEvent,
+    ) => void;
+    "attendance:adjustment:pending": (
+        data: AdjustmentApprovedEvent,
+    ) => void;
+    "attendance:adjustment:approved": (
+        data: AdjustmentApprovedEvent,
+    ) => void;
+    "attendance:adjustment:rejected": (
+        data: AdjustmentRejectedEvent,
+    ) => void;
+    "attendance:adjustment:auto-approved": (
+        data: AdjustmentAutoApprovedEvent,
+    ) => void;
     "shift:updated": (data: ShiftUpdatedEvent) => void;
     "shift:assigned": (data: ShiftAssignedEvent) => void;
     "config:updated": (data: ConfigUpdatedEvent) => void;
@@ -285,6 +335,11 @@ export const SOCKET_EVENTS = {
     ATTENDANCE_CHECK_IN: "attendance:check-in",
     ATTENDANCE_CHECK_OUT: "attendance:check-out",
     ATTENDANCE_UPDATED: "attendance:updated",
+    ATTENDANCE_ADJUSTMENT_REQUESTED: "attendance:adjustment:requested",
+    ATTENDANCE_ADJUSTMENT_PENDING: "attendance:adjustment:pending",
+    ATTENDANCE_ADJUSTMENT_APPROVED: "attendance:adjustment:approved",
+    ATTENDANCE_ADJUSTMENT_REJECTED: "attendance:adjustment:rejected",
+    ATTENDANCE_ADJUSTMENT_AUTO_APPROVED: "attendance:adjustment:auto-approved",
     OVERTIME_REQUESTED: "overtime:requested",
     OVERTIME_APPROVED: "overtime:approved",
     OVERTIME_MANAGER_APPROVED: "overtime:manager-approved",

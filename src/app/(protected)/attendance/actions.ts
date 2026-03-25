@@ -8,9 +8,19 @@ import {
 import { Permission } from "@/lib/rbac/permissions";
 import { hasAnyPermission } from "@/lib/rbac/check-access";
 import { prisma } from "@/lib/prisma";
+
+export async function getDepartmentOptions() {
+    const departments = await prisma.department.findMany({
+        where: { status: "ACTIVE" },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+    });
+    return departments.map((d) => ({ value: d.id, label: d.name }));
+}
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { emitToAll, emitToUser } from "@/lib/socket/server";
+import { SOCKET_EVENTS } from "@/lib/socket";
 
 // ─── HELPERS ───
 
@@ -3293,4 +3303,963 @@ export async function sendShiftReminderNotification(data: {
         shiftName: data.shiftName,
         shiftStartTime: data.shiftStartTime,
     });
+}
+
+// ─── ATTENDANCE APPROVAL PROCESS ───
+
+export async function getAttendanceApprovalProcess() {
+    const session = await requirePermission(Permission.ATTENDANCE_APPROVAL_CONFIG);
+
+    const process = await prisma.attendanceApprovalProcess.findFirst({
+        include: {
+            steps: {
+                orderBy: { stepOrder: "asc" },
+            },
+        },
+    });
+
+    if (!process) return null;
+
+    return {
+        id: process.id,
+        name: process.name,
+        isActive: process.isActive,
+        sendEmailReminder: process.sendEmailReminder,
+        skipDuplicateApprover: process.skipDuplicateApprover,
+        skipSelfApprover: process.skipSelfApprover,
+        steps: process.steps.map((s) => ({
+            id: s.id,
+            stepOrder: s.stepOrder,
+            stepType: s.stepType,
+            approverType: s.approverType,
+            managerLevel: s.managerLevel,
+            approvalMethod: s.approvalMethod,
+            customApproverIds: s.customApproverIds
+                ? JSON.parse(s.customApproverIds)
+                : undefined,
+            conditionType: s.conditionType,
+            conditionField: s.conditionField,
+            conditionOperator: s.conditionOperator,
+            conditionValues: s.conditionValues
+                ? JSON.parse(s.conditionValues)
+                : undefined,
+            priority: s.priority,
+            skipIfNoApproverFound: s.skipIfNoApproverFound,
+        })),
+    };
+}
+
+export async function saveAttendanceApprovalProcess(data: {
+    name?: string;
+    steps: Array<{
+        stepOrder: number;
+        stepType: string;
+        approverType?: string;
+        managerLevel?: number;
+        approvalMethod?: string;
+        customApproverIds?: string[];
+        conditionType?: string;
+        conditionField?: string;
+        conditionOperator?: string;
+        conditionValues?: string[];
+        priority?: number;
+        skipIfNoApproverFound?: boolean;
+    }>;
+    advancedSettings?: {
+        sendEmailReminder?: boolean;
+        skipDuplicateApprover?: boolean;
+        skipSelfApprover?: boolean;
+    };
+}) {
+    const session = await requirePermission(Permission.ATTENDANCE_APPROVAL_CONFIG);
+
+    const existing = await prisma.attendanceApprovalProcess.findFirst();
+
+    const processData = {
+        name: data.name ?? "Quy trình duyệt chấm công",
+        isActive: true,
+        sendEmailReminder: data.advancedSettings?.sendEmailReminder ?? false,
+        skipDuplicateApprover:
+            data.advancedSettings?.skipDuplicateApprover ?? true,
+        skipSelfApprover: data.advancedSettings?.skipSelfApprover ?? true,
+    };
+
+    const process = existing
+        ? await prisma.attendanceApprovalProcess.update({
+              where: { id: existing.id },
+              data: processData,
+          })
+        : await prisma.attendanceApprovalProcess.create({
+              data: processData,
+          });
+
+    // Delete existing steps
+    await prisma.attendanceApprovalStep.deleteMany({
+        where: { processId: process.id },
+    });
+
+    // Create new steps
+    await prisma.attendanceApprovalStep.createMany({
+        data: data.steps.map((s) => ({
+            processId: process.id,
+            stepOrder: s.stepOrder,
+            stepType: s.stepType,
+            approverType: s.approverType ?? null,
+            managerLevel: s.managerLevel ?? null,
+            approvalMethod: s.approvalMethod ?? null,
+            customApproverIds: s.customApproverIds
+                ? JSON.stringify(s.customApproverIds)
+                : null,
+            conditionType: s.conditionType ?? null,
+            conditionField: s.conditionField ?? null,
+            conditionOperator: s.conditionOperator ?? null,
+            conditionValues: s.conditionValues
+                ? JSON.stringify(s.conditionValues)
+                : null,
+            priority: s.priority ?? null,
+            skipIfNoApproverFound: s.skipIfNoApproverFound ?? false,
+        })),
+    });
+
+    revalidatePath("/attendance/approval-process");
+    return { success: true, id: process.id };
+}
+
+// ─── ATTENDANCE ADJUSTMENT REQUEST ───
+
+const createAdjustmentSchema = z.object({
+    attendanceId: z.string().min(1, "ID chấm công không hợp lệ"),
+    date: z.string().min(1, "Ngày không hợp lệ"),
+    checkInTime: z.string().optional(),
+    checkOutTime: z.string().optional(),
+    reason: z.string().min(5, "Lý do phải có ít nhất 5 ký tự"),
+    attachment: z.string().optional(),
+});
+
+export async function createAttendanceAdjustmentRequest(data: {
+    attendanceId: string;
+    date: string;
+    checkInTime?: string;
+    checkOutTime?: string;
+    reason: string;
+    attachment?: string;
+}) {
+    const session = await requirePermission(
+        Permission.ATTENDANCE_ADJUSTMENT_CREATE,
+    );
+
+    const validated = createAdjustmentSchema.parse(data);
+
+    // Get attendance record
+    const attendance = await prisma.attendance.findUnique({
+        where: { id: validated.attendanceId },
+        include: {
+            user: {
+                include: { department: true, manager: true },
+            },
+        },
+    });
+
+    if (!attendance) {
+        throw new Error("Bản ghi chấm công không tồn tại");
+    }
+
+    if (attendance.userId !== session.user.id) {
+        const role = extractRole(session);
+        const canApprove = hasAnyPermission(role, [
+            Permission.ATTENDANCE_APPROVAL_APPROVE,
+            Permission.ATTENDANCE_APPROVAL_CONFIG,
+        ]);
+        if (!canApprove) {
+            throw new Error("Bạn không có quyền tạo yêu cầu cho nhân viên khác");
+        }
+    }
+
+    // Check if there's already a pending or approved adjustment request
+    const existingRequest =
+        await prisma.attendanceAdjustmentRequest.findFirst({
+            where: {
+                attendanceId: validated.attendanceId,
+                status: { in: ["PENDING", "APPROVED"] },
+            },
+        });
+
+    if (existingRequest) {
+        throw new Error(
+            "Đã có yêu cầu điều chỉnh đang chờ duyệt hoặc đã được duyệt cho bản ghi này",
+        );
+    }
+
+    // Get approval process
+    const process = await prisma.attendanceApprovalProcess.findFirst({
+        where: { isActive: true },
+        include: { steps: { orderBy: { stepOrder: "asc" } } },
+    });
+
+    let status = "PENDING";
+    let approvalChain: Array<{
+        stepOrder: number;
+        approverId: string;
+        approverName: string;
+        action: string;
+    }> = [];
+    let autoApprovedReason: string | null = null;
+
+    if (!process || process.steps.length === 0) {
+        // Auto-approve if no process configured
+        status = "AUTO_APPROVED";
+        autoApprovedReason = "Không có quy trình duyệt được thiết lập";
+    } else {
+        // Resolve approvers
+        const resolvedChain = await resolveAdjustmentApprovers(
+            attendance.user,
+            process.steps,
+            session,
+            process.skipSelfApprover,
+            process.skipDuplicateApprover,
+        );
+
+        if (resolvedChain.length === 0) {
+            status = "AUTO_APPROVED";
+            autoApprovedReason = "Không tìm thấy người duyệt phù hợp";
+        } else {
+            approvalChain = resolvedChain;
+        }
+    }
+
+    const request = await prisma.attendanceAdjustmentRequest.create({
+        data: {
+            attendanceId: validated.attendanceId,
+            userId: session.user.id,
+            date: new Date(validated.date),
+            checkInTime: validated.checkInTime,
+            checkOutTime: validated.checkOutTime,
+            reason: validated.reason,
+            attachment: validated.attachment,
+            status,
+            approvalChain: approvalChain.length > 0 ? approvalChain : undefined,
+            autoApprovedReason,
+        },
+        include: {
+            user: {
+                include: { department: true },
+            },
+        },
+    });
+
+    // If auto-approved, update attendance record
+    if (status === "AUTO_APPROVED") {
+        const updateData: Record<string, unknown> = {};
+        if (validated.checkInTime) {
+            const [h, m] = validated.checkInTime.split(":").map(Number);
+            updateData.checkIn = new Date(
+                new Date(validated.date).setHours(h, m, 0, 0),
+            );
+        }
+        if (validated.checkOutTime) {
+            const [h, m] = validated.checkOutTime.split(":").map(Number);
+            updateData.checkOut = new Date(
+                new Date(validated.date).setHours(h, m, 0, 0),
+            );
+        }
+        if (Object.keys(updateData).length > 0) {
+            await prisma.attendance.update({
+                where: { id: validated.attendanceId },
+                data: updateData,
+            });
+        }
+
+        emitToUser(request.userId, SOCKET_EVENTS.ATTENDANCE_ADJUSTMENT_AUTO_APPROVED, {
+            requestId: request.id,
+            userId: request.userId,
+            reason: autoApprovedReason || "",
+        });
+    } else {
+        // Notify approvers
+        for (const entry of approvalChain) {
+            emitToUser(entry.approverId, SOCKET_EVENTS.ATTENDANCE_ADJUSTMENT_REQUESTED, {
+                requestId: request.id,
+                userId: request.userId,
+                userName: request.user.name || "Unknown",
+                date: validated.date,
+                attendanceId: validated.attendanceId,
+                status: "PENDING",
+            });
+        }
+    }
+
+    emitToUser(request.userId, SOCKET_EVENTS.ATTENDANCE_ADJUSTMENT_REQUESTED, {
+        requestId: request.id,
+        userId: request.userId,
+        userName: request.user.name || "Unknown",
+        date: validated.date,
+        attendanceId: validated.attendanceId,
+        status,
+    });
+
+    revalidatePath("/attendance/approval-process");
+    return request;
+}
+
+async function resolveAdjustmentApprovers(
+    user: {
+        id: string;
+        name: string | null;
+        departmentId: string | null;
+        managerId: string | null;
+    },
+    steps: Array<{
+        stepOrder: number;
+        stepType: string;
+        approverType: string | null;
+        managerLevel: number | null;
+        approvalMethod: string | null;
+        customApproverIds: string | null;
+        conditionType: string | null;
+        conditionValues: string | null;
+        priority: number | null;
+        skipIfNoApproverFound: boolean;
+    }>,
+    session: { user: { id: string; name?: string | null } },
+    skipSelf: boolean,
+    skipDuplicate: boolean,
+): Promise<
+    Array<{
+        stepOrder: number;
+        approverId: string;
+        approverName: string;
+        action: string;
+    }>
+> {
+    const chain: Array<{
+        stepOrder: number;
+        approverId: string;
+        approverName: string;
+        action: string;
+    }> = [];
+    const addedApproverIds = new Set<string>();
+
+    for (const step of steps) {
+        if (step.stepType === "CONDITION") {
+            // Check if user matches condition
+            const values = step.conditionValues
+                ? JSON.parse(step.conditionValues)
+                : [];
+
+            if (values.length === 0) continue;
+
+            const matches = await checkUserMatchesCondition(
+                user.id,
+                step.conditionType || "",
+                values,
+            );
+
+            if (!matches) {
+                // Skip this step and its children
+                continue;
+            }
+        }
+
+        if (step.stepType === "APPROVER") {
+            const approvers = await findApproversForStep(user, step);
+
+            if (approvers.length === 0) {
+                if (step.skipIfNoApproverFound) {
+                    chain.push({
+                        stepOrder: step.stepOrder,
+                        approverId: "SKIPPED",
+                        approverName: "Bỏ qua - không tìm thấy người duyệt",
+                        action: "SKIPPED",
+                    });
+                }
+                continue;
+            }
+
+            for (const approver of approvers) {
+                // Skip self
+                if (skipSelf && approver.id === user.id) continue;
+
+                // Skip duplicate
+                if (skipDuplicate && addedApproverIds.has(approver.id)) continue;
+
+                addedApproverIds.add(approver.id);
+                chain.push({
+                    stepOrder: step.stepOrder,
+                    approverId: approver.id,
+                    approverName: approver.name,
+                    action: "PENDING",
+                });
+            }
+        }
+    }
+
+    return chain;
+}
+
+async function findApproversForStep(
+    user: {
+        id: string;
+        departmentId: string | null;
+        managerId: string | null;
+    },
+    step: {
+        approverType: string | null;
+        managerLevel: number | null;
+        customApproverIds: string | null;
+    },
+): Promise<Array<{ id: string; name: string }>> {
+    switch (step.approverType) {
+        case "DIRECT_MANAGER": {
+            if (!user.managerId) return [];
+            const manager = await prisma.user.findUnique({
+                where: { id: user.managerId },
+                select: { id: true, name: true },
+            });
+            return manager ? [manager] : [];
+        }
+
+        case "MANAGER_LEVEL": {
+            const level = step.managerLevel ?? 1;
+            const approvers: Array<{ id: string; name: string }> = [];
+            let currentUserId: string | null = user.id;
+            let currentLevel = 0;
+
+            while (currentUserId && currentLevel < level) {
+                const u: { id: string; name: string | null; managerId: string | null } | null =
+                    await prisma.user.findUnique({
+                        where: { id: currentUserId },
+                        select: { id: true, name: true, managerId: true },
+                    });
+                if (!u || !u.managerId) break;
+
+                const manager: { id: string; name: string | null } | null =
+                    await prisma.user.findUnique({
+                        where: { id: u.managerId },
+                        select: { id: true, name: true },
+                    });
+                approvers.push({
+                    id: u.managerId,
+                    name: manager?.name || "Unknown",
+                });
+                currentUserId = u.managerId;
+                currentLevel++;
+            }
+
+            return approvers;
+        }
+
+        case "DEPT_HEAD": {
+            if (!user.departmentId) return [];
+            const dept = await prisma.department.findUnique({
+                where: { id: user.departmentId },
+                select: { managerId: true, manager: { select: { id: true, name: true } } },
+            });
+            return dept?.manager ? [dept.manager] : [];
+        }
+
+        case "CUSTOM_LIST": {
+            const ids = step.customApproverIds
+                ? JSON.parse(step.customApproverIds)
+                : [];
+            if (!ids.length) return [];
+            const users = await prisma.user.findMany({
+                where: { id: { in: ids } },
+                select: { id: true, name: true },
+            });
+            return users;
+        }
+
+        default:
+            return [];
+    }
+}
+
+async function checkUserMatchesCondition(
+    userId: string,
+    conditionType: string,
+    values: string[],
+): Promise<boolean> {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            departmentId: true,
+            positionId: true,
+        },
+    });
+
+    if (!user) return false;
+
+    switch (conditionType) {
+        case "DEPARTMENT":
+            return user.departmentId
+                ? values.includes(user.departmentId)
+                : false;
+        case "WORKGROUP": {
+            // TODO: cần field workGroupId trong User model để filter
+            // Hiện tại tạm return true - developer cập nhật khi cần
+            return true;
+        }
+        case "PAYROLL_COMPANY": {
+            // TODO: cần field payrollCompanyId trong User model để filter
+            // Hiện tại tạm return true - developer cập nhật khi cần
+            return true;
+        }
+        case "OTHER":
+        default:
+            return true; // OTHER = fallback, luôn match
+    }
+}
+
+export async function approveAttendanceAdjustment(
+    requestId: string,
+    stepOrder: number,
+    note?: string,
+) {
+    const session = await requirePermission(
+        Permission.ATTENDANCE_APPROVAL_APPROVE,
+    );
+
+    const request = await prisma.attendanceAdjustmentRequest.findUnique({
+        where: { id: requestId },
+    });
+
+    if (!request) {
+        throw new Error("Yêu cầu không tồn tại");
+    }
+
+    if (request.status !== "PENDING") {
+        throw new Error("Yêu cầu không còn ở trạng thái chờ duyệt");
+    }
+
+    const chain = (request.approvalChain as Array<{
+        stepOrder: number;
+        approverId: string;
+        approverName: string;
+        action: string;
+        actionAt?: string;
+        note?: string;
+    }>) || [];
+
+    const currentEntry = chain.find(
+        (e) => e.stepOrder === stepOrder && e.approverId === session.user.id,
+    );
+
+    if (!currentEntry) {
+        throw new Error("Bạn không phải là người duyệt cho bước này");
+    }
+
+    // Update chain entry
+    currentEntry.action = "APPROVED";
+    currentEntry.actionAt = new Date().toISOString();
+    if (note) currentEntry.note = note;
+
+    // Check if all approvers for this step have approved
+    const stepEntries = chain.filter((e) => e.stepOrder === stepOrder);
+    const allApproved = stepEntries.every((e) => e.action === "APPROVED");
+
+    if (!allApproved) {
+        // Not all approved yet
+        await prisma.attendanceAdjustmentRequest.update({
+            where: { id: requestId },
+            data: { approvalChain: chain },
+        });
+
+        emitToUser(request.userId, SOCKET_EVENTS.ATTENDANCE_ADJUSTMENT_PENDING, {
+            requestId,
+            userId: request.userId,
+            approvedBy: session.user.id,
+            approvedByName: session.user.name || "Unknown",
+            stepOrder,
+            status: "PENDING",
+        });
+
+        revalidatePath("/attendance/approval-process");
+        return { success: true, status: "PENDING" };
+    }
+
+    // All approvers for this step have approved
+    // Find next step
+    const nextStepEntries = chain.filter(
+        (e) => e.stepOrder === stepOrder + 1 && e.action === "PENDING",
+    );
+
+    if (nextStepEntries.length === 0) {
+        // No more steps - request is fully approved
+        const updated = await prisma.attendanceAdjustmentRequest.update({
+            where: { id: requestId },
+            data: {
+                status: "APPROVED",
+                approvalChain: chain,
+            },
+        });
+
+        // Update attendance record
+        const attendance = await prisma.attendance.findUnique({
+            where: { id: request.attendanceId },
+        });
+
+        if (attendance) {
+            const updateData: Record<string, unknown> = {};
+            if (request.checkInTime) {
+                const [h, m] = request.checkInTime.split(":").map(Number);
+                updateData.checkIn = new Date(
+                    new Date(request.date).setHours(h, m, 0, 0),
+                );
+            }
+            if (request.checkOutTime) {
+                const [h, m] = request.checkOutTime.split(":").map(Number);
+                updateData.checkOut = new Date(
+                    new Date(request.date).setHours(h, m, 0, 0),
+                );
+            }
+            if (Object.keys(updateData).length > 0) {
+                await prisma.attendance.update({
+                    where: { id: request.attendanceId },
+                    data: updateData,
+                });
+            }
+        }
+
+        emitToUser(request.userId, SOCKET_EVENTS.ATTENDANCE_ADJUSTMENT_APPROVED, {
+            requestId,
+            userId: request.userId,
+            approvedBy: session.user.id,
+            approvedByName: session.user.name || "Unknown",
+            stepOrder,
+            status: "APPROVED",
+        });
+
+        revalidatePath("/attendance/approval-process");
+        return { success: true, status: "APPROVED" };
+    }
+
+    // Move to next step
+    await prisma.attendanceAdjustmentRequest.update({
+        where: { id: requestId },
+        data: {
+            currentStep: stepOrder + 1,
+            approvalChain: chain,
+        },
+    });
+
+    // Notify next step approvers
+    for (const entry of nextStepEntries) {
+        emitToUser(entry.approverId, SOCKET_EVENTS.ATTENDANCE_ADJUSTMENT_PENDING, {
+            requestId,
+            userId: request.userId,
+            approvedBy: session.user.id,
+            approvedByName: session.user.name || "Unknown",
+            stepOrder: stepOrder + 1,
+            status: "PENDING",
+        });
+    }
+
+    emitToUser(request.userId, SOCKET_EVENTS.ATTENDANCE_ADJUSTMENT_APPROVED, {
+        requestId,
+        userId: request.userId,
+        approvedBy: session.user.id,
+        approvedByName: session.user.name || "Unknown",
+        stepOrder,
+        status: "PENDING",
+    });
+
+    revalidatePath("/attendance/approval-process");
+    return { success: true, status: "PENDING" };
+}
+
+export async function rejectAttendanceAdjustment(
+    requestId: string,
+    stepOrder: number,
+    reason: string,
+) {
+    const session = await requirePermission(
+        Permission.ATTENDANCE_APPROVAL_APPROVE,
+    );
+
+    const request = await prisma.attendanceAdjustmentRequest.findUnique({
+        where: { id: requestId },
+    });
+
+    if (!request) {
+        throw new Error("Yêu cầu không tồn tại");
+    }
+
+    if (request.status !== "PENDING") {
+        throw new Error("Yêu cầu không còn ở trạng thái chờ duyệt");
+    }
+
+    const chain = (request.approvalChain as Array<{
+        stepOrder: number;
+        approverId: string;
+        approverName: string;
+        action: string;
+        actionAt?: string;
+        note?: string;
+    }>) || [];
+
+    const currentEntry = chain.find(
+        (e) => e.stepOrder === stepOrder && e.approverId === session.user.id,
+    );
+
+    if (!currentEntry) {
+        throw new Error("Bạn không phải là người duyệt cho bước này");
+    }
+
+    currentEntry.action = "REJECTED";
+    currentEntry.actionAt = new Date().toISOString();
+    currentEntry.note = reason;
+
+    await prisma.attendanceAdjustmentRequest.update({
+        where: { id: requestId },
+        data: {
+            status: "REJECTED",
+            rejectedBy: session.user.id,
+            rejectedAt: new Date(),
+            rejectedReason: reason,
+            approvalChain: chain,
+        },
+    });
+
+    emitToUser(request.userId, SOCKET_EVENTS.ATTENDANCE_ADJUSTMENT_REJECTED, {
+        requestId,
+        userId: request.userId,
+        rejectedBy: session.user.id,
+        rejectedByName: session.user.name || "Unknown",
+        reason,
+        stepOrder,
+    });
+
+    revalidatePath("/attendance/approval-process");
+    return { success: true, status: "REJECTED" };
+}
+
+export async function cancelAttendanceAdjustmentRequest(requestId: string) {
+    const session = await requireAuth();
+
+    const request = await prisma.attendanceAdjustmentRequest.findUnique({
+        where: { id: requestId },
+    });
+
+    if (!request) {
+        throw new Error("Yêu cầu không tồn tại");
+    }
+
+    if (request.userId !== session.user.id) {
+        throw new Error("Bạn không có quyền hủy yêu cầu này");
+    }
+
+    if (request.status !== "PENDING") {
+        throw new Error("Chỉ có thể hủy yêu cầu đang chờ duyệt");
+    }
+
+    await prisma.attendanceAdjustmentRequest.update({
+        where: { id: requestId },
+        data: { status: "CANCELLED" },
+    });
+
+    revalidatePath("/attendance/approval-process");
+    return { success: true };
+}
+
+export async function getAttendanceAdjustments(params?: {
+    status?: string;
+    userId?: string;
+    cursor?: string;
+    pageSize?: number;
+}) {
+    const session = await requireAuth();
+    const role = extractRole(session);
+    const pageSize = params?.pageSize ?? 20;
+
+    const canViewAll = hasAnyPermission(role, [
+        Permission.ATTENDANCE_APPROVAL_VIEW,
+        Permission.ATTENDANCE_APPROVAL_CONFIG,
+    ]);
+    const canApprove = hasAnyPermission(role, [
+        Permission.ATTENDANCE_APPROVAL_APPROVE,
+    ]);
+
+    // Build filter
+    const where: Record<string, unknown> = {};
+    if (params?.status) where.status = params.status;
+
+    if (canViewAll) {
+        // Can see everything — optionally filter by specific userId
+        if (params?.userId) {
+            where.userId = params.userId;
+        }
+    } else {
+        // Non-config users: can only see their own requests
+        // Note: Approver filtering (requests pending their approval) is done
+        // in-memory after fetching to avoid expensive JSON queries in Prisma
+        where.userId = session.user.id;
+    }
+
+    const requests = await prisma.attendanceAdjustmentRequest.findMany({
+        where,
+        include: {
+            user: {
+                include: { department: true },
+            },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: params?.cursor ? 1 : 0,
+        take: pageSize + 1,
+    });
+
+    const hasMore = requests.length > pageSize;
+    const items = hasMore ? requests.slice(0, -1) : requests;
+
+    return {
+        items: items.map((r) => ({
+            id: r.id,
+            attendanceId: r.attendanceId,
+            userId: r.userId,
+            userName: r.user.name || "Unknown",
+            userAvatar: r.user.image,
+            departmentName: r.user.department?.name || "N/A",
+            date: r.date.toISOString(),
+            checkInTime: r.checkInTime || undefined,
+            checkOutTime: r.checkOutTime || undefined,
+            reason: r.reason,
+            attachment: r.attachment || undefined,
+            status: r.status as "PENDING" | "APPROVED" | "REJECTED" | "AUTO_APPROVED" | "CANCELLED",
+            currentStep: r.currentStep,
+            approvalChain: (r.approvalChain as Array<{
+                stepOrder: number;
+                approverId: string;
+                approverName: string;
+                action?: string;
+                actionAt?: string;
+                note?: string;
+            }>) || [],
+            rejectedBy: r.rejectedBy || undefined,
+            rejectedAt: r.rejectedAt?.toISOString() || undefined,
+            rejectedReason: r.rejectedReason || undefined,
+            autoApprovedReason: r.autoApprovedReason || undefined,
+            createdAt: r.createdAt.toISOString(),
+            updatedAt: r.updatedAt.toISOString(),
+        })),
+        nextCursor: hasMore ? items[items.length - 1].id : null,
+    };
+}
+
+export async function getAttendanceAdjustmentRequest(id: string) {
+    const session = await requireAuth();
+    const role = extractRole(session);
+
+    const canViewAll = hasAnyPermission(role, [
+        Permission.ATTENDANCE_APPROVAL_VIEW,
+        Permission.ATTENDANCE_APPROVAL_CONFIG,
+    ]);
+
+    const request = await prisma.attendanceAdjustmentRequest.findUnique({
+        where: { id },
+        include: {
+            user: {
+                include: { department: true },
+            },
+        },
+    });
+
+    if (!request) {
+        throw new Error("Yêu cầu không tồn tại");
+    }
+
+    if (!canViewAll && request.userId !== session.user.id) {
+        // Check if user is an approver
+        const chain = (request.approvalChain as Array<{
+            approverId: string;
+        }>) || [];
+        const isApprover = chain.some((e) => e.approverId === session.user.id);
+        if (!isApprover) {
+            throw new Error("Bạn không có quyền xem yêu cầu này");
+        }
+    }
+
+    return {
+        id: request.id,
+        attendanceId: request.attendanceId,
+        userId: request.userId,
+        userName: request.user.name || "Unknown",
+        userAvatar: request.user.image,
+        departmentName: request.user.department?.name || "N/A",
+        date: request.date.toISOString(),
+        checkInTime: request.checkInTime || undefined,
+        checkOutTime: request.checkOutTime || undefined,
+        reason: request.reason,
+        attachment: request.attachment || undefined,
+        status: request.status as "PENDING" | "APPROVED" | "REJECTED" | "AUTO_APPROVED" | "CANCELLED",
+        currentStep: request.currentStep,
+        approvalChain: (request.approvalChain as Array<{
+            stepOrder: number;
+            approverId: string;
+            approverName: string;
+            action?: string;
+            actionAt?: string;
+            note?: string;
+        }>) || [],
+        rejectedBy: request.rejectedBy || undefined,
+        rejectedAt: request.rejectedAt?.toISOString() || undefined,
+        rejectedReason: request.rejectedReason || undefined,
+        autoApprovedReason: request.autoApprovedReason || undefined,
+        createdAt: request.createdAt.toISOString(),
+        updatedAt: request.updatedAt.toISOString(),
+    };
+}
+
+export async function getPendingAdjustmentApprovals() {
+    const session = await requirePermission(
+        Permission.ATTENDANCE_APPROVAL_APPROVE,
+    );
+
+    const requests = await prisma.attendanceAdjustmentRequest.findMany({
+        where: { status: "PENDING" },
+        include: {
+            user: {
+                include: { department: true },
+            },
+        },
+        orderBy: { createdAt: "asc" },
+    });
+
+    const pendingForUser = requests.filter((r) => {
+        const chain = (r.approvalChain as Array<{
+            stepOrder: number;
+            approverId: string;
+            action: string;
+        }>) || [];
+        return chain.some(
+            (e) =>
+                e.approverId === session.user.id &&
+                e.stepOrder === r.currentStep &&
+                e.action === "PENDING",
+        );
+    });
+
+    return pendingForUser.map((r) => ({
+        id: r.id,
+        attendanceId: r.attendanceId,
+        userId: r.userId,
+        userName: r.user.name || "Unknown",
+        userAvatar: r.user.image,
+        departmentName: r.user.department?.name || "N/A",
+        date: r.date.toISOString(),
+        checkInTime: r.checkInTime || undefined,
+        checkOutTime: r.checkOutTime || undefined,
+        reason: r.reason,
+        attachment: r.attachment || undefined,
+        status: r.status as "PENDING" | "APPROVED" | "REJECTED" | "AUTO_APPROVED" | "CANCELLED",
+        currentStep: r.currentStep,
+        approvalChain: (r.approvalChain as Array<{
+            stepOrder: number;
+            approverId: string;
+            approverName: string;
+            action?: string;
+            actionAt?: string;
+            note?: string;
+        }>) || [],
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+    }));
 }

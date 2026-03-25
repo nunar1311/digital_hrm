@@ -13,4 +13,8 @@ export type {
     ShiftUpdatedEvent,
     ShiftAssignedEvent,
     ConfigUpdatedEvent,
+    AdjustmentRequestedEvent,
+    AdjustmentApprovedEvent,
+    AdjustmentRejectedEvent,
+    AdjustmentAutoApprovedEvent,
 } from "./types";

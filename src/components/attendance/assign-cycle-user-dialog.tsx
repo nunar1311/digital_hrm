@@ -1,10 +1,11 @@
 "use client";
 
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -24,6 +25,19 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -32,9 +46,9 @@ import {
 } from "@/components/ui/select";
 import type { WorkCycle } from "@/app/(protected)/attendance/types";
 import { assignWorkCycle } from "@/app/(protected)/attendance/actions";
-import { useMutation } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { CyclePreview } from "./cycle-preview";
 
 const assignCycleSchema = z.object({
     userId: z.string().min(1, "Vui lòng chọn nhân viên"),
@@ -66,6 +80,8 @@ export function AssignCycleUserDialog({
     defaultUserId,
     defaultStartDate,
 }: AssignCycleUserDialogProps) {
+    const id = useId();
+    const [userOpen, setUserOpen] = useState(false);
     const queryClient = useQueryClient();
 
     const form = useForm<AssignCycleFormValues>({
@@ -106,6 +122,7 @@ export function AssignCycleUserDialog({
     const selectedCycle = workCycles.find(
         (c) => c.id === workCycleId,
     );
+    const activeCycles = workCycles.filter((c) => c.isActive);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -137,29 +154,100 @@ export function AssignCycleUserDialog({
                                         </span>
                                     </FormLabel>
                                     <FormControl>
-                                        <Select
-                                            value={field.value}
-                                            onValueChange={
-                                                field.onChange
-                                            }
+                                        <Popover
+                                            onOpenChange={setUserOpen}
+                                            open={userOpen}
                                         >
-                                            <SelectTrigger className="h-8 text-xs">
-                                                <SelectValue placeholder="Chọn nhân viên..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {users.map((u) => (
-                                                    <SelectItem
-                                                        key={u.id}
-                                                        value={u.id}
-                                                    >
-                                                        {u.name}
-                                                        {u.employeeCode
-                                                            ? ` (${u.employeeCode})`
-                                                            : ""}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    aria-expanded={
+                                                        userOpen
+                                                    }
+                                                    className={cn(
+                                                        "w-full justify-between border-input bg-background px-3 font-normal outline-none hover:bg-background focus-visible:outline-[3px]",
+                                                        !field.value &&
+                                                            "text-muted-foreground",
+                                                    )}
+                                                    id={id}
+                                                    role="combobox"
+                                                    variant="outline"
+                                                >
+                                                    <span className="truncate">
+                                                        {field.value
+                                                            ? users.find(
+                                                                  (
+                                                                      u,
+                                                                  ) =>
+                                                                      u.id ===
+                                                                      field.value,
+                                                              )?.name
+                                                            : "Chọn nhân viên..."}
+                                                    </span>
+                                                    <ChevronDownIcon
+                                                        aria-hidden="true"
+                                                        className="shrink-0 text-muted-foreground/80"
+                                                        size={16}
+                                                    />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent
+                                                align="start"
+                                                className="w-full min-w-(--radix-popper-anchor-width) border-input p-0"
+                                            >
+                                                <Command>
+                                                    <CommandInput placeholder="Tìm nhân viên..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>
+                                                            Không tìm
+                                                            thấy nhân
+                                                            viên.
+                                                        </CommandEmpty>
+                                                        <CommandGroup>
+                                                            {users.map(
+                                                                (
+                                                                    u,
+                                                                ) => (
+                                                                    <CommandItem
+                                                                        key={
+                                                                            u.id
+                                                                        }
+                                                                        onSelect={(
+                                                                            currentValue,
+                                                                        ) => {
+                                                                            field.onChange(
+                                                                                currentValue,
+                                                                            );
+                                                                            setUserOpen(
+                                                                                false,
+                                                                            );
+                                                                        }}
+                                                                        value={
+                                                                            u.id
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            u.name
+                                                                        }
+                                                                        {u.employeeCode
+                                                                            ? ` (${u.employeeCode})`
+                                                                            : ""}
+                                                                        {field.value ===
+                                                                            u.id && (
+                                                                            <CheckIcon
+                                                                                className="ml-auto"
+                                                                                size={
+                                                                                    16
+                                                                                }
+                                                                            />
+                                                                        )}
+                                                                    </CommandItem>
+                                                                ),
+                                                            )}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                     </FormControl>
                                     <FormMessage className="text-[10px]" />
                                 </FormItem>
@@ -184,16 +272,12 @@ export function AssignCycleUserDialog({
                                                 field.onChange
                                             }
                                         >
-                                            <SelectTrigger className="h-8 text-xs">
+                                            <SelectTrigger className="w-full">
                                                 <SelectValue placeholder="Chọn chu kỳ..." />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {workCycles
-                                                    .filter(
-                                                        (c) =>
-                                                            c.isActive,
-                                                    )
-                                                    .map((c) => (
+                                                {activeCycles.map(
+                                                    (c) => (
                                                         <SelectItem
                                                             key={c.id}
                                                             value={
@@ -206,7 +290,8 @@ export function AssignCycleUserDialog({
                                                             }{" "}
                                                             ngày)
                                                         </SelectItem>
-                                                    ))}
+                                                    ),
+                                                )}
                                             </SelectContent>
                                         </Select>
                                     </FormControl>
@@ -216,25 +301,9 @@ export function AssignCycleUserDialog({
                         />
 
                         {selectedCycle && (
-                            <div className="rounded-md border bg-muted/50 px-2.5 py-1.5">
-                                <p className="text-[10px] text-muted-foreground">
-                                    Mẫu:{" "}
-                                    {selectedCycle.entries
-                                        .slice(0, 7)
-                                        .map((e, i) =>
-                                            e.isDayOff
-                                                ? "Nghỉ"
-                                                : (e.shift?.name?.slice(
-                                                      0,
-                                                      3,
-                                                  ) ?? "?"),
-                                        )
-                                        .join(" · ")}
-                                    {selectedCycle.entries.length >
-                                        7 &&
-                                        ` +${selectedCycle.entries.length - 7}`}
-                                </p>
-                            </div>
+                            <CyclePreview
+                                cycle={selectedCycle}
+                            />
                         )}
 
                         <div className="grid grid-cols-2 gap-2">
@@ -254,21 +323,13 @@ export function AssignCycleUserDialog({
                                                 date={
                                                     field.value
                                                         ? new Date(
-                                                              field.value,
+                                                              field.value as unknown as string,
                                                           )
                                                         : undefined
                                                 }
                                                 setDate={(d) =>
-                                                    field.onChange(
-                                                        d
-                                                            ? format(
-                                                                  d,
-                                                                  "yyyy-MM-dd",
-                                                              )
-                                                            : "",
-                                                    )
+                                                    field.onChange(d)
                                                 }
-                                                className="h-8 text-xs"
                                             />
                                         </FormControl>
                                         <FormMessage className="text-[10px]" />
@@ -288,21 +349,13 @@ export function AssignCycleUserDialog({
                                                 date={
                                                     field.value
                                                         ? new Date(
-                                                              field.value,
+                                                              field.value as unknown as string,
                                                           )
                                                         : undefined
                                                 }
                                                 setDate={(d) =>
-                                                    field.onChange(
-                                                        d
-                                                            ? format(
-                                                                  d,
-                                                                  "yyyy-MM-dd",
-                                                              )
-                                                            : "",
-                                                    )
+                                                    field.onChange(d)
                                                 }
-                                                className="h-8 text-xs"
                                             />
                                         </FormControl>
                                         <FormMessage className="text-[10px]" />
