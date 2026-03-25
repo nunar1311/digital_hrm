@@ -81,7 +81,7 @@ export function AssignCycleInlineForm({
         userId,
         values.workCycleId,
         values.startDate,
-        values.endDate || undefined,
+        values.endDate,
       );
     },
     onSuccess: () => {
@@ -164,10 +164,8 @@ export function AssignCycleInlineForm({
               <FormLabel className="text-xs">Đến ngày</FormLabel>
               <FormControl>
                 <DatePicker
-                  date={field.value ? new Date(field.value) : undefined}
-                  setDate={(date) =>
-                    field.onChange(date ? format(date, "yyyy-MM-dd") : "")
-                  }
+                  date={field.value}
+                  setDate={(date) => field.onChange(date)}
                   className="h-8 text-sm"
                 />
               </FormControl>

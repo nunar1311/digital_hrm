@@ -1,12 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Trophy,
@@ -18,6 +13,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { getRewards } from "@/app/(protected)/employees/actions";
+import Loading from "@/app/(protected)/loading";
 
 interface Props {
   employeeId: string;
@@ -34,31 +30,22 @@ export function RewardsTab({ employeeId }: Props) {
 
   const totalRewardAmount = rewardItems.reduce(
     (sum, r) => sum + (r.amount ? Number(r.amount) : 0),
-    0
+    0,
   );
   const totalDisciplineAmount = disciplineItems.reduce(
     (sum, r) => sum + (r.amount ? Number(r.amount) : 0),
-    0
+    0,
   );
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-32 rounded-xl bg-muted/50 animate-pulse"
-          />
-        ))}
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-emerald-200/50 bg-gradient-to-br from-emerald-50/50 to-background dark:from-emerald-950/20">
+        <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
               <Trophy className="h-5 w-5 text-emerald-600" />
@@ -72,7 +59,7 @@ export function RewardsTab({ employeeId }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="border-red-200/50 bg-gradient-to-br from-red-50/50 to-background dark:from-red-950/20">
+        <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
               <ShieldAlert className="h-5 w-5 text-red-600" />
@@ -86,7 +73,7 @@ export function RewardsTab({ employeeId }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="border-amber-200/50 bg-gradient-to-br from-amber-50/50 to-background dark:from-amber-950/20">
+        <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
               <DollarSign className="h-5 w-5 text-amber-600" />
@@ -104,7 +91,7 @@ export function RewardsTab({ employeeId }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="border-purple-200/50 bg-gradient-to-br from-purple-50/50 to-background dark:from-purple-950/20">
+        <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
               <DollarSign className="h-5 w-5 text-purple-600" />
@@ -127,11 +114,8 @@ export function RewardsTab({ employeeId }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Khen thưởng */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Award className="h-5 w-5 text-emerald-600" />
-              Khen thưởng
-            </CardTitle>
+          <CardHeader>
+            <CardTitle>Khen thưởng</CardTitle>
           </CardHeader>
           <CardContent>
             {rewardItems.length > 0 ? (
@@ -139,7 +123,7 @@ export function RewardsTab({ employeeId }: Props) {
                 {rewardItems.map((reward) => (
                   <div
                     key={reward.id}
-                    className="group p-4 rounded-xl border bg-gradient-to-r from-emerald-50/30 to-transparent dark:from-emerald-950/10 hover:shadow-md transition-all duration-200"
+                    className="group p-4 rounded-xl border hover:shadow-md transition-all duration-200"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-semibold text-foreground group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
@@ -171,7 +155,7 @@ export function RewardsTab({ employeeId }: Props) {
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {new Date(reward.decisionDate).toLocaleDateString(
-                          "vi-VN"
+                          "vi-VN",
                         )}
                       </span>
                       {reward.decisionNo && (
@@ -182,8 +166,7 @@ export function RewardsTab({ employeeId }: Props) {
                       )}
                       {reward.amount && (
                         <span className="font-mono font-medium text-emerald-600">
-                          +
-                          {Number(reward.amount).toLocaleString("vi-VN")}đ
+                          +{Number(reward.amount).toLocaleString("vi-VN")}đ
                         </span>
                       )}
                     </div>
@@ -201,11 +184,8 @@ export function RewardsTab({ employeeId }: Props) {
 
         {/* Kỷ luật */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              Kỷ luật
-            </CardTitle>
+          <CardHeader>
+            <CardTitle>Kỷ luật</CardTitle>
           </CardHeader>
           <CardContent>
             {disciplineItems.length > 0 ? (
@@ -213,7 +193,7 @@ export function RewardsTab({ employeeId }: Props) {
                 {disciplineItems.map((item) => (
                   <div
                     key={item.id}
-                    className="group p-4 rounded-xl border bg-gradient-to-r from-red-50/30 to-transparent dark:from-red-950/10 hover:shadow-md transition-all duration-200"
+                    className="group p-4 rounded-xl border hover:shadow-md transition-all duration-200"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-semibold text-foreground group-hover:text-red-700 dark:group-hover:text-red-400 transition-colors">
@@ -243,7 +223,7 @@ export function RewardsTab({ employeeId }: Props) {
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {new Date(item.decisionDate).toLocaleDateString(
-                          "vi-VN"
+                          "vi-VN",
                         )}
                       </span>
                       {item.decisionNo && (

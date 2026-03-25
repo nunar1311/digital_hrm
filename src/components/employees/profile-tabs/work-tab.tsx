@@ -84,14 +84,11 @@ export function WorkTab({ employee }: Props) {
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Thông tin nội bộ */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-primary" />
-            Thông tin công việc nội bộ
-          </CardTitle>
+        <CardHeader>
+          <CardTitle>Thông tin công việc nội bộ</CardTitle>
         </CardHeader>
         <CardContent>
           <InfoRow
@@ -124,9 +121,11 @@ export function WorkTab({ employee }: Props) {
                   className="flex items-center gap-2 hover:underline text-primary"
                 >
                   <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold">
-                    {(employee.manager.fullName || employee.manager.name)
-                      .split(" ")
-                      .pop()?.[0]}
+                    {
+                      (employee.manager.fullName || employee.manager.name)
+                        .split(" ")
+                        .pop()?.[0]
+                    }
                   </div>
                   <span>
                     {employee.manager.fullName || employee.manager.name} -{" "}
@@ -144,9 +143,7 @@ export function WorkTab({ employee }: Props) {
             label="Trạng thái"
             icon={ShieldCheck}
             value={
-              <EmployeeStatusBadge
-                status={employee.employeeStatus ?? null}
-              />
+              <EmployeeStatusBadge status={employee.employeeStatus ?? null} />
             }
           />
           <InfoRow
@@ -196,14 +193,11 @@ export function WorkTab({ employee }: Props) {
         </CardContent>
       </Card>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Ngân hàng */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Landmark className="h-5 w-5 text-primary" />
-              Tài khoản Ngân hàng
-            </CardTitle>
+          <CardHeader>
+            <CardTitle>Tài khoản Ngân hàng</CardTitle>
           </CardHeader>
           <CardContent>
             <InfoRow
@@ -230,11 +224,8 @@ export function WorkTab({ employee }: Props) {
 
         {/* Thuế & Bảo hiểm */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              Thuế & Bảo hiểm xã hội
-            </CardTitle>
+          <CardHeader>
+            <CardTitle>Thuế & Bảo hiểm xã hội</CardTitle>
           </CardHeader>
           <CardContent>
             <InfoRow
@@ -274,9 +265,8 @@ export function WorkTab({ employee }: Props) {
 
       {/* Kinh nghiệm làm việc */}
       <Card className="lg:col-span-2">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <History className="h-5 w-5 text-primary" />
+        <CardHeader>
+          <CardTitle>
             Kinh nghiệm làm việc trước đây
             {workHistories.length > 0 && (
               <Badge variant="secondary" className="text-xs ml-1">

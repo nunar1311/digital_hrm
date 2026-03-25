@@ -78,7 +78,7 @@ export function GeneralTab({ employee }: Props) {
   const completeness = Math.round((filledFields / fields.length) * 100);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Profile completeness */}
       <Card className="border-primary/20 py-0">
         <CardContent className="p-4">
@@ -100,7 +100,7 @@ export function GeneralTab({ employee }: Props) {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Thông tin cá nhân */}
         <Card>
           <CardHeader>
@@ -177,7 +177,7 @@ export function GeneralTab({ employee }: Props) {
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Thông tin liên hệ */}
           <Card>
             <CardHeader>

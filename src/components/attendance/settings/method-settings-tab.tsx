@@ -90,50 +90,94 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                 otWeekendCoeff: config?.otWeekendCoeff ?? 2.0,
                 otHolidayCoeff: config?.otHolidayCoeff ?? 3.0,
             }),
+        onMutate: async (values) => {
+            await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
+            queryClient.setQueryData(["attendance", "config"], (old: any) => {
+                if (!old) return old;
+                return { ...old, ...values };
+            });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Đã lưu phương thức chấm công");
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Có lỗi xảy ra");
+            queryClient.invalidateQueries({ queryKey: ["attendance", "config"] });
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "config"],
             });
-        },
-        onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+        }
     });
 
     const addWifiMutation = useMutation({
         mutationFn: () => {
             if (!config?.id)
-                throw new Error(
-                    "Chưa có cấu hình, hãy lưu cài đặt trước",
-                );
-            return addWifiWhitelist(
-                config.id,
-                wifiSsid,
-                wifiBssid || undefined,
-            );
+                throw new Error("Chưa có cấu hình, hãy lưu cài đặt trước");
+            return addWifiWhitelist(config.id, wifiSsid, wifiBssid || undefined);
+        },
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
+            const optimisticWifi = {
+                id: `optimistic-${Date.now()}`,
+                configId: config?.id || "",
+                ssid: wifiSsid,
+                bssid: wifiBssid || null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            queryClient.setQueryData(["attendance", "config"], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    wifiWhitelist: [...(old.wifiWhitelist || []), optimisticWifi],
+                };
+            });
+            return {};
         },
         onSuccess: () => {
             toast.success("Đã thêm WiFi");
             setWifiSsid("");
             setWifiBssid("");
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Có lỗi xảy ra");
+            queryClient.invalidateQueries({ queryKey: ["attendance", "config"] });
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "config"],
             });
-        },
-        onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+        }
     });
 
     const removeWifiMutation = useMutation({
         mutationFn: removeWifiWhitelist,
+        onMutate: async (id) => {
+            await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
+            queryClient.setQueryData(["attendance", "config"], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    wifiWhitelist: (old.wifiWhitelist || []).filter((w: any) => w.id !== id),
+                };
+            });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Đã xoá WiFi");
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Có lỗi xảy ra");
+            queryClient.invalidateQueries({ queryKey: ["attendance", "config"] });
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "config"],
             });
-        },
-        onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+        }
     });
 
     return (

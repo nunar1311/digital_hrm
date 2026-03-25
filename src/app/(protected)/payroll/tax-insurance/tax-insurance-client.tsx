@@ -103,13 +103,20 @@ export default function TaxInsuranceClient({
         effectiveDate: new Date().toISOString(),
       });
     },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["payroll-configs"] });
+      return {};
+    },
     onSuccess: () => {
       toast.success("Đã lưu cấu hình");
-      queryClient.invalidateQueries({ queryKey: ["payroll-configs"] });
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Lỗi khi lưu");
+      queryClient.invalidateQueries({ queryKey: ["payroll-configs"] });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll-configs"] });
+    }
   });
 
   // Create a map of current config values

@@ -111,19 +111,34 @@ export function AddEmployeesToDepartmentDialog({
                 departmentId,
             );
         },
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["assignable-employees"] });
+            await queryClient.cancelQueries({ queryKey: ["departmentEmployees"] });
+            await queryClient.cancelQueries({ queryKey: ["departments"] });
+            await queryClient.cancelQueries({ queryKey: ["departmentTree"] });
+            onOpenChange(false);
+            return {};
+        },
         onSuccess: (count) => {
             toast.success(
                 `Đã gán ${count} nhân viên vào phòng ban "${departmentName}"`,
             );
-            queryClient.invalidateQueries({
-                queryKey: ["assignable-employees"],
-            });
             onAssigned?.();
-            onOpenChange(false);
+            setSelectedIds(new Set());
         },
         onError: () => {
             toast.error("Có lỗi xảy ra khi gán nhân viên");
+            queryClient.invalidateQueries({ queryKey: ["assignable-employees"] });
+            queryClient.invalidateQueries({ queryKey: ["departmentEmployees"] });
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
+            queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["assignable-employees"] });
+            queryClient.invalidateQueries({ queryKey: ["departmentEmployees"] });
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
+            queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
+        }
     });
 
     const selectedEmployees = useMemo(

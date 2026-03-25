@@ -97,20 +97,26 @@ export function CreatePayrollDialog({
       const result = await createPayrollRecord(data);
       return result;
     },
-    onSuccess: (result) => {
-      toast.success(`Đã tạo bảng lương tháng ${result.month}/${result.year}`);
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["payroll-records"] });
       setOpen(false);
       setShowPreview(false);
+      return {};
+    },
+    onSuccess: (result) => {
+      toast.success(`Đã tạo bảng lương tháng ${result.month}/${result.year}`);
       setPreviewData(null);
       form.reset();
-      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
-      //   onSuccess?.(result );
     },
     onError: (error) => {
       toast.error(
         error instanceof Error ? error.message : "Lỗi khi tạo bảng lương",
       );
+      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
+    }
   });
 
   const previewMutation = useMutation({

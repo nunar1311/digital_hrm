@@ -438,3 +438,22 @@ export async function notifyAttendanceReminder(
     sendBrowser: true,
   });
 }
+
+export async function notifyShiftReminder(
+  userId: string,
+  data: {
+    employeeName: string;
+    shiftName: string;
+    shiftStartTime: string;
+  }
+) {
+  return await sendNotificationToUser(userId, {
+    type: NOTIFICATION_TYPES.ATTENDANCE,
+    title: "Sắp đến giờ làm việc",
+    content: `Ca "${data.shiftName}" bắt đầu lúc ${data.shiftStartTime}. Hãy chuẩn bị chấm công!`,
+    link: "/attendance",
+    priority: "HIGH",
+    sendEmail: true,
+    sendBrowser: true,
+  });
+}

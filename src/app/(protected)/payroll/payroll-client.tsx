@@ -116,10 +116,13 @@ function CreatePayrollDialog({
       year: number;
       departmentId?: string;
     }) => createPayrollRecord(data),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["payroll-records"] });
+      setOpen(false);
+      return {};
+    },
     onSuccess: (result) => {
       toast.success(`Đã tạo bảng lương tháng ${result.month}/${result.year}`);
-      setOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
       form.reset();
       onSuccess();
     },
@@ -127,7 +130,11 @@ function CreatePayrollDialog({
       toast.error(
         error instanceof Error ? error.message : "Lỗi khi tạo bảng lương",
       );
+      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
+    }
   });
 
   const form = useForm<CreatePayrollForm>({
@@ -386,13 +393,20 @@ export default function PayrollClient({
 
   const deleteMutation = useMutation({
     mutationFn: deletePayrollRecord,
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["payroll-records"] });
+      return {};
+    },
     onSuccess: () => {
       toast.success("Đã xóa bảng lương");
-      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Lỗi khi xóa");
+      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
+    }
   });
 
   const exportMutation = useMutation({

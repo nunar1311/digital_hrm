@@ -129,21 +129,34 @@ export default function PayrollDetailClient({
   const updateStatusMutation = useMutation({
     mutationFn: (status: "DRAFT" | "PROCESSING" | "COMPLETED" | "CANCELLED") =>
       updatePayrollRecordStatus(recordId, status),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["payroll-record", recordId] });
+      await queryClient.cancelQueries({ queryKey: ["payroll-records"] });
+      setShowApprovalDialog(false);
+      return {};
+    },
     onSuccess: () => {
       toast.success("Cập nhật trạng thái thành công");
-      queryClient.invalidateQueries({ queryKey: ["payroll-record", recordId] });
-      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
-      setShowApprovalDialog(false);
     },
     onError: (error) => {
       toast.error(
         error instanceof Error ? error.message : "Lỗi khi cập nhật trạng thái",
       );
+      queryClient.invalidateQueries({ queryKey: ["payroll-record", recordId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll-record", recordId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
+    }
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => deletePayrollRecord(recordId),
+    onMutate: async () => {
+      setShowDeleteDialog(false);
+      return {};
+    },
     onSuccess: () => {
       toast.success("Đã xóa bảng lương");
       router.push("/payroll");
@@ -152,7 +165,6 @@ export default function PayrollDetailClient({
       toast.error(
         error instanceof Error ? error.message : "Lỗi khi xóa bảng lương",
       );
-      setShowDeleteDialog(false);
     },
   });
 
@@ -179,16 +191,25 @@ export default function PayrollDetailClient({
 
   const sendEmailMutation = useMutation({
     mutationFn: () => sendPayslipEmails(recordId),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["payslips-for-record", recordId] });
+      setShowSendEmailDialog(false);
+      return {};
+    },
     onSuccess: (result) => {
       toast.success(`Đã gửi ${result.sent} phiếu lương qua email`);
-      setShowSendEmailDialog(false);
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Lỗi khi gửi email");
       queryClient.invalidateQueries({
         queryKey: ["payslips-for-record", recordId],
       });
     },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Lỗi khi gửi email");
-    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["payslips-for-record", recordId],
+      });
+    }
   });
 
   if (isLoading) {

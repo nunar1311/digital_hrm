@@ -136,15 +136,37 @@ export function DevicesTab({ devices, queryClient }: Props) {
                 ipAddress: values.ipAddress || undefined,
                 apiKey: values.apiKey || undefined,
             }),
+        onMutate: async (values) => {
+            await queryClient.cancelQueries({ queryKey: ["attendance", "devices"] });
+            const optimisticDevice = {
+                id: `optimistic-${Date.now()}`,
+                ...values,
+                location: values.location || null,
+                ipAddress: values.ipAddress || null,
+                apiKey: values.apiKey || null,
+                isActive: true,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            queryClient.setQueryData(["attendance", "devices"], (old: any) => {
+                if (!old) return [optimisticDevice];
+                return [...old, optimisticDevice];
+            });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Đã thêm thiết bị");
             setShowDialog(false);
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Có lỗi xảy ra");
+            queryClient.invalidateQueries({ queryKey: ["attendance", "devices"] });
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "devices"],
             });
-        },
-        onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+        }
     });
 
     const updateMutation = useMutation({
@@ -158,29 +180,54 @@ export function DevicesTab({ devices, queryClient }: Props) {
                 apiKey: values.apiKey || undefined,
             });
         },
+        onMutate: async (values) => {
+            await queryClient.cancelQueries({ queryKey: ["attendance", "devices"] });
+            if (!editDevice) return;
+            queryClient.setQueryData(["attendance", "devices"], (old: any) => {
+                if (!old) return old;
+                return old.map((d: any) => d.id === editDevice.id ? { ...d, ...values, location: values.location || null, ipAddress: values.ipAddress || null, apiKey: values.apiKey || null } : d);
+            });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Đã cập nhật thiết bị");
             setShowDialog(false);
             setEditDevice(null);
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Có lỗi xảy ra");
+            queryClient.invalidateQueries({ queryKey: ["attendance", "devices"] });
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "devices"],
             });
-        },
-        onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+        }
     });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteTimekeeperDevice(id),
+        onMutate: async (id) => {
+            await queryClient.cancelQueries({ queryKey: ["attendance", "devices"] });
+            queryClient.setQueryData(["attendance", "devices"], (old: any) => {
+                if (!old) return old;
+                return old.filter((d: any) => d.id !== id);
+            });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Đã xoá thiết bị");
             setDeleteId(null);
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Có lỗi xảy ra");
+            queryClient.invalidateQueries({ queryKey: ["attendance", "devices"] });
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "devices"],
             });
-        },
-        onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+        }
     });
 
     const toggleMutation = useMutation({
@@ -191,13 +238,23 @@ export function DevicesTab({ devices, queryClient }: Props) {
             id: string;
             isActive: boolean;
         }) => updateTimekeeperDevice(id, { isActive }),
-        onSuccess: () => {
+        onMutate: async ({ id, isActive }) => {
+            await queryClient.cancelQueries({ queryKey: ["attendance", "devices"] });
+            queryClient.setQueryData(["attendance", "devices"], (old: any) => {
+                if (!old) return old;
+                return old.map((d: any) => d.id === id ? { ...d, isActive } : d);
+            });
+            return {};
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Có lỗi xảy ra");
+            queryClient.invalidateQueries({ queryKey: ["attendance", "devices"] });
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "devices"],
             });
-        },
-        onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+        }
     });
 
     const isSaving =

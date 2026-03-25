@@ -35,7 +35,6 @@ import type { UserBasic } from "@/app/(protected)/attendance/types";
 import { assignShift } from "@/app/(protected)/attendance/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useMemo } from "react";
 
 const assignSchema = z.object({
   userId: z.string().min(1, "Vui lòng chọn nhân viên"),
@@ -80,18 +79,54 @@ export function AssignShiftDialog({
         values.endDate || undefined,
       );
     },
+    onMutate: async (values) => {
+      await queryClient.cancelQueries({
+        queryKey: ["attendance", "shiftAssignments"],
+      });
+
+      const optimisticAssignment = {
+        id: `optimistic-${Date.now()}`,
+        userId: values.userId,
+        shiftId: values.shiftId,
+        startDate: values.startDate,
+        endDate: values.endDate || null,
+        workCycleId: null,
+        cycleStartDate: null,
+        shift: shifts.find((s) => s.id === values.shiftId),
+        user: users.find((u) => u.id === values.userId) || {
+          id: values.userId,
+          name: "...",
+          employeeCode: "...",
+        },
+      };
+
+      queryClient.setQueriesData(
+        { queryKey: ["attendance", "shiftAssignments"] },
+        (old: any) => {
+          if (!old) return [optimisticAssignment];
+          return [...old, optimisticAssignment];
+        },
+      );
+
+      return {};
+    },
     onSuccess: () => {
       toast.success("Phân ca thành công");
+      onOpenChange(false);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Có lỗi xảy ra");
+      queryClient.invalidateQueries({
+        queryKey: ["attendance", "shiftAssignments"],
+      });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["attendance", "shiftAssignments"],
       });
       queryClient.invalidateQueries({
         queryKey: ["attendance", "shifts"],
       });
-      onOpenChange(false);
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || "Có lỗi xảy ra");
     },
   });
 

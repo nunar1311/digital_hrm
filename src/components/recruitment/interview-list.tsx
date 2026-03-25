@@ -202,18 +202,23 @@ export function InterviewList() {
                     .toISOString()
                     .split("T")[0],
             } as CreateInterviewForm),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["recruitment", "interviews"] });
+            setIsCreateOpen(false);
+            return {};
+        },
         onSuccess: () => {
             toast.success("Đặt lịch phỏng vấn thành công");
-            setIsCreateOpen(false);
-            queryClient.invalidateQueries({
-                queryKey: ["recruitment", "interviews"],
-            });
         },
         onError: (error: Error) => {
             toast.error(
                 error.message || "Lỗi khi đặt lịch phỏng vấn",
             );
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
+        }
     });
 
     const updateMutation = useMutation({
@@ -230,33 +235,43 @@ export function InterviewList() {
                     ? data.scheduledDate.toISOString().split("T")[0]
                     : undefined,
             } as Partial<CreateInterviewForm>),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["recruitment", "interviews"] });
+            setEditingInterview(null);
+            return {};
+        },
         onSuccess: () => {
             toast.success("Cập nhật phỏng vấn thành công");
-            setEditingInterview(null);
-            queryClient.invalidateQueries({
-                queryKey: ["recruitment", "interviews"],
-            });
         },
         onError: (error: Error) => {
             toast.error(
                 error.message || "Lỗi khi cập nhật phỏng vấn",
             );
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
+        }
     });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteInterview(id),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["recruitment", "interviews"] });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Xóa lịch phỏng vấn thành công");
-            queryClient.invalidateQueries({
-                queryKey: ["recruitment", "interviews"],
-            });
         },
         onError: (error: Error) => {
             toast.error(
                 error.message || "Lỗi khi xóa lịch phỏng vấn",
             );
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
+        }
     });
 
     const feedbackMutation = useMutation({
@@ -268,16 +283,21 @@ export function InterviewList() {
             improvements?: string;
             notes?: string;
         }) => submitFeedback(data),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["recruitment", "interviews"] });
+            setFeedbackInterview(null);
+            return {};
+        },
         onSuccess: () => {
             toast.success("Gửi feedback thành công");
-            setFeedbackInterview(null);
-            queryClient.invalidateQueries({
-                queryKey: ["recruitment", "interviews"],
-            });
         },
         onError: (error: Error) => {
             toast.error(error.message || "Lỗi khi gửi feedback");
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
+        }
     });
 
     return (

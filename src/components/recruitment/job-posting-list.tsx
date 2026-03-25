@@ -187,18 +187,23 @@ export function JobPostingList() {
     const createMutation = useMutation({
         mutationFn: (data: JobPostingFormValues) =>
             createJobPosting(data),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["recruitment", "job-postings"] });
+            setIsCreateOpen(false);
+            return {};
+        },
         onSuccess: () => {
             toast.success("Tạo tin tuyển dụng thành công");
-            setIsCreateOpen(false);
-            queryClient.invalidateQueries({
-                queryKey: ["recruitment", "job-postings"],
-            });
         },
         onError: (error: Error) => {
             toast.error(
                 error.message || "Lỗi khi tạo tin tuyển dụng",
             );
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
+        }
     });
 
     const updateMutation = useMutation({
@@ -209,33 +214,45 @@ export function JobPostingList() {
             id: string;
             data: Partial<EditJobPostingFormValues>;
         }) => updateJobPosting(id, data),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["recruitment", "job-postings"] });
+            // Cannot eagerly update the local state correctly if called from table status change,
+            // but for editing dialog, setEditingPost(null) works.
+            setEditingPost(null);
+            return {};
+        },
         onSuccess: () => {
             toast.success("Cập nhật tin tuyển dụng thành công");
-            setEditingPost(null);
-            queryClient.invalidateQueries({
-                queryKey: ["recruitment", "job-postings"],
-            });
         },
         onError: (error: Error) => {
             toast.error(
                 error.message || "Lỗi khi cập nhật tin tuyển dụng",
             );
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
+        }
     });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteJobPosting(id),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["recruitment", "job-postings"] });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Xóa tin tuyển dụng thành công");
-            queryClient.invalidateQueries({
-                queryKey: ["recruitment", "job-postings"],
-            });
         },
         onError: (error: Error) => {
             toast.error(
                 error.message || "Lỗi khi xóa tin tuyển dụng",
             );
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
+        }
     });
 
     const handleStatusChange = (id: string, status: string) => {

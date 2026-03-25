@@ -76,20 +76,31 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
                 requireGps: config?.requireGps ?? false,
                 requireWifi: config?.requireWifi ?? false,
                 requireSelfie: config?.requireSelfie ?? false,
-                maxGpsDistanceMeters:
-                    config?.maxGpsDistanceMeters ?? 200,
+                maxGpsDistanceMeters: config?.maxGpsDistanceMeters ?? 200,
                 officeLat: config?.officeLat ?? null,
                 officeLng: config?.officeLng ?? null,
                 ...values,
             }),
+        onMutate: async (values) => {
+            await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
+            queryClient.setQueryData(["attendance", "config"], (old: any) => {
+                if (!old) return old;
+                return { ...old, ...values };
+            });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Đã lưu cài đặt chung");
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Có lỗi xảy ra");
+            queryClient.invalidateQueries({ queryKey: ["attendance", "config"] });
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "config"],
             });
-        },
-        onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+        }
     });
 
     return (

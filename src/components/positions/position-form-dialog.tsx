@@ -152,20 +152,26 @@ export function PositionFormDialog({
 
   const createMutation = useMutation({
     mutationFn: createPosition,
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["positions"] });
+      resolvedOnClose();
+      return {};
+    },
     onSuccess: (result) => {
       if (result.success) {
         toast.success("Tạo chức vụ thành công");
-        queryClient.invalidateQueries({
-          queryKey: ["positions"],
-        });
-        resolvedOnClose();
       } else {
         toast.error(result.error);
+        queryClient.invalidateQueries({ queryKey: ["positions"] });
       }
     },
     onError: () => {
       toast.error("Đã xảy ra lỗi khi tạo chức vụ");
+      queryClient.invalidateQueries({ queryKey: ["positions"] });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["positions"] });
+    }
   });
 
   const updateMutation = useMutation({
@@ -176,20 +182,26 @@ export function PositionFormDialog({
       id: string;
       data: Parameters<typeof updatePosition>[1];
     }) => updatePosition(id, data),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["positions"] });
+      resolvedOnClose();
+      return {};
+    },
     onSuccess: (result) => {
       if (result.success) {
         toast.success("Cập nhật chức vụ thành công");
-        queryClient.invalidateQueries({
-          queryKey: ["positions"],
-        });
-        resolvedOnClose();
       } else {
         toast.error(result.error);
+        queryClient.invalidateQueries({ queryKey: ["positions"] });
       }
     },
     onError: () => {
       toast.error("Đã xảy ra lỗi khi cập nhật chức vụ");
+      queryClient.invalidateQueries({ queryKey: ["positions"] });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["positions"] });
+    }
   });
 
   const onSubmit = form.handleSubmit((values) => {

@@ -162,16 +162,21 @@ export function CandidateList() {
     const createMutation = useMutation({
         mutationFn: (data: CreateCandidateForm) =>
             createCandidate(data),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["recruitment", "candidates"] });
+            setIsCreateOpen(false);
+            return {};
+        },
         onSuccess: () => {
             toast.success("Thêm ứng viên thành công");
-            setIsCreateOpen(false);
-            queryClient.invalidateQueries({
-                queryKey: ["recruitment", "candidates"],
-            });
         },
         onError: (error: Error) => {
             toast.error(error.message || "Lỗi khi thêm ứng viên");
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] });
+        }
     });
 
     const updateMutation = useMutation({
@@ -182,29 +187,39 @@ export function CandidateList() {
             id: string;
             data: Partial<CreateCandidateForm> & { stage?: string };
         }) => updateCandidate(id, data),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["recruitment", "candidates"] });
+            setEditingCandidate(null);
+            return {};
+        },
         onSuccess: () => {
             toast.success("Cập nhật ứng viên thành công");
-            setEditingCandidate(null);
-            queryClient.invalidateQueries({
-                queryKey: ["recruitment", "candidates"],
-            });
         },
         onError: (error: Error) => {
             toast.error(error.message || "Lỗi khi cập nhật ứng viên");
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] });
+        }
     });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteCandidate(id),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["recruitment", "candidates"] });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Xóa ứng viên thành công");
-            queryClient.invalidateQueries({
-                queryKey: ["recruitment", "candidates"],
-            });
         },
         onError: (error: Error) => {
             toast.error(error.message || "Lỗi khi xóa ứng viên");
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] });
+        }
     });
 
     const createForm = useForm<CandidateFormValues>({

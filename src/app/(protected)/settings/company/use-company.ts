@@ -22,13 +22,24 @@ export function useUpdateCompanyInfo() {
         mutationFn: async (data: Partial<CompanyInfo>) => {
             return await updateCompanyInfo(data);
         },
+        onMutate: async (data) => {
+            await queryClient.cancelQueries({ queryKey: ["company"] });
+            queryClient.setQueryData(["company"], (old: any) => {
+                if (!old) return old;
+                return { ...old, ...data };
+            });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Lưu thông tin công ty thành công");
-            queryClient.invalidateQueries({ queryKey: ["company"] });
         },
         onError: (error: Error) => {
             toast.error(error.message || "Không thể lưu thông tin công ty");
+            queryClient.invalidateQueries({ queryKey: ["company"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["company"] });
+        }
     });
 }
 
@@ -57,12 +68,23 @@ export function useDeleteCompanyLogo() {
         mutationFn: async () => {
             return await deleteCompanyLogo();
         },
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["company"] });
+            queryClient.setQueryData(["company"], (old: any) => {
+                if (!old) return old;
+                return { ...old, logo: null };
+            });
+            return {};
+        },
         onSuccess: () => {
             toast.success("Đã xóa logo");
-            queryClient.invalidateQueries({ queryKey: ["company"] });
         },
         onError: (error: Error) => {
             toast.error(error.message || "Không thể xóa logo");
+            queryClient.invalidateQueries({ queryKey: ["company"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["company"] });
+        }
     });
 }

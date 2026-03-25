@@ -89,20 +89,30 @@ export function DepartmentDetailPanel({
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteDepartment(id),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["departmentTree"] });
+            await queryClient.cancelQueries({ queryKey: ["departments"] });
+            onClose();
+            return {};
+        },
         onSuccess: (result) => {
             if (result.success) {
                 toast.success(result.message);
-                queryClient.invalidateQueries({
-                    queryKey: ["departmentTree"],
-                });
-                onClose();
             } else {
                 toast.error(result.message);
+                queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
+                queryClient.invalidateQueries({ queryKey: ["departments"] });
             }
         },
         onError: () => {
             toast.error("Lỗi khi xóa phòng ban");
+            queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
+        }
     });
 
     const handleDeleteConfirm = () => {

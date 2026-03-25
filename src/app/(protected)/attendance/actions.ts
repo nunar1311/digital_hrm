@@ -258,6 +258,11 @@ async function getTodayShiftsForUser(userId: string) {
         Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
     );
 
+    const dayType = await getDayType(today);
+    if (dayType === "HOLIDAY") {
+        return [];
+    }
+
     const assignments = await prisma.shiftAssignment.findMany({
         where: {
             userId,
@@ -381,6 +386,130 @@ export async function getTodayAttendance() {
         assignedShift,
         todayShifts,
         hasShiftToday,
+    };
+}
+
+// ─── LOGIN ATTENDANCE CHECK ───
+
+/**
+ * Kiểm tra ca làm việc khi nhân viên đăng nhập.
+ * Trả về thông tin ca hôm nay, trạng thái check-in, và cửa sổ thời gian hợp lệ.
+ */
+export async function checkTodayShiftOnLogin() {
+    const session = await requireAuth();
+    const userId = session.user.id;
+    const { start, end } = getTodayDateRange();
+
+    // Kiểm tra đã check-in chưa
+    const attendance = await prisma.attendance.findFirst({
+        where: {
+            userId,
+            date: { gte: start, lte: end },
+        },
+        include: { shift: true },
+    });
+
+    const hasCheckedIn = !!attendance?.checkIn;
+
+    // Nếu đã check-in rồi thì không cần kiểm tra gì thêm
+    if (hasCheckedIn) {
+        return {
+            hasShift: true,
+            hasCheckedIn: true,
+            isWithinCheckInWindow: false,
+            currentShift: null,
+            todayShifts: [] as { id: string; name: string; code: string; startTime: string; endTime: string; lateThreshold: number; earlyThreshold: number }[],
+            minutesUntilWindowOpen: null as number | null,
+            minutesUntilWindowClose: null as number | null,
+        };
+    }
+
+    // Lấy tất cả ca hôm nay
+    const todayShifts = await getTodayShiftsForUser(userId);
+    if (todayShifts.length === 0) {
+        return {
+            hasShift: false,
+            hasCheckedIn: false,
+            isWithinCheckInWindow: false,
+            currentShift: null,
+            todayShifts: [] as { id: string; name: string; code: string; startTime: string; endTime: string; lateThreshold: number; earlyThreshold: number }[],
+            minutesUntilWindowOpen: null as number | null,
+            minutesUntilWindowClose: null as number | null,
+        };
+    }
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Lấy config earlyCheckinMinutes (mặc định 60 phút)
+    const config = await prisma.attendanceConfig.findFirst();
+    const earlyCheckinMinutes = config?.earlyCheckinMinutes ?? 60;
+
+    // Tìm ca phù hợp nhất (đang trong cửa sổ check-in)
+    let bestShift: (typeof todayShifts)[0] | null = null;
+    let isWithinWindow = false;
+    let minutesUntilOpen: number | null = null;
+    let minutesUntilClose: number | null = null;
+
+    for (const shift of todayShifts) {
+        const [sh, sm] = shift.startTime.split(":").map(Number);
+        const shiftStartMinutes = sh * 60 + sm;
+
+        // Cửa sổ check-in: [shiftStart - earlyCheckinMinutes, shiftStart + lateThreshold]
+        const windowOpen = shiftStartMinutes - earlyCheckinMinutes;
+        const windowClose = shiftStartMinutes + shift.lateThreshold;
+
+        if (currentMinutes >= windowOpen && currentMinutes <= windowClose) {
+            bestShift = shift;
+            isWithinWindow = true;
+            minutesUntilOpen = 0;
+            minutesUntilClose = windowClose - currentMinutes;
+            break;
+        }
+
+        // Nếu chưa đến cửa sổ, ghi nhận ca sắp tới gần nhất
+        if (currentMinutes < windowOpen) {
+            if (minutesUntilOpen === null || (windowOpen - currentMinutes) < minutesUntilOpen) {
+                bestShift = shift;
+                minutesUntilOpen = windowOpen - currentMinutes;
+                minutesUntilClose = windowClose - currentMinutes;
+            }
+        }
+    }
+
+    // Nếu không tìm được ca nào phù hợp, fallback auto-detect
+    if (!bestShift) {
+        bestShift = detectCurrentShift(todayShifts);
+    }
+
+    const mappedShifts = todayShifts.map((s) => ({
+        id: s.id,
+        name: s.name,
+        code: s.code,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        lateThreshold: s.lateThreshold,
+        earlyThreshold: s.earlyThreshold,
+    }));
+
+    return {
+        hasShift: true,
+        hasCheckedIn: false,
+        isWithinCheckInWindow: isWithinWindow,
+        currentShift: bestShift
+            ? {
+                  id: bestShift.id,
+                  name: bestShift.name,
+                  code: bestShift.code,
+                  startTime: bestShift.startTime,
+                  endTime: bestShift.endTime,
+                  lateThreshold: bestShift.lateThreshold,
+                  earlyThreshold: bestShift.earlyThreshold,
+              }
+            : null,
+        todayShifts: mappedShifts,
+        minutesUntilWindowOpen: minutesUntilOpen,
+        minutesUntilWindowClose: minutesUntilClose,
     };
 }
 
@@ -2621,20 +2750,42 @@ export async function getHolidays(year?: number) {
 
 export async function createHoliday(data: {
     name: string;
-    date: string;
-    endDate?: string;
+    date: Date;
+    endDate?: Date;
     isRecurring?: boolean;
 }) {
     await requirePermission(Permission.ATTENDANCE_SHIFT_MANAGE);
 
-    const dateObj = new Date(data.date);
     return prisma.holiday.create({
         data: {
             name: data.name,
-            date: dateObj,
-            endDate: data.endDate ? new Date(data.endDate) : null,
+            date: data.date,
+            endDate: data.endDate,
             isRecurring: data.isRecurring || false,
-            year: dateObj.getFullYear(),
+            year: data.date.getFullYear(),
+        },
+    });
+}
+
+export async function updateHoliday(
+    id: string,
+    data: {
+        name: string;
+        date: Date;
+        endDate?: Date | null;
+        isRecurring?: boolean;
+    }
+) {
+    await requirePermission(Permission.ATTENDANCE_SHIFT_MANAGE);
+
+    return prisma.holiday.update({
+        where: { id },
+        data: {
+            name: data.name,
+            date: data.date,
+            endDate: data.endDate,
+            isRecurring: data.isRecurring || false,
+            year: data.date.getFullYear(),
         },
     });
 }
@@ -3064,4 +3215,82 @@ export async function getAttendanceRecords(params: {
         page,
         pageSize,
     };
+}
+
+// ─── SHIFT REMINDER (15 phút trước ca) ───
+
+/**
+ * Kiểm tra xem user có ca nào sắp bắt đầu trong vòng 15 phút không.
+ * Dùng cho client hook polling mỗi 60 giây.
+ */
+export async function getUpcomingShiftReminder() {
+    const session = await requireAuth();
+    const userId = session.user.id;
+    const { start, end } = getTodayDateRange();
+
+    // Đã check-in rồi → không cần nhắc
+    const attendance = await prisma.attendance.findFirst({
+        where: {
+            userId,
+            date: { gte: start, lte: end },
+        },
+    });
+
+    if (attendance?.checkIn) {
+        return { shouldRemind: false as const, shift: null, minutesUntil: 0 };
+    }
+
+    // Lấy tất cả ca hôm nay
+    const todayShifts = await getTodayShiftsForUser(userId);
+    if (todayShifts.length === 0) {
+        return { shouldRemind: false as const, shift: null, minutesUntil: 0 };
+    }
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Tìm ca sắp bắt đầu trong vòng 15 phút
+    for (const shift of todayShifts) {
+        const [sh, sm] = shift.startTime.split(":").map(Number);
+        const shiftStartMinutes = sh * 60 + sm;
+        const minutesUntil = shiftStartMinutes - currentMinutes;
+
+        // Nhắc khi còn 0-15 phút trước ca bắt đầu
+        if (minutesUntil >= 0 && minutesUntil <= 15) {
+            return {
+                shouldRemind: true as const,
+                shift: {
+                    id: shift.id,
+                    name: shift.name,
+                    code: shift.code,
+                    startTime: shift.startTime,
+                    endTime: shift.endTime,
+                },
+                minutesUntil,
+            };
+        }
+    }
+
+    return { shouldRemind: false as const, shift: null, minutesUntil: 0 };
+}
+
+/**
+ * Gửi thông báo nhắc nhở ca làm việc qua tất cả kênh đã bật.
+ * Gọi từ client sau khi getUpcomingShiftReminder trả shouldRemind=true.
+ */
+export async function sendShiftReminderNotification(data: {
+    shiftId: string;
+    shiftName: string;
+    shiftStartTime: string;
+}) {
+    const session = await requireAuth();
+    const userId = session.user.id;
+
+    const { notifyShiftReminder } = await import("@/lib/notification");
+
+    await notifyShiftReminder(userId, {
+        employeeName: session.user.name || "bạn",
+        shiftName: data.shiftName,
+        shiftStartTime: data.shiftStartTime,
+    });
 }

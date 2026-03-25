@@ -12,9 +12,11 @@ import {
   DeleteShiftDialog,
   DeleteAssignmentDialog,
 } from "./shift-dialogs";
-import { format } from "date-fns";
 import { AssignCycleDeptDialog } from "./assign-cycle-dept-dialog";
 import { AssignDialog } from "./assign-shift-dialog";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 // ─── Main Component ───
 
@@ -44,90 +46,20 @@ export function ShiftsClient({
       <div className="flex h-full flex-col gap-2">
         {/* ─── Header ─── */} {/* Header */}
         <section className="border-b">
-          <header className="p-2 flex items-center h-10">
+          <header className="p-2 flex items-center gap-2 h-10">
+            <Link href="/attendance">
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                className="h-7"
+                tooltip={"Quay lại"}
+              >
+                <ArrowLeft />
+              </Button>
+            </Link>
             <h1 className="font-bold truncate">Quản lý ca làm việc</h1>
           </header>
         </section>
-        {/* {canManage && (
-                        <div className="flex items-center gap-2">
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={data.openCreateShift}
-                                    >
-                                        <Plus className=" h-4 w-4" />
-                                        Tạo ca
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Tạo ca làm việc mới</p>
-                                </TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            data.setCycleDialogOpen(
-                                                true,
-                                            );
-                                        }}
-                                    >
-                                        <Plus className=" h-4 w-4" />
-                                        Gán chu kỳ
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>
-                                        Gán ca theo chu kỳ cho nhân
-                                        viên
-                                    </p>
-                                </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            data.setCycleDeptDialogOpen(
-                                                true,
-                                            );
-                                        }}
-                                    >
-                                        <Plus className=" h-4 w-4" />
-                                        Gán chu kỳ phòng ban
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>
-                                        Gán ca theo chu kỳ cho phòng
-                                        ban
-                                    </p>
-                                </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Link
-                                        href={"/attendance/settings"}
-                                        className={buttonVariants({
-                                            size: "sm",
-                                        })}
-                                    >
-                                        <Settings2 className="h-4 w-4" />
-                                        Cài đặt
-                                    </Link>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Cài đặt ca làm việc</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </div>
-                    )} */}
         <div className="flex items-center justify-between gap-2 px-4">
           <ShiftNavigation
             viewMode={data.viewMode}

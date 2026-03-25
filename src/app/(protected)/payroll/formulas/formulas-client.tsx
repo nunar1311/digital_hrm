@@ -148,6 +148,7 @@ function SalaryComponentTypeDialog({
 
   const onSubmit = async (data: SalaryComponentTypeForm) => {
     setIsLoading(true);
+    setOpen(false);
     try {
       if (editData) {
         await updateSalaryComponentType(editData.id, data);
@@ -156,11 +157,11 @@ function SalaryComponentTypeDialog({
         await createSalaryComponentType(data);
         toast.success("Đã tạo loại khoản lương mới");
       }
-      setOpen(false);
       form.reset();
       onSuccess();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Lỗi khi lưu");
+      setOpen(true);
     } finally {
       setIsLoading(false);
     }
@@ -357,13 +358,20 @@ export default function FormulasClient({
 
   const deleteMutation = useMutation({
     mutationFn: deleteSalaryComponentType,
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["salary-component-types"] });
+      return {};
+    },
     onSuccess: () => {
       toast.success("Đã xóa loại khoản lương");
-      queryClient.invalidateQueries({ queryKey: ["salary-component-types"] });
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Lỗi khi xóa");
+      queryClient.invalidateQueries({ queryKey: ["salary-component-types"] });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["salary-component-types"] });
+    }
   });
 
   // Group by category

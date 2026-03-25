@@ -124,23 +124,40 @@ export function EmployeeAssignDialog({
             Array.from(selectedIds),
             department!.id
         ),
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["departments"] });
+            await queryClient.cancelQueries({ queryKey: ["departmentTree"] });
+            await queryClient.cancelQueries({ queryKey: ["departmentEmployees"] });
+            await queryClient.cancelQueries({ queryKey: ["assignableEmployees"] });
+            onOpenChange(false);
+            return {};
+        },
         onSuccess: (result) => {
             if (result.success) {
                 toast.success(result.message);
+                onAssigned?.();
+                setSelectedIds(new Set());
+            } else {
+                toast.error(result.message);
                 queryClient.invalidateQueries({ queryKey: ["departments"] });
                 queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
                 queryClient.invalidateQueries({ queryKey: ["departmentEmployees"] });
                 queryClient.invalidateQueries({ queryKey: ["assignableEmployees"] });
-                onAssigned?.();
-                onOpenChange(false);
-                setSelectedIds(new Set());
-            } else {
-                toast.error(result.message);
             }
         },
         onError: () => {
             toast.error("Có lỗi xảy ra khi phân công");
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
+            queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
+            queryClient.invalidateQueries({ queryKey: ["departmentEmployees"] });
+            queryClient.invalidateQueries({ queryKey: ["assignableEmployees"] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
+            queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
+            queryClient.invalidateQueries({ queryKey: ["departmentEmployees"] });
+            queryClient.invalidateQueries({ queryKey: ["assignableEmployees"] });
+        }
     });
 
     const handleClose = (isOpen: boolean) => {

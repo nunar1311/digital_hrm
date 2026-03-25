@@ -7,6 +7,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import SidebarMind from "@/components/sidebar-mind";
 import BannerNotification from "@/components/banner-notification";
+import { AttendanceCheckDialog } from "@/components/attendance/attendance-check-dialog";
+import { ShiftReminderNotifier } from "@/components/attendance/shift-reminder-notifier";
 import {
     SidebarContextProvider,
     SidebarSlot,
@@ -51,6 +53,8 @@ export default async function ProtectedLayout({
                             <div className="border rounded-lg flex-1 flex overflow-hidden relative mr-1.5">
                                 <SidebarSlot className="overflow-hidden flex-1 relative min-h-0">
                                     <BannerNotification />
+                                    <AttendanceCheckDialog />
+                                    <ShiftReminderNotifier />
                                     <main className="h-full overflow-hidden">
                                         {children}
                                     </main>

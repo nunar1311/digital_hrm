@@ -1,12 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Building2,
@@ -23,6 +18,7 @@ import {
 } from "lucide-react";
 import { getEmployeeTimeline } from "@/app/(protected)/employees/actions";
 import { useState, useMemo } from "react";
+import Loading from "@/app/(protected)/loading";
 
 interface Props {
   employeeId: string;
@@ -63,9 +59,7 @@ export function TimelineTab({ employeeId }: Props) {
       if (!groups[year]) groups[year] = [];
       groups[year].push(event);
     });
-    return Object.entries(groups).sort(
-      ([a], [b]) => Number(b) - Number(a)
-    );
+    return Object.entries(groups).sort(([a], [b]) => Number(b) - Number(a));
   }, [filteredEvents]);
 
   const getEventIcon = (type: string) => {
@@ -128,24 +122,14 @@ export function TimelineTab({ employeeId }: Props) {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-24 rounded-xl bg-muted/50 animate-pulse"
-          />
-        ))}
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
             Lịch sử hoạt động
             <Badge variant="secondary" className="ml-1 text-xs">
               {filteredEvents.length} sự kiện
@@ -186,10 +170,7 @@ export function TimelineTab({ employeeId }: Props) {
 
                 <div className="relative border-l-2 border-border/50 ml-6 space-y-6 pb-2">
                   {yearEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="relative pl-8 group"
-                    >
+                    <div key={event.id} className="relative pl-8 group">
                       {/* Timeline Icon */}
                       <span
                         className={`absolute -left-4 top-1 h-8 w-8 rounded-full flex items-center justify-center ring-4 shadow-sm transition-transform duration-200 group-hover:scale-110 ${getEventBg(event.type)}`}
@@ -203,9 +184,7 @@ export function TimelineTab({ employeeId }: Props) {
                             {event.title}
                           </h3>
                           <time className="text-xs text-muted-foreground font-mono">
-                            {new Date(event.date).toLocaleDateString(
-                              "vi-VN"
-                            )}
+                            {new Date(event.date).toLocaleDateString("vi-VN")}
                           </time>
                         </div>
 
@@ -225,23 +204,17 @@ export function TimelineTab({ employeeId }: Props) {
                         {/* Metadata */}
                         {event.metadata &&
                           typeof event.metadata === "object" &&
-                          Object.keys(
-                            event.metadata as Record<string, unknown>
-                          ).length > 0 && (
+                          Object.keys(event.metadata as Record<string, unknown>)
+                            .length > 0 && (
                             <div className="mt-2 text-xs font-mono text-muted-foreground bg-muted/30 p-2 rounded-lg border border-dashed flex gap-2 flex-wrap">
                               {Object.entries(
-                                event.metadata as Record<
-                                  string,
-                                  unknown
-                                >
+                                event.metadata as Record<string, unknown>,
                               ).map(([key, val]) => (
                                 <span
                                   key={key}
                                   className="bg-background px-1.5 py-0.5 rounded border"
                                 >
-                                  <span className="opacity-60">
-                                    {key}:
-                                  </span>{" "}
+                                  <span className="opacity-60">{key}:</span>{" "}
                                   {String(val)}
                                 </span>
                               ))}

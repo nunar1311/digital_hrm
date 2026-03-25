@@ -185,23 +185,30 @@ export function DepartmentPositionFormDialog({
 
   const createMutation = useMutation({
     mutationFn: createPosition,
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["positions", "department", departmentId] });
+      await queryClient.cancelQueries({ queryKey: ["departments", departmentId] });
+      onOpenChange(false);
+      return {};
+    },
     onSuccess: (result) => {
       if (result.success) {
         toast.success("Tạo chức vụ thành công");
-        queryClient.invalidateQueries({
-          queryKey: ["positions", "department", departmentId],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["departments", departmentId],
-        });
-        onOpenChange(false);
       } else {
         toast.error(result.error);
+        queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
+        queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
       }
     },
     onError: () => {
       toast.error("Đã xảy ra lỗi khi tạo chức vụ");
+      queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
+      queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
+      queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
+    }
   });
 
   const updateMutation = useMutation({
@@ -212,23 +219,30 @@ export function DepartmentPositionFormDialog({
       id: string;
       data: Parameters<typeof updatePosition>[1];
     }) => updatePosition(id, data),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["positions", "department", departmentId] });
+      await queryClient.cancelQueries({ queryKey: ["departments", departmentId] });
+      onOpenChange(false);
+      return {};
+    },
     onSuccess: (result) => {
       if (result.success) {
         toast.success("Cập nhật chức vụ thành công");
-        queryClient.invalidateQueries({
-          queryKey: ["positions", "department", departmentId],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["departments", departmentId],
-        });
-        onOpenChange(false);
       } else {
         toast.error(result.error);
+        queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
+        queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
       }
     },
     onError: () => {
       toast.error("Đã xảy ra lỗi khi cập nhật chức vụ");
+      queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
+      queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
+      queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
+    }
   });
 
   const onSubmit = form.handleSubmit((values) => {

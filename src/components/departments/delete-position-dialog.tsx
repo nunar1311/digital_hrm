@@ -40,23 +40,30 @@ export function DeletePositionDialog({
 
     const deleteMutation = useMutation({
         mutationFn: deletePosition,
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["positions", "department", departmentId] });
+            await queryClient.cancelQueries({ queryKey: ["departments", departmentId] });
+            onOpenChange(false);
+            return {};
+        },
         onSuccess: (result) => {
             if (result.success) {
                 toast.success("Xóa chức vụ thành công");
-                queryClient.invalidateQueries({
-                    queryKey: ["positions", "department", departmentId],
-                });
-                queryClient.invalidateQueries({
-                    queryKey: ["departments", departmentId],
-                });
-                onOpenChange(false);
             } else {
                 toast.error(result.error);
+                queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
+                queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
             }
         },
         onError: () => {
             toast.error("Đã xảy ra lỗi khi xóa chức vụ");
+            queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
+            queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
+            queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
+        }
     });
 
     const handleDelete = () => {
