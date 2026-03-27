@@ -21,6 +21,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { emitToAll, emitToUser } from "@/lib/socket/server";
 import { SOCKET_EVENTS } from "@/lib/socket";
+import { notifyApproversOfNewRequest, notifyRequesterOfApproval, notifyRequesterOfRejection } from "@/lib/email-attendance-approval";
 
 // ─── HELPERS ───
 
@@ -957,11 +958,20 @@ const shiftSchema = z.object({
     code: z.string().min(1, "Mã ca không được trống"),
     startTime: z.string().regex(/^\d{2}:\d{2}$/, "Định dạng HH:mm"),
     endTime: z.string().regex(/^\d{2}:\d{2}$/, "Định dạng HH:mm"),
-    breakMinutes: z.coerce.number().min(0).default(60),
-    lateThreshold: z.coerce.number().min(0).default(15),
-    earlyThreshold: z.coerce.number().min(0).default(15),
+    breakMinutes: z.number().min(0).default(60),
+    lateThreshold: z.number().min(0).default(15),
+    earlyThreshold: z.number().min(0).default(15),
     isDefault: z.boolean().default(false),
     isActive: z.boolean().default(true),
+    // Flexible shift fields
+    type: z.string().default("FIXED"), // "FIXED" | "FLEXIBLE" | "FLEXIBLE_WINDOW"
+    checkinWindowStart: z.string().optional(),
+    checkinWindowEnd: z.string().optional(),
+    checkoutWindowStart: z.string().optional(),
+    checkoutWindowEnd: z.string().optional(),
+    minWorkingHours: z.number().optional(),
+    maxWorkingHours: z.number().optional(),
+    gracePeriodMinutes: z.number().optional(),
 });
 
 export async function getShifts() {
@@ -2585,7 +2595,7 @@ export interface ExportAttendanceParams {
 export async function exportMonthlyAttendance(
     params: ExportAttendanceParams,
 ) {
-    const session = await requireAuth();
+    await requireAuth();
 
     // Lấy dữ liệu monthly attendance
     const data = await getMonthlyAttendance(params);
@@ -2968,6 +2978,81 @@ export async function getUsersPaginated({
     return { users: mappedUsers, totalCount, page, pageSize };
 }
 
+/** Search users for custom approver selection */
+export async function searchUsersForApproval(params: {
+    search?: string;
+    page?: number;
+    pageSize?: number;
+}): Promise<{
+    users: Array<{
+        id: string;
+        name: string;
+        employeeCode: string | null;
+        image: string | null;
+    }>;
+    totalCount: number;
+    page: number;
+    pageSize: number;
+}> {
+    await requireAuth();
+
+    const { search = "", page = 1, pageSize = 20 } = params;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: Record<string, any> = {};
+
+    if (search.trim()) {
+        where.OR = [
+            {
+                name: {
+                    contains: search.trim(),
+                    mode: "insensitive",
+                },
+            },
+            {
+                employeeCode: {
+                    contains: search.trim(),
+                    mode: "insensitive",
+                },
+            },
+            {
+                email: {
+                    contains: search.trim(),
+                    mode: "insensitive",
+                },
+            },
+        ];
+    }
+
+    const [users, totalCount] = await Promise.all([
+        prisma.user.findMany({
+            where,
+            orderBy: { name: "asc" },
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+            select: {
+                id: true,
+                name: true,
+                employeeCode: true,
+                image: true,
+            },
+        }),
+        prisma.user.count({ where }),
+    ]);
+
+    return {
+        users: users.map((u) => ({
+            id: u.id,
+            name: u.name,
+            employeeCode: u.employeeCode,
+            image: u.image,
+        })),
+        totalCount,
+        page,
+        pageSize,
+    };
+}
+
 // ─── WORK CYCLES (Chu kỳ làm việc linh động) ───
 
 const workCycleEntrySchema = z.object({
@@ -3308,7 +3393,7 @@ export async function sendShiftReminderNotification(data: {
 // ─── ATTENDANCE APPROVAL PROCESS ───
 
 export async function getAttendanceApprovalProcess() {
-    const session = await requirePermission(Permission.ATTENDANCE_APPROVAL_CONFIG);
+    await requirePermission(Permission.ATTENDANCE_APPROVAL_CONFIG);
 
     const process = await prisma.attendanceApprovalProcess.findFirst({
         include: {
@@ -3371,7 +3456,7 @@ export async function saveAttendanceApprovalProcess(data: {
         skipSelfApprover?: boolean;
     };
 }) {
-    const session = await requirePermission(Permission.ATTENDANCE_APPROVAL_CONFIG);
+    await requirePermission(Permission.ATTENDANCE_APPROVAL_CONFIG);
 
     const existing = await prisma.attendanceApprovalProcess.findFirst();
 
@@ -3429,7 +3514,7 @@ export async function saveAttendanceApprovalProcess(data: {
 
 const createAdjustmentSchema = z.object({
     attendanceId: z.string().min(1, "ID chấm công không hợp lệ"),
-    date: z.string().min(1, "Ngày không hợp lệ"),
+    date: z.date().min(1, "Ngày không hợp lệ"),
     checkInTime: z.string().optional(),
     checkOutTime: z.string().optional(),
     reason: z.string().min(5, "Lý do phải có ít nhất 5 ký tự"),
@@ -3438,7 +3523,7 @@ const createAdjustmentSchema = z.object({
 
 export async function createAttendanceAdjustmentRequest(data: {
     attendanceId: string;
-    date: string;
+    date: Date;
     checkInTime?: string;
     checkOutTime?: string;
     reason: string;
@@ -3576,6 +3661,13 @@ export async function createAttendanceAdjustmentRequest(data: {
         });
     } else {
         // Notify approvers
+        // Get approver emails for email notification
+        const approverIds = approvalChain.map((e) => e.approverId);
+        const approvers = await prisma.user.findMany({
+            where: { id: { in: approverIds } },
+            select: { id: true, email: true, name: true },
+        });
+
         for (const entry of approvalChain) {
             emitToUser(entry.approverId, SOCKET_EVENTS.ATTENDANCE_ADJUSTMENT_REQUESTED, {
                 requestId: request.id,
@@ -3585,6 +3677,26 @@ export async function createAttendanceAdjustmentRequest(data: {
                 attendanceId: validated.attendanceId,
                 status: "PENDING",
             });
+        }
+
+        // Send email notification to approvers if enabled
+        if (process?.sendEmailReminder && approvers.length > 0) {
+            const dateStr = new Intl.DateTimeFormat("vi-VN", {
+                timeZone: "Asia/Ho_Chi_Minh",
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+            }).format(new Date(validated.date));
+
+            await notifyApproversOfNewRequest(
+                request.id,
+                approvers.map((a) => a.email),
+                request.user.name || "Nhân viên",
+                dateStr,
+                validated.checkInTime,
+                validated.checkOutTime,
+                validated.reason
+            );
         }
     }
 
@@ -3720,10 +3832,13 @@ async function findApproversForStep(
 
         case "MANAGER_LEVEL": {
             const level = step.managerLevel ?? 1;
+            if (level < 1 || level > 5) return []; // Safety limit
             const approvers: Array<{ id: string; name: string }> = [];
             let currentUserId: string | null = user.id;
             let currentLevel = 0;
 
+            // Walk up the management chain: user → manager → manager's manager → ...
+            // Level 1 = direct manager (1 hop), Level 2 = manager's manager (2 hops), etc.
             while (currentUserId && currentLevel < level) {
                 const u: { id: string; name: string | null; managerId: string | null } | null =
                     await prisma.user.findUnique({
@@ -3737,10 +3852,13 @@ async function findApproversForStep(
                         where: { id: u.managerId },
                         select: { id: true, name: true },
                     });
+
                 approvers.push({
                     id: u.managerId,
                     name: manager?.name || "Unknown",
                 });
+
+                // Move to next level in chain
                 currentUserId = u.managerId;
                 currentLevel++;
             }
@@ -3763,7 +3881,11 @@ async function findApproversForStep(
                 : [];
             if (!ids.length) return [];
             const users = await prisma.user.findMany({
-                where: { id: { in: ids } },
+                where: {
+                    id: { in: ids },
+                    // Filter out inactive users so they can't be approvers
+                    employeeStatus: { not: "INACTIVE" },
+                },
                 select: { id: true, name: true },
             });
             return users;
@@ -3784,6 +3906,8 @@ async function checkUserMatchesCondition(
         select: {
             departmentId: true,
             positionId: true,
+            workGroupId: true,
+            payrollCompanyId: true,
         },
     });
 
@@ -3794,16 +3918,14 @@ async function checkUserMatchesCondition(
             return user.departmentId
                 ? values.includes(user.departmentId)
                 : false;
-        case "WORKGROUP": {
-            // TODO: cần field workGroupId trong User model để filter
-            // Hiện tại tạm return true - developer cập nhật khi cần
-            return true;
-        }
-        case "PAYROLL_COMPANY": {
-            // TODO: cần field payrollCompanyId trong User model để filter
-            // Hiện tại tạm return true - developer cập nhật khi cần
-            return true;
-        }
+        case "WORKGROUP":
+            return user.workGroupId
+                ? values.includes(user.workGroupId)
+                : false;
+        case "PAYROLL_COMPANY":
+            return user.payrollCompanyId
+                ? values.includes(user.payrollCompanyId)
+                : false;
         case "OTHER":
         default:
             return true; // OTHER = fallback, luôn match
@@ -3892,6 +4014,7 @@ export async function approveAttendanceAdjustment(
                 approvalChain: chain,
             },
         });
+        void updated; // avoid unused warning
 
         // Update attendance record
         const attendance = await prisma.attendance.findUnique({
@@ -3928,6 +4051,29 @@ export async function approveAttendanceAdjustment(
             stepOrder,
             status: "APPROVED",
         });
+
+        // Send email notification to requester
+        const requester = await prisma.user.findUnique({
+            where: { id: request.userId },
+            select: { email: true, name: true },
+        });
+        if (requester?.email) {
+            const dateStr = new Intl.DateTimeFormat("vi-VN", {
+                timeZone: "Asia/Ho_Chi_Minh",
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+            }).format(new Date(request.date));
+
+            await notifyRequesterOfApproval(
+                requester.email,
+                requester.name || "Nhân viên",
+                dateStr,
+                request.checkInTime || undefined,
+                request.checkOutTime || undefined,
+                session.user.name || undefined
+            );
+        }
 
         revalidatePath("/attendance/approval-process");
         return { success: true, status: "APPROVED" };
@@ -4029,6 +4175,28 @@ export async function rejectAttendanceAdjustment(
         stepOrder,
     });
 
+    // Send email notification to requester about rejection
+    const requester = await prisma.user.findUnique({
+        where: { id: request.userId },
+        select: { email: true, name: true },
+    });
+    if (requester?.email) {
+        const dateStr = new Intl.DateTimeFormat("vi-VN", {
+            timeZone: "Asia/Ho_Chi_Minh",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        }).format(new Date(request.date));
+
+        await notifyRequesterOfRejection(
+            requester.email,
+            requester.name || "Nhân viên",
+            dateStr,
+            reason,
+            session.user.name || undefined
+        );
+    }
+
     revalidatePath("/attendance/approval-process");
     return { success: true, status: "REJECTED" };
 }
@@ -4075,7 +4243,7 @@ export async function getAttendanceAdjustments(params?: {
         Permission.ATTENDANCE_APPROVAL_VIEW,
         Permission.ATTENDANCE_APPROVAL_CONFIG,
     ]);
-    const canApprove = hasAnyPermission(role, [
+    void hasAnyPermission(role, [
         Permission.ATTENDANCE_APPROVAL_APPROVE,
     ]);
 

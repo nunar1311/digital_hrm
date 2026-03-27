@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Building2,
@@ -12,11 +13,12 @@ import {
   Trash2,
   ChevronRight,
   Users,
-  Hash,
   Ruler,
   Briefcase,
   Clock,
-  AlertCircle,
+  Shield,
+  Sparkles,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +36,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PositionFormDialog } from "@/components/positions/position-form-dialog";
 import { deletePosition } from "../actions";
+import { getPositionRoleMapping } from "../position-role-actions";
+import { POSITION_ROLE_SUGGESTIONS, AUTHORITY_ROLE_LABELS } from "../schemas";
+import { ROLE_LABELS, getRoleBadgeColor, PERMISSION_GROUPS } from "@/app/(protected)/settings/roles/constants";
 import type { PositionDetail } from "../types";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 
 const AUTHORITY_LABELS: Record<string, { label: string; class: string }> = {
   EXECUTIVE: {
@@ -79,20 +83,19 @@ interface PositionDetailClientProps {
 
 export function PositionDetailClient({ position }: PositionDetailClientProps) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const { data: roleMapping } = useQuery({
+    queryKey: ["position-role-mapping", position.id],
+    queryFn: () => getPositionRoleMapping(position.id),
+  });
+
+  const suggestedRoleKey = POSITION_ROLE_SUGGESTIONS[position.authority];
 
   const authInfo = AUTHORITY_LABELS[position.authority] || {
     label: position.authority,
     class: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-  };
-
-  const formatSalary = (value: string | null) => {
-    if (!value) return "—";
-    const num = Number(value);
-    if (isNaN(num)) return "—";
-    return new Intl.NumberFormat("vi-VN").format(num) + " VNĐ";
   };
 
   const handleDelete = async () => {
@@ -248,40 +251,9 @@ export function PositionDetailClient({ position }: PositionDetailClientProps) {
                     )}
                   </div>
                 </div>
-
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Thứ tự hiển thị
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Hash className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-mono bg-muted px-2 py-0.5 rounded text-sm">
-                      {position.sortOrder}
-                    </span>
-                  </div>
-                </div>
               </div>
 
               <Separator />
-
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Lương tối thiểu
-                  </p>
-                  <p className="text-sm font-medium">
-                    {formatSalary(position.minSalary)}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Lương tối đa
-                  </p>
-                  <p className="text-sm font-medium">
-                    {formatSalary(position.maxSalary)}
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
@@ -424,6 +396,112 @@ export function PositionDetailClient({ position }: PositionDetailClientProps) {
                 </p>
                 <p className="text-sm font-medium">{position.userCount}</p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Role Mapping Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Vai trò mặc định
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {roleMapping ? (
+                <>
+                  {/* Current mapped role */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Vai trò hiện tại
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getRoleBadgeColor(roleMapping.roleKey)}>
+                        {roleMapping.roleName}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {roleMapping.roleType === "FIXED" ? "Hệ thống" : "Tùy chỉnh"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Permissions list */}
+                  {roleMapping.permissions && roleMapping.permissions.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                        Quyền hạn ({roleMapping.permissions.length})
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {roleMapping.permissions.slice(0, 8).map((perm: string) => (
+                          <Badge
+                            key={perm}
+                            variant="secondary"
+                            className="text-xs font-normal"
+                          >
+                            {PERMISSION_GROUPS[perm.split(":")[0]] || perm.split(":")[0]}
+                            {perm.split(":")[1] && (
+                              <span className="ml-1 opacity-70">
+                                {perm.split(":")[1]}
+                              </span>
+                            )}
+                          </Badge>
+                        ))}
+                        {roleMapping.permissions.length > 8 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{roleMapping.permissions.length - 8} quyền khác
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  {/* Quick link to roles page */}
+                  <Button variant="outline" size="sm" className="w-full gap-2" asChild>
+                    <Link href="/settings/roles">
+                      <ExternalLink className="h-3 w-3" />
+                      Quản lý vai trò
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {/* No mapping */}
+                  <div className="flex flex-col items-center justify-center py-4 text-center">
+                    <Shield className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Chưa gán vai trò mặc định
+                    </p>
+                  </div>
+
+                  {/* Suggestion */}
+                  {suggestedRoleKey && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                        Gợi ý cho cấp {AUTHORITY_ROLE_LABELS[position.authority] || position.authority}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={getRoleBadgeColor(suggestedRoleKey)}
+                        >
+                          {ROLE_LABELS[suggestedRoleKey] || suggestedRoleKey}
+                        </Badge>
+                        <Sparkles className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          Gợi ý tự động
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Vui lòng chỉnh sửa chức vụ để gán vai trò mặc định.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

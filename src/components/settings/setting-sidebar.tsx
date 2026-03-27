@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "../ui/sidebar";
-import { Bell, Building, LucideIcon, Package, UserCircle2 } from "lucide-react";
+import { Bell, Building, LucideIcon, Package, UserCircle2, UserCog2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 interface SettingsItem {
@@ -44,6 +44,11 @@ const MyCompanySettings: SettingsItem[] = [
     name: "Tài sản",
     url: "/settings/assets",
   },
+  {
+    icon: UserCog2,
+    name: "Phân quyền",
+    url: "/settings/roles",
+  }
 ] as const;
 const SettingSidebar = () => {
   const pathname = usePathname();

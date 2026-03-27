@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState, useRef } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,10 +9,13 @@ import {
   updatePosition,
   getAllPositions,
 } from "@/app/(protected)/positions/actions";
+import {
+  getPositionRoleMapping,
+  setPositionRoleMapping,
+} from "@/app/(protected)/positions/position-role-actions";
 import { updatePositionSchema } from "@/app/(protected)/positions/schemas";
 import type { PositionListItem } from "@/app/(protected)/positions/types";
 import { getDepartments } from "@/app/(protected)/departments/actions";
-// import { getAuthorityTypes } from "@/app/(protected)/authority-types/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +23,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -40,21 +42,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, Plus, X } from "lucide-react";
 import z from "zod";
 
+/** Sinh mã chức vụ từ chữ cái đầu của mỗi từ trong tên */
+function generateCode(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase())
+    .join("")
+    .slice(0, 6);
+}
+
 const STATUS_OPTIONS = [
-  { value: "ACTIVE", label: "Hoạt động" },
-  { value: "INACTIVE", label: "Không hoạt động" },
+  {
+    value: "ACTIVE",
+    label: "Hoạt động",
+  },
+  {
+    value: "INACTIVE",
+    label: "Không hoạt động",
+  },
 ];
 
 interface PositionFormDialogProps {
   open: boolean;
   onClose: () => void;
   editData?: PositionListItem | null;
-  // Optional aliases for department-scoped usage
   onOpenChange?: (open: boolean) => void;
   editingPosition?: PositionListItem | null;
+  defaultDepartmentId?: string;
+  defaultDepartmentName?: string;
 }
 
 export function PositionFormDialog({
@@ -63,11 +83,14 @@ export function PositionFormDialog({
   editData,
   onOpenChange,
   editingPosition,
+  defaultDepartmentId,
+  defaultDepartmentName,
 }: PositionFormDialogProps) {
   const resolvedEditData = editingPosition ?? editData;
   const resolvedOnClose = onOpenChange ? () => onOpenChange(false) : onClose;
   const queryClient = useQueryClient();
   const isEdit = !!resolvedEditData;
+  const [selectedRoleKey, setSelectedRoleKey] = useState<string>("");
 
   const form = useForm<z.infer<typeof updatePositionSchema>>({
     resolver: zodResolver(updatePositionSchema),
@@ -75,18 +98,14 @@ export function PositionFormDialog({
       name: "",
       code: "",
       authority: "STAFF",
-      departmentId: undefined,
+      departmentId: defaultDepartmentId ?? undefined,
       level: 5,
       description: "",
       parentId: undefined,
-      minSalary: 0,
-      maxSalary: 0,
       status: "ACTIVE",
-      sortOrder: 0,
     },
   });
 
-  // Load edit data
   useEffect(() => {
     if (resolvedEditData) {
       form.reset({
@@ -97,31 +116,49 @@ export function PositionFormDialog({
         level: resolvedEditData.level || 0,
         description: resolvedEditData.description || "",
         parentId: resolvedEditData.parentId ?? undefined,
-        minSalary: resolvedEditData.minSalary
-          ? Number(resolvedEditData.minSalary)
-          : undefined,
-        maxSalary: resolvedEditData.maxSalary
-          ? Number(resolvedEditData.maxSalary)
-          : undefined,
         status: resolvedEditData.status as never,
-        sortOrder: resolvedEditData.sortOrder || 0,
       });
     } else {
       form.reset({
         name: "",
         code: "",
         authority: "STAFF",
-        departmentId: undefined,
+        departmentId: defaultDepartmentId ?? undefined,
         level: 5,
         description: "",
         parentId: undefined,
-        minSalary: 0,
-        maxSalary: 0,
         status: "ACTIVE",
-        sortOrder: 0,
       });
     }
-  }, [resolvedEditData, form]);
+  }, [resolvedEditData, form, defaultDepartmentId]);
+
+  // Reset role key khi đóng/mở dialog tạo mới
+  useEffect(() => {
+    if (!open) {
+      queueMicrotask(() => setSelectedRoleKey(""));
+    }
+  }, [open]);
+
+  // Lấy role mapping mới nhất từ query cache khi edit
+  const { data: existingMapping } = useQuery({
+    queryKey: ["position-role-mapping", resolvedEditData?.id],
+    queryFn: () => getPositionRoleMapping(resolvedEditData!.id),
+    enabled: !!open && !!resolvedEditData?.id,
+  });
+
+  // Khi mapping có dữ liệu, sync vào state
+  const prevMappingIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const mapping = existingMapping;
+    if (!mapping?.roleKey) return;
+    const mappingId = mapping.positionId ?? null;
+    if (mappingId && mappingId !== prevMappingIdRef.current) {
+      prevMappingIdRef.current = mappingId;
+      queueMicrotask(() => {
+        setSelectedRoleKey(mapping.roleKey);
+      });
+    }
+  }, [existingMapping]);
 
   const { data: departmentsData } = useQuery({
     queryKey: ["departments", "all"],
@@ -143,12 +180,16 @@ export function PositionFormDialog({
     enabled: open,
   });
 
-  // Fetch authority types from database
-  // const { data: authorityTypes = [] } = useQuery({
-  //     queryKey: ["authority-types"],
-  //     queryFn: () => getAuthorityTypes(),
-  //     enabled: open,
-  // });
+  // Tự sinh mã chức vụ khi tên thay đổi (chỉ khi tạo mới)
+  const watchedName = useWatch({ control: form.control, name: "name" });
+  useEffect(() => {
+    if (!isEdit && watchedName && watchedName.trim().length > 0) {
+      const generated = generateCode(watchedName);
+      if (form.getValues("code") !== generated) {
+        form.setValue("code", generated, { shouldValidate: true });
+      }
+    }
+  }, [watchedName, isEdit, form]);
 
   const createMutation = useMutation({
     mutationFn: createPosition,
@@ -160,6 +201,12 @@ export function PositionFormDialog({
     onSuccess: (result) => {
       if (result.success) {
         toast.success("Tạo chức vụ thành công");
+        if (selectedRoleKey && selectedRoleKey !== "__none__") {
+          roleMappingMutation.mutate({
+            positionId: result.id,
+            roleKey: selectedRoleKey,
+          });
+        }
       } else {
         toast.error(result.error);
         queryClient.invalidateQueries({ queryKey: ["positions"] });
@@ -171,7 +218,7 @@ export function PositionFormDialog({
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["positions"] });
-    }
+    },
   });
 
   const updateMutation = useMutation({
@@ -201,66 +248,87 @@ export function PositionFormDialog({
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["positions"] });
-    }
+    },
   });
 
-  const onSubmit = form.handleSubmit((values) => {
+  const roleMappingMutation = useMutation({
+    mutationFn: ({
+      positionId,
+      roleKey,
+    }: {
+      positionId: string;
+      roleKey: string;
+    }) => setPositionRoleMapping(positionId, roleKey),
+    onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.error);
+      }
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    const finalDepartmentId = isEdit
+      ? (values.departmentId ?? undefined)
+      : (defaultDepartmentId ?? values.departmentId ?? undefined);
+
     const payload = {
       name: values.name,
       code: values.code,
       authority: values.authority as never,
-      departmentId: values.departmentId ?? undefined,
+      departmentId: finalDepartmentId,
       level: Number(values.level),
       description: values.description || undefined,
       parentId: values.parentId ?? undefined,
-      minSalary: values.minSalary ? Number(values.minSalary) : undefined,
-      maxSalary: values.maxSalary ? Number(values.maxSalary) : undefined,
       status: values.status as never,
-      sortOrder: Number(values.sortOrder),
     };
 
     if (isEdit && editData) {
       updateMutation.mutate({ id: editData.id, data: payload });
+      if (selectedRoleKey && selectedRoleKey !== "__none__") {
+        roleMappingMutation.mutate({
+          positionId: editData.id,
+          roleKey: selectedRoleKey,
+        });
+      }
     } else {
       createMutation.mutate(payload as never);
     }
   });
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
-
-  // Filter out current position from parent options when editing
-  const parentOptions = positions.filter((p) => p.id !== editData?.id);
+  const parentOptions = (positions as PositionListItem[]).filter(
+    (p: PositionListItem) => p.id !== editData?.id,
+  );
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && resolvedOnClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>
-            {isEdit ? "Sửa chức vụ" : "Thêm chức vụ mới"}
+          <DialogTitle className="text-xl font-semibold">
+            {isEdit ? "Chỉnh sửa chức vụ" : "Thêm chức vụ mới"}
           </DialogTitle>
-          <DialogDescription>
+          <p className="text-sm text-muted-foreground">
             {isEdit
-              ? "Cập nhật thông tin chức vụ"
-              : "Điền thông tin để tạo chức vụ mới trong hệ thống"}
-          </DialogDescription>
+              ? `Cập nhật thông tin cho chức vụ ${resolvedEditData?.name}`
+              : defaultDepartmentName
+                ? `Tạo chức vụ mới trong ${defaultDepartmentName}`
+                : "Điền thông tin để tạo chức vụ mới"}
+          </p>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {/* Tên chức vụ */}
               <FormField
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                control={form.control as any}
+                control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tên chức vụ *</FormLabel>
+                    <FormLabel>
+                      Tên chức vụ <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="VD: Trưởng phòng Nhân sự"
-                        {...field}
-                      />
+                      <Input placeholder="Nhập tên chức vụ" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -273,15 +341,18 @@ export function PositionFormDialog({
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mã chức vụ *</FormLabel>
+                    <FormLabel>
+                      Mã chức vụ <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="VD: HR_MANAGER"
+                        placeholder="Tự động tạo từ tên chức vụ"
                         {...field}
                         disabled={isEdit}
-                        className={isEdit ? "opacity-60" : ""}
+                        readOnly={!isEdit}
                       />
                     </FormControl>
+
                     <FormMessage />
                   </FormItem>
                 )}
@@ -301,7 +372,7 @@ export function PositionFormDialog({
                         type="number"
                         min={1}
                         max={10}
-                        placeholder="1-10 (1=cao nhất)"
+                        placeholder="Nhập cấp bậc (1-10)"
                         {...field}
                       />
                     </FormControl>
@@ -310,81 +381,6 @@ export function PositionFormDialog({
                 )}
               />
 
-              {/* Quyền hạn */}
-              {/* <FormField
-                                control={form.control}
-                                name="authority"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>
-                                            Quyền hạn
-                                        </FormLabel>
-                                        <Select
-                                            onValueChange={
-                                                field.onChange
-                                            }
-                                            value={field.value}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Chọn quyền hạn" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {authorityTypes.map(
-                                                    (opt) => (
-                                                        <SelectItem
-                                                            key={
-                                                                opt.code
-                                                            }
-                                                            value={
-                                                                opt.code
-                                                            }
-                                                        >
-                                                            {
-                                                                opt.name
-                                                            }
-                                                        </SelectItem>
-                                                    ),
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            /> */}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* Phòng ban */}
-              <FormField
-                control={form.control}
-                name="departmentId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phòng ban</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn phòng ban (tùy chọn)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {departmentsData?.departments?.map(
-                          (dept: { id: string; name: string }) => (
-                            <SelectItem key={dept.id} value={dept.id}>
-                              {dept.name}
-                            </SelectItem>
-                          ),
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Chức vụ cha */}
               <FormField
                 control={form.control}
                 name="parentId"
@@ -394,7 +390,7 @@ export function PositionFormDialog({
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Chọn chức vụ cha (tùy chọn)" />
+                          <SelectValue placeholder="Chọn chức vụ cha" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -412,62 +408,38 @@ export function PositionFormDialog({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Lương tối thiểu */}
-              <FormField
-                control={form.control}
-                name="minSalary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lương tối thiểu (VNĐ)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        placeholder="VD: 15000000"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Lương tối đa */}
-              <FormField
-                control={form.control}
-                name="maxSalary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lương tối đa (VNĐ)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        placeholder="VD: 30000000"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* Thứ tự */}
-              <FormField
-                control={form.control}
-                name="sortOrder"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Thứ tự hiển thị</FormLabel>
-                    <FormControl>
-                      <Input type="number" min={0} placeholder="0" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Phòng ban */}
+              {(!defaultDepartmentId || isEdit) && (
+                <FormField
+                  control={form.control}
+                  name="departmentId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phòng ban</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Chọn phòng ban" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {departmentsData?.departments?.map(
+                            (dept: { id: string; name: string }) => (
+                              <SelectItem key={dept.id} value={dept.id}>
+                                {dept.name}
+                              </SelectItem>
+                            ),
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Trạng thái */}
               <FormField
@@ -478,8 +450,8 @@ export function PositionFormDialog({
                     <FormLabel>Trạng thái</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn trạng thái" />
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -496,7 +468,6 @@ export function PositionFormDialog({
               />
             </div>
 
-            {/* Mô tả */}
             <FormField
               control={form.control}
               name="description"
@@ -505,8 +476,9 @@ export function PositionFormDialog({
                   <FormLabel>Mô tả</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Mô tả chi tiết về chức vụ này..."
-                      rows={3}
+                      placeholder="Mô tả chi tiết về chức vụ, trách nhiệm và quyền hạn..."
+                      rows={4}
+                      className="resize-none"
                       {...field}
                     />
                   </FormControl>
@@ -521,12 +493,28 @@ export function PositionFormDialog({
                 variant="outline"
                 onClick={onClose}
                 disabled={isLoading}
+                className="gap-2"
               >
-                Hủy
+                <X className="w-4 h-4" />
+                Hủy bỏ
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEdit ? "Lưu thay đổi" : "Tạo mới"}
+              <Button type="submit" disabled={isLoading} className="gap-2">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Đang xử lý...
+                  </>
+                ) : isEdit ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Lưu thay đổi
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Tạo chức vụ
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </form>

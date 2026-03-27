@@ -83,7 +83,7 @@ export interface AdjustmentRequestedEvent {
     requestId: string;
     userId: string;
     userName: string;
-    date: string;
+    date: Date;
     attendanceId: string;
     status: string;
 }
@@ -203,10 +203,21 @@ export interface SettingsUpdatedEvent {
 }
 
 export interface RoleUpdatedEvent {
+    userId?: string;
+    userName?: string;
+    newRole?: string;
+    updatedBy?: string;
+    action?: "create" | "update" | "delete";
+    id?: string;
+}
+
+export interface CustomRoleUpdatedEvent {
+    action: "create" | "update" | "delete";
+    id?: string;
+}
+
+export interface RoleAssignmentUpdatedEvent {
     userId: string;
-    userName: string;
-    newRole: string;
-    updatedBy: string;
 }
 
 // === Asset Events ===
@@ -313,6 +324,8 @@ export interface ServerToClientEvents {
     ) => void;
     "settings:updated": (data: SettingsUpdatedEvent) => void;
     "settings:role-updated": (data: RoleUpdatedEvent) => void;
+    "settings:custom-role-updated": (data: CustomRoleUpdatedEvent) => void;
+    "settings:role-assignment-updated": (data: RoleAssignmentUpdatedEvent) => void;
     "asset:created": (data: AssetCreatedEvent) => void;
     "asset:updated": (data: AssetUpdatedEvent) => void;
     "asset:deleted": (data: AssetDeletedEvent) => void;

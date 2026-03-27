@@ -875,3 +875,183 @@ export async function getEmployeeTimeline(userId: string) {
     orderBy: { date: "desc" },
   });
 }
+
+// ─── Position ↔ Role Suggestion for Employees ───
+
+/**
+ * Lấy role được suggest cho user dựa trên position mapping
+ * Trả về thông tin gợi ý khi user được gán position
+ */
+export async function getSuggestedRoleForUser(userId: string): Promise<{
+  suggestedRoleKey: string | null;
+  suggestedRoleName: string | null;
+  currentRoleKey: string | null;
+  positionName: string | null;
+  hasMismatch: boolean;
+} | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      positionId: true,
+      position: {
+        select: {
+          name: true,
+          authority: true,
+          roleMapping: {
+            select: { roleKey: true },
+          },
+        },
+      },
+      roleAssignments: {
+        select: {
+          role: {
+            select: { key: true, name: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!user?.positionId || !user.position) {
+    return null;
+  }
+
+  const mappedRole = user.position.roleMapping?.roleKey ?? null;
+  const currentRole = user.roleAssignments[0]?.role.key ?? null;
+  const suggestedRoleKey = mappedRole;
+
+  // Lấy thông tin role để hiển thị tên
+  let suggestedRoleName: string | null = null;
+  if (suggestedRoleKey) {
+    const role = await prisma.role.findUnique({
+      where: { key: suggestedRoleKey },
+      select: { name: true },
+    });
+    suggestedRoleName = role?.name ?? suggestedRoleKey;
+  }
+
+  const hasMismatch = !!(
+    suggestedRoleKey &&
+    currentRole &&
+    suggestedRoleKey !== currentRole
+  );
+
+  return {
+    suggestedRoleKey,
+    suggestedRoleName,
+    currentRoleKey: currentRole,
+    positionName: user.position.name,
+    hasMismatch,
+  };
+}
+
+/**
+ * Gợi ý role cho user khi position thay đổi
+ * Dùng trong employee form dialog khi user chọn position mới
+ */
+export async function suggestRoleForPositionChange(
+  userId: string,
+  newPositionId: string,
+): Promise<{
+  roleKey: string | null;
+  roleName: string | null;
+  positionName: string | null;
+  currentRoleKey: string | null;
+  shouldSuggest: boolean;
+}> {
+  const [user, position] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        roleAssignments: {
+          select: {
+            role: { select: { key: true, name: true } },
+          },
+        },
+      },
+    }),
+    prisma.position.findUnique({
+      where: { id: newPositionId },
+      select: {
+        name: true,
+        roleMapping: {
+          select: { roleKey: true },
+        },
+      },
+    }),
+  ]);
+
+  const currentRoleKey = user?.roleAssignments[0]?.role.key ?? null;
+  const mappedRoleKey = position?.roleMapping?.roleKey ?? null;
+
+  let roleName: string | null = null;
+  if (mappedRoleKey) {
+    const role = await prisma.role.findUnique({
+      where: { key: mappedRoleKey },
+      select: { name: true },
+    });
+    roleName = role?.name ?? mappedRoleKey;
+  }
+
+  const shouldSuggest =
+    !!mappedRoleKey &&
+    !!currentRoleKey &&
+    mappedRoleKey !== currentRoleKey;
+
+  return {
+    roleKey: mappedRoleKey,
+    roleName,
+    positionName: position?.name ?? null,
+    currentRoleKey,
+    shouldSuggest,
+  };
+}
+
+/**
+ * Cập nhật vai trò (role) của user theo position mapping
+ * Xóa role cũ và gán role mới từ position
+ */
+export async function updateUserRoleFromPosition(
+  userId: string,
+  positionId: string,
+): Promise<{ success: boolean; roleKey?: string; error?: string }> {
+  try {
+    const position = await prisma.position.findUnique({
+      where: { id: positionId },
+      select: { roleMapping: { select: { roleKey: true } } },
+    });
+
+    const mappedRoleKey = position?.roleMapping?.roleKey ?? null;
+
+    if (!mappedRoleKey) {
+      return { success: true };
+    }
+
+    const role = await prisma.role.findUnique({
+      where: { key: mappedRoleKey },
+      select: { id: true },
+    });
+
+    if (!role) {
+      return { success: false, error: "Không tìm thấy vai trò" };
+    }
+
+    // Xóa tất cả role assignment hiện tại
+    await prisma.userCustomRoleAssignment.deleteMany({
+      where: { userId },
+    });
+
+    // Gán role mới
+    await prisma.userCustomRoleAssignment.create({
+      data: {
+        userId,
+        roleId: role.id,
+      },
+    });
+
+    return { success: true, roleKey: mappedRoleKey };
+  } catch (err) {
+    console.error("updateUserRoleFromPosition error:", err);
+    return { success: false, error: "Lỗi khi cập nhật vai trò" };
+  }
+}

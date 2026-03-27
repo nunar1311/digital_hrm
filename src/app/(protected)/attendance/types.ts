@@ -476,7 +476,7 @@ export interface AttendanceAdjustmentRequest {
     attendanceId: string;
     userId: string;
     userName: string;
-    userAvatar?: string;
+    userAvatar?: string | null;
     departmentName: string;
     date: string;
     checkInTime?: string;

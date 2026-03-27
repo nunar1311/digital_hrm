@@ -186,28 +186,6 @@ function PositionsSectionInline({
           </code>
         ),
       },
-      //   {
-      //     accessorKey: "authority",
-      //     header: "Cấp bậc",
-      //     size: 130,
-      //     cell: ({ row }) => {
-      //       const auth = getAuthorityColorConfig(
-      //         row.original.authority,
-      //         authorityTypes,
-      //       );
-      //       return (
-      //         <span
-      //           className={cn(
-      //             "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium",
-      //             auth.bg,
-      //             auth.text,
-      //           )}
-      //         >
-      //           {auth.label}
-      //         </span>
-      //       );
-      //     },
-      //   },
       {
         accessorKey: "level",
         header: "Cấp độ",
@@ -254,26 +232,12 @@ function PositionsSectionInline({
             >
               <Pencil className="h-3 w-3" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(row.original);
-              }}
-              className={cn(
-                row.original.userCount > 0 && "opacity-40 cursor-not-allowed",
-              )}
-              disabled={row.original.userCount > 0}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
           </div>
         ),
         enableSorting: false,
       },
     ],
-    [onEdit, onDelete],
+    [positions, selectedIds, onEdit],
   );
 
   // TanStack Table's useReactTable() returns unstable functions — known limitation.

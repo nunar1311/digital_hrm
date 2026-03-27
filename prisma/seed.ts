@@ -353,6 +353,36 @@ async function seed() {
         console.log(`  ✅ ${pos.name} (${pos.code})`);
     }
 
+    // ─── Seed PositionRoleMapping ───
+    const POSITION_ROLE_SEED: Record<string, string> = {
+        DIRECTOR: "DIRECTOR",
+        DEPUTY: "DEPT_MANAGER",
+        MANAGER: "HR_MANAGER",
+        TEAM_LEAD: "TEAM_LEADER",
+        STAFF: "EMPLOYEE",
+        INTERN: "EMPLOYEE",
+    };
+
+    console.log("\n🔗 Seeding position-role mappings...\n");
+    const allPositions = await prisma.position.findMany({ select: { id: true, authority: true } });
+    let mappedCount = 0;
+
+    for (const pos of allPositions) {
+        const roleKey = POSITION_ROLE_SEED[pos.authority];
+        if (!roleKey) continue;
+        const role = await prisma.role.findFirst({ where: { key: roleKey, isActive: true } });
+        if (!role) continue;
+        try {
+            await prisma.positionRoleMapping.upsert({
+                where: { positionId: pos.id },
+                create: { positionId: pos.id, roleKey: role.key, isDefault: true },
+                update: {},
+            });
+            mappedCount++;
+        } catch {}
+    }
+    console.log(`  ✅ Đã seed ${mappedCount} position-role mappings`);
+
     // ─── Update user departmentId and positionId ───
     console.log("\n🔗 Linking users to departments and positions...\n");
     const userDeptLinks: { email: string; deptCode: string; positionCode: string }[] = [
@@ -377,6 +407,155 @@ async function seed() {
             });
             console.log(`  ✅ ${link.email} → ${link.deptCode} (${link.positionCode})`);
         }
+    }
+
+    // ─── Seed Attendance Approval Process (Default) ───
+    console.log("\n📋 Seeding attendance approval process (default)...\n");
+
+    const existingProcess = await prisma.attendanceApprovalProcess.findFirst();
+    if (!existingProcess) {
+        // Get HR Manager user for the approver
+        const hrManager = await prisma.user.findFirst({
+            where: { hrmRole: "HR_MANAGER" },
+        });
+
+        await prisma.attendanceApprovalProcess.create({
+            data: {
+                name: "Quy trình duyệt điều chỉnh chấm công",
+                isActive: true,
+                sendEmailReminder: false,
+                skipDuplicateApprover: true,
+                skipSelfApprover: true,
+                steps: {
+                    create: {
+                        stepOrder: 1,
+                        stepType: "APPROVER",
+                        approverType: "DIRECT_MANAGER",
+                        approvalMethod: "FIRST_APPROVES",
+                        skipIfNoApproverFound: true,
+                    },
+                },
+            },
+        });
+        console.log("  ✅ Default attendance approval process created");
+        console.log("     - Step 1: Direct Manager (First Approves)");
+    } else {
+        console.log("  ⏭️  Attendance approval process already exists, skipping...");
+    }
+
+    // ─── Seed Attendance Config ───
+    console.log("\n⏰ Seeding attendance config...\n");
+
+    const existingConfig = await prisma.attendanceConfig.findFirst();
+    if (!existingConfig) {
+        await prisma.attendanceConfig.create({
+            data: {
+                otWeekdayCoeff: 1.5,
+                otWeekendCoeff: 2.0,
+                otHolidayCoeff: 3.0,
+                standardWorkHours: 8,
+                standardWorkDays: 22,
+                requireGps: false,
+                requireWifi: false,
+                requireSelfie: false,
+                maxGpsDistanceMeters: 200,
+                earlyCheckinMinutes: 60,
+            },
+        });
+        console.log("  ✅ Default attendance config created");
+    } else {
+        console.log("  ⏭️  Attendance config already exists, skipping...");
+    }
+
+    // ─── Seed Default Shifts ───
+    console.log("\n🕐 Seeding default shifts...\n");
+
+    const existingShifts = await prisma.shift.findMany();
+    if (existingShifts.length === 0) {
+        const shifts = [
+            {
+                name: "Ca sáng",
+                code: "SHIFT-MORNING",
+                startTime: "08:00",
+                endTime: "12:00",
+                breakMinutes: 0,
+                lateThreshold: 15,
+                earlyThreshold: 15,
+                isDefault: false,
+                isActive: true,
+            },
+            {
+                name: "Ca chiều",
+                code: "SHIFT-AFTERNOON",
+                startTime: "13:00",
+                endTime: "17:30",
+                breakMinutes: 0,
+                lateThreshold: 15,
+                earlyThreshold: 15,
+                isDefault: false,
+                isActive: true,
+            },
+            {
+                name: "Ca ngày",
+                code: "SHIFT-FULL",
+                startTime: "08:00",
+                endTime: "17:30",
+                breakMinutes: 90,
+                lateThreshold: 15,
+                earlyThreshold: 15,
+                isDefault: true,
+                isActive: true,
+            },
+            {
+                name: "Ca đêm",
+                code: "SHIFT-NIGHT",
+                startTime: "22:00",
+                endTime: "06:00",
+                breakMinutes: 60,
+                lateThreshold: 15,
+                earlyThreshold: 15,
+                isDefault: false,
+                isActive: true,
+            },
+        ];
+
+        for (const shift of shifts) {
+            await prisma.shift.create({ data: shift });
+            console.log(`  ✅ ${shift.name} (${shift.code})`);
+        }
+    } else {
+        console.log("  ⏭️  Shifts already exist, skipping...");
+    }
+
+    // ─── Seed Holidays 2026 ───
+    console.log("\n🎉 Seeding holidays 2026...\n");
+
+    const existingHolidays = await prisma.holiday.findMany({
+        where: { date: { gte: new Date("2026-01-01"), lte: new Date("2026-12-31") } },
+    });
+
+    if (existingHolidays.length === 0) {
+        const holidays = [
+            { name: "Tết Dương lịch", date: "2026-01-01" },
+            { name: "Tết Nguyên Đán", date: "2026-02-17", endDate: "2026-02-23" },
+            { name: "Giỗ Tổ Hùng Vương", date: "2026-04-10" },
+            { name: "Ngày Giải phóng miền Nam", date: "2026-04-30" },
+            { name: "Quốc tế Lao động", date: "2026-05-01" },
+            { name: "Quốc khánh", date: "2026-09-02" },
+        ];
+
+        for (const holiday of holidays) {
+            await prisma.holiday.create({
+                data: {
+                    name: holiday.name,
+                    date: new Date(holiday.date),
+                    endDate: holiday.endDate ? new Date(holiday.endDate) : null,
+                },
+            });
+            console.log(`  ✅ ${holiday.name} (${holiday.date})`);
+        }
+    } else {
+        console.log("  ⏭️  Holidays already exist, skipping...");
     }
 
     // ─── Seed Company Settings ───

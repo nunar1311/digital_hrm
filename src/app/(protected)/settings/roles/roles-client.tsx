@@ -1,6 +1,6 @@
 "use client";
 
-import { Shield, Users } from "lucide-react";
+import { Shield, Users, ShieldPlus } from "lucide-react";
 import {
     Tabs,
     TabsContent,
@@ -10,7 +10,8 @@ import {
 import { TAB_TRIGGER_CLASS } from "../../attendance/settings/settings-client";
 import { UsersRoleTable } from "./users-role-table";
 import { PermissionMatrix } from "./permission-matrix";
-import type { RolesData, UsersPage } from "./constants";
+import { CustomRoleTable } from "./custom-role-table";
+import type { RolesData, UsersPage, DBRole } from "./constants";
 
 // ─── Component ───
 
@@ -27,7 +28,7 @@ export function RolesClient({
     canManage,
     currentUserId,
 }: RolesClientProps) {
-    const { rolePermissionsMap, permissions } = initialRolesData;
+    const { rolePermissionsMap, permissions, dbRoles } = initialRolesData;
 
     return (
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden p-4 md:p-6">
@@ -41,11 +42,18 @@ export function RolesClient({
             </div>
 
             <Tabs
-                defaultValue="users"
+                defaultValue="custom-roles"
                 orientation="vertical"
                 className="w-full gap-2 flex flex-1 min-h-0"
             >
                 <TabsList variant={"line"} className="w-60">
+                    <TabsTrigger
+                        value="custom-roles"
+                        className={TAB_TRIGGER_CLASS}
+                    >
+                        <ShieldPlus className="h-4 w-4" />
+                        Vai trò tùy chỉnh
+                    </TabsTrigger>
                     <TabsTrigger
                         value="users"
                         className={TAB_TRIGGER_CLASS}
@@ -63,6 +71,16 @@ export function RolesClient({
                 </TabsList>
 
                 <TabsContent
+                    value="custom-roles"
+                    className="space-y-4 flex-1 min-h-0 overflow-y-auto"
+                >
+                    <CustomRoleTable
+                        canManage={canManage}
+                        dbRoles={dbRoles}
+                    />
+                </TabsContent>
+
+                <TabsContent
                     value="users"
                     className="space-y-4 flex-1 min-h-0 overflow-y-auto"
                 >
@@ -71,6 +89,7 @@ export function RolesClient({
                         canManage={canManage}
                         currentUserId={currentUserId}
                         rolePermissionsMap={rolePermissionsMap}
+                        dbRoles={dbRoles}
                     />
                 </TabsContent>
 

@@ -61,8 +61,6 @@ const positionFormSchema = z.object({
   ]),
   level: z.number().int().min(1).max(10),
   description: z.string().optional(),
-  minSalary: z.number().min(0).optional(),
-  maxSalary: z.number().min(0).optional(),
 });
 
 type PositionFormValues = z.infer<typeof positionFormSchema>;
@@ -84,12 +82,10 @@ export interface DepartmentPositionFormDialogProps {
     id: string;
     name: string;
     code: string;
-    authority: string;
-    level: number;
-    description?: string | null;
-    minSalary?: string | null;
-    maxSalary?: string | null;
-  } | null;
+  authority: string;
+  level: number;
+  description?: string | null;
+} | null;
 }
 
 // function getAuthorityLabel(authority: string, authorityTypes: AuthorityTypeItem[]): string {
@@ -128,8 +124,6 @@ export function DepartmentPositionFormDialog({
       authority: "STAFF",
       level: 6,
       description: "",
-      minSalary: undefined,
-      maxSalary: undefined,
     },
   });
 
@@ -141,24 +135,14 @@ export function DepartmentPositionFormDialog({
         name: editingPosition.name,
         code: editingPosition.code,
         authority: editingPosition.authority as PositionFormValues["authority"],
-        // level: editingPosition.level || getDefaultLevel(editingPosition.authority),
         description: editingPosition.description || "",
-        minSalary: editingPosition.minSalary
-          ? Number(editingPosition.minSalary)
-          : undefined,
-        maxSalary: editingPosition.maxSalary
-          ? Number(editingPosition.maxSalary)
-          : undefined,
       });
     } else {
       form.reset({
         name: "",
         code: "",
         authority: "STAFF",
-        // level: getDefaultLevel("STAFF"),
         description: "",
-        minSalary: undefined,
-        maxSalary: undefined,
       });
     }
   }, [editingPosition, form]);
@@ -273,10 +257,7 @@ export function DepartmentPositionFormDialog({
       departmentId,
       level: Number(values.level),
       description: values.description || undefined,
-      minSalary: values.minSalary ? Number(values.minSalary) : undefined,
-      maxSalary: values.maxSalary ? Number(values.maxSalary) : undefined,
       status: "ACTIVE" as const,
-      sortOrder: 0,
     };
 
     if (isEdit && editingPosition) {
@@ -402,54 +383,6 @@ export function DepartmentPositionFormDialog({
                         min={1}
                         max={10}
                         placeholder="1-10 (1=cao nhất)"
-                        value={field.value ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          field.onChange(val ? Number(val) : undefined);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="minSalary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lương tối thiểu (VNĐ)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        placeholder="VD: 15000000"
-                        value={field.value ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          field.onChange(val ? Number(val) : undefined);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="maxSalary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lương tối đa (VNĐ)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        placeholder="VD: 30000000"
                         value={field.value ?? ""}
                         onChange={(e) => {
                           const val = e.target.value;

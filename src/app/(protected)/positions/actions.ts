@@ -33,7 +33,7 @@ export async function getPositions(
         departmentId,
         authority,
         status = "ALL",
-        sortBy = "sortOrder",
+        sortBy = "level",
         sortOrder = "asc",
     } = params;
 
@@ -60,8 +60,8 @@ export async function getPositions(
         where.status = status;
     }
 
-    const validSortFields = ["name", "code", "level", "sortOrder", "status", "authority"];
-    const sortField = validSortFields.includes(sortBy) ? sortBy : "sortOrder";
+    const validSortFields = ["name", "code", "level", "status", "authority"];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : "level";
 
     const [positions, total] = await Promise.all([
         prisma.position.findMany({
@@ -128,7 +128,7 @@ export async function getPositionById(id: string): Promise<PositionDetail | null
             parent: { select: { id: true, name: true, code: true } },
             children: {
                 select: { id: true, name: true, code: true, authority: true },
-                orderBy: { sortOrder: "asc" },
+                orderBy: { level: "asc" },
             },
             users: {
                 select: {
@@ -231,8 +231,6 @@ export async function createPosition(
                 level: validated.level,
                 description: validated.description,
                 parentId: validated.parentId,
-                minSalary: validated.minSalary,
-                maxSalary: validated.maxSalary,
                 status: validated.status,
                 sortOrder: validated.sortOrder,
             },
@@ -307,8 +305,6 @@ export async function updatePosition(
                 ...(validated.level !== undefined && { level: validated.level }),
                 ...(validated.description !== undefined && { description: validated.description }),
                 ...(validated.parentId !== undefined && { parentId: validated.parentId }),
-                ...(validated.minSalary !== undefined && { minSalary: validated.minSalary }),
-                ...(validated.maxSalary !== undefined && { maxSalary: validated.maxSalary }),
                 ...(validated.status !== undefined && { status: validated.status }),
                 ...(validated.sortOrder !== undefined && { sortOrder: validated.sortOrder }),
             },

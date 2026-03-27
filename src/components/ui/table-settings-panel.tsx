@@ -58,7 +58,7 @@ export function TableSettingsPanel({
     <div
       ref={panelRef}
       className={cn(
-        "absolute top-[69px] right-0 bottom-0 flex flex-col shrink-0 transition-all duration-300 ease-in-out overflow-hidden z-20 bg-background border-l",
+        "absolute top-17.25 right-0 bottom-0 flex flex-col shrink-0 transition-all duration-300 ease-in-out overflow-hidden z-20 bg-background border-l",
         open ? "w-72" : "w-0 border-0",
         className,
       )}
@@ -151,7 +151,7 @@ export function TableSettingsPanel({
                     htmlFor={`column-${option.key}`}
                     className={"flex items-center gap-2"}
                   >
-                    <option.icon className="size-4 text-muted-foreground" />
+                    <option.icon className="size-3.5 text-muted-foreground" />
                     <span className="text-sm">{option.label}</span>
                   </Label>
                   <Switch

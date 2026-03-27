@@ -4,9 +4,11 @@ import { useState } from "react";
 import {
     useQuery,
     useQueryClient,
+    useMutation,
     keepPreviousData,
 } from "@tanstack/react-query";
-import { Search, UserCog } from "lucide-react";
+import { Search, UserCog, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,15 +32,33 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+} from "@/components/ui/form";
 import { useSocketEvent } from "@/hooks/use-socket-event";
-import { getUsersWithRoles } from "../preferences/actions";
+import {
+    getUsersWithRoles,
+    assignUserRole,
+    removeUserRole,
+} from "../preferences/actions";
 import { EditRoleDialog } from "./edit-role-dialog";
 import {
-    ROLE_LABELS,
-    ROLE_COLORS,
     getInitials,
-    type UserRow,
+    getRoleBadgeColor,
     type UsersPage,
+    type DBRole,
 } from "./constants";
 
 interface UsersRoleTableProps {
@@ -46,6 +66,7 @@ interface UsersRoleTableProps {
     canManage: boolean;
     currentUserId: string;
     rolePermissionsMap: Record<string, string[]>;
+    dbRoles: DBRole[];
 }
 
 export function UsersRoleTable({
@@ -53,17 +74,18 @@ export function UsersRoleTable({
     canManage,
     currentUserId,
     rolePermissionsMap,
+    dbRoles,
 }: UsersRoleTableProps) {
     const queryClient = useQueryClient();
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState<string>("all");
-    const [editDialog, setEditDialog] = useState<UserRow | null>(
-        null,
-    );
+    const [editDialog, setEditDialog] = useState<UsersPage["users"][number] | null>(null);
+    const [assignDialog, setAssignDialog] = useState<UsersPage["users"][number] | null>(null);
+    const [selectedRoleId, setSelectedRoleId] = useState<string>("");
 
-    const pageSize = 5;
+    const pageSize = 20;
 
     const queryKey = [
         "settings",
@@ -73,27 +95,23 @@ export function UsersRoleTable({
         roleFilter,
     ];
 
-    const { data: usersData, isFetching: isLoading } =
-        useQuery<UsersPage>({
-            queryKey,
-            queryFn: async () => {
-                const result = await getUsersWithRoles({
-                    page,
-                    pageSize,
-                    search: searchQuery || undefined,
-                    role:
-                        roleFilter === "all" ? undefined : roleFilter,
-                });
-                return JSON.parse(
-                    JSON.stringify(result),
-                ) as UsersPage;
-            },
-            initialData:
-                page === 1 && !searchQuery && roleFilter === "all"
-                    ? initialData
-                    : undefined,
-            placeholderData: keepPreviousData,
-        });
+    const { data: usersData, isFetching: isLoading } = useQuery<UsersPage>({
+        queryKey,
+        queryFn: async () => {
+            const result = await getUsersWithRoles({
+                page,
+                pageSize,
+                search: searchQuery || undefined,
+                roleId: roleFilter === "all" ? undefined : roleFilter,
+            });
+            return JSON.parse(JSON.stringify(result)) as UsersPage;
+        },
+        initialData:
+            page === 1 && !searchQuery && roleFilter === "all"
+                ? initialData
+                : undefined,
+        placeholderData: keepPreviousData,
+    });
 
     useSocketEvent("settings:role-updated", () => {
         queryClient.invalidateQueries({
@@ -111,14 +129,19 @@ export function UsersRoleTable({
         setPage(1);
     };
 
+    // Build role options from dbRoles + fixed roles
+    const roleOptions = [
+        ...dbRoles.map((r) => ({ key: r.key, name: r.name, roleType: r.roleType })),
+    ];
+
     return (
         <>
             {/* Filters */}
-            <div className="flex items-center gap-2 w-full sm:w-auto mb-4 p-2">
-                <div className="relative">
+            <div className="flex items-center gap-2 mb-4">
+                <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                        placeholder="Tìm theo tên, email, mã NV..."
+                        placeholder="Tìm theo tên, email..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         onKeyDown={(e) => {
@@ -127,24 +150,17 @@ export function UsersRoleTable({
                         className="pl-9"
                     />
                 </div>
-                <Select
-                    value={roleFilter}
-                    onValueChange={handleRoleFilterChange}
-                >
+                <Select value={roleFilter} onValueChange={handleRoleFilterChange}>
                     <SelectTrigger className="w-full sm:w-48">
                         <SelectValue placeholder="Tất cả vai trò" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">
-                            Tất cả vai trò
-                        </SelectItem>
-                        {Object.entries(ROLE_LABELS).map(
-                            ([key, label]) => (
-                                <SelectItem key={key} value={key}>
-                                    {label}
-                                </SelectItem>
-                            ),
-                        )}
+                        <SelectItem value="all">Tất cả vai trò</SelectItem>
+                        {roleOptions.map((r) => (
+                            <SelectItem key={r.key} value={r.key}>
+                                {r.name}
+                            </SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>
@@ -156,8 +172,9 @@ export function UsersRoleTable({
                         <TableRow>
                             <TableHead>Người dùng</TableHead>
                             <TableHead>Mã NV</TableHead>
-                            <TableHead>Vai trò</TableHead>
-                            <TableHead className="w-24 text-right">
+                            <TableHead>Vai trò hệ thống</TableHead>
+                            <TableHead>Vai trò bổ sung</TableHead>
+                            <TableHead className="w-32 text-right">
                                 Thao tác
                             </TableHead>
                         </TableRow>
@@ -166,17 +183,16 @@ export function UsersRoleTable({
                         {isLoading ? (
                             <TableRow>
                                 <TableCell
-                                    colSpan={4}
+                                    colSpan={5}
                                     className="py-8 text-center text-muted-foreground"
                                 >
                                     Đang tải...
                                 </TableCell>
                             </TableRow>
-                        ) : !usersData ||
-                          usersData.users.length === 0 ? (
+                        ) : !usersData || usersData.users.length === 0 ? (
                             <TableRow>
                                 <TableCell
-                                    colSpan={4}
+                                    colSpan={5}
                                     className="py-8 text-center text-muted-foreground"
                                 >
                                     Không tìm thấy người dùng
@@ -189,15 +205,10 @@ export function UsersRoleTable({
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-8 w-8">
                                                 <AvatarImage
-                                                    src={
-                                                        user.image ??
-                                                        undefined
-                                                    }
+                                                    src={user.image ?? undefined}
                                                 />
                                                 <AvatarFallback className="text-xs">
-                                                    {getInitials(
-                                                        user.name,
-                                                    )}
+                                                    {getInitials(user.name)}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div>
@@ -217,30 +228,65 @@ export function UsersRoleTable({
                                         <Badge
                                             variant="secondary"
                                             className={
-                                                ROLE_COLORS[
-                                                    user.hrmRole
-                                                ] ?? ""
+                                                getRoleBadgeColor(
+                                                    user.hrmRole,
+                                                ) + " mr-1"
                                             }
                                         >
-                                            {ROLE_LABELS[
-                                                user.hrmRole
-                                            ] ?? user.hrmRole}
+                                            {user.hrmRole}
                                         </Badge>
                                     </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-wrap gap-1">
+                                            {user.roles && user.roles.length > 0 ? (
+                                                user.roles.map((r) => (
+                                                    <Badge
+                                                        key={r.id}
+                                                        variant="outline"
+                                                        className={getRoleBadgeColor(
+                                                            r.key,
+                                                            r.roleType,
+                                                        )}
+                                                    >
+                                                        {r.name}
+                                                    </Badge>
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground italic">
+                                                    Không có
+                                                </span>
+                                            )}
+                                        </div>
+                                    </TableCell>
                                     <TableCell className="text-right">
-                                        {canManage &&
-                                        user.id !== currentUserId ? (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() =>
-                                                    setEditDialog(
-                                                        user,
-                                                    )
-                                                }
-                                            >
-                                                <UserCog className="h-4 w-4" />
-                                            </Button>
+                                        {canManage && user.id !== currentUserId ? (
+                                            <div className="flex items-center justify-end gap-1">
+                                                {canManage && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 w-8 p-0"
+                                                        onClick={() =>
+                                                            setAssignDialog(
+                                                                user,
+                                                            )
+                                                        }
+                                                        title="Gán vai trò"
+                                                    >
+                                                        <Plus className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0"
+                                                    onClick={() =>
+                                                        setEditDialog(user)
+                                                    }
+                                                >
+                                                    <UserCog className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         ) : null}
                                     </TableCell>
                                 </TableRow>
@@ -255,8 +301,7 @@ export function UsersRoleTable({
                 <div className="flex items-center justify-between mt-4">
                     <p className="text-sm text-muted-foreground">
                         Hiển thị{" "}
-                        {(usersData.page - 1) * usersData.pageSize +
-                            1}
+                        {(usersData.page - 1) * usersData.pageSize + 1}
                         –
                         {Math.min(
                             usersData.page * usersData.pageSize,
@@ -271,9 +316,6 @@ export function UsersRoleTable({
                             disabled={page <= 1}
                             onClick={() => setPage((p) => p - 1)}
                         >
-                            <span className="sr-only">
-                                Trang trước
-                            </span>
                             ←
                         </Button>
                         <span className="flex items-center px-3 text-sm">
@@ -285,14 +327,13 @@ export function UsersRoleTable({
                             disabled={page >= usersData.totalPages}
                             onClick={() => setPage((p) => p + 1)}
                         >
-                            <span className="sr-only">Trang sau</span>
                             →
                         </Button>
                     </div>
                 </div>
             )}
 
-            {/* ─── Edit Role Dialog ─── */}
+            {/* Edit Role Dialog */}
             <EditRoleDialog
                 user={editDialog}
                 open={!!editDialog}
@@ -301,6 +342,200 @@ export function UsersRoleTable({
                 }}
                 rolePermissionsMap={rolePermissionsMap}
             />
+
+            {/* Assign Custom Role Dialog */}
+            <AssignRoleDialog
+                user={assignDialog}
+                open={!!assignDialog}
+                onOpenChange={(open) => {
+                    if (!open) setAssignDialog(null);
+                    setSelectedRoleId("");
+                }}
+                dbRoles={dbRoles}
+                rolePermissionsMap={rolePermissionsMap}
+            />
         </>
+    );
+}
+
+// ─── Assign Role Dialog ───
+
+interface AssignRoleDialogProps {
+    user: UsersPage["users"][number] | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    dbRoles: DBRole[];
+    rolePermissionsMap: Record<string, string[]>;
+}
+
+function AssignRoleDialog({
+    user,
+    open,
+    onOpenChange,
+    dbRoles,
+    rolePermissionsMap,
+}: AssignRoleDialogProps) {
+    const queryClient = useQueryClient();
+    const [selectedRoleId, setSelectedRoleId] = useState<string>("");
+
+    const assignMutation = useMutation({
+        mutationFn: assignUserRole,
+        onSuccess: () => {
+            toast.success(`Đã gán vai trò cho ${user?.name}`);
+            onOpenChange(false);
+            setSelectedRoleId("");
+            queryClient.invalidateQueries({
+                queryKey: ["settings", "users-roles"],
+            });
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Không thể gán vai trò");
+        },
+    });
+
+    const removeMutation = useMutation({
+        mutationFn: removeUserRole,
+        onSuccess: () => {
+            toast.success(`Đã gỡ vai trò khỏi ${user?.name}`);
+            onOpenChange(false);
+            setSelectedRoleId("");
+            queryClient.invalidateQueries({
+                queryKey: ["settings", "users-roles"],
+            });
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || "Không thể gỡ vai trò");
+        },
+    });
+
+    const availableRoles = dbRoles.filter((r) => r.roleType === "CUSTOM");
+    const assignedRoleIds = new Set(user?.roles.map((r) => r.id) ?? []);
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Gán vai trò bổ sung</DialogTitle>
+                    <DialogDescription>
+                        Gán thêm vai trò cho <strong>{user?.name}</strong>.
+                        Người dùng có thể có nhiều vai trò bổ sung cùng lúc.
+                    </DialogDescription>
+                </DialogHeader>
+
+                {availableRoles.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-4 text-center">
+                        Chưa có vai trò tùy chỉnh nào. Hãy tạo vai trò mới
+                        trước.
+                    </p>
+                ) : (
+                    <div className="space-y-3 py-4">
+                        {/* Current roles */}
+                        {user?.roles && user.roles.length > 0 && (
+                            <div>
+                                <p className="text-sm font-medium mb-2">
+                                    Vai trò hiện tại:
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {user.roles.map((r) => (
+                                        <div
+                                            key={r.id}
+                                            className="flex items-center gap-1"
+                                        >
+                                            <Badge
+                                                variant="outline"
+                                                className={getRoleBadgeColor(
+                                                    r.key,
+                                                    r.roleType,
+                                                )}
+                                            >
+                                                {r.name} ({r.permissionCount}{" "}
+                                                quyền)
+                                            </Badge>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-5 w-5 p-0 text-destructive hover:text-destructive"
+                                                onClick={() =>
+                                                    removeMutation.mutate({
+                                                        userId: user.id,
+                                                        roleId: r.id,
+                                                    })
+                                                }
+                                                disabled={
+                                                    removeMutation.isPending
+                                                }
+                                            >
+                                                ×
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Assign new role */}
+                        <div>
+                            <p className="text-sm font-medium mb-2">
+                                Gán vai trò mới:
+                            </p>
+                            <Select
+                                value={selectedRoleId}
+                                onValueChange={setSelectedRoleId}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Chọn vai trò..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableRoles.map((r) =>
+                                        assignedRoleIds.has(r.id) ? null : (
+                                            <SelectItem
+                                                key={r.id}
+                                                value={r.id}
+                                            >
+                                                <div>
+                                                    <span>{r.name}</span>
+                                                    <span className="ml-2 text-xs text-muted-foreground">
+                                                        {r.permissions.length}{" "}
+                                                        quyền
+                                                    </span>
+                                                </div>
+                                            </SelectItem>
+                                        ),
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                )}
+
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Đóng
+                    </Button>
+                    <Button
+                        type="button"
+                        disabled={
+                            !selectedRoleId || assignMutation.isPending
+                        }
+                        onClick={() => {
+                            if (user && selectedRoleId) {
+                                assignMutation.mutate({
+                                    userId: user.id,
+                                    roleId: selectedRoleId,
+                                });
+                            }
+                        }}
+                    >
+                        {assignMutation.isPending
+                            ? "Đang gán..."
+                            : "Gán vai trò"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

@@ -43,10 +43,10 @@ export const APPROVAL_METHOD_OPTIONS = [
 ] as const;
 
 export const CONDITION_TYPE_OPTIONS = [
-    { value: "DEPARTMENT", label: "Phòng ban" },
-    { value: "WORKGROUP", label: "Nhóm làm việc" },
-    { value: "PAYROLL_COMPANY", label: "Công ty trả lương" },
-    { value: "OTHER", label: "Điều kiện khác" },
+    { value: "DEPARTMENT", label: "Phòng ban", description: "Lọc theo phòng ban của nhân viên" },
+    { value: "WORKGROUP", label: "Nhóm làm việc", description: "Lọc theo nhóm làm việc của nhân viên" },
+    { value: "PAYROLL_COMPANY", label: "Công ty trả lương", description: "Lọc theo công ty trả lương của nhân viên" },
+    { value: "OTHER", label: "Điều kiện khác", description: "Áp dụng cho tất cả các yêu cầu còn lại" },
 ] as const;
 
 export const MANAGER_LEVEL_OPTIONS = [

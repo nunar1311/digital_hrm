@@ -21,6 +21,8 @@ import {
   generateEmployeeCode,
   importEmployeesBatch,
   getDepartmentOptions,
+  suggestRoleForPositionChange,
+  updateUserRoleFromPosition,
 } from "@/app/(protected)/employees/actions";
 import { toast } from "sonner";
 import {
@@ -29,7 +31,6 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
 import {
   Select,
@@ -55,10 +56,11 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  Sparkles,
+  AlertTriangle,
 } from "lucide-react";
 import { FileDropzone } from "@/components/employees/import-export/file-dropzone";
 import {
-  parseExcelFile,
   downloadEmployeeImportTemplate,
   type ParsedImportResult,
 } from "@/lib/excel-utils";
@@ -67,6 +69,11 @@ import { SidebarMenuButton } from "../ui/sidebar";
 import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
 import { PositionDropdown } from "../positions/position-dropdown";
+import { Badge } from "../ui/badge";
+import {
+  getRoleBadgeColor,
+  ROLE_LABELS,
+} from "@/app/(protected)/settings/roles/constants";
 
 // ─── Zod Schema ─────────────────────────────────────────────────────────────
 
@@ -580,6 +587,16 @@ export function AddEmployeeDialog({
   // ── Import sheet ──
   const [importOpen, setImportOpen] = useState(false);
 
+  // ── Role suggestion state ──
+  const [roleSuggestion, setRoleSuggestion] = useState<{
+    roleKey: string | null;
+    roleName: string | null;
+    positionName: string | null;
+    currentRoleKey: string | null;
+    shouldSuggest: boolean;
+  } | null>(null);
+  const [showRoleSuggestion, setShowRoleSuggestion] = useState(false);
+
   // ── Fetch departments for select ──
   const { data: departments = [] } = useQuery({
     queryKey: ["departmentOptions"],
@@ -699,8 +716,55 @@ export function AddEmployeeDialog({
         });
         generateEmployeeCode().then(setEmployeeCode);
       }
+      // Reset role suggestion when dialog opens
+      setRoleSuggestion(null);
+      setShowRoleSuggestion(false);
     }
   }, [open, form, isEditMode, employee]);
+
+  // ── Watch positionId for changes and fetch role suggestion ──
+  useEffect(() => {
+    if (!isEditMode || !employee?.id) {
+      setRoleSuggestion(null);
+      setShowRoleSuggestion(false);
+      return;
+    }
+
+    const positionId = form.getValues("positionId");
+    if (!positionId) {
+      setRoleSuggestion(null);
+      setShowRoleSuggestion(false);
+      return;
+    }
+
+    if (positionId === employee.positionId) {
+      setRoleSuggestion(null);
+      setShowRoleSuggestion(false);
+      return;
+    }
+
+    const fetchSuggestion = async () => {
+      try {
+        const result = await suggestRoleForPositionChange(
+          employee.id,
+          positionId,
+        );
+        if (result.shouldSuggest) {
+          setRoleSuggestion(result);
+          setShowRoleSuggestion(true);
+        } else {
+          setRoleSuggestion(null);
+          setShowRoleSuggestion(false);
+        }
+      } catch {
+        setRoleSuggestion(null);
+        setShowRoleSuggestion(false);
+      }
+    };
+
+    const timer = setTimeout(fetchSuggestion, 400);
+    return () => clearTimeout(timer);
+  }, [form, isEditMode, employee?.id, employee?.positionId]);
 
   // ── Debounced CCCD existence check ──
   const cccdDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -822,7 +886,7 @@ export function AddEmployeeDialog({
         );
       }
 
-      return updateEmployee(employee.id, {
+      const result = await updateEmployee(employee.id, {
         name: data.fullName,
         fullName: data.fullName,
         nationalId: data.nationalId,
@@ -854,6 +918,13 @@ export function AddEmployeeDialog({
         bankAccount: data.bankAccount,
         taxCode: data.taxCode,
       });
+
+      // Cập nhật role tự động nếu position thay đổi và có role mapping
+      if (showRoleSuggestion && roleSuggestion?.roleKey && data.positionId) {
+        await updateUserRoleFromPosition(employee.id, data.positionId);
+      }
+
+      return result;
     },
     onSuccess: () => {
       toast.success("Cập nhật nhân viên thành công");
@@ -1077,9 +1148,9 @@ export function AddEmployeeDialog({
                                         {...field}
                                         className={
                                           cccdStatus === "exists"
-                                            ? "pr-10 border-destructive focus-visible:ring-destructive"
+                                            ? "pr-10 border-destructive! focus-visible:ring-destructive/30"
                                             : cccdStatus === "available"
-                                              ? "pr-10 border-green-500 focus-visible:ring-green-500/50"
+                                              ? "pr-10 border-green-500! focus-visible:ring-green-500/30"
                                               : cccdStatus === "checking"
                                                 ? "pr-10"
                                                 : "pr-10"
@@ -1310,6 +1381,64 @@ export function AddEmployeeDialog({
                               )}
                             />
                           </div>
+
+                          {/* Role suggestion alert */}
+                          {showRoleSuggestion && roleSuggestion && (
+                            <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg">
+                              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                  Chức vụ này gợi ý vai trò khác
+                                </p>
+                                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                                  Chức vụ{" "}
+                                  <strong>{roleSuggestion.positionName}</strong>{" "}
+                                  thường gắn với vai trò{" "}
+                                  <Badge
+                                    variant="outline"
+                                    className={
+                                      getRoleBadgeColor(
+                                        roleSuggestion.roleKey!,
+                                      ) + " mx-1 text-xs"
+                                    }
+                                  >
+                                    {roleSuggestion.roleName}
+                                  </Badge>
+                                  , khác với vai trò hiện tại{" "}
+                                  <Badge
+                                    variant="outline"
+                                    className={
+                                      getRoleBadgeColor(
+                                        roleSuggestion.currentRoleKey!,
+                                      ) + " mx-1 text-xs"
+                                    }
+                                  >
+                                    {ROLE_LABELS[
+                                      roleSuggestion.currentRoleKey!
+                                    ] || roleSuggestion.currentRoleKey}
+                                  </Badge>
+                                  của nhân viên.
+                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs gap-1 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                                    onClick={() => setShowRoleSuggestion(false)}
+                                  >
+                                    Bỏ qua
+                                  </Button>
+                                  <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                                    <Sparkles className="h-3 w-3" />
+                                    <span>
+                                      Vai trò sẽ được cập nhật khi lưu
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           <div className="grid grid-cols-2 gap-4">
                             <FormField

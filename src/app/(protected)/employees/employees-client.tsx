@@ -648,7 +648,10 @@ export function EmployeesClient() {
               </Button>
             </div>
           )}
-          <div className="h-full flex flex-col pb-8" ref={tableContainerRef}>
+          <div
+            className="h-full flex flex-col pb-8 overflow-y-auto"
+            ref={tableContainerRef}
+          >
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -727,7 +730,7 @@ export function EmployeesClient() {
             </Table>
 
             {/* Infinite scroll sentinel */}
-            <div id="infinite-scroll-sentinel" className="h-px" />
+            <div id="infinite-scroll-sentinel" className="h-px shrink-0 mt-4" />
 
             {/* Loading more indicator */}
             {isFetchingNextPage && (

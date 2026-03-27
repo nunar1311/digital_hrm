@@ -51,6 +51,8 @@ model User {
   socialInsuranceNo            String?
   taxCode                      String?
   university                   String?
+  workGroupId                  String?
+  payrollCompanyId             String?
   accounts                     Account[]
   attendanceSummaries          AttendanceSummary[]
   attendances                  Attendance[]
@@ -80,8 +82,24 @@ model User {
   emergencyContacts            EmergencyContact[]
   dependents                   Dependent[]
   timelineEvents               EmployeeTimeline[]
+  roleAssignments              UserCustomRoleAssignment[]
+  workGroup                    WorkGroup?                   @relation(fields: [workGroupId], references: [id])
+  payrollCompany               Organization?                 @relation("PayrollCompanyEmployees", fields: [payrollCompanyId], references: [id])
 
   @@map("users")
+}
+
+// WorkGroup: nhóm làm việc (dùng cho điều kiện duyệt WORKGROUP)
+model WorkGroup {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  status      String    @default("ACTIVE")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  members     User[]
+
+  @@map("work_groups")
 }
 
 // ==================== HỒ SƠ 360° ====================
@@ -225,6 +243,7 @@ model Organization {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   members           Member[]
+  payrollEmployees  User[]    @relation("PayrollCompanyEmployees")
 
   @@map("organizations")
 }
@@ -267,25 +286,26 @@ model Department {
 }
 
 model Position {
-  id           String       @id @default(cuid())
+  id           String               @id @default(cuid())
   name         String
-  code         String       @unique
-  authority    String       @default("STAFF") // EXECUTIVE, DIRECTOR, MANAGER, DEPUTY, TEAM_LEAD, STAFF, INTERN
+  code         String               @unique
+  authority    String               @default("STAFF") // EXECUTIVE, DIRECTOR, MANAGER, DEPUTY, TEAM_LEAD, STAFF, INTERN
   departmentId String?
-  level        Int          @default(1) // 1=cao nhất (Giám đốc), 7=thấp nhất (Thực tập)
+  level        Int                  @default(1) // 1=cao nhất (Giám đốc), 7=thấp nhất (Thực tập)
   description  String?
   parentId     String?
-  minSalary    Decimal?     @db.Decimal(15, 0)
-  maxSalary    Decimal?     @db.Decimal(15, 0)
-  status       String       @default("ACTIVE") // ACTIVE, INACTIVE
-  sortOrder    Int          @default(0)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @default(now()) @updatedAt
+  minSalary    Decimal?             @db.Decimal(15, 0)
+  maxSalary    Decimal?             @db.Decimal(15, 0)
+  status       String               @default("ACTIVE") // ACTIVE, INACTIVE
+  sortOrder    Int                  @default(0)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @default(now()) @updatedAt
   jobPostings  JobPosting[]
-  department   Department?  @relation(fields: [departmentId], references: [id])
+  department   Department?          @relation(fields: [departmentId], references: [id])
   users        User[]
-  parent       Position?    @relation("PositionHierarchy", fields: [parentId], references: [id])
-  children     Position[]   @relation("PositionHierarchy")
+  parent       Position?            @relation("PositionHierarchy", fields: [parentId], references: [id])
+  children     Position[]           @relation("PositionHierarchy")
+  roleMapping  PositionRoleMapping?
 
   @@map("positions")
 }
@@ -1283,7 +1303,7 @@ model AttendanceApprovalStep {
 
 model AttendanceAdjustmentRequest {
   id           String     @id @default(cuid())
-  attendanceId String @unique
+  attendanceId String     @unique
   attendance   Attendance @relation(fields: [attendanceId], references: [id])
   userId       String
   user         User       @relation(fields: [userId], references: [id])
@@ -1316,4 +1336,83 @@ model AttendanceAdjustmentRequest {
   @@index([userId])
   @@index([status])
   @@map("attendance_adjustment_requests")
+}
+
+// =============================================
+// ROLES - Vai trò cố định + tùy chỉnh
+// =============================================
+
+model Role {
+  id          String   @id @default(cuid())
+  key         String   @unique // Mã vai trò: SUPER_ADMIN, HR_MANAGER, custom_xxx
+  name        String // Tên hiển thị
+  description String?
+  roleType    String   @default("CUSTOM") // FIXED | CUSTOM
+  isActive    Boolean  @default(true)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userAssignments UserCustomRoleAssignment[]
+  rolePermissions RolePermission[]
+
+  @@index([roleType])
+  @@index([isActive])
+  @@map("roles")
+}
+
+// Lưu các permission key dưới dạng chuỗi (đồng bộ với enum Permission)
+model PermissionKey {
+  id    String @id @default(cuid())
+  key   String @unique
+  label String
+  group String
+
+  rolePermissions RolePermission[]
+
+  @@map("permission_keys")
+}
+
+// Bảng trung gian: Role <-> PermissionKey (nhiều-nhiều)
+model RolePermission {
+  id            String @id @default(cuid())
+  roleId        String
+  permissionKey String
+
+  role       Role          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission PermissionKey @relation(fields: [permissionKey], references: [key])
+
+  @@unique([roleId, permissionKey])
+  @@index([roleId])
+  @@index([permissionKey])
+  @@map("role_permissions")
+}
+
+// Gán User <-> Role (nhiều role per user)
+model UserCustomRoleAssignment {
+  id         String   @id @default(cuid())
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_custom_role_assignments")
+}
+
+// Bảng trung gian: Position <-> Role (mỗi Position có một Role mặc định)
+model PositionRoleMapping {
+  id         String   @id @default(cuid())
+  positionId String   @unique
+  roleKey    String
+  isDefault  Boolean  @default(true)
+  position   Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("position_role_mappings")
 }

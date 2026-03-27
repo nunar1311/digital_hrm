@@ -164,74 +164,62 @@ export async function updateSystemSettings(data: Record<string, string>) {
 }
 
 // ─────────────────────────────────────────────
-// ROLES & PERMISSIONS
+// ROLES - Vai trò cố định + tùy chỉnh (từ DB)
 // ─────────────────────────────────────────────
 
 export async function getRolesAndPermissions() {
     await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
 
-    const roles = Object.values(Role);
+    // Lấy tất cả vai trò từ DB
+    const dbRoles = await prisma.role.findMany({
+        where: { isActive: true },
+        include: {
+            rolePermissions: {
+                include: { permission: true },
+            },
+        },
+        orderBy: { createdAt: "asc" },
+    });
+
     const permissions = Object.values(Permission);
 
+    // Map DB roles (cả FIXED và CUSTOM) vào rolePermissionsMap
     const rolePermissionsMap: Record<string, string[]> = {};
-    for (const role of roles) {
-        rolePermissionsMap[role] = ROLE_PERMISSIONS[role].map((p) => p as string);
+
+    // Thêm fixed roles từ code (để đảm bảo hệ thống luôn có đủ roles)
+    const fixedRoles = Object.values(Role) as string[];
+    for (const role of fixedRoles) {
+        rolePermissionsMap[role] = (
+            ROLE_PERMISSIONS[role as Role] ?? []
+        ).map((p) => p as string);
     }
 
-    return { roles, permissions, rolePermissionsMap };
-}
-
-export async function getUsersWithRoles(params?: {
-    page?: number;
-    pageSize?: number;
-    search?: string;
-    role?: string;
-}) {
-    await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
-
-    const page = params?.page ?? 1;
-    const pageSize = params?.pageSize ?? 20;
-    const search = params?.search?.trim();
-    const roleFilter = params?.role;
-
-    const where: Record<string, unknown> = {};
-    if (search) {
-        where.OR = [
-            { name: { contains: search, mode: "insensitive" } },
-            { email: { contains: search, mode: "insensitive" } },
-            { employeeCode: { contains: search, mode: "insensitive" } },
-        ];
+    // Thêm custom roles từ DB (đè lên fixed nếu trùng key)
+    for (const r of dbRoles) {
+        if (r.roleType === "CUSTOM") {
+            rolePermissionsMap[r.key] = r.rolePermissions.map(
+                (rp) => rp.permissionKey,
+            );
+        }
     }
-    if (roleFilter) {
-        where.hrmRole = roleFilter;
-    }
-
-    const [users, total] = await Promise.all([
-        prisma.user.findMany({
-            where,
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                image: true,
-                employeeCode: true,
-                hrmRole: true,
-                departmentId: true,
-                position: true,
-            },
-            orderBy: { name: "asc" },
-            skip: (page - 1) * pageSize,
-            take: pageSize,
-        }),
-        prisma.user.count({ where }),
-    ]);
 
     return {
-        users,
-        total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(total / pageSize),
+        roles: [...fixedRoles, ...dbRoles.filter((r) => r.roleType === "CUSTOM").map((r) => r.key)],
+        permissions,
+        rolePermissionsMap,
+        dbRoles: dbRoles.map((r) => ({
+            id: r.id,
+            key: r.key,
+            name: r.name,
+            description: r.description,
+            roleType: r.roleType,
+            isActive: r.isActive,
+            permissions: r.rolePermissions.map((rp) => rp.permissionKey),
+            permissionLabels: r.rolePermissions.map((rp) => rp.permission.label),
+            createdBy: r.createdBy,
+            createdAt: r.createdAt.toISOString(),
+            updatedAt: r.updatedAt.toISOString(),
+        })),
     };
 }
 
@@ -421,4 +409,547 @@ export async function createAuditLog(data: {
             userAgent: data.userAgent ?? null,
         },
     });
+}
+
+// ─────────────────────────────────────────────
+// ROLES CRUD (từ DB - cả FIXED và CUSTOM)
+// ─────────────────────────────────────────────
+
+export async function getAllRoles() {
+    await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
+
+    const roles = await prisma.role.findMany({
+        where: { isActive: true },
+        include: {
+            rolePermissions: {
+                include: { permission: true },
+            },
+            _count: {
+                select: { userAssignments: true },
+            },
+        },
+        orderBy: { createdAt: "asc" },
+    });
+
+    return roles.map((role) => ({
+        id: role.id,
+        key: role.key,
+        name: role.name,
+        description: role.description,
+        roleType: role.roleType,
+        permissions: role.rolePermissions.map((rp) => rp.permissionKey),
+        permissionLabels: role.rolePermissions.map((rp) => rp.permission.label),
+        userCount: role._count.userAssignments,
+        createdBy: role.createdBy,
+        createdAt: role.createdAt.toISOString(),
+        updatedAt: role.updatedAt.toISOString(),
+    }));
+}
+
+export async function getRoleById(id: string) {
+    await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
+
+    const role = await prisma.role.findUnique({
+        where: { id },
+        include: {
+            rolePermissions: {
+                include: { permission: true },
+            },
+        },
+    });
+
+    if (!role) return null;
+
+    return {
+        id: role.id,
+        key: role.key,
+        name: role.name,
+        description: role.description,
+        roleType: role.roleType,
+        permissions: role.rolePermissions.map((rp) => rp.permissionKey),
+        createdBy: role.createdBy,
+        createdAt: role.createdAt.toISOString(),
+        updatedAt: role.updatedAt.toISOString(),
+    };
+}
+
+export async function getRoleByKey(key: string) {
+    await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
+
+    const role = await prisma.role.findUnique({
+        where: { key },
+        include: {
+            rolePermissions: {
+                include: { permission: true },
+            },
+        },
+    });
+
+    if (!role) return null;
+
+    return {
+        id: role.id,
+        key: role.key,
+        name: role.name,
+        description: role.description,
+        roleType: role.roleType,
+        permissions: role.rolePermissions.map((rp) => rp.permissionKey),
+        createdBy: role.createdBy,
+        createdAt: role.createdAt.toISOString(),
+        updatedAt: role.updatedAt.toISOString(),
+    };
+}
+
+const createRoleSchema = z.object({
+    name: z
+        .string()
+        .min(2, "Tên vai trò phải có ít nhất 2 ký tự")
+        .max(100, "Tên vai trò không được quá 100 ký tự"),
+    description: z
+        .string()
+        .max(255, "Mô tả không được quá 255 ký tự")
+        .optional(),
+    permissions: z
+        .array(z.string())
+        .min(1, "Phải chọn ít nhất 1 quyền"),
+});
+
+export async function createRole(data: {
+    name: string;
+    description?: string;
+    permissions: string[];
+}) {
+    const session = await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
+    const validated = createRoleSchema.parse(data);
+
+    // Tạo key tự động từ tên (slugify)
+    const key =
+        validated.name
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_|_$/g, "") +
+        "_" +
+        Date.now().toString(36);
+
+    // Kiểm tra tên không trùng role khác
+    const existingByName = await prisma.role.findFirst({
+        where: {
+            OR: [
+                { name: validated.name },
+                { key },
+            ],
+        },
+    });
+    if (existingByName) {
+        throw new Error("Tên hoặc mã vai trò đã tồn tại");
+    }
+
+    // Upsert PermissionKey nếu chưa có
+    const { getPermissionLabel, getPermissionGroupLabel } = await import(
+        "@/lib/rbac/db-permissions"
+    );
+    await Promise.all(
+        validated.permissions.map((permKey) =>
+            prisma.permissionKey.upsert({
+                where: { key: permKey },
+                create: {
+                    key: permKey,
+                    label: getPermissionLabel(permKey),
+                    group: getPermissionGroupLabel(permKey),
+                },
+                update: {},
+            }),
+        ),
+    );
+
+    const role = await prisma.role.create({
+        data: {
+            key,
+            name: validated.name,
+            description: validated.description,
+            roleType: "CUSTOM",
+            createdBy: session.user.id,
+            rolePermissions: {
+                create: validated.permissions.map((permKey) => ({
+                    permissionKey: permKey,
+                })),
+            },
+        },
+        include: {
+            rolePermissions: true,
+        },
+    });
+
+    // Audit log
+    await prisma.auditLog.create({
+        data: {
+            userId: session.user.id,
+            userName: session.user.name,
+            action: "CREATE",
+            entity: "Role",
+            entityId: role.id,
+            newData: {
+                key: role.key,
+                name: role.name,
+                description: role.description,
+                permissions: validated.permissions,
+            },
+        },
+    });
+
+    emitToAll("settings:custom-role-updated", { action: "create" });
+    revalidatePath("/settings/roles");
+
+    return { success: true, id: role.id, key: role.key };
+}
+
+const updateRoleSchema = z.object({
+    id: z.string(),
+    name: z
+        .string()
+        .min(2, "Tên vai trò phải có ít nhất 2 ký tự")
+        .max(100, "Tên vai trò không được quá 100 ký tự")
+        .optional(),
+    description: z
+        .string()
+        .max(255, "Mô tả không được quá 255 ký tự")
+        .optional(),
+    permissions: z
+        .array(z.string())
+        .min(1, "Phải chọn ít nhất 1 quyền")
+        .optional(),
+    isActive: z.boolean().optional(),
+});
+
+export async function updateRole(data: {
+    id: string;
+    name?: string;
+    description?: string;
+    permissions?: string[];
+    isActive?: boolean;
+}) {
+    const session = await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
+    const validated = updateRoleSchema.parse(data);
+
+    const existing = await prisma.role.findUnique({
+        where: { id: validated.id },
+        include: { rolePermissions: true },
+    });
+    if (!existing) {
+        throw new Error("Không tìm thấy vai trò");
+    }
+
+    // Không cho sửa vai trò cố định
+    if (existing.roleType === "FIXED") {
+        throw new Error("Không thể chỉnh sửa vai trò cố định");
+    }
+
+    const oldData = {
+        name: existing.name,
+        description: existing.description,
+        permissions: existing.rolePermissions.map((rp) => rp.permissionKey),
+    };
+
+    // Cập nhật permissions nếu có
+    if (validated.permissions) {
+        await prisma.rolePermission.deleteMany({
+            where: { roleId: validated.id },
+        });
+
+        const { getPermissionLabel, getPermissionGroupLabel } = await import(
+            "@/lib/rbac/db-permissions"
+        );
+        await Promise.all(
+            validated.permissions.map(async (permKey) => {
+                await prisma.permissionKey.upsert({
+                    where: { key: permKey },
+                    create: {
+                        key: permKey,
+                        label: getPermissionLabel(permKey),
+                        group: getPermissionGroupLabel(permKey),
+                    },
+                    update: {},
+                });
+
+                return prisma.rolePermission.create({
+                    data: {
+                        roleId: validated.id,
+                        permissionKey: permKey,
+                    },
+                });
+            }),
+        );
+    }
+
+    // Cập nhật thông tin vai trò
+    const updateData: Record<string, unknown> = {};
+    if (validated.name !== undefined) updateData.name = validated.name;
+    if (validated.description !== undefined)
+        updateData.description = validated.description;
+    if (validated.isActive !== undefined)
+        updateData.isActive = validated.isActive;
+
+    if (Object.keys(updateData).length > 0) {
+        await prisma.role.update({
+            where: { id: validated.id },
+            data: updateData,
+        });
+    }
+
+    // Audit log
+    await prisma.auditLog.create({
+        data: {
+            userId: session.user.id,
+            userName: session.user.name,
+            action: "UPDATE",
+            entity: "Role",
+            entityId: validated.id,
+            oldData,
+            newData: validated,
+        },
+    });
+
+    emitToAll("settings:custom-role-updated", { action: "update", id: validated.id });
+    revalidatePath("/settings/roles");
+
+    return { success: true };
+}
+
+export async function deleteRole(id: string) {
+    const session = await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
+
+    const existing = await prisma.role.findUnique({
+        where: { id },
+        include: {
+            rolePermissions: true,
+            _count: { select: { userAssignments: true } },
+        },
+    });
+    if (!existing) {
+        throw new Error("Không tìm thấy vai trò");
+    }
+
+    // Không cho xóa vai trò cố định
+    if (existing.roleType === "FIXED") {
+        throw new Error("Không thể xóa vai trò cố định");
+    }
+
+    // Không cho xóa nếu đang có người dùng
+    if (existing._count.userAssignments > 0) {
+        throw new Error(
+            `Vai trò đang được gán cho ${existing._count.userAssignments} người dùng. Vui lòng gỡ vai trò trước khi xóa.`,
+        );
+    }
+
+    await prisma.role.delete({ where: { id } });
+
+    // Audit log
+    await prisma.auditLog.create({
+        data: {
+            userId: session.user.id,
+            userName: session.user.name,
+            action: "DELETE",
+            entity: "Role",
+            entityId: id,
+            oldData: {
+                key: existing.key,
+                name: existing.name,
+                description: existing.description,
+                permissions: existing.rolePermissions.map((rp) => rp.permissionKey),
+            },
+        },
+    });
+
+    emitToAll("settings:custom-role-updated", { action: "delete", id });
+    revalidatePath("/settings/roles");
+
+    return { success: true };
+}
+
+// ─────────────────────────────────────────────
+// USER ↔ ROLE ASSIGNMENTS
+// ─────────────────────────────────────────────
+
+export async function assignUserRole(data: {
+    userId: string;
+    roleId: string;
+}) {
+    const session = await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
+
+    const user = await prisma.user.findUnique({
+        where: { id: data.userId },
+    });
+    if (!user) throw new Error("Không tìm thấy người dùng");
+
+    const role = await prisma.role.findUnique({
+        where: { id: data.roleId },
+    });
+    if (!role) throw new Error("Không tìm thấy vai trò");
+
+    await prisma.userCustomRoleAssignment.upsert({
+        where: {
+            userId_roleId: {
+                userId: data.userId,
+                roleId: data.roleId,
+            },
+        },
+        create: {
+            userId: data.userId,
+            roleId: data.roleId,
+        },
+        update: {},
+    });
+
+    // Audit log
+    await prisma.auditLog.create({
+        data: {
+            userId: session.user.id,
+            userName: session.user.name,
+            action: "ASSIGN",
+            entity: "UserRoleAssignment",
+            entityId: data.userId,
+            newData: { roleId: data.roleId, roleName: role.name },
+        },
+    });
+
+    emitToAll("settings:role-assignment-updated", { userId: data.userId });
+    revalidatePath("/settings/roles");
+
+    return { success: true };
+}
+
+export async function removeUserRole(data: {
+    userId: string;
+    roleId: string;
+}) {
+    const session = await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
+
+    const role = await prisma.role.findUnique({
+        where: { id: data.roleId },
+    });
+
+    await prisma.userCustomRoleAssignment.deleteMany({
+        where: {
+            userId: data.userId,
+            roleId: data.roleId,
+        },
+    });
+
+    // Audit log
+    await prisma.auditLog.create({
+        data: {
+            userId: session.user.id,
+            userName: session.user.name,
+            action: "UNASSIGN",
+            entity: "UserRoleAssignment",
+            entityId: data.userId,
+            oldData: { roleId: data.roleId, roleName: role?.name },
+        },
+    });
+
+    emitToAll("settings:role-assignment-updated", { userId: data.userId });
+    revalidatePath("/settings/roles");
+
+    return { success: true };
+}
+
+export async function getUserRoles(userId: string) {
+    await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
+
+    const assignments = await prisma.userCustomRoleAssignment.findMany({
+        where: { userId },
+        include: {
+            role: {
+                include: {
+                    rolePermissions: {
+                        include: { permission: true },
+                    },
+                },
+            },
+        },
+    });
+
+    return assignments.map((a) => ({
+        id: a.role.id,
+        key: a.role.key,
+        name: a.role.name,
+        description: a.role.description,
+        roleType: a.role.roleType,
+        permissions: a.role.rolePermissions.map((rp) => rp.permissionKey),
+        assignedAt: a.assignedAt.toISOString(),
+    }));
+}
+
+export async function getUsersWithRoles(params?: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    roleId?: string;
+}) {
+    await requirePermission(Permission.SETTINGS_ROLES_MANAGE);
+
+    const page = params?.page ?? 1;
+    const pageSize = params?.pageSize ?? 20;
+
+    const where: Record<string, unknown> = {};
+    if (params?.search) {
+        where.OR = [
+            { name: { contains: params.search, mode: "insensitive" } },
+            { email: { contains: params.search, mode: "insensitive" } },
+        ];
+    }
+    if (params?.roleId) {
+        where.roleAssignments = {
+            some: { roleId: params.roleId },
+        };
+    }
+
+    const [users, total] = await Promise.all([
+        prisma.user.findMany({
+            where,
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+                hrmRole: true,
+                roleAssignments: {
+                    include: {
+                        role: {
+                            include: {
+                                rolePermissions: true,
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: { name: "asc" },
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+        }),
+        prisma.user.count({ where }),
+    ]);
+
+    return {
+        users: users.map((u) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            image: u.image,
+            hrmRole: u.hrmRole,
+            roles: u.roleAssignments.map((a) => ({
+                id: a.role.id,
+                key: a.role.key,
+                name: a.role.name,
+                roleType: a.role.roleType,
+                permissionCount: a.role.rolePermissions.length,
+            })),
+        })),
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+    };
 }

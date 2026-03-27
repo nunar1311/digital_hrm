@@ -72,8 +72,6 @@ export default async function EmployeeProfilePage({
     "Chưa cập nhật chức vụ";
   const displayDepartment = employee.department?.name || "Chưa cập nhật";
 
-  console.log(employee);
-
   return (
     <div>
       {/* Breadcrumb + Actions */}
