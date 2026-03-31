@@ -96,6 +96,22 @@ Mở [http://localhost:3000](http://localhost:3000) trên trình duyệt.
 | `pnpm prisma migrate dev` | Tạo và áp dụng migration mới     |
 | `pnpm tsx prisma/seed.ts` | Seed dữ liệu mẫu                 |
 
+## Docker
+
+Xem [docker-setup.md](./docker-setup.md) để biết chi tiết về cách chạy ứng dụng với Docker.
+
+### Quick Start với Docker
+
+```bash
+# Development Mode
+cp .env.docker .env
+./docker.sh dev:up
+
+# Production Mode
+cp .env.docker .env
+./docker.sh prod:up
+```
+
 ---
 
 ## Tech Stack

@@ -6,33 +6,29 @@
 export interface LeaveType {
     id: string;
     name: string;
-    code: string;
+    description: string | null;
     defaultDays: number;
-    isPaid: boolean;
-    isCarryOver: boolean;
-    maxCarryOverDays: number | null;
-    requireApproval: boolean;
-    color: string | null;
+    isPaidLeave: boolean;
     isActive: boolean;
 }
 
 export interface LeaveBalance {
     id: string;
-    employeeId: string;
+    userId: string;
     leaveTypeId: string;
-    year: number;
+    policyYear: number;
     totalDays: number;
     usedDays: number;
-    remainDays: number;
+    pendingDays: number;
     // Resolved
     leaveTypeName?: string;
-    leaveTypeColor?: string;
 }
 
 export interface LeaveRequest {
     id: string;
-    employeeId: string;
+    userId: string;
     leaveTypeId: string;
+    leaveBalanceId: string | null;
     startDate: string;
     endDate: string;
     totalDays: number;
@@ -40,8 +36,8 @@ export interface LeaveRequest {
     status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
     approvedBy: string | null;
     approvedAt: string | null;
-    rejectedReason: string | null;
-    attachmentUrl: string | null;
+    rejectionReason: string | null;
+    documentUrl: string | null;
     createdAt: string;
     updatedAt: string;
     // Resolved
@@ -49,6 +45,5 @@ export interface LeaveRequest {
     employeeCode?: string;
     departmentName?: string;
     leaveTypeName?: string;
-    leaveTypeColor?: string;
     approverName?: string;
 }

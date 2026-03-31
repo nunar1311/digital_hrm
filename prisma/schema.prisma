@@ -19,6 +19,7 @@ model User {
   departmentId                 String?
   departmentRole               String?                       @default("MEMBER")
   hrmRole                      String                        @default("EMPLOYEE")
+  payrollCompanyId             String?
   address                      String?
   avatar                       String?
   bankAccount                  String?
@@ -51,8 +52,6 @@ model User {
   socialInsuranceNo            String?
   taxCode                      String?
   university                   String?
-  workGroupId                  String?
-  payrollCompanyId             String?
   accounts                     Account[]
   attendanceSummaries          AttendanceSummary[]
   attendances                  Attendance[]
@@ -83,23 +82,11 @@ model User {
   dependents                   Dependent[]
   timelineEvents               EmployeeTimeline[]
   roleAssignments              UserCustomRoleAssignment[]
-  workGroup                    WorkGroup?                   @relation(fields: [workGroupId], references: [id])
   payrollCompany               Organization?                 @relation("PayrollCompanyEmployees", fields: [payrollCompanyId], references: [id])
+  leaveBalances                LeaveBalance[]
+  leaveRequests                LeaveRequest[]                  @relation("LeaveRequestsByUser")
 
   @@map("users")
-}
-
-// WorkGroup: nhóm làm việc (dùng cho điều kiện duyệt WORKGROUP)
-model WorkGroup {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  status      String    @default("ACTIVE")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  members     User[]
-
-  @@map("work_groups")
 }
 
 // ==================== HỒ SƠ 360° ====================
@@ -480,13 +467,18 @@ model TimekeeperDevice {
 }
 
 model Holiday {
-  id          String    @id @default(cuid())
-  name        String
-  date        DateTime  @db.Date
-  endDate     DateTime? @db.Date
-  isRecurring Boolean   @default(false)
-  year        Int?
-  createdAt   DateTime  @default(now())
+  id              String    @id @default(cuid())
+  holidayCalendarId String?             // FK đến HolidayCalendar
+
+  name            String
+  date            DateTime  @db.Date
+  endDate         DateTime? @db.Date
+  isRecurring     Boolean   @default(false)
+  year            Int?
+  halfDay         String?   @default("FULL") // FULL | MORNING | AFTERNOON
+
+  holidayCalendar HolidayCalendar? @relation(fields: [holidayCalendarId], references: [id])
+  createdAt       DateTime  @default(now())
 
   @@map("holidays")
 }
@@ -1404,6 +1396,83 @@ model UserCustomRoleAssignment {
   @@map("user_custom_role_assignments")
 }
 
+// =============================================
+// =============================================
+// LEAVE - Quản lý nghỉ phép (đơn giản)
+// =============================================
+
+// Loại ngày nghỉ
+model LeaveType {
+  id              String   @id @default(cuid())
+  name            String                    // "Phép năm", "Nghỉ ốm", "Nghỉ thai sản"
+  description     String?
+  sortOrder       Int @default(0)
+  isPaidLeave     Boolean @default(true)     // Nghỉ có lương
+  defaultDays     Float @default(12)         // Số ngày phép mặc định/năm
+  isActive        Boolean @default(true)
+
+  leaveBalances   LeaveBalance[]
+  leaveRequests   LeaveRequest[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("leave_types")
+}
+
+// Số dư ngày nghỉ của nhân viên
+model LeaveBalance {
+  id              String   @id @default(cuid())
+  userId          String
+  leaveTypeId     String
+
+  totalDays       Float @default(0)           // Tổng số ngày được cấp trong kỳ
+  usedDays        Float @default(0)           // Số ngày đã dùng
+  pendingDays     Float @default(0)           // Số ngày đang chờ duyệt
+  policyYear      Int                        // Năm
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaveType       LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  leaveRequests   LeaveRequest[]
+
+  @@unique([userId, leaveTypeId, policyYear])
+  @@index([userId])
+  @@index([leaveTypeId])
+  @@map("leave_balances")
+}
+
+// Đơn xin nghỉ
+model LeaveRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  leaveTypeId     String
+  leaveBalanceId  String?
+
+  startDate       DateTime
+  endDate         DateTime
+  totalDays       Float                     // Số ngày nghỉ
+  reason          String?
+  status          String @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+
+  documentUrl     String?                   // URL tài liệu chứng minh
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectionReason String?
+
+  leaveBalance    LeaveBalance? @relation(fields: [leaveBalanceId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation("LeaveRequestsByUser", fields: [userId], references: [id], onDelete: Cascade)
+  leaveType       LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([leaveTypeId])
+  @@index([status])
+  @@map("leave_requests")
+}
+
 // Bảng trung gian: Position <-> Role (mỗi Position có một Role mặc định)
 model PositionRoleMapping {
   id         String   @id @default(cuid())
@@ -1415,4 +1484,22 @@ model PositionRoleMapping {
   updatedAt  DateTime @updatedAt
 
   @@map("position_role_mappings")
+}
+
+// Lịch nghỉ lễ - nhóm ngày lễ theo quốc gia/năm
+model HolidayCalendar {
+  id          String    @id @default(cuid())
+  name        String                    // "Lịch nghỉ lễ Việt Nam 2025"
+  description String?
+  year        Int                       // 2025, 2026...
+  country     String?                   // "Vietnam", "Singapore", ...
+  isDefault   Boolean @default(false)   // Lịch mặc định
+  isActive    Boolean @default(true)
+
+  holidays    Holiday[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("holiday_calendars")
 }

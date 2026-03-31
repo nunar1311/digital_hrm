@@ -414,7 +414,6 @@ export type ApprovalMethod = "ALL_MUST_APPROVE" | "FIRST_APPROVES";
 
 export type ConditionType =
     | "DEPARTMENT"
-    | "WORKGROUP"
     | "PAYROLL_COMPANY"
     | "OTHER";
 

@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import SidebarMind from "@/components/sidebar-mind";
+import { SidebarMindWrapper } from "@/components/sidebar-mind-wrapper";
 import BannerNotification from "@/components/banner-notification";
 import { AttendanceCheckDialog } from "@/components/attendance/attendance-check-dialog";
 import { ShiftReminderNotifier } from "@/components/attendance/shift-reminder-notifier";
@@ -49,7 +49,7 @@ export default async function ProtectedLayout({
                         </div>
 
                         <div className="flex flex-1 overflow-hidden mb-1.5">
-                            <SidebarMind />
+                            <SidebarMindWrapper />
                             <div className="border rounded-lg flex-1 flex overflow-hidden relative mr-1.5">
                                 <SidebarSlot className="overflow-hidden flex-1 relative min-h-0">
                                     <BannerNotification />

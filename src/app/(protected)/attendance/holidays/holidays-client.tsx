@@ -1,10 +1,18 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Holiday } from "../types";
+import type { Holiday, HolidayCalendarWithRelations } from "./types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Loader2, Pen, Plus, Trash2 } from "lucide-react";
+import {
+  CalendarDays,
+  Copy,
+  Loader2,
+  Pen,
+  Plus,
+  Trash2,
+  MoreVertical,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,11 +41,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
+  copyHolidayCalendar,
   createHoliday,
+  createHolidayCalendar,
+  createFromVietnamTemplate,
   deleteHoliday,
-  getHolidays,
+  deleteHolidayCalendar,
+  getHolidayCalendars,
   updateHoliday,
-} from "../actions";
+  updateHolidayCalendar,
+} from "./actions";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
@@ -46,166 +59,281 @@ import { useTimezone } from "@/hooks/use-timezone";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+// ============================================================
+// Schemas
+// ============================================================
+
+const calendarSchema = z.object({
+  name: z.string().min(1, "Vui lòng nhập tên lịch"),
+  year: z.number().min(2020).max(2100),
+  description: z.string().optional(),
+  isDefault: z.boolean(),
+});
 
 const holidaySchema = z.object({
   name: z.string().min(1, "Vui lòng nhập tên ngày lễ"),
-  date: z.date().min(1, "Vui lòng chọn ngày bắt đầu"),
-  endDate: z.date().optional(),
+  date: z.date({ message: "Vui lòng chọn ngày" }),
+  endDate: z.date().optional().nullable(),
   isRecurring: z.boolean(),
+  halfDay: z.enum(["FULL", "MORNING", "AFTERNOON"]),
 });
 
+const copySchema = z.object({
+  targetYear: z.number().min(2020).max(2100),
+  targetName: z.string().optional(),
+});
+
+type CalendarFormValues = z.infer<typeof calendarSchema>;
 type HolidayFormValues = z.infer<typeof holidaySchema>;
+type CopyFormValues = z.infer<typeof copySchema>;
+
+// ============================================================
+// Component
+// ============================================================
 
 interface HolidaysClientProps {
-  initialHolidays: Holiday[];
+  initialData: HolidayCalendarWithRelations[];
 }
 
-const HolidaysClient = ({ initialHolidays }: HolidaysClientProps) => {
+const HolidaysClient = ({ initialData }: HolidaysClientProps) => {
+  const { timezone } = useTimezone();
   const queryClient = useQueryClient();
 
-  const [showDialog, setShowDialog] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editId, setEditId] = useState<string | null>(null);
-  const { timezone } = useTimezone();
+  // Dialog states
+  const [showCalendarDialog, setShowCalendarDialog] = useState(false);
+  const [showHolidayDialog, setShowHolidayDialog] = useState(false);
+  const [showCopyDialog, setShowCopyDialog] = useState(false);
+  const [showVietnamTemplateDialog, setShowVietnamTemplateDialog] =
+    useState(false);
+  const [showHolidaysListDialog, setShowHolidaysListDialog] = useState(false);
+  const [holidaysListCalendarId, setHolidaysListCalendarId] = useState<
+    string | null
+  >(null);
+  const [deleteCalendarId, setDeleteCalendarId] = useState<string | null>(null);
+  const [deleteHolidayId, setDeleteHolidayId] = useState<string | null>(null);
 
-  const toUTCDate = (dateStr: Date | undefined | null) => {
-    if (!dateStr) return undefined;
-    return new Date(
-      Date.UTC(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate()),
-    );
-  };
+  // Edit states
+  const [editCalendarId, setEditCalendarId] = useState<string | null>(null);
+  const [editHolidayId, setEditHolidayId] = useState<string | null>(null);
+  const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(
+    null,
+  );
 
-  const form = useForm<HolidayFormValues>({
+  // Forms
+  const calendarForm = useForm<CalendarFormValues>({
+    resolver: zodResolver(calendarSchema),
+    defaultValues: {
+      name: "",
+      year: new Date().getFullYear(),
+      description: "",
+      isDefault: false,
+    },
+  });
+
+  const holidayForm = useForm<HolidayFormValues>({
     resolver: zodResolver(holidaySchema),
     defaultValues: {
       name: "",
       date: new Date(),
-      endDate: new Date(),
+      endDate: undefined,
       isRecurring: false,
+      halfDay: "FULL",
     },
   });
 
-  const { data: holidays } = useQuery({
-    queryKey: ["attendance", "holidays"],
-    queryFn: async () => {
-      const res = await getHolidays();
-      return JSON.parse(JSON.stringify(res)) as Holiday[];
+  const copyForm = useForm<CopyFormValues>({
+    resolver: zodResolver(copySchema),
+    defaultValues: {
+      targetYear: new Date().getFullYear() + 1,
+      targetName: "",
     },
-    initialData: initialHolidays,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (values: HolidayFormValues) =>
-      createHoliday({
-        name: values.name,
-        date: toUTCDate(values.date)!,
-        endDate: toUTCDate(values.endDate),
-        isRecurring: values.isRecurring,
-      }),
-    onMutate: async (newHoliday) => {
-      await queryClient.cancelQueries({ queryKey: ["attendance", "holidays"] });
-      const optimisticHoliday = {
-        id: `optimistic-${Date.now()}`,
-        name: newHoliday.name,
-        date: new Date(newHoliday.date).toISOString(),
-        endDate: newHoliday.endDate
-          ? new Date(newHoliday.endDate).toISOString()
-          : null,
-        isRecurring: newHoliday.isRecurring,
-      };
-      queryClient.setQueryData(["attendance", "holidays"], (old: any) => {
-        if (!old) return [optimisticHoliday];
-        return [...old, optimisticHoliday];
+  // Queries
+  const { data: calendars = initialData, isLoading } = useQuery({
+    queryKey: ["attendance", "holidays", "calendars"],
+    queryFn: () =>
+      getHolidayCalendars() as Promise<HolidayCalendarWithRelations[]>,
+  });
+
+  // Mutations - Calendar
+  const createCalendarMutation = useMutation({
+    mutationFn: (data: CalendarFormValues) => createHolidayCalendar(data),
+    onSuccess: () => {
+      toast.success("Đã tạo lịch nghỉ lễ");
+      setShowCalendarDialog(false);
+      calendarForm.reset();
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["attendance", "holidays", "calendars"],
       });
-      return {};
     },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const updateCalendarMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<CalendarFormValues>;
+    }) => updateHolidayCalendar(id, data),
+    onSuccess: () => {
+      toast.success("Đã cập nhật lịch nghỉ lễ");
+      setShowCalendarDialog(false);
+      calendarForm.reset();
+      setEditCalendarId(null);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["attendance", "holidays", "calendars"],
+      });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteCalendarMutation = useMutation({
+    mutationFn: (id: string) => deleteHolidayCalendar(id),
+    onSuccess: () => {
+      toast.success("Đã xoá lịch nghỉ lễ");
+      setDeleteCalendarId(null);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["attendance", "holidays", "calendars"],
+      });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const createFromTemplateMutation = useMutation({
+    mutationFn: (year: number) => createFromVietnamTemplate(year),
+    onSuccess: () => {
+      toast.success("Đã tạo lịch nghỉ lễ Việt Nam");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["attendance", "holidays", "calendars"],
+      });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const copyCalendarMutation = useMutation({
+    mutationFn: ({
+      sourceId,
+      targetYear,
+      targetName,
+    }: {
+      sourceId: string;
+      targetYear: number;
+      targetName?: string;
+    }) => copyHolidayCalendar(sourceId, targetYear, targetName),
+    onSuccess: () => {
+      toast.success("Đã sao chép lịch nghỉ lễ");
+      setShowCopyDialog(false);
+      copyForm.reset();
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["attendance", "holidays", "calendars"],
+      });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  // Mutations - Holiday
+  const createHolidayMutation = useMutation({
+    mutationFn: ({
+      calendarId,
+      data,
+    }: {
+      calendarId: string;
+      data: HolidayFormValues;
+    }) =>
+      createHoliday({
+        holidayCalendarId: calendarId,
+        name: data.name,
+        date: data.date,
+        endDate: data.endDate || undefined,
+        isRecurring: data.isRecurring,
+        halfDay: data.halfDay,
+      }),
     onSuccess: () => {
       toast.success("Đã thêm ngày nghỉ lễ");
-      setShowDialog(false);
-      form.reset();
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || "Có lỗi xảy ra");
-      queryClient.invalidateQueries({ queryKey: ["attendance", "holidays"] });
+      setShowHolidayDialog(false);
+      holidayForm.reset();
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: ["attendance", "holidays"],
+        queryKey: ["attendance", "holidays", "calendars"],
       });
     },
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (values: HolidayFormValues) =>
-      updateHoliday(editId!, {
-        name: values.name,
-        date: toUTCDate(values.date)!,
-        endDate: toUTCDate(values.endDate) || null,
-        isRecurring: values.isRecurring,
+  const updateHolidayMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<HolidayFormValues>;
+    }) =>
+      updateHoliday(id, {
+        name: data.name,
+        date: data.date,
+        endDate: data.endDate || null,
+        isRecurring: data.isRecurring,
+        halfDay: data.halfDay,
       }),
-    onMutate: async (updatedHoliday) => {
-      await queryClient.cancelQueries({ queryKey: ["attendance", "holidays"] });
-      queryClient.setQueryData(["attendance", "holidays"], (old: any) => {
-        if (!old) return old;
-        return old.map((h: any) =>
-          h.id === editId
-            ? {
-                ...h,
-                name: updatedHoliday.name,
-                date: new Date(updatedHoliday.date).toISOString(),
-                endDate: updatedHoliday.endDate
-                  ? new Date(updatedHoliday.endDate).toISOString()
-                  : null,
-                isRecurring: updatedHoliday.isRecurring,
-              }
-            : h,
-        );
-      });
-      return {};
-    },
     onSuccess: () => {
       toast.success("Đã cập nhật ngày nghỉ lễ");
-      setShowDialog(false);
-      setEditId(null);
-      form.reset();
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || "Có lỗi xảy ra");
-      queryClient.invalidateQueries({ queryKey: ["attendance", "holidays"] });
+      setShowHolidayDialog(false);
+      holidayForm.reset();
+      setEditHolidayId(null);
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: ["attendance", "holidays"],
+        queryKey: ["attendance", "holidays", "calendars"],
       });
     },
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  const deleteMutation = useMutation({
+  const deleteHolidayMutation = useMutation({
     mutationFn: (id: string) => deleteHoliday(id),
-    onMutate: async (deleteId) => {
-      await queryClient.cancelQueries({ queryKey: ["attendance", "holidays"] });
-      queryClient.setQueryData(["attendance", "holidays"], (old: any) => {
-        if (!old) return old;
-        return old.filter((h: any) => h.id !== deleteId);
-      });
-      return {};
-    },
     onSuccess: () => {
       toast.success("Đã xoá ngày nghỉ lễ");
-      setDeleteId(null);
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || "Có lỗi xảy ra");
-      queryClient.invalidateQueries({ queryKey: ["attendance", "holidays"] });
+      setDeleteHolidayId(null);
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: ["attendance", "holidays"],
+        queryKey: ["attendance", "holidays", "calendars"],
       });
     },
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  const formatDate = (dateStr: string) => {
+  // Helpers
+  const formatDate = (dateStr: Date | string) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString("vi-VN", {
       timeZone: timezone,
@@ -214,111 +342,343 @@ const HolidaysClient = ({ initialHolidays }: HolidaysClientProps) => {
       year: "numeric",
     });
   };
+
+  const openCalendarDialog = (calendar?: HolidayCalendarWithRelations) => {
+    if (calendar) {
+      setEditCalendarId(calendar.id);
+      calendarForm.reset({
+        name: calendar.name,
+        year: calendar.year,
+        description: calendar.description || "",
+        isDefault: calendar.isDefault,
+      });
+    } else {
+      setEditCalendarId(null);
+      calendarForm.reset({
+        name: "",
+        year: new Date().getFullYear(),
+        description: "",
+        isDefault: false,
+      });
+    }
+    setShowCalendarDialog(true);
+  };
+
+  const openHolidayDialog = (calendarId: string, holiday?: Holiday) => {
+    setSelectedCalendarId(calendarId);
+    if (holiday) {
+      setEditHolidayId(holiday.id);
+      holidayForm.reset({
+        name: holiday.name,
+        date: new Date(holiday.date),
+        endDate: holiday.endDate ? new Date(holiday.endDate) : undefined,
+        isRecurring: holiday.isRecurring,
+        halfDay:
+          (holiday.halfDay as "FULL" | "MORNING" | "AFTERNOON") || "FULL",
+      });
+    } else {
+      setEditHolidayId(null);
+      holidayForm.reset({
+        name: "",
+        date: new Date(),
+        endDate: undefined,
+        isRecurring: false,
+        halfDay: "FULL",
+      });
+    }
+    setShowHolidayDialog(true);
+  };
+
+  const handleCalendarSubmit = (values: CalendarFormValues) => {
+    if (editCalendarId) {
+      updateCalendarMutation.mutate({
+        id: editCalendarId,
+        data: values,
+      });
+    } else {
+      createCalendarMutation.mutate(values);
+    }
+  };
+
+  const handleHolidaySubmit = (values: HolidayFormValues) => {
+    if (editHolidayId) {
+      updateHolidayMutation.mutate({
+        id: editHolidayId,
+        data: values,
+      });
+    } else {
+      createHolidayMutation.mutate({
+        calendarId: selectedCalendarId!,
+        data: values,
+      });
+    }
+  };
+
+  const getHalfDayLabel = (halfDay: string | null) => {
+    switch (halfDay) {
+      case "MORNING":
+        return "Sáng";
+      case "AFTERNOON":
+        return "Chiều";
+      default:
+        return "Cả ngày";
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <div className="flex flex-row items-center justify-between border-b px-2 h-10">
-        <h2 className="font-semibold">Ngày nghỉ lễ</h2>
-      </div>
-      <div className="px-2 flex justify-end items-center gap-2 p-2">
-        <Button
-          onClick={() => {
-            setEditId(null);
-            form.reset({
-              name: "",
-              date: new Date(),
-              endDate: undefined,
-              isRecurring: false,
-            });
-            setShowDialog(true);
-          }}
-          size="xs"
-        >
-          <Plus />
-          Thêm ngày lễ
-        </Button>
-      </div>
-      <div className="flex flex-col p-2">
-        {holidays.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">
-            Chưa có ngày nghỉ lễ nào
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {holidays.map((h) => (
-              <div
-                key={h.id}
-                className="flex items-center justify-between rounded-lg border px-4 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-sm">{h.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(h.date)}
-                      {h.endDate && ` → ${formatDate(h.endDate)}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {h.isRecurring && (
-                    <Badge variant="secondary" className="text-xs">
-                      Hàng năm
-                    </Badge>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    tooltip={"Chỉnh sửa"}
-                    onClick={() => {
-                      setEditId(h.id);
-                      form.reset({
-                        name: h.name,
-                        date: new Date(h.date),
-                        endDate: h.endDate ? new Date(h.endDate) : undefined,
-                        isRecurring: h.isRecurring,
-                      });
-                      setShowDialog(true);
-                    }}
-                  >
-                    <Pen className="h-4 w-4 text-primary" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon-sm"
-                    tooltip={"Xoá"}
-                    onClick={() => setDeleteId(h.id)}
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+    <div className="space-y-4 min-h-0 flex-1 overflow-hidden p-2">
+      {/* Toolbar */}
+      <div className="flex items-center justify-end">
+        <div className="flex items-center gap-2">
+          <Button onClick={() => openCalendarDialog()} size="xs">
+            <Plus />
+            Tạo lịch mới
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowVietnamTemplateDialog(true)}
+            size="xs"
+            disabled={createFromTemplateMutation.isPending}
+          >
+            {createFromTemplateMutation.isPending && (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            )}
+            Template Việt Nam
+          </Button>
+        </div>
       </div>
 
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      {/* Calendar List */}
+      {calendars.length === 0 ? (
+        <Card>
+          <CardContent>
+            <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">Chưa có lịch nghỉ lễ</h3>
+            <p className="text-muted-foreground mb-4">
+              Tạo lịch nghỉ lễ hoặc sử dụng template Việt Nam để bắt đầu.
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <Button onClick={() => openCalendarDialog()}>
+                <Plus />
+                Tạo lịch mới
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2 h-[calc(100vh-8rem)] overflow-y-auto">
+          {calendars.map((calendar) => (
+            <Card key={calendar.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {calendar.name}
+                        {calendar.isDefault && (
+                          <Badge variant="default" className="text-xs">
+                            Mặc định
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Năm {calendar.year} · {calendar._count?.holidays || 0}{" "}
+                        ngày nghỉ
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2">
+                    {/* Toggle holidays */}
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => {
+                          setHolidaysListCalendarId(calendar.id);
+                          setShowHolidaysListDialog(true);
+                        }}
+                      >
+                        Hiện {calendar.holidays.length} ngày nghỉ
+                      </Button>
+
+                      <Button
+                        size="xs"
+                        onClick={() => openHolidayDialog(calendar.id)}
+                      >
+                        <Plus />
+                        Thêm ngày lễ
+                      </Button>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="icon-xs" variant="ghost">
+                          <MoreVertical />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedCalendarId(calendar.id);
+                            setShowCopyDialog(true);
+                            copyForm.reset({
+                              targetYear: calendar.year + 1,
+                              targetName: `${calendar.name.replace(
+                                /\d{4}/,
+                                String(calendar.year + 1),
+                              )}`,
+                            });
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                          Sao chép
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => openCalendarDialog(calendar)}
+                        >
+                          <Pen className="h-4 w-4" />
+                          Chỉnh sửa
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setDeleteCalendarId(calendar.id)}
+                          variant="destructive"
+                        >
+                          <Trash2 className="h-4 w-4" /> Xóa
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Calendar Dialog */}
+      <Dialog open={showCalendarDialog} onOpenChange={setShowCalendarDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editId ? "Chỉnh sửa ngày nghỉ lễ" : "Thêm ngày nghỉ lễ"}
+              {editCalendarId ? "Chỉnh sửa lịch nghỉ lễ" : "Tạo lịch nghỉ lễ"}
             </DialogTitle>
           </DialogHeader>
-          <Form {...form}>
+          <Form {...calendarForm}>
             <form
-              onSubmit={form.handleSubmit((v) =>
-                editId ? updateMutation.mutate(v) : createMutation.mutate(v),
-              )}
+              onSubmit={calendarForm.handleSubmit(handleCalendarSubmit)}
               className="space-y-4"
             >
               <FormField
-                control={form.control}
+                control={calendarForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tên lịch</FormLabel>
+                    <FormControl>
+                      <Input placeholder="VD: Lịch nghỉ lễ 2026" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={calendarForm.control}
+                name="year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Năm</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={calendarForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mô tả</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Mô tả (tuỳ chọn)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={calendarForm.control}
+                name="isDefault"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel>Đặt làm mặc định</FormLabel>
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCalendarDialog(false)}
+                >
+                  Huỷ
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    createCalendarMutation.isPending ||
+                    updateCalendarMutation.isPending
+                  }
+                >
+                  {(createCalendarMutation.isPending ||
+                    updateCalendarMutation.isPending) && (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  )}
+                  {editCalendarId ? "Cập nhật" : "Tạo"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Holiday Dialog */}
+      <Dialog open={showHolidayDialog} onOpenChange={setShowHolidayDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editHolidayId ? "Chỉnh sửa ngày nghỉ lễ" : "Thêm ngày nghỉ lễ"}
+            </DialogTitle>
+          </DialogHeader>
+          <Form {...holidayForm}>
+            <form
+              onSubmit={holidayForm.handleSubmit(handleHolidaySubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={holidayForm.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tên ngày lễ</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nhập tên ngày lễ" {...field} />
+                      <Input placeholder="VD: Tết Dương lịch" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -326,7 +686,7 @@ const HolidaysClient = ({ initialHolidays }: HolidaysClientProps) => {
               />
               <div className="grid grid-cols-2 gap-4">
                 <FormField
-                  control={form.control}
+                  control={holidayForm.control}
                   name="date"
                   render={({ field }) => (
                     <FormItem>
@@ -342,14 +702,14 @@ const HolidaysClient = ({ initialHolidays }: HolidaysClientProps) => {
                   )}
                 />
                 <FormField
-                  control={form.control}
+                  control={holidayForm.control}
                   name="endDate"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Ngày kết thúc (tuỳ chọn)</FormLabel>
                       <FormControl>
                         <DatePicker
-                          date={field.value}
+                          date={field.value ?? undefined}
                           setDate={field.onChange}
                         />
                       </FormControl>
@@ -359,7 +719,34 @@ const HolidaysClient = ({ initialHolidays }: HolidaysClientProps) => {
                 />
               </div>
               <FormField
-                control={form.control}
+                control={holidayForm.control}
+                name="halfDay"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Loại ngày nghỉ</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="FULL">Cả ngày</SelectItem>
+                        <SelectItem value="MORNING">Nửa ngày (Sáng)</SelectItem>
+                        <SelectItem value="AFTERNOON">
+                          Nửa ngày (Chiều)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={holidayForm.control}
                 name="isRecurring"
                 render={({ field }) => (
                   <FormItem className="flex items-center gap-2">
@@ -377,20 +764,22 @@ const HolidaysClient = ({ initialHolidays }: HolidaysClientProps) => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setShowDialog(false)}
+                  onClick={() => setShowHolidayDialog(false)}
                 >
                   Huỷ
                 </Button>
                 <Button
                   type="submit"
                   disabled={
-                    createMutation.isPending || updateMutation.isPending
+                    createHolidayMutation.isPending ||
+                    updateHolidayMutation.isPending
                   }
                 >
-                  {(createMutation.isPending || updateMutation.isPending) && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {(createHolidayMutation.isPending ||
+                    updateHolidayMutation.isPending) && (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                   )}
-                  {editId ? "Cập nhật" : "Thêm"}
+                  {editHolidayId ? "Cập nhật" : "Thêm"}
                 </Button>
               </DialogFooter>
             </form>
@@ -398,23 +787,219 @@ const HolidaysClient = ({ initialHolidays }: HolidaysClientProps) => {
         </DialogContent>
       </Dialog>
 
+      {/* Copy Dialog */}
+      <Dialog open={showCopyDialog} onOpenChange={setShowCopyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sao chép lịch nghỉ lễ</DialogTitle>
+          </DialogHeader>
+          <Form {...copyForm}>
+            <form
+              onSubmit={copyForm.handleSubmit((v) =>
+                copyCalendarMutation.mutate({
+                  sourceId: selectedCalendarId!,
+                  targetYear: v.targetYear,
+                  targetName: v.targetName,
+                }),
+              )}
+              className="space-y-4"
+            >
+              <FormField
+                control={copyForm.control}
+                name="targetYear"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Năm mới</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={copyForm.control}
+                name="targetName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tên mới (tuỳ chọn)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Để trống để tự động đặt tên"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCopyDialog(false)}
+                >
+                  Huỷ
+                </Button>
+                <Button type="submit" disabled={copyCalendarMutation.isPending}>
+                  {copyCalendarMutation.isPending && (
+                    <Loader2 className="animate-spin" />
+                  )}
+                  Sao chép
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Calendar Confirmation */}
       <AlertDialog
-        open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
+        open={!!deleteCalendarId}
+        onOpenChange={(open) => !open && setDeleteCalendarId(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xoá ngày nghỉ lễ?</AlertDialogTitle>
+            <AlertDialogTitle>Xoá lịch nghỉ lễ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Hành động này không thể hoàn tác. Ngày nghỉ lễ sẽ bị xoá khỏi hệ
-              thống.
+              Hành động này không thể hoàn tác. Tất cả ngày nghỉ lễ trong lịch
+              này sẽ bị xoá.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Huỷ</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteId && deleteMutation.mutate(deleteId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() =>
+                deleteCalendarId &&
+                deleteCalendarMutation.mutate(deleteCalendarId)
+              }
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Xoá
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Vietnam Template Confirmation */}
+      <AlertDialog
+        open={showVietnamTemplateDialog}
+        onOpenChange={setShowVietnamTemplateDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tạo lịch nghỉ lễ Việt Nam</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hệ thống sẽ tạo lịch nghỉ lễ Việt Nam năm{" "}
+              {new Date().getFullYear()} với các ngày lễ lớn theo quy định.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Huỷ</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowVietnamTemplateDialog(false);
+                createFromTemplateMutation.mutate(new Date().getFullYear());
+              }}
+            >
+              Xác nhận
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Holidays List Dialog */}
+      <Dialog
+        open={showHolidaysListDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowHolidaysListDialog(false);
+            setHolidaysListCalendarId(null);
+          } else {
+            setShowHolidaysListDialog(true);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Danh sách ngày nghỉ lễ</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {calendars.find((c) => c.id === holidaysListCalendarId)?.holidays
+              .length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Chưa có ngày nghỉ lễ nào
+              </p>
+            ) : (
+              calendars
+                .find((c) => c.id === holidaysListCalendarId)
+                ?.holidays.map((holiday) => (
+                  <div
+                    key={holiday.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium text-sm">{holiday.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(holiday.date)}
+                          {holiday.endDate &&
+                            ` → ${formatDate(holiday.endDate)}`}
+                          {" · "}
+                          {getHalfDayLabel(holiday.halfDay)}
+                          {holiday.isRecurring && " · Hàng năm"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          setShowHolidaysListDialog(false);
+                          openHolidayDialog(holidaysListCalendarId!, holiday);
+                        }}
+                      >
+                        <Pen className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          setShowHolidaysListDialog(false);
+                          setDeleteHolidayId(holiday.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Holiday Confirmation */}
+      <AlertDialog
+        open={!!deleteHolidayId}
+        onOpenChange={(open) => !open && setDeleteHolidayId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xoá ngày nghỉ lễ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Huỷ</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                deleteHolidayId && deleteHolidayMutation.mutate(deleteHolidayId)
+              }
+              className="bg-destructive hover:bg-destructive/90"
             >
               Xoá
             </AlertDialogAction>

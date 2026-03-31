@@ -72,7 +72,7 @@ app.prepare().then(() => {
 
     httpServer.listen(port, () => {
         console.log(
-            `> Ready on http://${hostname}:${port} (Socket.IO enabled)`,
+            `> Ready on http://localhost:${port} (Socket.IO enabled)`,
         );
     });
 });

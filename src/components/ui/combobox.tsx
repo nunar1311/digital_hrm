@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Check, ChevronDown, X } from "lucide-react"
+import * as React from "react";
+import { Check, ChevronDown, X } from "lucide-react";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandInput,
@@ -12,26 +12,26 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
-} from "@/components/ui/command"
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 
 export interface ComboboxOption {
-  value: string
-  label: string
+  value: string;
+  label: string;
 }
 
 interface ComboboxProps {
-  options: ComboboxOption[]
-  value?: string[]
-  onChange?: (value: string[]) => void
-  placeholder?: string
-  multiple?: boolean
-  className?: string
-  disabled?: boolean
+  options: ComboboxOption[];
+  value?: string[];
+  onChange?: (value: string[]) => void;
+  placeholder?: string;
+  multiple?: boolean;
+  className?: string;
+  disabled?: boolean;
 }
 
 export function Combobox({
@@ -43,28 +43,28 @@ export function Combobox({
   className,
   disabled = false,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
 
   const selectedLabels = options
     .filter((opt) => value.includes(opt.value))
-    .map((opt) => opt.label)
+    .map((opt) => opt.label);
 
   const handleSelect = (selectedValue: string) => {
     if (multiple) {
       const newValue = value.includes(selectedValue)
         ? value.filter((v) => v !== selectedValue)
-        : [...value, selectedValue]
-      onChange?.(newValue)
+        : [...value, selectedValue];
+      onChange?.(newValue);
     } else {
-      onChange?.([selectedValue])
-      setOpen(false)
+      onChange?.([selectedValue]);
+      setOpen(false);
     }
-  }
+  };
 
   const handleClear = (e: React.MouseEvent, valueToRemove: string) => {
-    e.stopPropagation()
-    onChange?.(value.filter((v) => v !== valueToRemove))
-  }
+    e.stopPropagation();
+    onChange?.(value.filter((v) => v !== valueToRemove));
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -73,27 +73,34 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between min-h-[40px]", !value.length && "text-muted-foreground", className)}
+          className={cn(
+            "w-full min-w-0 max-w-full shrink justify-between h-6",
+            multiple
+              ? "h-auto min-h-6 items-start py-2 whitespace-normal"
+              : "items-center",
+            !value.length && "text-muted-foreground",
+            className,
+          )}
           disabled={disabled}
         >
-          <span className="truncate">
-            {selectedLabels.length > 0 ? selectedLabels.join(", ") : placeholder}
-          </span>
-          <div className="flex items-center gap-1">
-            {value.length > 0 && (
-              <X
-                className="h-4 w-4 opacity-50 hover:opacity-100"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onChange?.([])
-                }}
-              />
+          <span
+            className={cn(
+              "min-w-0 flex-1 text-left font-normal",
+              multiple ? "wrap-anywhere" : "truncate",
             )}
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </div>
+          >
+            {selectedLabels.length > 0
+              ? selectedLabels.join(", ")
+              : placeholder}
+          </span>
+
+          <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0"
+        align="start"
+      >
         <Command>
           <CommandInput placeholder="Tìm kiếm..." />
           <CommandList>
@@ -102,13 +109,16 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
+                  value={option.value}
+                  keywords={[option.label]}
                   onSelect={() => handleSelect(option.value)}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value.includes(option.value) ? "opacity-100" : "opacity-0"
+                      value.includes(option.value)
+                        ? "opacity-100"
+                        : "opacity-0",
                     )}
                   />
                   {option.label}
@@ -119,5 +129,5 @@ export function Combobox({
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

@@ -33,7 +33,6 @@ import {
   CircleDot,
   Loader2,
   Trash2,
-  Pencil,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MoveEmployeesDialog } from "@/components/departments/move-employees-dialog";

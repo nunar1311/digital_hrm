@@ -1,29 +1,27 @@
 import { Metadata } from "next";
 import HolidaysClient from "./holidays-client";
-import { hasPermission } from "@/lib/rbac/check-access";
+import { getHolidayCalendars } from "./actions";
+import { requirePermission } from "@/lib/auth-session";
 import { Permission } from "@/lib/rbac/permissions";
-import { extractRole, requireAuth } from "@/lib/auth-session";
-import { redirect } from "next/navigation";
-import { getHolidays } from "../actions";
 
 export const metadata: Metadata = {
-  title: "Ngày nghỉ lễ",
-  description: "Quản lý ngày nghỉ lễ",
+  title: "Lịch nghỉ lễ",
+  description: "Quản lý lịch nghỉ lễ và ngày nghỉ của công ty",
 };
 
-const page = async () => {
-  const session = await requireAuth();
-  const role = extractRole(session);
+export default async function HolidaysPage() {
+  await requirePermission(Permission.HOLIDAY_VIEW);
 
-  if (!hasPermission(role, Permission.ATTENDANCE_SHIFT_MANAGE)) {
-    redirect("/");
-  }
-
-  const [holidays] = await Promise.all([getHolidays()]);
+  const calendars = await getHolidayCalendars();
 
   return (
-    <HolidaysClient initialHolidays={JSON.parse(JSON.stringify(holidays))} />
+    <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
+      <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative">
+        <div className="shrink-0 flex items-center justify-between h-10 p-2 border-b">
+          <h1 className="font-bold">Lịch nghỉ lễ</h1>
+        </div>
+        <HolidaysClient initialData={calendars} />
+      </div>
+    </div>
   );
-};
-
-export default page;
+}

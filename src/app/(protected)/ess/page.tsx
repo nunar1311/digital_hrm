@@ -1,16 +1,10 @@
-import type { Metadata } from "next";
+import { requireAuth } from "@/lib/auth-session";
+import { getESSDashboardData } from "./actions";
+import { ESSClient } from "./ess-client";
 
-export const metadata: Metadata = {
-    title: "Cổng nhân viên | Digital HRM",
-};
-
-export default function ESSPage() {
-    return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Cổng nhân viên (Self-Service)
-            </h1>
-            {/* TODO: Employee self-service portal */}
-        </div>
-    );
+export default async function ESSPage() {
+    const session = await requireAuth();
+    const data = await getESSDashboardData();
+    
+    return <ESSClient initialData={data} />;
 }

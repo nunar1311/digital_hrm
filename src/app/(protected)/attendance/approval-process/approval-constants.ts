@@ -44,7 +44,6 @@ export const APPROVAL_METHOD_OPTIONS = [
 
 export const CONDITION_TYPE_OPTIONS = [
     { value: "DEPARTMENT", label: "Phòng ban", description: "Lọc theo phòng ban của nhân viên" },
-    { value: "WORKGROUP", label: "Nhóm làm việc", description: "Lọc theo nhóm làm việc của nhân viên" },
     { value: "PAYROLL_COMPANY", label: "Công ty trả lương", description: "Lọc theo công ty trả lương của nhân viên" },
     { value: "OTHER", label: "Điều kiện khác", description: "Áp dụng cho tất cả các yêu cầu còn lại" },
 ] as const;
@@ -90,7 +89,7 @@ export const ADJUSTMENT_STATUS_CONFIG: Record<
     },
 };
 
-export const DEFAULT_APPROVAL_STEPS: import("./types").ApprovalStep[] = [
+export const DEFAULT_APPROVAL_STEPS: import("../types").ApprovalStep[] = [
     {
         stepOrder: 1,
         stepType: "APPROVER",

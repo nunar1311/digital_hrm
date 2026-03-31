@@ -8,8 +8,8 @@ export const ROUTE_PERMISSIONS: Array<{
     pattern: string;
     permissions: Permission[];
 }> = [
-    // ─── Dashboard ───
-    { pattern: "/", permissions: [Permission.DASHBOARD_VIEW] },
+    // ─── Dashboard / ESS ───
+    { pattern: "/", permissions: [Permission.ESS_VIEW] },
 
     // ─── Tổ chức ───
     {

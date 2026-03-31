@@ -648,10 +648,7 @@ export function EmployeesClient() {
               </Button>
             </div>
           )}
-          <div
-            className="h-full flex flex-col pb-8 overflow-y-auto"
-            ref={tableContainerRef}
-          >
+          <div className="h-full flex flex-col pb-8" ref={tableContainerRef}>
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (

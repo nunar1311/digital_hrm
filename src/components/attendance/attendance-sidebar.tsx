@@ -25,6 +25,7 @@ import {
   Search,
   Calendar,
   CalendarCheck,
+  CalendarOff,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -341,12 +342,10 @@ const AttendanceSidebar = () => {
       children: [
         {
           title: "Thiết lập ngày lễ",
-          icon: Calendar,
           url: "/attendance/holidays",
         },
         {
           title: "Ca làm việc",
-          icon: Calendar,
           url: "/attendance/shifts",
         },
       ],
@@ -372,24 +371,12 @@ const AttendanceSidebar = () => {
     },
     {
       title: "Quản lý nghỉ phép",
-      icon: CalendarCheck,
+      icon: CalendarOff,
       isActive: true,
       children: [
         {
-          title: "Loại ngày nghỉ và quy định",
-          url: "/attendance/leave-types",
-        },
-        {
-          title: "Chính sách ngày nghỉ",
-          url: "/attendance/leave-policies",
-        },
-        {
-          title: "Quy trình duyệt nghỉ phép",
-          url: "/attendance/leave-approval-process",
-        },
-        {
-          title: "Cấu hình nâng cao",
-          url: "/attendance/leave-advanced-settings",
+          title: "Duyệt đơn nghỉ phép",
+          url: "/attendance/leave-requests",
         },
         {
           title: "Tổng hợp ngày nghỉ",

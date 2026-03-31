@@ -333,6 +333,7 @@ export interface ServerToClientEvents {
     "asset:returned": (data: AssetReturnedEvent) => void;
     "company:updated": (data: CompanyUpdatedEvent) => void;
     "company:logo-updated": (data: CompanyLogoUpdatedEvent) => void;
+    "data:updated": (data: { entity: string; userId?: string; action?: string; data?: unknown }) => void;
 }
 
 // === Client → Server Events ===
@@ -378,4 +379,6 @@ export const SOCKET_EVENTS = {
     ASSET_RETURNED: "asset:returned",
     COMPANY_UPDATED: "company:updated",
     COMPANY_LOGO_UPDATED: "company:logo-updated",
+    // Leave management
+    DATA_UPDATED: "data:updated",
 } as const;

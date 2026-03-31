@@ -1,0 +1,585 @@
+"use client";
+
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+    CalendarCheck,
+    Clock,
+    Sun,
+    Moon,
+    TrendingUp,
+    CheckCircle2,
+    CalendarIcon,
+    Bell,
+    FileText,
+    User,
+    ArrowRight,
+    ChevronRight,
+    Plus,
+    CalendarDays,
+    Wallet,
+    Package,
+    Briefcase,
+    HeartPulse,
+    Star,
+    Gift,
+} from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+
+interface LeaveBalance {
+    id: string;
+    totalDays: number;
+    usedDays: number;
+    pendingDays: number;
+    carriedForward: number;
+    policyYear: number;
+    leaveType: {
+        id: string;
+        name: string;
+        description: string | null;
+        isPaidLeave: boolean;
+    };
+}
+
+interface AttendanceSummary {
+    standardDays: number;
+    totalWorkDays: number;
+    lateDays: number;
+    earlyLeaveDays: number;
+    leaveDays: number;
+    unpaidLeaveDays: number;
+    totalOtHours: number;
+}
+
+interface TodayShift {
+    id: string;
+    name: string;
+    startTime: string;
+    endTime: string;
+}
+
+interface TodayAttendance {
+    id: string;
+    checkIn: string | null;
+    checkOut: string | null;
+    status: string;
+    shift: TodayShift | null;
+}
+
+interface Holiday {
+    id: string;
+    name: string;
+    date: string;
+}
+
+interface Announcement {
+    id: string;
+    title: string;
+    content: string;
+    date: string;
+    type: string;
+}
+
+interface PendingRequests {
+    leaveRequests: number;
+    profileRequests: number;
+    adminRequests: number;
+    total: number;
+}
+
+interface ESSQuickInfoProps {
+    profile: {
+        fullName?: string;
+        name?: string;
+        employeeCode: string;
+        department?: { name: string };
+        position?: { name: string };
+        avatar?: string;
+    };
+    leaveBalances: LeaveBalance[];
+    attendanceSummary: AttendanceSummary;
+    todayShift: TodayShift | null;
+    todayAttendance: TodayAttendance | null;
+    upcomingHolidays: Holiday[];
+    announcements: Announcement[];
+    pendingRequests: PendingRequests;
+}
+
+function formatTime(timeStr: string) {
+    const [hours, minutes] = timeStr.split(":");
+    return `${hours}:${minutes}`;
+}
+
+function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Chào buổi sáng";
+    if (hour < 18) return "Chào buổi chiều";
+    return "Chào buổi tối";
+}
+
+function getInitials(name: string) {
+    return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+}
+
+const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; className?: string }> = {
+    PRESENT: { label: "Đã chấm công", variant: "secondary", className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100" },
+    ABSENT: { label: "Vắng mặt", variant: "destructive" },
+    LEAVE: { label: "Nghỉ phép", variant: "outline", className: "text-blue-600 hover:text-blue-600" },
+    LATE: { label: "Đi trễ", variant: "outline", className: "text-orange-600" },
+};
+
+const quickActions = [
+    {
+        title: "Đăng ký nghỉ phép",
+        description: "Gửi yêu cầu nghỉ phép",
+        href: "/attendance/leave-summary",
+        icon: CalendarDays,
+        color: "bg-blue-500/10 text-blue-600",
+    },
+    {
+        title: "Xem bảng công",
+        description: "Kiểm tra công tháng",
+        href: "/ess/attendance",
+        icon: CalendarCheck,
+        color: "bg-emerald-500/10 text-emerald-600",
+    },
+    {
+        title: "Cập nhật hồ sơ",
+        description: "Thông tin cá nhân",
+        href: "/ess/profile",
+        icon: User,
+        color: "bg-purple-500/10 text-purple-600",
+    },
+];
+
+export function ESSQuickInfo({
+    profile,
+    leaveBalances,
+    attendanceSummary,
+    todayShift,
+    todayAttendance,
+    upcomingHolidays,
+    announcements,
+    pendingRequests,
+}: ESSQuickInfoProps) {
+    const userName = profile.fullName || profile.name || "Nhân viên";
+    const greeting = getGreeting();
+    const currentStatus = todayAttendance?.status
+        ? statusConfig[todayAttendance.status] || { label: todayAttendance.status, variant: "outline" as const }
+        : { label: "Chưa chấm công", variant: "outline" as const };
+
+    const workProgress = attendanceSummary.standardDays > 0
+        ? (attendanceSummary.totalWorkDays / attendanceSummary.standardDays) * 100
+        : 0;
+
+    return (
+        <TooltipProvider>
+            <div className="space-y-6">
+                {/* Welcome Header - Full Width Banner */}
+                <div className="relative overflow-hidden rounded-xl bg-linear-to-r from-primary/5 via-primary/10 to-primary/5 border border-primary/10">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent" />
+                    <div className="relative p-6 md:p-8">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-16 w-16 border-2 border-primary/20">
+                                    <AvatarImage src={profile.avatar} alt={userName} />
+                                    <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
+                                        {getInitials(userName)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <h1 className="text-2xl md:text-3xl font-bold">
+                                        {greeting}, <span className="text-primary">{userName}</span>
+                                    </h1>
+                                    <div className="flex flex-wrap items-center gap-2 mt-1 text-muted-foreground text-sm">
+                                        <Badge variant="outline" className="font-normal">
+                                            {profile.employeeCode}
+                                        </Badge>
+                                        <span className="text-muted-foreground/50">•</span>
+                                        <span>{profile.department?.name || "Chưa phòng ban"}</span>
+                                        <span className="text-muted-foreground/50">•</span>
+                                        <span>{profile.position?.name || "Chưa chức vụ"}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                    <div className="text-sm text-muted-foreground">
+                                        {new Date().toLocaleDateString("vi-VN", { weekday: "long" })}
+                                    </div>
+                                    <div className="text-lg font-semibold">
+                                        {new Date().toLocaleDateString("vi-VN", {
+                                            day: "numeric",
+                                            month: "long",
+                                            year: "numeric",
+                                        })}
+                                    </div>
+                                </div>
+                                <Clock className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stats Grid - 4 Columns */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {/* Today's Shift */}
+                    <Card className="group hover:shadow-md transition-all duration-200">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                {todayShift ? (
+                                    <Sun className="h-4 w-4 text-orange-500" />
+                                ) : (
+                                    <Moon className="h-4 w-4 text-slate-500" />
+                                )}
+                                Ca làm việc hôm nay
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {todayShift ? (
+                                <div className="space-y-1">
+                                    <div className="font-semibold text-lg">{todayShift.name}</div>
+                                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                        <Clock className="h-3 w-3" />
+                                        {formatTime(todayShift.startTime)} - {formatTime(todayShift.endTime)}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-sm text-muted-foreground">Không có ca được gán</div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Today's Attendance Status */}
+                    <Card className="group hover:shadow-md transition-all duration-200">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                Trạng thái hôm nay
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                <Badge variant={currentStatus.variant} className={currentStatus.className}>
+                                    {currentStatus.label}
+                                </Badge>
+                                {todayAttendance && (
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pt-1">
+                                        <div className="flex items-center gap-1">
+                                            <span className="font-medium">Vào:</span>
+                                            <span>{todayAttendance.checkIn
+                                                ? new Date(todayAttendance.checkIn).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+                                                : "--:--"
+                                            }</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <span className="font-medium">Ra:</span>
+                                            <span>{todayAttendance.checkOut
+                                                ? new Date(todayAttendance.checkOut).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+                                                : "--:--"
+                                            }</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Monthly Work Progress */}
+                    <Card className="group hover:shadow-md transition-all duration-200">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-blue-500" />
+                                Công tháng này
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl font-bold">{attendanceSummary.totalWorkDays}</span>
+                                    <span className="text-sm text-muted-foreground">/ {attendanceSummary.standardDays} ngày</span>
+                                </div>
+                                <Progress value={workProgress} className="h-2" />
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>Tiến độ: {Math.round(workProgress)}%</span>
+                                    {attendanceSummary.lateDays > 0 && (
+                                        <span className="text-orange-600">{attendanceSummary.lateDays} ngày trễ</span>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Pending Requests */}
+                    <Card className={cn(
+                        "group hover:shadow-md transition-all duration-200",
+                        pendingRequests.total > 0 && "border-orange-200 bg-orange-50/50"
+                    )}>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <Bell className="h-4 w-4 text-orange-500" />
+                                Yêu cầu chờ duyệt
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {pendingRequests.total > 0 ? (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-2xl font-bold text-orange-600">{pendingRequests.total}</span>
+                                        <span className="text-sm text-muted-foreground">yêu cầu</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1 text-xs">
+                                        {pendingRequests.leaveRequests > 0 && (
+                                            <Badge variant="outline" className="text-xs bg-orange-100 text-orange-800">
+                                                {pendingRequests.leaveRequests} nghỉ phép
+                                            </Badge>
+                                        )}
+                                        {pendingRequests.adminRequests > 0 && (
+                                            <Badge variant="outline" className="text-xs bg-orange-100 text-orange-800">
+                                                {pendingRequests.adminRequests} HCNS
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 text-emerald-600">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    <span className="text-sm">Không có yêu cầu</span>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Quick Actions - Horizontal Strip */}
+                <Card className="bg-linear-to-r from-blue-50/50 to-indigo-50/50 border-blue-100/50">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <Star className="h-4 w-4 text-blue-600" />
+                                Thao tác nhanh
+                            </CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-3 md:grid-cols-3">
+                            {quickActions.map((action) => {
+                                const Icon = action.icon;
+                                return (
+                                    <Link key={action.href} href={action.href}>
+                                        <div className="flex items-center gap-4 p-4 rounded-lg bg-white hover:bg-white/80 border border-border/50 hover:border-primary/20 hover:shadow-sm transition-all duration-200 group cursor-pointer">
+                                            <div className={cn("p-2.5 rounded-lg", action.color)}>
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-medium text-sm group-hover:text-primary transition-colors">
+                                                    {action.title}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground truncate">
+                                                    {action.description}
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Two Column Layout */}
+                <div className="grid gap-6 lg:grid-cols-2">
+                    {/* Leave Balance */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <div className="space-y-1">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <CalendarDays className="h-4 w-4 text-blue-600" />
+                                    Số dư ngày nghỉ phép
+                                </CardTitle>
+                                <CardDescription>
+                                    Năm {new Date().getFullYear()} • {leaveBalances.length} loại nghỉ phép
+                                </CardDescription>
+                            </div>
+                            <Link href="/attendance/leave-summary">
+                                <Button variant="ghost" size="sm" className="text-xs gap-1">
+                                    Xem tất cả
+                                    <ArrowRight className="h-3 w-3" />
+                                </Button>
+                            </Link>
+                        </CardHeader>
+                        <CardContent>
+                            {leaveBalances.length === 0 ? (
+                                <div className="text-sm text-muted-foreground py-8 text-center">
+                                    <CalendarDays className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                                    Chưa có số dư nghỉ phép
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {leaveBalances.slice(0, 4).map((balance) => {
+                                        const remaining = Math.max(0, balance.totalDays - balance.usedDays - balance.pendingDays);
+                                        const usagePercent = balance.totalDays > 0
+                                            ? ((balance.usedDays + balance.pendingDays) / balance.totalDays) * 100
+                                            : 0;
+                                        return (
+                                            <div key={balance.id} className="space-y-2">
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium">{balance.leaveType.name}</span>
+                                                        {balance.leaveType.isPaidLeave && (
+                                                            <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">
+                                                                Có lương
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-muted-foreground">
+                                                        {remaining} / {balance.totalDays} ngày
+                                                    </span>
+                                                </div>
+                                                <Progress
+                                                    value={100 - usagePercent}
+                                                    className="h-2"
+                                                />
+                                                <div className="flex justify-between text-xs text-muted-foreground">
+                                                    <span>Đã dùng: {balance.usedDays} ngày</span>
+                                                    {balance.pendingDays > 0 && (
+                                                        <span className="text-orange-600 font-medium">
+                                                            Chờ duyệt: {balance.pendingDays} ngày
+                                                        </span>
+                                                    )}
+                                                    {balance.carriedForward > 0 && (
+                                                        <span className="text-blue-600">
+                                                            Chuyển năm trước: {balance.carriedForward}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Right Column - Holidays & Announcements */}
+                    <div className="space-y-6">
+                        {/* Upcoming Holidays */}
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Gift className="h-4 w-4 text-red-500" />
+                                    Nghỉ lễ sắp tới
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {upcomingHolidays.length === 0 ? (
+                                    <div className="text-sm text-muted-foreground py-4 text-center">
+                                        Không có ngày nghỉ lễ trong 30 ngày tới
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {upcomingHolidays.slice(0, 3).map((holiday) => (
+                                            <div
+                                                key={holiday.id}
+                                                className="flex items-center gap-4 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                                            >
+                                                <div className="p-2.5 rounded-lg bg-red-100 text-red-600">
+                                                    <CalendarIcon className="h-4 w-4" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-sm">{holiday.name}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {new Date(holiday.date).toLocaleDateString("vi-VN", {
+                                                            weekday: "long",
+                                                            day: "numeric",
+                                                            month: "long",
+                                                            year: "numeric",
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Announcements */}
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Bell className="h-4 w-4 text-amber-500" />
+                                    Thông báo mới
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {announcements.length === 0 ? (
+                                    <div className="text-sm text-muted-foreground py-4 text-center">
+                                        Không có thông báo mới
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {announcements.slice(0, 3).map((ann) => (
+                                            <div
+                                                key={ann.id}
+                                                className="p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow"
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-sm">{ann.title}</p>
+                                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                            {ann.content}
+                                                        </p>
+                                                    </div>
+                                                    {ann.type === "WARNING" && (
+                                                        <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 shrink-0">
+                                                            Quan trọng
+                                                        </Badge>
+                                                    )}
+                                                    {ann.type === "INFO" && (
+                                                        <Badge variant="outline" className="text-xs shrink-0">
+                                                            Thông báo
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-2">
+                                                    {new Date(ann.date).toLocaleDateString("vi-VN", {
+                                                        day: "numeric",
+                                                        month: "short",
+                                                        year: "numeric",
+                                                    })}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        </TooltipProvider>
+    );
+}

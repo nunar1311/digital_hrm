@@ -63,8 +63,13 @@ export enum Permission {
     LEAVE_CREATE = "leave:create",
     LEAVE_APPROVE_TEAM = "leave:approve_team",
     LEAVE_APPROVE_ALL = "leave:approve_all",
+    LEAVE_APPROVAL_CONFIG = "leave:approval_config",
     LEAVE_POLICY_MANAGE = "leave:policy_manage",
     LEAVE_CALENDAR_VIEW = "leave:calendar_view",
+
+    // Nghỉ lễ
+    HOLIDAY_VIEW = "holiday:view",
+    HOLIDAY_MANAGE = "holiday:manage",
 
     // Chấm công
     ATTENDANCE_VIEW_SELF = "attendance:view_self",
@@ -140,6 +145,10 @@ export enum Permission {
     ESS_UPDATE_PROFILE = "ess:update_profile",
     ESS_SEND_REQUEST = "ess:send_request",
 
+    // Yêu cầu HC / Administrative Requests
+    ADMIN_REQUEST_VIEW = "admin_request:view",
+    ADMIN_REQUEST_APPROVE = "admin_request:approve",
+
     // Cài đặt
     SETTINGS_VIEW = "settings:view",
     SETTINGS_ROLES_MANAGE = "settings:roles_manage",
@@ -164,7 +173,10 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.CONTRACT_PRINT,
         Permission.LEAVE_VIEW_ALL,
         Permission.LEAVE_APPROVE_ALL,
+        Permission.LEAVE_APPROVAL_CONFIG,
         Permission.LEAVE_CALENDAR_VIEW,
+        Permission.HOLIDAY_VIEW,
+        Permission.HOLIDAY_MANAGE,
         Permission.ATTENDANCE_VIEW_ALL,
         Permission.ATTENDANCE_OVERTIME_APPROVE,
         Permission.ATTENDANCE_OVERTIME_HR_REVIEW,
@@ -199,6 +211,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.ESS_VIEW,
         Permission.ESS_UPDATE_PROFILE,
         Permission.ESS_SEND_REQUEST,
+        Permission.ADMIN_REQUEST_VIEW,
+        Permission.ADMIN_REQUEST_APPROVE,
         Permission.SETTINGS_VIEW,
         Permission.SETTINGS_AUDIT_LOG,
     ],
@@ -229,8 +243,11 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.LEAVE_VIEW_ALL,
         Permission.LEAVE_CREATE,
         Permission.LEAVE_APPROVE_ALL,
+        Permission.LEAVE_APPROVAL_CONFIG,
         Permission.LEAVE_POLICY_MANAGE,
         Permission.LEAVE_CALENDAR_VIEW,
+        Permission.HOLIDAY_VIEW,
+        Permission.HOLIDAY_MANAGE,
         Permission.ATTENDANCE_VIEW_ALL,
         Permission.ATTENDANCE_CHECKIN,
         Permission.ATTENDANCE_EXPLANATION,
@@ -280,6 +297,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.ESS_VIEW,
         Permission.ESS_UPDATE_PROFILE,
         Permission.ESS_SEND_REQUEST,
+        Permission.ADMIN_REQUEST_VIEW,
+        Permission.ADMIN_REQUEST_APPROVE,
         Permission.SETTINGS_VIEW,
     ],
 
@@ -302,6 +321,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.LEAVE_VIEW_ALL,
         Permission.LEAVE_CREATE,
         Permission.LEAVE_CALENDAR_VIEW,
+        Permission.HOLIDAY_VIEW,
         Permission.ATTENDANCE_VIEW_ALL,
         Permission.ATTENDANCE_CHECKIN,
         Permission.ATTENDANCE_EXPLANATION,
@@ -330,6 +350,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.ESS_VIEW,
         Permission.ESS_UPDATE_PROFILE,
         Permission.ESS_SEND_REQUEST,
+        Permission.ADMIN_REQUEST_VIEW,
+        Permission.ADMIN_REQUEST_APPROVE,
     ],
 
     [Role.DEPT_MANAGER]: [
@@ -403,10 +425,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     ],
 
     [Role.EMPLOYEE]: [
-        Permission.DASHBOARD_VIEW,
-        Permission.ORG_CHART_VIEW,
-        Permission.DEPT_VIEW,
-        Permission.POSITION_VIEW_ALL,
         Permission.EMPLOYEE_VIEW_SELF,
         Permission.CONTRACT_VIEW_SELF,
         Permission.LEAVE_VIEW_SELF,

@@ -527,15 +527,14 @@ async function seed() {
         console.log("  ⏭️  Shifts already exist, skipping...");
     }
 
-    // ─── Seed Holidays 2026 ───
+    // ─── Seed Holidays 2026 ─── (chỉ tạo nếu chưa có HolidayCalendar)
     console.log("\n🎉 Seeding holidays 2026...\n");
 
-    const existingHolidays = await prisma.holiday.findMany({
-        where: { date: { gte: new Date("2026-01-01"), lte: new Date("2026-12-31") } },
-    });
-
-    if (existingHolidays.length === 0) {
-        const holidays = [
+    // Chỉ seed trực tiếp nếu chưa có HolidayCalendar
+    const existingCalendars = await prisma.holidayCalendar.findMany();
+    if (existingCalendars.length === 0) {
+        // Fallback: seed đơn giản nếu chưa có HolidayCalendar
+        const simpleHolidays = [
             { name: "Tết Dương lịch", date: "2026-01-01" },
             { name: "Tết Nguyên Đán", date: "2026-02-17", endDate: "2026-02-23" },
             { name: "Giỗ Tổ Hùng Vương", date: "2026-04-10" },
@@ -544,18 +543,24 @@ async function seed() {
             { name: "Quốc khánh", date: "2026-09-02" },
         ];
 
-        for (const holiday of holidays) {
-            await prisma.holiday.create({
-                data: {
+        for (const holiday of simpleHolidays) {
+            await prisma.holiday.upsert({
+                where: {
+                    id: `simple-${holiday.name}-2026`,
+                },
+                update: {},
+                create: {
+                    id: `simple-${holiday.name}-2026`,
                     name: holiday.name,
                     date: new Date(holiday.date),
                     endDate: holiday.endDate ? new Date(holiday.endDate) : null,
+                    isRecurring: holiday.name !== "Tết Nguyên Đán",
                 },
             });
             console.log(`  ✅ ${holiday.name} (${holiday.date})`);
         }
     } else {
-        console.log("  ⏭️  Holidays already exist, skipping...");
+        console.log("  ⏭️  Holidays đã được seed qua HolidayCalendar, bỏ qua...");
     }
 
     // ─── Seed Company Settings ───
@@ -593,12 +598,22 @@ async function seed() {
     ];
 
     for (const setting of companySettings) {
-        await prisma.systemSetting.upsert({
-            where: { key: setting.key },
-            update: {},
-            create: setting,
-        });
-        console.log(`  ✅ ${setting.key}`);
+        try {
+            await prisma.systemSetting.upsert({
+                where: { key: setting.key },
+                update: {},
+                create: setting,
+            });
+            console.log(`  ✅ ${setting.key}`);
+        } catch (error: unknown) {
+            const isUniqueError =
+                error instanceof Error && error.message.includes("P2002");
+            if (isUniqueError) {
+                console.log(`  ⏭️  ${setting.key} — da ton tai, bo qua`);
+            } else {
+                throw error;
+            }
+        }
     }
 
     // ─── Seed 100 Employees ───
@@ -889,6 +904,58 @@ async function seedEmployees() {
         console.log(`  ✅ Đã gán ca làm việc cho ${employees.length} nhân viên`);
     }
 
+    // ============================================================
+    // LEAVE MANAGEMENT SEED
+    // ============================================================
+
+    console.log("\n🏖️ Seeding leave types...\n");
+    const leaveTypes = [
+        {
+            name: "Phép năm",
+            description: "Nghỉ phép năm có lương theo quy định",
+            isPaidLeave: true,
+            defaultDays: 12,
+        },
+        {
+            name: "Nghỉ ốm",
+            description: "Nghỉ ốm theo BHXH",
+            isPaidLeave: true,
+            defaultDays: 0,
+        },
+        {
+            name: "Nghỉ thai sản",
+            description: "Nghỉ thai sản theo quy định BHXH",
+            isPaidLeave: true,
+            defaultDays: 180,
+        },
+        {
+            name: "Nghỉ không lương",
+            description: "Nghỉ không lương theo yêu cầu",
+            isPaidLeave: false,
+            defaultDays: 0,
+        },
+    ];
+
+    for (const lt of leaveTypes) {
+        const existing = await prisma.leaveType.findFirst({
+            where: { name: lt.name },
+        });
+        if (!existing) {
+            await prisma.leaveType.create({
+                data: {
+                    name: lt.name,
+                    description: lt.description,
+                    isPaidLeave: lt.isPaidLeave,
+                    defaultDays: lt.defaultDays,
+                    isActive: true,
+                },
+            });
+            console.log(`  ✅ Đã tạo: ${lt.name}`);
+        } else {
+            console.log(`  ⏭️  Đã tồn tại: ${lt.name}`);
+        }
+    }
+
     const totalUsers = await prisma.user.count();
     const totalDepts = await prisma.department.count();
     const totalPositions = await prisma.position.count();
@@ -896,6 +963,116 @@ async function seedEmployees() {
     console.log(`   - Tổng users: ${totalUsers}`);
     console.log(`   - Departments: ${totalDepts}`);
     console.log(`   - Positions: ${totalPositions}`);
+
+    // ============================================================
+    // HOLIDAY CALENDARS - Lịch nghỉ lễ (Route 4)
+    // ============================================================
+    console.log("\n🎉 Seeding holiday calendars...\n");
+
+    const holidayCalendarDefs = [
+        {
+            name: "Lịch nghỉ lễ Việt Nam 2026",
+            year: 2026,
+            country: "Vietnam",
+            isDefault: true,
+            holidays: [
+                { name: "Tết Dương lịch", date: "2026-01-01", isRecurring: true, halfDay: "FULL" },
+                { name: "Tết Nguyên đán", date: "2026-02-17", endDate: "2026-02-23", isRecurring: false, halfDay: "FULL" },
+                { name: "Giỗ Tổ Hùng Vương", date: "2026-04-10", isRecurring: true, halfDay: "FULL" },
+                { name: "Ngày Giải phóng miền Nam 30/4", date: "2026-04-30", isRecurring: true, halfDay: "FULL" },
+                { name: "Quốc tế Lao động 1/5", date: "2026-05-01", isRecurring: true, halfDay: "FULL" },
+                { name: "Quốc khánh 2/9", date: "2026-09-02", isRecurring: true, halfDay: "FULL" },
+            ],
+        },
+        {
+            name: "Lịch nghỉ lễ Việt Nam 2025",
+            year: 2025,
+            country: "Vietnam",
+            isDefault: false,
+            holidays: [
+                { name: "Tết Dương lịch", date: "2025-01-01", isRecurring: true, halfDay: "FULL" },
+                { name: "Tết Nguyên đán", date: "2025-01-29", endDate: "2025-02-02", isRecurring: false, halfDay: "FULL" },
+                { name: "Giỗ Tổ Hùng Vương", date: "2025-04-07", isRecurring: true, halfDay: "FULL" },
+                { name: "Ngày Giải phóng miền Nam 30/4", date: "2025-04-30", isRecurring: true, halfDay: "FULL" },
+                { name: "Quốc tế Lao động 1/5", date: "2025-05-01", isRecurring: true, halfDay: "FULL" },
+                { name: "Quốc khánh 2/9", date: "2025-09-02", isRecurring: true, halfDay: "FULL" },
+            ],
+        },
+    ];
+
+    for (const calDef of holidayCalendarDefs) {
+        const existingCal = await prisma.holidayCalendar.findFirst({
+            where: { name: calDef.name, year: calDef.year },
+        });
+        let calendarId: string;
+        if (existingCal) {
+            calendarId = existingCal.id;
+            console.log(`  ⏭️  Đã tồn tại: ${calDef.name}`);
+        } else {
+            const created = await prisma.holidayCalendar.create({
+                data: {
+                    name: calDef.name,
+                    year: calDef.year,
+                    country: calDef.country,
+                    isDefault: calDef.isDefault,
+                    isActive: true,
+                },
+            });
+            calendarId = created.id;
+            console.log(`  ✅ Đã tạo: ${calDef.name}`);
+        }
+
+        // Seed holidays cho calendar
+        for (const holiday of calDef.holidays) {
+            const existingHoliday = await prisma.holiday.findFirst({
+                where: {
+                    holidayCalendarId: calendarId,
+                    name: holiday.name,
+                },
+            });
+            if (!existingHoliday) {
+                await prisma.holiday.create({
+                    data: {
+                        holidayCalendarId: calendarId,
+                        name: holiday.name,
+                        date: new Date(holiday.date),
+                        endDate: holiday.endDate ? new Date(holiday.endDate) : null,
+                        isRecurring: holiday.isRecurring,
+                        year: parseInt(holiday.date.split("-")[0]),
+                        halfDay: holiday.halfDay,
+                    },
+                });
+                console.log(`     ✅ + ${holiday.name} (${holiday.date})`);
+            } else {
+                console.log(`     ⏭️  ${holiday.name} đã tồn tại`);
+            }
+        }
+    }
+
+
+
+    // ============================================================
+    // FINAL SUMMARY
+    // ============================================================
+    const finalUsers = await prisma.user.count();
+    const finalDepts = await prisma.department.count();
+    const finalPositions = await prisma.position.count();
+    const finalLeaveTypes = await prisma.leaveType.count();
+    const finalCalendars = await prisma.holidayCalendar.count();
+    const finalHolidays = await prisma.holiday.count();
+
+    console.log("\n" + "=".repeat(60));
+    console.log("🎉 SEED HOÀN TẤT - TỔNG KẾT CUỐI CÙNG");
+    console.log("=".repeat(60));
+    console.log(`  👥 Users:             ${finalUsers}`);
+    console.log(`  🏢 Departments:      ${finalDepts}`);
+    console.log(`  💼 Positions:        ${finalPositions}`);
+    console.log("");
+    console.log(`  📋 Leave Types:      ${finalLeaveTypes}`);
+    console.log("");
+    console.log(`  🎉 HolidayCalendars: ${finalCalendars}`);
+    console.log(`  📅 Holidays:         ${finalHolidays}`);
+    console.log("=".repeat(60));
 }
 
 seed()

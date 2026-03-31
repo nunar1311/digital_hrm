@@ -69,7 +69,8 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
     if (sidebarType === "attendance") {
       return <AttendanceSidebar />;
     }
-    return <AppSidebar />;
+    // return <AppSidebar />;
+    return null;
   }, [sidebarType, departmentTree]);
 
   return (

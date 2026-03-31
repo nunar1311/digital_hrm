@@ -3906,7 +3906,6 @@ async function checkUserMatchesCondition(
         select: {
             departmentId: true,
             positionId: true,
-            workGroupId: true,
             payrollCompanyId: true,
         },
     });
@@ -3917,10 +3916,6 @@ async function checkUserMatchesCondition(
         case "DEPARTMENT":
             return user.departmentId
                 ? values.includes(user.departmentId)
-                : false;
-        case "WORKGROUP":
-            return user.workGroupId
-                ? values.includes(user.workGroupId)
                 : false;
         case "PAYROLL_COMPANY":
             return user.payrollCompanyId
