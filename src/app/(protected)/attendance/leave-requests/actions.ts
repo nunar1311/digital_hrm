@@ -27,6 +27,7 @@ export async function getLeaveRequestsForApproval(
         leaveTypeId,
         departmentId,
         year = new Date().getFullYear(),
+        month,
         page = 1,
         pageSize = 20,
     } = params;
@@ -39,12 +40,19 @@ export async function getLeaveRequestsForApproval(
         where.status = status;
     }
 
-    // Year filter (by startDate or endDate)
-    const yearStart = new Date(year, 0, 1);
-    const yearEnd = new Date(year, 11, 31);
+    // Date filter (year + optional month)
+    let periodStart: Date;
+    let periodEnd: Date;
+    if (month && month >= 1 && month <= 12) {
+        periodStart = new Date(year, month - 1, 1);
+        periodEnd = new Date(year, month, 0); // last day of month
+    } else {
+        periodStart = new Date(year, 0, 1);
+        periodEnd = new Date(year, 11, 31);
+    }
     where.OR = [
-        { startDate: { gte: yearStart, lte: yearEnd } },
-        { endDate: { gte: yearStart, lte: yearEnd } },
+        { startDate: { gte: periodStart, lte: periodEnd } },
+        { endDate: { gte: periodStart, lte: periodEnd } },
     ];
 
     // Leave type filter
@@ -97,7 +105,7 @@ export async function getLeaveRequestsForApproval(
                         avatar: true,
                         employeeCode: true,
                         department: {
-                            select: { id: true, name: true },
+                            select: { id: true, name: true, logo: true },
                         },
                         position: {
                             select: { id: true, name: true },
@@ -126,13 +134,13 @@ export async function getLeaveRequestsForApproval(
     const approvers =
         approverIds.length > 0
             ? new Map(
-                  (
-                      await prisma.user.findMany({
-                          where: { id: { in: approverIds } },
-                          select: { id: true, fullName: true, name: true },
-                      })
-                  ).map((u) => [u.id, u])
-              )
+                (
+                    await prisma.user.findMany({
+                        where: { id: { in: approverIds } },
+                        select: { id: true, fullName: true, name: true },
+                    })
+                ).map((u) => [u.id, u])
+            )
             : new Map<string, { id: string; fullName: string | null; name: string }>();
 
     const items = data.map((req) => ({
@@ -168,17 +176,24 @@ export async function getLeaveRequestsForApproval(
 // QUERY — Lấy thống kê đơn nghỉ phép
 // ============================================================
 
-export async function getLeaveRequestStats(year = new Date().getFullYear()) {
+export async function getLeaveRequestStats(year = new Date().getFullYear(), month?: number) {
     const session = await requireAuth();
     const userRole = session.user.hrmRole;
 
-    const yearStart = new Date(year, 0, 1);
-    const yearEnd = new Date(year, 11, 31);
+    let periodStart: Date;
+    let periodEnd: Date;
+    if (month && month >= 1 && month <= 12) {
+        periodStart = new Date(year, month - 1, 1);
+        periodEnd = new Date(year, month, 0);
+    } else {
+        periodStart = new Date(year, 0, 1);
+        periodEnd = new Date(year, 11, 31);
+    }
 
     const baseWhere: Record<string, unknown> = {
         OR: [
-            { startDate: { gte: yearStart, lte: yearEnd } },
-            { endDate: { gte: yearStart, lte: yearEnd } },
+            { startDate: { gte: periodStart, lte: periodEnd } },
+            { endDate: { gte: periodStart, lte: periodEnd } },
         ],
     };
 
@@ -265,6 +280,13 @@ export async function approveLeaveRequest(requestId: string) {
     // Update balance: chuyển pendingDays → usedDays
     await prisma.$transaction(async (tx) => {
         if (request.leaveBalanceId && request.leaveBalance) {
+            // Kiểm tra số dư trước khi duyệt
+            if (request.leaveBalance.pendingDays < request.totalDays) {
+                throw new Error(
+                    "Số ngày chờ duyệt không đủ để duyệt. Đơn có thể đã bị chỉnh sửa thủ công."
+                );
+            }
+
             await tx.leaveBalance.update({
                 where: { id: request.leaveBalanceId },
                 data: {
@@ -352,11 +374,13 @@ export async function rejectLeaveRequest(
     // Hoàn lại pendingDays và cập nhật trạng thái
     await prisma.$transaction(async (tx) => {
         if (request.leaveBalanceId) {
-            await tx.leaveBalance.updateMany({
+            await tx.leaveBalance.update({
                 where: {
-                    userId: request.userId,
-                    leaveTypeId: request.leaveTypeId,
-                    policyYear: currentYear,
+                    userId_leaveTypeId_policyYear: {
+                        userId: request.userId,
+                        leaveTypeId: request.leaveTypeId,
+                        policyYear: currentYear,
+                    },
                 },
                 data: {
                     pendingDays: { decrement: request.totalDays },

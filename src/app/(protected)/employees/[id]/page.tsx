@@ -37,9 +37,9 @@ interface EmployeeProfilePageProps {
 export async function generateMetadata({ params }: EmployeeProfilePageProps) {
   const resolvedParams = await params;
   const employee = await getEmployeeById(resolvedParams.id);
-  if (!employee) return { title: "Không tìm thấy - Digital HRM" };
+  if (!employee) return { title: "Không tìm thấy" };
   return {
-    title: `${employee.fullName || employee.name} - Hồ sơ nhân viên | Digital HRM`,
+    title: `${employee.fullName || employee.name} - Hồ sơ nhân viên`,
   };
 }
 
@@ -94,7 +94,7 @@ export default async function EmployeeProfilePage({
           <EditEmployeeButton
             employee={{
               id: employee.id,
-              employeeCode: employee.employeeCode,
+              username: employee.username,
               fullName: employee.name,
               nationalId: employee.nationalId,
               nationalIdDate: employee.nationalIdDate,
@@ -160,7 +160,7 @@ export default async function EmployeeProfilePage({
                       </h2>
                       <EmployeeStatusBadge status={employee.employeeStatus} />
                       <Badge className=" font-mono">
-                        {employee.employeeCode || "---"}
+                        {employee.username || "---"}
                       </Badge>
                     </div>
                     <p className="text-muted-foreground font-medium">

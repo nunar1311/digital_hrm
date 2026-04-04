@@ -111,7 +111,7 @@ export function EmployeesClient() {
   const [columnVisibility, setColumnVisibility] = useState<
     Record<string, boolean>
   >({
-    employeeCode: true,
+    username: true,
     fullName: true,
     positionName: true,
     phone: true,
@@ -327,12 +327,10 @@ export function EmployeesClient() {
         size: 40,
       },
       {
-        accessorKey: "employeeCode",
-        header: "Mã NV",
+        accessorKey: "username",
+        header: "Mã nhân viên",
         cell: ({ row }) => (
-          <span className="font-medium text-muted-foreground">
-            {row.original.employeeCode || "---"}
-          </span>
+          <span className="font-medium">{row.original.username || "---"}</span>
         ),
       },
       {
@@ -557,7 +555,7 @@ export function EmployeesClient() {
             columnVisibility={columnVisibility}
             setColumnVisibility={setColumnVisibility}
             defaultVisibleColumns={{
-              employeeCode: false,
+              username: false,
               fullName: true,
               positionName: false,
               phone: false,
@@ -567,8 +565,8 @@ export function EmployeesClient() {
             }}
             columnOptions={[
               {
-                key: "employeeCode",
-                label: "Mã NV",
+                key: "username",
+                label: "Mã nhân viên",
                 icon: BadgeCheck,
               },
               {
@@ -724,20 +722,29 @@ export function EmployeesClient() {
                   </TableRow>
                 )}
               </TableBody>
+              <tbody>
+                <tr>
+                  <td>
+                    {/* Infinite scroll sentinel */}
+                    <div
+                      id="infinite-scroll-sentinel"
+                      className="h-px shrink-0 mt-4"
+                    />
+                  </td>
+                  <td>
+                    {/* Loading more indicator */}
+                    {isFetchingNextPage && (
+                      <div className="flex items-center justify-center py-3 border-t">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          Đang tải thêm...
+                        </span>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
             </Table>
-
-            {/* Infinite scroll sentinel */}
-            <div id="infinite-scroll-sentinel" className="h-px shrink-0 mt-4" />
-
-            {/* Loading more indicator */}
-            {isFetchingNextPage && (
-              <div className="flex items-center justify-center py-3 border-t">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-xs text-muted-foreground">
-                  Đang tải thêm...
-                </span>
-              </div>
-            )}
 
             {/* Summary */}
             {!isLoadingEmployees && employees.length > 0 && (

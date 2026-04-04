@@ -5,7 +5,7 @@ import { Permission } from "@/lib/rbac/permissions";
 import SidebarMind from "./sidebar-mind";
 
 export function SidebarMindWrapper() {
-  const { canAny, isHR, isManager, isAdmin } = useAuth();
+  const { canAny } = useAuth();
 
   // Chỉ hiển thị sidebar cho người dùng có quyền quản trị HR
   // (HR Manager, HR Staff, Director, Dept Manager, Super Admin, IT Admin)

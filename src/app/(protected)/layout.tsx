@@ -10,60 +10,56 @@ import BannerNotification from "@/components/banner-notification";
 import { AttendanceCheckDialog } from "@/components/attendance/attendance-check-dialog";
 import { ShiftReminderNotifier } from "@/components/attendance/shift-reminder-notifier";
 import {
-    SidebarContextProvider,
-    SidebarSlot,
+  SidebarContextProvider,
+  SidebarSlot,
 } from "@/contexts/sidebar-context";
 
 export default async function ProtectedLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    // Server-side auth check
-    const session = await auth.api.getSession({
-        headers: await headers(),
-    });
+  // Server-side auth check
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-    if (!session) {
-        redirect("/login");
-    }
+  if (!session) {
+    redirect("/login");
+  }
 
-    // Check if company is set up
-    const company = await prisma.organization.findFirst();
-    if (!company) {
-        redirect("/company-setup");
-    }
+  // Check if company is set up
+  const company = await prisma.organization.findFirst();
+  if (!company) {
+    redirect("/company-setup");
+  }
 
-    return (
-        <SocketWrapper
-            userId={session.user.id}
-            organizationId={
-                session.session.activeOrganizationId ?? undefined
-            }
-        >
-            <SidebarContextProvider>
-                <div className="h-screen flex flex-col overflow-hidden [--header-height:calc(--spacing(10))]">
-                    <SidebarProvider className="flex flex-col h-full">
-                        <div className="shrink-0">
-                            <AppHeader />
-                        </div>
+  return (
+    <SocketWrapper
+      userId={session.user.id}
+      organizationId={session.session.activeOrganizationId ?? undefined}
+    >
+      <SidebarContextProvider>
+        <div className="h-screen flex flex-col overflow-hidden [--header-height:calc(--spacing(10))]">
+          <SidebarProvider className="flex flex-col h-full">
+            <div className="shrink-0">
+              <AppHeader />
+            </div>
 
-                        <div className="flex flex-1 overflow-hidden mb-1.5">
-                            <SidebarMindWrapper />
-                            <div className="border rounded-lg flex-1 flex overflow-hidden relative mr-1.5">
-                                <SidebarSlot className="overflow-hidden flex-1 relative min-h-0">
-                                    <BannerNotification />
-                                    <AttendanceCheckDialog />
-                                    <ShiftReminderNotifier />
-                                    <main className="h-full overflow-hidden">
-                                        {children}
-                                    </main>
-                                </SidebarSlot>
-                            </div>
-                        </div>
-                    </SidebarProvider>
-                </div>
-            </SidebarContextProvider>
-        </SocketWrapper>
-    );
+            <div className="flex flex-1 overflow-hidden mb-1.5">
+              <SidebarMindWrapper />
+              <div className="border rounded-lg flex-1 flex overflow-hidden relative mr-1.5">
+                <SidebarSlot className="overflow-hidden flex-1 relative min-h-0">
+                  <BannerNotification />
+                  <AttendanceCheckDialog />
+                  <ShiftReminderNotifier />
+                  <main className="h-full overflow-hidden">{children}</main>
+                </SidebarSlot>
+              </div>
+            </div>
+          </SidebarProvider>
+        </div>
+      </SidebarContextProvider>
+    </SocketWrapper>
+  );
 }

@@ -26,9 +26,9 @@ export interface DepartmentNode {
 export interface EmployeeBasic {
     id: string;
     name: string;
+    username: string | null;
     image: string | null;
     position: string | null;
-    employeeCode: string | null;
 }
 
 export interface DepartmentFormData {

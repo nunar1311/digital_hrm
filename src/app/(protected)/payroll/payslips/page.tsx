@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 export default async function PayslipsPage() {
     const payslips = await getPayslips({});
 
-    return <PayslipsClient initialData={payslips} />;
+    return <PayslipsClient initialData={JSON.parse(JSON.stringify(payslips))} />;
 }

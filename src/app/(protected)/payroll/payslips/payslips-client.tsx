@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -27,22 +27,52 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getPayslips, getMyPayslips } from "../actions";
-import { FileText, Download, Eye, Search } from "lucide-react";
-import { useState } from "react";
+import { getPayslips } from "../actions";
+import {
+  FileText,
+  Eye,
+  Search,
+  Loader2,
+  Receipt,
+  Mail,
+  CheckCircle2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 
-function formatCurrency(amount: number | bigint): string {
+function formatCurrency(amount: number | bigint | unknown): string {
+  const num = typeof amount === "bigint" ? Number(amount) : Number(amount) || 0;
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(num);
 }
 
-function formatDate(date: string | Date | null): string {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("vi-VN");
+function getStatusConfig(status: string) {
+  switch (status) {
+    case "GENERATED":
+      return {
+        label: "Mới",
+        className: "bg-blue-50 text-blue-700 border-blue-200",
+      };
+    case "VIEWED":
+      return {
+        label: "Đã xem",
+        className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      };
+    case "DOWNLOADED":
+      return {
+        label: "Đã tải",
+        className: "bg-violet-50 text-violet-700 border-violet-200",
+      };
+    case "SENT":
+      return {
+        label: "Đã gửi",
+        className: "bg-amber-50 text-amber-700 border-amber-200",
+      };
+    default:
+      return { label: status, className: "" };
+  }
 }
 
 export default function PayslipsClient({
@@ -56,7 +86,7 @@ export default function PayslipsClient({
   const [search, setSearch] = useState("");
   const [monthFilter, setMonthFilter] = useState<string>("all");
   const [yearFilter, setYearFilter] = useState<string>(
-    new Date().getFullYear().toString(),
+    new Date().getFullYear().toString()
   );
 
   const { data: payslips, isLoading } = useQuery({
@@ -68,213 +98,282 @@ export default function PayslipsClient({
           : {
               month: parseInt(monthFilter),
               year: parseInt(yearFilter),
-            },
+            }
       ),
     initialData: initialData,
   });
 
   const years = Array.from(
     { length: 5 },
-    (_, i) => new Date().getFullYear() - i,
+    (_, i) => new Date().getFullYear() - i
   );
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-  const filteredPayslips = payslips?.filter((p) => {
-    if (!search) return true;
-    const searchLower = search.toLowerCase();
-    return (
-      p.employeeName.toLowerCase().includes(searchLower) ||
-      p.employeeCode?.toLowerCase().includes(searchLower)
-    );
-  });
+  const filteredPayslips = useMemo(
+    () =>
+      payslips?.filter((p: (typeof payslips)[number]) => {
+        if (!search) return true;
+        const s = search.toLowerCase();
+        return (
+          p.user.name.toLowerCase().includes(s) ||
+          p.user.employeeCode?.toLowerCase().includes(s)
+        );
+      }),
+    [payslips, search]
+  );
+
+  const stats = useMemo(
+    () => ({
+      total: payslips?.length || 0,
+      viewed: payslips?.filter((p) => p.status !== "GENERATED").length || 0,
+      pending: payslips?.filter((p) => p.status === "GENERATED").length || 0,
+    }),
+    [payslips]
+  );
+
+  const statCards = [
+    {
+      label: "Tổng phiếu lương",
+      value: stats.total,
+      icon: FileText,
+      bg: "bg-blue-50",
+      color: "text-blue-600",
+    },
+    {
+      label: "Đã xem / tải",
+      value: stats.viewed,
+      icon: CheckCircle2,
+      bg: "bg-emerald-50",
+      color: "text-emerald-600",
+    },
+    {
+      label: "Chưa xem",
+      value: stats.pending,
+      icon: Mail,
+      bg: "bg-amber-50",
+      color: "text-amber-600",
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {isSelfService ? "Phiếu lương của tôi" : "Phiếu lương"}
-        </h1>
-        <p className="text-muted-foreground">
-          {isSelfService
-            ? "Xem và tải phiếu lương cá nhân"
-            : "Quản lý phiếu lương nhân viên"}
-        </p>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Tìm theo tên hoặc mã nhân viên..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={monthFilter} onValueChange={setMonthFilter}>
-          <SelectTrigger className="w-[120px]">
-            <SelectValue placeholder="Tháng" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            {months.map((m) => (
-              <SelectItem key={m} value={String(m)}>
-                Tháng {m}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={yearFilter} onValueChange={setYearFilter}>
-          <SelectTrigger className="w-[120px]">
-            <SelectValue placeholder="Năm" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            {years.map((y) => (
-              <SelectItem key={y} value={String(y)}>
-                {y}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Summary Cards */}
-      {!isSelfService && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Tổng số phiếu</CardDescription>
-              <CardTitle className="text-2xl">
-                {payslips?.length || 0}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Đã xem</CardDescription>
-              <CardTitle className="text-2xl">
-                {payslips?.filter((p) => p.status !== "GENERATED").length || 0}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Chưa xem</CardDescription>
-              <CardTitle className="text-2xl">
-                {payslips?.filter((p) => p.status === "GENERATED").length || 0}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
-      )}
-
-      {/* Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Danh sách phiếu lương</CardTitle>
-          <CardDescription>
-            {filteredPayslips?.length || 0} phiếu lương
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">Đang tải...</div>
+    <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
+      {/* Header */}
+      <div className="shrink-0 border-b bg-gradient-to-r from-blue-500/5 via-primary/5 to-emerald-500/5">
+        <div className="px-4 md:px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-blue-100">
+              <Receipt className="h-6 w-6 text-blue-600" />
             </div>
-          ) : !filteredPayslips || filteredPayslips.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <FileText className="mx-auto h-12 w-12 opacity-50" />
-              <h3 className="mt-4 text-lg font-semibold">
-                Không có phiếu lương
-              </h3>
-              <p className="mt-2 text-sm">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                {isSelfService ? "Phiếu lương của tôi" : "Phiếu lương"}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {isSelfService
-                  ? "Bạn chưa có phiếu lương nào"
-                  : "Chưa có phiếu lương nào được tạo"}
+                  ? "Xem và tải phiếu lương cá nhân"
+                  : "Quản lý phiếu lương nhân viên"}
               </p>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tháng/Năm</TableHead>
-                  {!isSelfService && (
-                    <>
-                      <TableHead>Mã NV</TableHead>
-                      <TableHead>Nhân viên</TableHead>
-                      <TableHead>Phòng ban</TableHead>
-                    </>
-                  )}
-                  <TableHead className="text-right">Lương Gross</TableHead>
-                  <TableHead className="text-right">Thuế</TableHead>
-                  <TableHead className="text-right">BH</TableHead>
-                  <TableHead className="text-right">Lương Net</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPayslips.map((payslip) => (
-                  <TableRow key={payslip.id}>
-                    <TableCell className="font-medium">
-                      {payslip.month}/{payslip.year}
-                    </TableCell>
-                    {!isSelfService && (
-                      <>
-                        <TableCell>{payslip.employeeCode || "—"}</TableCell>
-                        <TableCell>{payslip.employeeName}</TableCell>
-                        <TableCell>{payslip.departmentName || "—"}</TableCell>
-                      </>
-                    )}
-                    <TableCell className="text-right">
-                      {formatCurrency(Number(payslip.grossSalary))}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {(() => {
-                        const tax = JSON.parse(String(payslip.tax));
-                        return formatCurrency(tax["Thuế TNCN"] || 0);
-                      })()}
-                    </TableCell>
-                    {/* <TableCell className="text-right">
-                      {(() => {
-                        const ins = JSON.parse(payslip.insurance);
-                        return formatCurrency(
-                          (ins.BHXH || 0) + (ins.BHYT || 0) + (ins.BHTN || 0),
-                        );
-                      })()}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(payslip.netSalary)}
-                    </TableCell> */}
-                    <TableCell>
-                      {payslip.status === "GENERATED" ? (
-                        <Badge variant="secondary">Mới</Badge>
-                      ) : payslip.status === "VIEWED" ? (
-                        <Badge>Đã xem</Badge>
-                      ) : (
-                        <Badge variant="outline">Đã tải</Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+        {/* Summary Cards */}
+        {!isSelfService && (
+          <div className="grid gap-4 md:grid-cols-3">
+            {statCards.map((s) => (
+              <Card
+                key={s.label}
+                className="group hover:shadow-md transition-all duration-200"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`p-2.5 rounded-xl ${s.bg} group-hover:scale-110 transition-transform duration-200`}
+                    >
+                      <s.icon className={`h-5 w-5 ${s.color}`} />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-xs text-muted-foreground font-medium">
+                        {s.label}
+                      </p>
+                      <p className={`text-2xl font-bold ${s.color}`}>
+                        {s.value}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Tìm theo tên hoặc mã nhân viên..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={monthFilter} onValueChange={setMonthFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Tháng" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả tháng</SelectItem>
+              {months.map((m) => (
+                <SelectItem key={m} value={String(m)}>
+                  Tháng {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Năm" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              {years.map((y) => (
+                <SelectItem key={y} value={String(y)}>
+                  {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex-1" />
+          <span className="text-sm text-muted-foreground">
+            {filteredPayslips?.length || 0} phiếu
+          </span>
+        </div>
+
+        {/* Table */}
+        <Card>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : !filteredPayslips || filteredPayslips.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-muted/50 mb-4">
+                  <FileText className="h-8 w-8 text-muted-foreground/60" />
+                </div>
+                <h3 className="text-lg font-semibold">
+                  Không có phiếu lương
+                </h3>
+                <p className="mt-1.5 text-sm text-muted-foreground max-w-sm mx-auto">
+                  {isSelfService
+                    ? "Bạn chưa có phiếu lương nào"
+                    : "Chưa có phiếu lương nào được tạo cho kỳ này"}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="font-semibold">Kỳ lương</TableHead>
+                      {!isSelfService && (
+                        <>
+                          <TableHead className="font-semibold">
+                            Mã NV
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Nhân viên
+                          </TableHead>
+                          <TableHead className="font-semibold">
+                            Phòng ban
+                          </TableHead>
+                        </>
                       )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          router.push(`/payroll/payslips/${payslip.id}`)
-                        }
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                      <TableHead className="font-semibold text-right">
+                        Lương Gross
+                      </TableHead>
+                      <TableHead className="font-semibold text-right">
+                        Lương Net
+                      </TableHead>
+                      <TableHead className="font-semibold">
+                        Trạng thái
+                      </TableHead>
+                      <TableHead className="font-semibold text-right">
+                        Thao tác
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPayslips.map((payslip) => {
+                      const statusCfg = getStatusConfig(payslip.status);
+                      return (
+                        <TableRow key={payslip.id} className="group cursor-pointer" onClick={() => router.push(`/payroll/payslips/${payslip.id}`)}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
+                                T{payslip.month}
+                              </div>
+                              <span className="font-medium">
+                                Tháng {payslip.month}/{payslip.year}
+                              </span>
+                            </div>
+                          </TableCell>
+                          {!isSelfService && (
+                            <>
+                              <TableCell className="font-mono text-sm text-muted-foreground">
+                                {payslip.employeeCode || "—"}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {payslip.employeeName}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {payslip.departmentName || "—"}
+                              </TableCell>
+                            </>
+                          )}
+                          <TableCell className="text-right font-medium text-blue-600">
+                            {formatCurrency(payslip.grossSalary)}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-emerald-600">
+                            {formatCurrency(payslip.netSalary)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${statusCfg.className}`}
+                            >
+                              {statusCfg.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/payroll/payslips/${payslip.id}`
+                                );
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

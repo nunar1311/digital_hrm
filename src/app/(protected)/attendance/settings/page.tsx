@@ -5,6 +5,7 @@ import {
   getTimekeeperDevices,
   getShifts,
   getWorkCycles,
+  getLeaveTypes,
 } from "../actions";
 import { requireAuth, extractRole } from "@/lib/auth-session";
 import { hasPermission } from "@/lib/rbac/check-access";
@@ -24,12 +25,13 @@ export default async function AttendanceSettingsPage() {
     redirect("/403");
   }
 
-  const [config, holidays, devices, workCycles, shifts] = await Promise.all([
+  const [config, holidays, devices, workCycles, shifts, leaveTypes] = await Promise.all([
     getAttendanceConfig(),
     getHolidays(),
     getTimekeeperDevices(),
     getWorkCycles(),
     getShifts(),
+    getLeaveTypes(),
   ]);
 
   return (
@@ -38,6 +40,7 @@ export default async function AttendanceSettingsPage() {
       initialDevices={JSON.parse(JSON.stringify(devices))}
       initialWorkCycles={JSON.parse(JSON.stringify(workCycles))}
       initialShifts={JSON.parse(JSON.stringify(shifts))}
+      initialLeaveTypes={JSON.parse(JSON.stringify(leaveTypes))}
     />
   );
 }

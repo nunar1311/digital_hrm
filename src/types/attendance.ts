@@ -10,8 +10,18 @@ export interface Shift {
     startTime: string;
     endTime: string;
     breakMinutes: number;
+    lateThreshold: number;
+    earlyThreshold: number;
     isDefault: boolean;
     isActive: boolean;
+    type: string;
+    checkinWindowStart?: string;
+    checkinWindowEnd?: string;
+    checkoutWindowStart?: string;
+    checkoutWindowEnd?: string;
+    minWorkingHours?: number;
+    maxWorkingHours?: number;
+    gracePeriodMinutes?: number;
 }
 
 export interface Attendance {

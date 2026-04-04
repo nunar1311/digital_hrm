@@ -27,7 +27,10 @@ import {
 // SUB-COMPONENTS
 // ============================================================
 
-const YEAR_OPTIONS = [2024, 2025, 2026];
+const years = Array.from(
+  { length: 5 },
+  (_, i) => new Date().getFullYear() - 2 + i,
+);
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "ALL", label: "Tất cả" },
   { value: "PENDING", label: "Đang chờ" },
@@ -246,7 +249,7 @@ export function ESSLeaveClient({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {YEAR_OPTIONS.map((year) => (
+                    {years.map((year) => (
                       <SelectItem key={year} value={String(year)}>
                         Năm {year}
                       </SelectItem>

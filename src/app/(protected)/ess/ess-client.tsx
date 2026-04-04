@@ -7,15 +7,12 @@ import {
     Clock,
     FileText,
     Wallet,
-    User,
     ChevronRight,
     ArrowRight,
     CheckCircle2,
     XCircle,
     AlertCircle,
     Loader2,
-    Briefcase,
-    Package,
     Sun,
     Moon,
     TrendingUp,
@@ -27,113 +24,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-
-interface Profile {
-    fullName?: string;
-    name?: string;
-    employeeCode: string;
-    department?: { name: string };
-    position?: { name: string };
-    avatar?: string;
-}
-
-interface LeaveBalance {
-    id: string;
-    totalDays: number;
-    usedDays: number;
-    pendingDays: number;
-    carriedForward: number;
-    policyYear: number;
-    leaveType: {
-        id: string;
-        name: string;
-        description: string | null;
-        isPaidLeave: boolean;
-    };
-}
-
-interface AttendanceSummary {
-    standardDays: number;
-    totalWorkDays: number;
-    lateDays: number;
-    earlyLeaveDays: number;
-    leaveDays: number;
-    unpaidLeaveDays: number;
-    totalOtHours: number;
-}
-
-interface TodayShift {
-    id: string;
-    name: string;
-    startTime: string;
-    endTime: string;
-}
-
-interface TodayAttendance {
-    id: string;
-    checkIn: string | null;
-    checkOut: string | null;
-    status: string;
-    shift: TodayShift | null;
-}
-
-interface Holiday {
-    id: string;
-    name: string;
-    date: string;
-}
-
-interface Announcement {
-    id: string;
-    title: string;
-    content: string;
-    date: string;
-    type: string;
-}
-
-interface PendingRequests {
-    leaveRequests: number;
-    profileRequests: number;
-    adminRequests: number;
-    total: number;
-}
-
-interface ESSDashboardData {
-    profile: Profile;
-    leaveBalances: LeaveBalance[];
-    attendanceSummary: AttendanceSummary;
-    todayShift: TodayShift | null;
-    todayAttendance: TodayAttendance | null;
-    upcomingHolidays: Holiday[];
-    announcements: Announcement[];
-    pendingRequests: PendingRequests;
-}
+import type { ESSDashboardData } from "./types";
 
 interface ESSClientProps {
     initialData: ESSDashboardData;
-}
-
-function formatTime(timeStr: string) {
-    const [hours, minutes] = timeStr.split(":");
-    return `${hours}:${minutes}`;
-}
-
-function getGreeting() {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Chào buổi sáng";
-    if (hour < 18) return "Chào buổi chiều";
-    return "Chào buổi tối";
-}
-
-function getInitials(name: string) {
-    return name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
 }
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; className?: string }> = {
@@ -142,7 +37,6 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
     LATE: { label: "Đi trễ", variant: "outline", className: "text-orange-600" },
 };
 
-// Quick Actions Data
 const quickActions = [
     {
         title: "Đăng ký nghỉ phép",
@@ -174,19 +68,26 @@ const quickActions = [
     },
 ];
 
-// Leave Request Types for "Đơn của tôi"
-const requestTypeConfig: Record<string, { label: string; icon: LucideIcon; color: string }> = {
-    LEAVE: { label: "Nghỉ phép", icon: CalendarDays, color: "bg-blue-100 text-blue-600" },
-    OVERTIME: { label: "Làm thêm giờ", icon: Clock, color: "bg-amber-100 text-amber-600" },
-    ADMIN: { label: "Yêu cầu HC", icon: FileText, color: "bg-teal-100 text-teal-600" },
-};
+function formatTime(timeStr: string) {
+    const [hours, minutes] = timeStr.split(":");
+    return `${hours}:${minutes}`;
+}
 
-const requestStatusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; className?: string; icon: any }> = {
-    PENDING: { label: "Đang chờ", variant: "secondary", className: "bg-amber-100 text-amber-800 hover:bg-amber-100", icon: Clock },
-    APPROVED: { label: "Đã duyệt", variant: "default", className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100", icon: CheckCircle2 },
-    REJECTED: { label: "Từ chối", variant: "destructive", icon: XCircle },
-    CANCELLED: { label: "Đã hủy", variant: "outline", className: "text-muted-foreground", icon: XCircle },
-};
+function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Chào buổi sáng";
+    if (hour < 18) return "Chào buổi chiều";
+    return "Chào buổi tối";
+}
+
+function getInitials(name: string) {
+    return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+}
 
 export function ESSClient({ initialData }: ESSClientProps) {
     const userName = initialData.profile.fullName || initialData.profile.name || "Nhân viên";
@@ -201,9 +102,8 @@ export function ESSClient({ initialData }: ESSClientProps) {
 
     return (
         <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
-            {/* Content */}
             <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
-                {/* Welcome Header - Full Width Banner */}
+                {/* Welcome Header */}
                 <div className="relative overflow-hidden rounded-xl bg-linear-to-r from-primary/5 via-primary/10 to-primary/5 border border-primary/10">
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent" />
                     <div className="relative p-6 md:p-8">
@@ -249,7 +149,7 @@ export function ESSClient({ initialData }: ESSClientProps) {
                     </div>
                 </div>
 
-                {/* Stats Grid - 4 Columns */}
+                {/* Stats Grid */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {/* Today's Shift */}
                     <Card className="group hover:shadow-md transition-all duration-200">
@@ -379,7 +279,7 @@ export function ESSClient({ initialData }: ESSClientProps) {
                     </Card>
                 </div>
 
-                {/* Quick Actions - Full Width Strip */}
+                {/* Quick Actions */}
                 <Card className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border-blue-100/50">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
@@ -491,7 +391,7 @@ export function ESSClient({ initialData }: ESSClientProps) {
                         </CardContent>
                     </Card>
 
-                    {/* Right Column - Holidays & Announcements */}
+                    {/* Right Column */}
                     <div className="space-y-6">
                         {/* Upcoming Holidays */}
                         <Card>

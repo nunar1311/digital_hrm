@@ -86,7 +86,7 @@ export function AssignCycleDeptDialog({
         },
         onSuccess: (result) => {
             let msg = `Đã gán chu kỳ cho ${result.assigned} nhân viên`;
-            if (result.skipped > 0) {
+            if (result.skipped && result.skipped > 0) {
                 msg += ` (bỏ qua ${result.skipped} NV đã có chu kỳ)`;
             }
             toast.success(msg);

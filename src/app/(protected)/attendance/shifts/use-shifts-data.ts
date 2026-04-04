@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import {
   format,
   startOfWeek,
@@ -22,14 +22,13 @@ import { useTimezone } from "@/contexts/timezone-context";
 
 import {
   getShifts,
-  getUsers,
+  getUsersWithAssignmentsPaginated,
   createShift,
   updateShift,
   deleteShift,
   assignShift,
   assignWorkCycle,
   assignWorkCycleToDepartment,
-  getShiftAssignmentsForRange,
   removeShiftAssignment,
 } from "../actions";
 import type { Shift, ShiftAssignment, UserBasic, WorkCycle } from "../types";
@@ -54,6 +53,7 @@ export interface UseShiftsDataReturn {
   viewMode: ViewMode;
   setViewMode: (v: ViewMode) => void;
   currentDate: Date;
+  pendingDate: Date;
   rangeLabel: string;
   visibleDays: Date[];
   weekDays: Date[];
@@ -79,8 +79,12 @@ export interface UseShiftsDataReturn {
   debouncedSearch: string;
   handleSearchChange: (value: string) => void;
   filteredUsers: (UserBasic & { image?: string | null })[];
+  totalCount: number;
+  loadedCount: number;
   hasMore: boolean;
   loadMore: () => void;
+  isFetchingNextPage: boolean;
+  isLoadingUsers: boolean;
 
   // Department filter
   departmentIds: string[];
@@ -104,9 +108,7 @@ export interface UseShiftsDataReturn {
   handleAssign: (values: AssignFormValues) => void;
 
   // Quick assign
-  quickAssignCell: { userId: string; date: Date } | null;
-  setQuickAssignCell: (cell: { userId: string; date: Date } | null) => void;
-  handleQuickAssign: (shiftId: string) => void;
+  handleQuickAssign: (shiftId: string, userId: string, date: Date) => void;
 
   // Delete assignment
   deleteAssignmentId: string | null;
@@ -139,12 +141,6 @@ export interface UseShiftsDataReturn {
   setCycleDeptDialogOpen: (open: boolean) => void;
   handleAssignCycleDept: (values: AssignCycleDeptFormValues) => void;
 
-  // User shift stats
-  getUserShiftCount: (userId: string) => {
-    totalShifts: number;
-    totalHours: number;
-  };
-
   // Computed stats
   stats: {
     totalShiftsDefined: number;
@@ -157,6 +153,7 @@ export interface UseShiftsDataReturn {
 
   // Loading
   isPending: boolean;
+  isFetchingAssignments: boolean;
 
   // Props pass-through
   users: UserBasic[];
@@ -186,22 +183,45 @@ export function useShiftsData({
 
   // ─── View State ───
   const [viewMode, setViewMode] = useState<ViewMode>("week");
+
+  // pendingDate: UI shows this immediately when navigating (synchronous)
+  const [pendingDate, setPendingDate] = useState(new Date());
+  // currentDate: used for queries — updated after data loads (deferred)
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  // When pendingDate changes to a new range, update currentDate to trigger query
+  // Use a ref to skip initial mount (first render should use same date)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      setCurrentDate(pendingDate);
+      return;
+    }
+    setCurrentDate(pendingDate);
+    // Reset users when navigating to a new period
+    queryClient.resetQueries({ queryKey: ["attendance", "users"] });
+  }, [pendingDate, queryClient]);
+
   // ─── Auto-refresh when day changes (timezone-aware) ───
+  // Stable interval ref — never recreated on renders
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     let lastDateKey = formatDateKey(new Date());
-    const interval = setInterval(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
       const currentDateKey = formatDateKey(new Date());
       if (currentDateKey !== lastDateKey) {
         lastDateKey = currentDateKey;
-        setCurrentDate(nowInTimezone());
+        setPendingDate(nowInTimezone());
         queryClient.invalidateQueries({
-          queryKey: ["attendance", "shiftAssignments"],
+          queryKey: ["attendance", "users"],
         });
       }
-    }, 30_000); // check every 30s
-    return () => clearInterval(interval);
+    }, 60_000); // check every 60s (was 30s — less frequent is enough)
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [formatDateKey, nowInTimezone, queryClient]);
 
   // ─── Shift CRUD Dialog ───
@@ -211,12 +231,6 @@ export function useShiftsData({
 
   // ─── Assign Dialog ───
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-
-  // ─── Quick-assign from cell click ───
-  const [quickAssignCell, setQuickAssignCell] = useState<{
-    userId: string;
-    date: Date;
-  } | null>(null);
 
   // ─── Delete assignment confirm ───
   const [deleteAssignmentId, setDeleteAssignmentId] = useState<string | null>(
@@ -237,24 +251,18 @@ export function useShiftsData({
 
   // ─── Search ───
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ─── Infinite scroll ────────────────────────────────────────────────────────
+  const PAGE_SIZE = 20;
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // ─── Infinite scroll state (declared early — used by filter resets) ───
-  const PAGE_SIZE = 20;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
   // ─── Department filter ───
-  const [departmentIds, setDepartmentIdsState] = useState<string[]>([]);
-  const setDepartmentIds = useCallback((ids: string[]) => {
-    setDepartmentIdsState(ids);
-    setVisibleCount(PAGE_SIZE);
-  }, []);
+  const [departmentIds, setDepartmentIds] = useState<string[]>([]);
 
-  // B-05: Debounce with proper cleanup on unmount / value change
+  // Debounce search + reset on filter change
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setVisibleCount(PAGE_SIZE);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -263,58 +271,148 @@ export function useShiftsData({
     setSearchQuery(value);
   }, []);
 
-  // ─── Week range ───
+  // ─── Week range (pending — drives UI immediately) ───
   const weekStart = useMemo(
-    () => startOfWeek(currentDate, { weekStartsOn: 1 }),
-    [currentDate],
+    () => startOfWeek(pendingDate, { weekStartsOn: 1 }),
+    [pendingDate],
   );
   const weekEnd = useMemo(
-    () => endOfWeek(currentDate, { weekStartsOn: 1 }),
-    [currentDate],
+    () => endOfWeek(pendingDate, { weekStartsOn: 1 }),
+    [pendingDate],
   );
   const weekDays = useMemo(
     () => eachDayOfInterval({ start: weekStart, end: weekEnd }),
     [weekStart, weekEnd],
   );
 
-  // ─── Month range ───
-  const monthStart = useMemo(() => startOfMonth(currentDate), [currentDate]);
-  const monthEnd = useMemo(() => endOfMonth(currentDate), [currentDate]);
+  // ─── Month range (pending — drives UI immediately) ───
+  const monthStart = useMemo(
+    () => startOfMonth(pendingDate),
+    [pendingDate],
+  );
+  const monthEnd = useMemo(
+    () => endOfMonth(pendingDate),
+    [pendingDate],
+  );
   const monthDays = useMemo(
     () => eachDayOfInterval({ start: monthStart, end: monthEnd }),
     [monthStart, monthEnd],
   );
 
-  // ─── Formatted range labels ───
-  const rangeStart =
-    viewMode === "month"
-      ? monthStart
+  // ─── Query ranges (current — used for data fetching) ───
+  const queryWeekStart = useMemo(
+    () => startOfWeek(currentDate, { weekStartsOn: 1 }),
+    [currentDate],
+  );
+  const queryWeekEnd = useMemo(
+    () => endOfWeek(currentDate, { weekStartsOn: 1 }),
+    [currentDate],
+  );
+  const queryMonthStart = useMemo(
+    () => startOfMonth(currentDate),
+    [currentDate],
+  );
+  const queryMonthEnd = useMemo(
+    () => endOfMonth(currentDate),
+    [currentDate],
+  );
+
+  // ─── Query date range strings (stable — only change on navigation) ───
+  const queryRangeStart = useMemo(() => {
+    const d = viewMode === "month"
+      ? queryMonthStart
       : viewMode === "week"
-        ? weekStart
+        ? queryWeekStart
         : currentDate;
-  const rangeEnd =
-    viewMode === "month"
-      ? monthEnd
+    return format(d, "yyyy-MM-dd");
+  }, [viewMode, queryMonthStart, queryWeekStart, currentDate]);
+
+  const queryRangeEnd = useMemo(() => {
+    const d = viewMode === "month"
+      ? queryMonthEnd
       : viewMode === "week"
-        ? weekEnd
+        ? queryWeekEnd
         : currentDate;
+    return format(d, "yyyy-MM-dd");
+  }, [viewMode, queryMonthEnd, queryWeekEnd, currentDate]);
+
+  // useInfiniteQuery: fetch users + their assignments together, page by page
+  const {
+    data: usersPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isLoadingUsers,
+  } = useInfiniteQuery({
+    queryKey: ["attendance", "users", debouncedSearch, departmentIds, queryRangeStart, queryRangeEnd],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await getUsersWithAssignmentsPaginated({
+        page: pageParam,
+        pageSize: PAGE_SIZE,
+        search: debouncedSearch,
+        departmentId: departmentIds[0] ?? undefined,
+        rangeStart: queryRangeStart,
+        rangeEnd: queryRangeEnd,
+      });
+      return res;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      // Cumulative count of all loaded users across all pages
+      const totalLoaded = allPages.reduce((acc, p) => acc + p.users.length, 0);
+      return totalLoaded < lastPage.totalCount
+        ? (lastPage.page ?? 1) + 1
+        : undefined;
+    },
+  });
+
+  // Flatten all pages into single mergedUsers + mergedAssignments arrays
+  const mergedUsers = useMemo(() => {
+    if (!usersPages) return users as (UserBasic & { image?: string | null })[];
+    const all = usersPages.pages.flatMap((p) => p.users);
+    return all as (UserBasic & { image?: string | null })[];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usersPages]);
+
+  const mergedAssignments = useMemo(() => {
+    if (!usersPages) return [] as (ShiftAssignment & { user: UserBasic & { image?: string | null } })[];
+    const all = usersPages.pages.flatMap((p) => p.assignments ?? []);
+    return all as (ShiftAssignment & { user: UserBasic & { image?: string | null } })[];
+  }, [usersPages]);
+
+  // Total count from server (accurate, not client-side approximation)
+  const totalCount = usersPages?.pages[0]?.totalCount ?? users.length;
+  const loadedCount = usersPages?.pages.reduce(
+    (acc, page) => acc + page.users.length,
+    0,
+  ) ?? mergedUsers.length;
+  const hasMore = hasNextPage ?? false;
+
+  // Load more: called by IntersectionObserver sentinel
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // ─── Formatted range labels (uses pendingDate for immediate UI update) ───
   const rangeLabel = useMemo(() => {
     if (viewMode === "day") {
       return capitalizeFirst(
-        format(currentDate, "EEEE, dd/MM/yyyy", {
+        format(pendingDate, "EEEE, dd/MM/yyyy", {
           locale: vi,
         }),
       );
     }
     if (viewMode === "month") {
       return capitalizeFirst(
-        format(currentDate, "'Tháng' MM, yyyy", {
+        format(pendingDate, "'Tháng' MM, yyyy", {
           locale: vi,
         }),
       );
     }
     return `${format(weekStart, "dd/MM/yyyy")} – ${format(weekEnd, "dd/MM/yyyy")}`;
-  }, [viewMode, currentDate, weekStart, weekEnd]);
+  }, [viewMode, pendingDate, weekStart, weekEnd]);
 
   // ─── Real-time WebSocket ───
   useSocketEvent("shift:updated", () => {
@@ -324,7 +422,7 @@ export function useShiftsData({
   });
   useSocketEvent("shift:assigned", () => {
     queryClient.invalidateQueries({
-      queryKey: ["attendance", "shiftAssignments"],
+      queryKey: ["attendance", "users"],
     });
   });
   useSocketEvent("department:employee-moved", () => {
@@ -334,7 +432,9 @@ export function useShiftsData({
   });
 
   // ─── Queries ───
-  const { data: shifts = initialShifts } = useQuery({
+  const {
+    data: shifts = initialShifts,
+  } = useQuery({
     queryKey: ["attendance", "shifts"],
     queryFn: async () => {
       const res = await getShifts();
@@ -343,67 +443,16 @@ export function useShiftsData({
     initialData: initialShifts,
   });
 
-  const { data: usersData = users } = useQuery({
-    queryKey: ["attendance", "users"],
-    queryFn: async () => {
-      const res = await getUsers();
-      return JSON.parse(JSON.stringify(res)) as UserBasic[];
-    },
-    initialData: users,
-  });
+  // Assignments now come from the combined infinite query — no separate assignments query needed.
+  // isFetchingAssignments just mirrors the initial loading state.
+  const assignments = mergedAssignments;
+  const isFetchingAssignments = isLoadingUsers;
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: [
-      "attendance",
-      "shiftAssignments",
-      "range",
-      format(rangeStart, "yyyy-MM-dd"),
-      format(rangeEnd, "yyyy-MM-dd"),
-    ],
-    queryFn: async () => {
-      const res = await getShiftAssignmentsForRange(
-        format(rangeStart, "yyyy-MM-dd"),
-        format(rangeEnd, "yyyy-MM-dd"),
-      );
-      return JSON.parse(JSON.stringify(res)) as (ShiftAssignment & {
-        user: UserBasic & { image?: string | null };
-      })[];
-    },
-  });
-
-  // ─── Client-side filtering ───
+  // ─── Client-side filtering (now server-side via useInfiniteQuery) ───
+  // Since search/department filter is handled server-side, mergedUsers is already filtered.
   const filteredUsers = useMemo(() => {
-    let result = usersData as (UserBasic & {
-      image?: string | null;
-    })[];
-    if (debouncedSearch) {
-      const q = debouncedSearch.toLowerCase();
-      result = result.filter(
-        (u) =>
-          u.name.toLowerCase().includes(q) ||
-          u.employeeCode?.toLowerCase().includes(q),
-      );
-    }
-    if (departmentIds.length > 0) {
-      // If users have department data, filter by department
-      // Otherwise, show all users (department data not yet populated)
-      const usersWithDept = result.filter((u) => u.departmentId);
-      if (usersWithDept.length > 0) {
-        result = usersWithDept.filter((u) =>
-          departmentIds.includes(u.departmentId!),
-        );
-      }
-      // If no users have department data, show all (waiting for data population)
-    }
-    return result;
-  }, [usersData, debouncedSearch, departmentIds]);
-
-  const hasMore = visibleCount < filteredUsers.length;
-  const loadMore = useCallback(() => {
-    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredUsers.length));
-  }, [filteredUsers.length]);
-
-  const totalCount = filteredUsers.length;
+    return mergedUsers;
+  }, [mergedUsers]);
 
   // ─── Shift color map ───
   // B-02: Use ID hash so colors are stable when shifts are added/removed
@@ -414,21 +463,31 @@ export function useShiftsData({
   }, [shifts]);
 
   // ─── Build user → day → assignments map ───
+  // Use refs to track previous values — avoid creating new Map references
+  // unless the actual assignment data has changed.
+  const userAssignmentsRef = useRef<
+    Map<string, Map<string, (ShiftAssignment & { user: UserBasic })[]>>
+  >(new Map());
+  const sortedUsersRef = useRef<(UserBasic & { image?: string | null })[]>([]);
+
   const calendarData = useMemo(() => {
     // Only show users that pass the current search / department filter
     const allowedUserIds = new Set(filteredUsers.map((u) => u.id));
 
+    // Rebuild userAssignments map (needed because Map keys/values change)
+    const userAssignments = userAssignmentsRef.current;
     const userMap = new Map<string, UserBasic & { image?: string | null }>();
-    const userAssignments = new Map<
-      string,
-      Map<string, (ShiftAssignment & { user: UserBasic })[]>
-    >();
 
+    // Reset all existing entries
+    userAssignments.forEach((dayMap) => dayMap.clear());
+    // Add users that exist in assignments
     for (const a of assignments) {
       if (!allowedUserIds.has(a.userId)) continue;
       if (!userMap.has(a.userId)) {
         userMap.set(a.userId, a.user);
-        userAssignments.set(a.userId, new Map());
+        if (!userAssignments.has(a.userId)) {
+          userAssignments.set(a.userId, new Map());
+        }
       }
       const dayMap = userAssignments.get(a.userId)!;
 
@@ -484,6 +543,7 @@ export function useShiftsData({
               earlyThreshold: 0,
               isDefault: false,
               isActive: true,
+              type: "FIXED",
             },
             shiftId: entry.shift.id,
           };
@@ -517,24 +577,39 @@ export function useShiftsData({
       }
     }
 
-    // Include visible users (infinite scroll) with NO assignments
-    const visibleUsers = filteredUsers.slice(0, visibleCount);
-    for (const u of visibleUsers) {
+    // Include all filtered users — even those with NO assignments
+    for (const u of filteredUsers) {
       if (!userMap.has(u.id)) {
         userMap.set(u.id, u);
-        userAssignments.set(u.id, new Map());
+        if (!userAssignments.has(u.id)) {
+          userAssignments.set(u.id, new Map());
+        }
       }
     }
 
-    const sortedUsers = Array.from(userMap.values()).sort((a, b) =>
+    // Reuse sortedUsers array unless users changed
+    const newSortedUsers = Array.from(userMap.values()).sort((a, b) =>
       a.name.localeCompare(b.name),
     );
 
-    return { sortedUsers, userAssignments };
+    // Check if sortedUsers array is different (compare by IDs)
+    const prevIds = sortedUsersRef.current.map((u) => u.id);
+    const newIds = newSortedUsers.map((u) => u.id);
+    const idsChanged =
+      prevIds.length !== newIds.length ||
+      prevIds.some((id, i) => id !== newIds[i]);
+
+    if (idsChanged) {
+      sortedUsersRef.current = newSortedUsers;
+    }
+
+    return {
+      sortedUsers: sortedUsersRef.current,
+      userAssignments,
+    };
   }, [
     assignments,
     filteredUsers,
-    visibleCount,
     weekDays,
     monthDays,
     viewMode,
@@ -590,13 +665,13 @@ export function useShiftsData({
         ...newShift,
         isDefault: newShift.isDefault ?? false,
         isActive: newShift.isActive ?? true,
-      };
+      } as unknown as Shift;
 
-      queryClient.setQueriesData(
+      queryClient.setQueriesData<Shift[]>(
         { queryKey: ["attendance", "shifts"] },
-        (old: any) => {
-          if (!old) return [optimisticShift];
-          return [...old, optimisticShift];
+        (old) => {
+          if (!old) return [optimisticShift] as Shift[];
+          return [...old, optimisticShift] as Shift[];
         },
       );
 
@@ -623,12 +698,12 @@ export function useShiftsData({
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ["attendance", "shifts"] });
 
-      queryClient.setQueriesData(
+      queryClient.setQueriesData<Shift[]>(
         { queryKey: ["attendance", "shifts"] },
-        (old: any) => {
+        (old) => {
           if (!old) return old;
-          return old.map((shift: any) =>
-            shift.id === id ? { ...shift, ...data } : shift,
+          return old.map((shift) =>
+            shift.id === id ? ({ ...shift, ...data } as Shift) : shift,
           );
         },
       );
@@ -655,11 +730,11 @@ export function useShiftsData({
     onMutate: async (shiftId) => {
       await queryClient.cancelQueries({ queryKey: ["attendance", "shifts"] });
 
-      queryClient.setQueriesData(
+      queryClient.setQueriesData<Shift[]>(
         { queryKey: ["attendance", "shifts"] },
-        (old: any) => {
+        (old) => {
           if (!old) return old;
-          return old.filter((shift: any) => shift.id !== shiftId);
+          return old.filter((shift) => shift.id !== shiftId);
         },
       );
 
@@ -702,59 +777,21 @@ export function useShiftsData({
         toNoonUTC(params.startDate),
         params.endDate ? toNoonUTC(params.endDate) : undefined,
       ),
-    onMutate: async (newAssign) => {
-      await queryClient.cancelQueries({
-        queryKey: ["attendance", "shiftAssignments"],
-      });
-
-      const shiftsCache =
-        queryClient.getQueryData<Shift[]>(["attendance", "shifts"]) || [];
-      const shiftObj = shiftsCache.find((s) => s.id === newAssign.shiftId);
-
-      const usersCache =
-        queryClient.getQueryData<UserBasic[]>(["attendance", "users"]) || [];
-      const userObj = usersCache.find((u) => u.id === newAssign.userId);
-
-      const optimisticAssignment = {
-        id: `optimistic-${Date.now()}`,
-        userId: newAssign.userId,
-        shiftId: newAssign.shiftId,
-        startDate: newAssign.startDate,
-        endDate: newAssign.endDate || null,
-        workCycleId: null,
-        cycleStartDate: null,
-        shift: shiftObj,
-        user: userObj || {
-          id: newAssign.userId,
-          name: "...",
-          employeeCode: "...",
-        },
-      };
-
-      queryClient.setQueriesData(
-        { queryKey: ["attendance", "shiftAssignments"] },
-        (old: any) => {
-          if (!old) return [optimisticAssignment];
-          return [...old, optimisticAssignment];
-        },
-      );
-
-      return {};
-    },
-    onSuccess: () => {
-      toast.success("Phân ca thành công");
-      setAssignDialogOpen(false);
-      setQuickAssignCell(null);
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success("Phân ca thành công");
+        setAssignDialogOpen(false);
+      } else {
+        toast.error(data.error || "Có lỗi xảy ra");
+        throw new Error(data.error || "Có lỗi xảy ra");
+      }
     },
     onError: (err: Error) => {
       toast.error(err.message || "Có lỗi xảy ra");
-      queryClient.invalidateQueries({
-        queryKey: ["attendance", "shiftAssignments"],
-      });
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: ["attendance", "shiftAssignments"],
+        queryKey: ["attendance", "users"],
       });
       queryClient.invalidateQueries({
         queryKey: ["attendance", "shifts"],
@@ -764,34 +801,21 @@ export function useShiftsData({
 
   const removeAssignMutationObj = useMutation({
     mutationFn: removeShiftAssignment,
-    onMutate: async (assignmentId) => {
-      await queryClient.cancelQueries({
-        queryKey: ["attendance", "shiftAssignments"],
-      });
-
-      queryClient.setQueriesData(
-        { queryKey: ["attendance", "shiftAssignments"] },
-        (old: any) => {
-          if (!old) return old;
-          return old.filter((a: any) => a.id !== assignmentId);
-        },
-      );
-
-      return {};
-    },
-    onSuccess: () => {
-      toast.success("Đã xóa phân ca");
-      setDeleteAssignmentId(null);
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success("Đã xóa phân ca");
+        setDeleteAssignmentId(null);
+      } else {
+        toast.error(result.error || "Có lỗi xảy ra");
+        throw new Error(result.error || "Có lỗi xảy ra");
+      }
     },
     onError: (err: Error) => {
       toast.error(err.message || "Có lỗi xảy ra");
-      queryClient.invalidateQueries({
-        queryKey: ["attendance", "shiftAssignments"],
-      });
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: ["attendance", "shiftAssignments"],
+        queryKey: ["attendance", "users"],
       });
       queryClient.invalidateQueries({
         queryKey: ["attendance", "shifts"],
@@ -812,11 +836,15 @@ export function useShiftsData({
         toNoonUTC(params.cycleStartDate),
         params.endDate ? toNoonUTC(params.endDate) : undefined,
       ),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.error || "Có lỗi xảy ra");
+        throw new Error(result.error || "Có lỗi xảy ra");
+      }
       toast.success("Gán chu kỳ làm việc thành công");
       setCycleDialogOpen(false);
       queryClient.invalidateQueries({
-        queryKey: ["attendance", "shiftAssignments"],
+        queryKey: ["attendance", "users"],
       });
     },
     onError: (err: Error) => toast.error(err.message || "Có lỗi xảy ra"),
@@ -836,14 +864,18 @@ export function useShiftsData({
         params.endDate ? toNoonUTC(params.endDate) : undefined,
       ),
     onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.error || "Có lỗi xảy ra");
+        throw new Error(result.error || "Có lỗi xảy ra");
+      }
       let msg = `Đã gán chu kỳ cho ${result.assigned} nhân viên phòng ${result.departmentName}`;
-      if (result.skipped > 0) {
-        msg += ` (bỏ qua ${result.skipped} NV đã có chu kỳ)`;
+      if ((result.skipped ?? 0) > 0) {
+        msg += ` (bỏ qua ${result.skipped} nhân viên đã có chu kỳ)`;
       }
       toast.success(msg);
       setCycleDeptDialogOpen(false);
       queryClient.invalidateQueries({
-        queryKey: ["attendance", "shiftAssignments"],
+        queryKey: ["attendance", "users"],
       });
     },
     onError: (err: Error) => toast.error(err.message || "Có lỗi xảy ra"),
@@ -859,12 +891,13 @@ export function useShiftsData({
     assignCycleDeptMutation.isPending;
 
   // ─── Navigation ───
+  // goToday/Prev/Next update pendingDate immediately → UI renders first, query fires after
   const goToday = useCallback(
-    () => setCurrentDate(nowInTimezone()),
+    () => setPendingDate(nowInTimezone()),
     [nowInTimezone],
   );
   const goPrev = useCallback(() => {
-    setCurrentDate((d) =>
+    setPendingDate((d) =>
       viewMode === "month"
         ? subMonths(d, 1)
         : viewMode === "week"
@@ -873,7 +906,7 @@ export function useShiftsData({
     );
   }, [viewMode]);
   const goNext = useCallback(() => {
-    setCurrentDate((d) =>
+    setPendingDate((d) =>
       viewMode === "month"
         ? addMonths(d, 1)
         : viewMode === "week"
@@ -923,15 +956,17 @@ export function useShiftsData({
     });
   };
 
-  const handleQuickAssign = (shiftId: string) => {
-    if (!quickAssignCell) return;
-    assignMutation.mutate({
-      userId: quickAssignCell.userId,
-      shiftId,
-      startDate: quickAssignCell.date,
-      endDate: quickAssignCell.date,
-    });
-  };
+  const handleQuickAssign = useCallback(
+    (shiftId: string, userId: string, date: Date) => {
+      assignMutation.mutate({
+        userId,
+        shiftId,
+        startDate: date,
+        endDate: date,
+      });
+    },
+    [assignMutation],
+  );
 
   // ─── Assign Cycle ───
   const handleAssignCycle = (values: AssignCycleFormValues) => {
@@ -959,47 +994,19 @@ export function useShiftsData({
     });
   };
 
-  // ─── Count total shifts for a user ───
-  const getUserShiftCount = useCallback(
-    (userId: string) => {
-      const dayMap = calendarData.userAssignments.get(userId);
-      if (!dayMap) return { totalShifts: 0, totalHours: 0 };
-      let totalShifts = 0;
-      let totalHours = 0;
-      dayMap.forEach((dayAssignments) => {
-        totalShifts += dayAssignments.length;
-        for (const a of dayAssignments) {
-          const s = a.shift;
-          if (s) {
-            const [sh, sm] = s.startTime.split(":").map(Number);
-            const [eh, em] = s.endTime.split(":").map(Number);
-            let h = eh - sh + (em - sm) / 60;
-            if (h < 0) h += 24;
-            // B-03: Clamp per-assignment to avoid negative hours
-            totalHours += Math.max(0, h - s.breakMinutes / 60);
-          }
-        }
-      });
-      return {
-        totalShifts,
-        totalHours: Math.max(0, totalHours),
-      };
-    },
-    [calendarData.userAssignments],
-  );
-
   // ─── Visible days ───
   const visibleDays =
     viewMode === "month"
       ? monthDays
       : viewMode === "week"
         ? weekDays
-        : [currentDate];
+        : [pendingDate];
 
   return {
     viewMode,
     setViewMode,
     currentDate,
+    pendingDate,
     rangeLabel,
     visibleDays,
     weekDays,
@@ -1015,6 +1022,10 @@ export function useShiftsData({
     filteredUsers,
     hasMore,
     loadMore,
+    totalCount,
+    loadedCount,
+    isFetchingNextPage,
+    isLoadingUsers,
     departmentIds,
     setDepartmentIds,
     departments,
@@ -1030,8 +1041,6 @@ export function useShiftsData({
     assignDialogOpen,
     setAssignDialogOpen,
     handleAssign,
-    quickAssignCell,
-    setQuickAssignCell,
     handleQuickAssign,
     deleteAssignmentId,
     setDeleteAssignmentId,
@@ -1047,9 +1056,9 @@ export function useShiftsData({
     setCycleDeptDialogOpen,
     handleAssignCycleDept,
     workCycles: initialWorkCycles,
-    getUserShiftCount,
     stats,
     isPending,
+    isFetchingAssignments,
     users,
     canManage,
     refreshUsers: () =>

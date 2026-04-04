@@ -9,6 +9,8 @@ interface UseKeyboardShortcutsOptions {
     onToggleLock?: () => void;
     onExpandAll?: () => void;
     onCollapseAll?: () => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
     isLocked?: boolean;
     enabled?: boolean;
 }
@@ -20,6 +22,8 @@ export function useKeyboardShortcuts({
     onToggleLock,
     onExpandAll,
     onCollapseAll,
+    onUndo,
+    onRedo,
     isLocked = false,
     enabled = true,
 }: UseKeyboardShortcutsOptions) {
@@ -34,6 +38,20 @@ export function useKeyboardShortcuts({
                 target.tagName === "TEXTAREA" ||
                 target.isContentEditable
             ) {
+                return;
+            }
+
+            // Ctrl/Cmd + Z: Undo
+            if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+                e.preventDefault();
+                onUndo?.();
+                return;
+            }
+
+            // Ctrl/Cmd + Y or Ctrl+Shift+Z: Redo
+            if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+                e.preventDefault();
+                onRedo?.();
                 return;
             }
 
@@ -99,5 +117,5 @@ export function useKeyboardShortcuts({
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [handleKeyDown, enabled]);
+    }, [enabled, onUndo, onRedo, onZoomIn, onZoomOut, onResetView, onToggleLock, onExpandAll, onCollapseAll]);
 }

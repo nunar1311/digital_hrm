@@ -8,12 +8,7 @@ import {
     CheckCircle2,
     XCircle,
     CalendarDays,
-    AlertCircle,
-    ChevronDown,
-    ChevronUp,
-    Calendar,
     Plus,
-    ArrowRight,
     Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,8 +16,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { LeaveRequestCard } from "./components/leave-request-card";
+import { AdminRequestCard } from "./components/admin-request-card";
 
-// Types - Updated to match Prisma schema
 interface LeaveRequest {
     id: string;
     startDate: string;
@@ -79,346 +75,18 @@ interface ESSMyRequestsClientProps {
     overtimeRequests: OvertimeRequest[];
 }
 
-// Status Config
-const statusConfig: Record<string, { 
-    label: string; 
-    variant: "default" | "secondary" | "destructive" | "outline"; 
-    className?: string;
-    icon: any;
-}> = {
-    PENDING: { 
-        label: "Đang chờ", 
-        variant: "secondary", 
-        className: "bg-amber-100 text-amber-800 hover:bg-amber-100", 
-        icon: Clock 
-    },
-    APPROVED: { 
-        label: "Đã duyệt", 
-        variant: "default", 
-        className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100", 
-        icon: CheckCircle2 
-    },
-    REJECTED: { 
-        label: "Từ chối", 
-        variant: "destructive", 
-        icon: XCircle 
-    },
-    CANCELLED: { 
-        label: "Đã hủy", 
-        variant: "outline", 
-        className: "text-muted-foreground", 
-        icon: XCircle 
-    },
-};
-
-const adminRequestTypes: Record<string, { label: string; icon: any }> = {
-    SALARY_CONFIRMATION: { label: "Xác nhận lương", icon: FileText },
-    WORK_CERTIFICATE: { label: "Giấy xác nhận lao động", icon: Briefcase },
-    TAX_CONFIRMATION: { label: "Xác nhận thuế", icon: FileText },
-    SOCIAL_INSURANCE: { label: "Sổ BHXH", icon: FileText },
-    RESIGNATION_LETTER: { label: "Đơn xin nghỉ việc", icon: FileText },
-    RECOMMENDATION_LETTER: { label: "Thư giới thiệu", icon: FileText },
-    OTHER: { label: "Khác", icon: FileText },
-};
-
-// Helper functions
-function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-    });
-}
-
-function formatDateTime(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-}
-
-function formatTime(timeStr: string) {
-    return timeStr.substring(0, 5);
-}
-
-// Request Card Components
-function LeaveRequestCard({ request }: { request: LeaveRequest }) {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const status = statusConfig[request.status] || statusConfig.PENDING;
-    const leaveTypeName = request.leaveBalance?.leaveType?.name || "Nghỉ phép";
-
-    return (
-        <div className={cn(
-            "rounded-lg border transition-all",
-            status.className?.includes("bg-amber") && "bg-amber-50/50 border-amber-200",
-            status.className?.includes("bg-emerald") && "bg-emerald-50/50 border-emerald-200",
-            request.status === "REJECTED" && "bg-red-50/50 border-red-200",
-        )}>
-            <div 
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                <div className="flex items-center gap-4">
-                    <div className={cn(
-                        "p-2.5 rounded-lg",
-                        status.className?.includes("bg-amber") ? "bg-amber-100 text-amber-600" :
-                        status.className?.includes("bg-emerald") ? "bg-emerald-100 text-emerald-600" :
-                        request.status === "REJECTED" ? "bg-red-100 text-red-600" :
-                        "bg-muted"
-                    )}>
-                        <CalendarDays className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="font-medium">{leaveTypeName}</span>
-                            <Badge variant={status.variant} className={status.className}>
-                                {status.label}
-                            </Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                            {formatDate(request.startDate)} - {formatDate(request.endDate)}
-                            <span className="mx-2">•</span>
-                            {request.totalDays} ngày
-                        </div>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground hidden sm:block">
-                        {formatDateTime(request.createdAt)}
-                    </span>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </Button>
-                </div>
-            </div>
-
-            {isExpanded && (
-                <div className="px-4 pb-4 pt-2 border-t space-y-4">
-                    <div className="flex items-center gap-2 text-sm">
-                        <span className="text-muted-foreground">Ngày tạo:</span>
-                        <span className="font-medium">{formatDateTime(request.createdAt)}</span>
-                    </div>
-
-                    {request.reason && (
-                        <div>
-                            <h4 className="text-sm font-medium mb-1">Lý do</h4>
-                            <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                                {request.reason}
-                            </p>
-                        </div>
-                    )}
-
-                    {request.status === "REJECTED" && request.rejectionReason && (
-                        <div className="bg-red-50 border border-red-100 rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-red-700 mb-1">
-                                <XCircle className="h-4 w-4" />
-                                <span className="text-sm font-medium">Lý do từ chối</span>
-                            </div>
-                            <p className="text-sm text-red-800">{request.rejectionReason}</p>
-                        </div>
-                    )}
-
-                    {request.status === "APPROVED" && request.approvedAt && (
-                        <div className="flex items-center gap-2 text-sm text-emerald-700">
-                            <CheckCircle2 className="h-4 w-4" />
-                            <span>Đã được duyệt</span>
-                            <span className="text-muted-foreground">
-                                lúc {formatDateTime(request.approvedAt)}
-                            </span>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
-
-function AdminRequestCard({ request }: { request: AdminRequest }) {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const status = statusConfig[request.status] || statusConfig.PENDING;
-    const typeConfig = adminRequestTypes[request.type] || adminRequestTypes.OTHER;
-    const TypeIcon = typeConfig.icon;
-
-    return (
-        <div className={cn(
-            "rounded-lg border transition-all",
-            status.className?.includes("bg-amber") && "bg-amber-50/50 border-amber-200",
-            status.className?.includes("bg-emerald") && "bg-emerald-50/50 border-emerald-200",
-            request.status === "REJECTED" && "bg-red-50/50 border-red-200",
-        )}>
-            <div 
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                <div className="flex items-center gap-4">
-                    <div className={cn(
-                        "p-2.5 rounded-lg",
-                        status.className?.includes("bg-amber") ? "bg-amber-100 text-amber-600" :
-                        status.className?.includes("bg-emerald") ? "bg-emerald-100 text-emerald-600" :
-                        request.status === "REJECTED" ? "bg-red-100 text-red-600" :
-                        "bg-teal-100 text-teal-600"
-                    )}>
-                        <TypeIcon className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="font-medium">{typeConfig.label}</span>
-                            <Badge variant={status.variant} className={status.className}>
-                                {status.label}
-                            </Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                            {formatDateTime(request.createdAt)}
-                        </div>
-                    </div>
-                </div>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
-            </div>
-
-            {isExpanded && (
-                <div className="px-4 pb-4 pt-2 border-t space-y-4">
-                    {request.description && (
-                        <div>
-                            <h4 className="text-sm font-medium mb-1">Mô tả</h4>
-                            <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                                {request.description}
-                            </p>
-                        </div>
-                    )}
-
-                    {request.status === "REJECTED" && request.rejectReason && (
-                        <div className="bg-red-50 border border-red-100 rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-red-700 mb-1">
-                                <XCircle className="h-4 w-4" />
-                                <span className="text-sm font-medium">Lý do từ chối</span>
-                            </div>
-                            <p className="text-sm text-red-800">{request.rejectReason}</p>
-                        </div>
-                    )}
-
-                    {request.reviewedAt && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <CheckCircle2 className="h-4 w-4" />
-                            <span>Đã xử lý: {formatDateTime(request.reviewedAt)}</span>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
-
-function OvertimeRequestCard({ request }: { request: OvertimeRequest }) {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const status = statusConfig[request.status] || statusConfig.PENDING;
-
-    return (
-        <div className={cn(
-            "rounded-lg border transition-all",
-            status.className?.includes("bg-amber") && "bg-amber-50/50 border-amber-200",
-            status.className?.includes("bg-emerald") && "bg-emerald-50/50 border-emerald-200",
-            request.status === "REJECTED" && "bg-red-50/50 border-red-200",
-        )}>
-            <div 
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                <div className="flex items-center gap-4">
-                    <div className={cn(
-                        "p-2.5 rounded-lg",
-                        status.className?.includes("bg-amber") ? "bg-amber-100 text-amber-600" :
-                        status.className?.includes("bg-emerald") ? "bg-emerald-100 text-emerald-600" :
-                        request.status === "REJECTED" ? "bg-red-100 text-red-600" :
-                        "bg-amber-100 text-amber-600"
-                    )}>
-                        <Clock className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="font-medium">Làm thêm giờ</span>
-                            <Badge variant={status.variant} className={status.className}>
-                                {status.label}
-                            </Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                            {formatDate(request.date)}
-                            <span className="mx-2">•</span>
-                            {formatTime(request.startTime)} - {formatTime(request.endTime)}
-                            <span className="mx-2">•</span>
-                            {request.hours} giờ
-                        </div>
-                    </div>
-                </div>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
-            </div>
-
-            {isExpanded && (
-                <div className="px-4 pb-4 pt-2 border-t space-y-4">
-                    <div className="flex items-center gap-2 text-sm">
-                        <span className="text-muted-foreground">Ngày tạo:</span>
-                        <span className="font-medium">{formatDateTime(request.createdAt)}</span>
-                    </div>
-
-                    {request.reason && (
-                        <div>
-                            <h4 className="text-sm font-medium mb-1">Lý do</h4>
-                            <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                                {request.reason}
-                            </p>
-                        </div>
-                    )}
-
-                    {request.status === "REJECTED" && request.rejectedReason && (
-                        <div className="bg-red-50 border border-red-100 rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-red-700 mb-1">
-                                <XCircle className="h-4 w-4" />
-                                <span className="text-sm font-medium">Lý do từ chối</span>
-                            </div>
-                            <p className="text-sm text-red-800">{request.rejectedReason}</p>
-                        </div>
-                    )}
-
-                    {request.status === "APPROVED" && (
-                        <div className="space-y-2">
-                            {request.managerApprovedAt && (
-                                <div className="flex items-center gap-2 text-sm text-emerald-700">
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    <span>Quản lý duyệt: {formatDateTime(request.managerApprovedAt)}</span>
-                                </div>
-                            )}
-                            {request.hrApprovedAt && (
-                                <div className="flex items-center gap-2 text-sm text-emerald-700">
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    <span>HR duyệt: {formatDateTime(request.hrApprovedAt)}</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
-
-// Empty State Component
-function EmptyState({ title, description, actionHref, actionLabel }: {
+interface EmptyStateProps {
     title: string;
     description: string;
     actionHref?: string;
     actionLabel?: string;
-}) {
+}
+
+function EmptyState({ title, description, actionHref, actionLabel }: EmptyStateProps) {
     return (
         <div className="text-center py-12">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
             <p className="text-muted-foreground mb-4">{title}</p>
-            <p className="text-sm text-muted-foreground mb-4">{description}</p>
             {actionHref && actionLabel && (
                 <Button asChild>
                     <Link href={actionHref}>
@@ -431,13 +99,11 @@ function EmptyState({ title, description, actionHref, actionLabel }: {
     );
 }
 
-// Main Component
 export function ESSMyRequestsClient({
     leaveRequests,
     adminRequests,
     overtimeRequests,
 }: ESSMyRequestsClientProps) {
-    // Stats
     const allRequests = [...leaveRequests, ...adminRequests, ...overtimeRequests];
     const pendingRequests = allRequests.filter(r => r.status === "PENDING");
     const approvedRequests = allRequests.filter(r => r.status === "APPROVED");
@@ -480,10 +146,7 @@ export function ESSMyRequestsClient({
             <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
                 {/* Stats Cards */}
                 <div className="grid gap-4 md:grid-cols-4">
-                    <Card className={cn(
-                        "hover:shadow-md transition-shadow",
-                        pendingRequests.length > 0 && "border-amber-200"
-                    )}>
+                    <Card className="hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
@@ -497,10 +160,7 @@ export function ESSMyRequestsClient({
                         </CardContent>
                     </Card>
 
-                    <Card className={cn(
-                        "hover:shadow-md transition-shadow",
-                        pendingRequests.length > 0 && "border-amber-200"
-                    )}>
+                    <Card className={cn("hover:shadow-md transition-shadow", pendingRequests.length > 0 && "border-amber-200")}>
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
@@ -569,95 +229,50 @@ export function ESSMyRequestsClient({
                     </TabsList>
 
                     {/* All Requests */}
-                    <TabsContent value="all" className="space-y-4">
+                    <TabsContent value="all" className="space-y-3">
                         {allRequests.length === 0 ? (
-                            <Card>
-                                <CardContent>
-                                    <EmptyState
-                                        title="Chưa có yêu cầu nào"
-                                        description="Bắt đầu bằng cách tạo yêu cầu mới"
-                                        actionHref="/ess/leave"
-                                        actionLabel="Đăng ký nghỉ phép"
-                                    />
-                                </CardContent>
-                            </Card>
+                            <Card><CardContent><EmptyState title="Chưa có yêu cầu nào" description="Bắt đầu bằng cách tạo yêu cầu mới" actionHref="/ess/leave" actionLabel="Đăng ký nghỉ phép" /></CardContent></Card>
                         ) : (
-                            <div className="space-y-3">
-                                {allRequests.map((request) => {
-                                    // Type guard based on presence of fields
-                                    if ("leaveBalance" in request) {
-                                        return <LeaveRequestCard key={request.id} request={request as LeaveRequest} />;
-                                    } else if ("date" in request && "startTime" in request) {
-                                        return <OvertimeRequestCard key={request.id} request={request as OvertimeRequest} />;
-                                    } else {
-                                        return <AdminRequestCard key={request.id} request={request as AdminRequest} />;
-                                    }
-                                })}
-                            </div>
+                            allRequests.map((request) => {
+                                if ("leaveBalance" in request) return <LeaveRequestCard key={request.id} request={request as LeaveRequest} onCancel={() => {}} isCancelling={false} />;
+                                if ("date" in request && "startTime" in request) return <Card key={request.id} className="p-4 text-muted-foreground"><Clock className="h-4 w-4 inline mr-2" />Yêu cầu OT: {(request as OvertimeRequest).hours} giờ</Card>;
+                                return <AdminRequestCard key={request.id} request={request as AdminRequest} onCancel={() => {}} isCancelling={false} />;
+                            })
                         )}
                     </TabsContent>
 
                     {/* Leave Requests */}
-                    <TabsContent value="leave" className="space-y-4">
+                    <TabsContent value="leave" className="space-y-3">
                         {leaveRequests.length === 0 ? (
-                            <Card>
-                                <CardContent>
-                                    <EmptyState
-                                        title="Chưa có đơn nghỉ phép nào"
-                                        description="Tạo đơn nghỉ phép mới"
-                                        actionHref="/ess/leave"
-                                        actionLabel="Đăng ký nghỉ phép"
-                                    />
-                                </CardContent>
-                            </Card>
+                            <Card><CardContent><EmptyState title="Chưa có đơn nghỉ phép nào" description="Tạo đơn nghỉ phép mới" actionHref="/ess/leave" actionLabel="Đăng ký nghỉ phép" /></CardContent></Card>
                         ) : (
-                            <div className="space-y-3">
-                                {leaveRequests.map((request) => (
-                                    <LeaveRequestCard key={request.id} request={request} />
-                                ))}
-                            </div>
+                            leaveRequests.map((request) => (
+                                <LeaveRequestCard key={request.id} request={request} onCancel={() => {}} isCancelling={false} />
+                            ))
                         )}
                     </TabsContent>
 
                     {/* Overtime Requests */}
-                    <TabsContent value="overtime" className="space-y-4">
+                    <TabsContent value="overtime" className="space-y-3">
                         {overtimeRequests.length === 0 ? (
-                            <Card>
-                                <CardContent>
-                                    <EmptyState
-                                        title="Chưa có yêu cầu OT nào"
-                                        description="Liên hệ quản lý để đăng ký làm thêm giờ"
-                                    />
-                                </CardContent>
-                            </Card>
+                            <Card><CardContent><EmptyState title="Chưa có yêu cầu OT nào" description="Liên hệ quản lý để đăng ký làm thêm giờ" /></CardContent></Card>
                         ) : (
-                            <div className="space-y-3">
-                                {overtimeRequests.map((request) => (
-                                    <OvertimeRequestCard key={request.id} request={request} />
-                                ))}
-                            </div>
+                            overtimeRequests.map((request) => (
+                                <Card key={request.id} className="p-4">
+                                    <p className="text-sm font-medium">Yêu cầu OT: {request.hours} giờ</p>
+                                </Card>
+                            ))
                         )}
                     </TabsContent>
 
                     {/* Admin Requests */}
-                    <TabsContent value="admin" className="space-y-4">
+                    <TabsContent value="admin" className="space-y-3">
                         {adminRequests.length === 0 ? (
-                            <Card>
-                                <CardContent>
-                                    <EmptyState
-                                        title="Chưa có yêu cầu HC nào"
-                                        description="Tạo yêu cầu hành chính mới"
-                                        actionHref="/ess/requests"
-                                        actionLabel="Tạo yêu cầu HC"
-                                    />
-                                </CardContent>
-                            </Card>
+                            <Card><CardContent><EmptyState title="Chưa có yêu cầu HC nào" description="Tạo yêu cầu hành chính mới" actionHref="/ess/requests" actionLabel="Tạo yêu cầu HC" /></CardContent></Card>
                         ) : (
-                            <div className="space-y-3">
-                                {adminRequests.map((request) => (
-                                    <AdminRequestCard key={request.id} request={request} />
-                                ))}
-                            </div>
+                            adminRequests.map((request) => (
+                                <AdminRequestCard key={request.id} request={request} onCancel={() => {}} isCancelling={false} />
+                            ))
                         )}
                     </TabsContent>
                 </Tabs>

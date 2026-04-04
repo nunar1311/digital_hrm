@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 export default async function FormulasPage() {
     const componentTypes = await getAllSalaryComponentTypes();
 
-    return <FormulasClient initialData={componentTypes} />;
+    return <FormulasClient initialData={JSON.parse(JSON.stringify(componentTypes))} />;
 }

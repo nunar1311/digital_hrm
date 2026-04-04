@@ -116,7 +116,7 @@ type AddEmployeeFormValues = z.infer<typeof addEmployeeSchema>;
 
 export interface EmployeeEditData {
   id: string;
-  employeeCode?: string | null;
+  username?: string | null;
   fullName?: string | null;
   nationalId?: string | null;
   nationalIdDate?: Date | null;
@@ -605,15 +605,15 @@ export function AddEmployeeDialog({
   });
 
   // ── Auto-generate employee code on open ──
-  const [employeeCode, setEmployeeCode] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
 
   useEffect(() => {
     if (open && !isEditMode) {
-      generateEmployeeCode().then(setEmployeeCode);
-    } else if (open && isEditMode && employee?.employeeCode) {
-      setEmployeeCode(employee.employeeCode);
+      generateEmployeeCode().then(setUsername);
+    } else if (open && isEditMode && employee?.username) {
+      setUsername(employee.username);
     }
-  }, [open, isEditMode, employee?.employeeCode]);
+  }, [open, isEditMode, employee?.username]);
 
   // ── Form ──
   const form = useForm<AddEmployeeFormValues>({
@@ -687,34 +687,8 @@ export function AddEmployeeDialog({
           taxCode: employee.taxCode || "",
         });
       } else {
-        form.reset({
-          fullName: "",
-          nationalId: "",
-          nationalIdDate: new Date(),
-          nationalIdPlace: "",
-          dateOfBirth: new Date(),
-          gender: undefined,
-          nationality: "Việt Nam",
-          ethnicity: "Kinh",
-          religion: "",
-          maritalStatus: undefined,
-          departmentId: undefined,
-          positionId: "",
-          employmentType: "FULL_TIME",
-          hireDate: new Date(),
-          probationEnd: new Date(),
-          employeeStatus: "ACTIVE",
-          phone: "",
-          personalEmail: "",
-          address: "",
-          educationLevel: undefined,
-          university: "",
-          major: "",
-          bankName: "",
-          bankAccount: "",
-          taxCode: "",
-        });
-        generateEmployeeCode().then(setEmployeeCode);
+        form.reset();
+        generateEmployeeCode().then(setUsername);
       }
       // Reset role suggestion when dialog opens
       setRoleSuggestion(null);
@@ -826,12 +800,12 @@ export function AddEmployeeDialog({
 
       const email =
         data.personalEmail ||
-        `${data.fullName.toLowerCase().replace(/\s+/g, ".")}.${employeeCode.toLowerCase()}@placeholder.local`;
+        `${data.fullName.toLowerCase().replace(/\s+/g, ".")}.${username.toLowerCase()}@placeholder.local`;
 
       return createEmployee({
         name: data.fullName,
         email,
-        employeeCode,
+        username: username,
         fullName: data.fullName,
         nationalId: data.nationalId,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
@@ -845,7 +819,7 @@ export function AddEmployeeDialog({
         religion: data.religion,
         maritalStatus: data.maritalStatus,
         departmentId: data.departmentId,
-        positionId: data.positionId,
+        positionId: data.positionId || undefined,
         employmentType: data.employmentType,
         hireDate: data.hireDate ? new Date(data.hireDate) : undefined,
         probationEnd: data.probationEnd
@@ -953,7 +927,8 @@ export function AddEmployeeDialog({
   });
 
   // Navigate to next section with validation
-  const handleNextSection = async () => {
+  const handleNextSection = async (e: React.MouseEvent) => {
+    e.preventDefault();
     const order: SectionKey[] = ["basic", "work", "contact", "banking"];
     const idx = order.indexOf(activeSection);
     if (idx < order.length - 1) {
@@ -1074,10 +1049,10 @@ export function AddEmployeeDialog({
                           {/* Employee code badge */}
                           <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-lg border shrink-0">
                             <span className="text-xs text-muted-foreground">
-                              Mã NV:
+                              Mã nhân viên:
                             </span>
                             <span className="font-mono font-semibold text-sm text-foreground">
-                              {employeeCode || "---"}
+                              {username || "---"}
                             </span>
                           </div>
                         </div>
@@ -1374,7 +1349,6 @@ export function AddEmployeeDialog({
                                       value={field.value}
                                       onValueChange={field.onChange}
                                       placeholder="Chọn chức vụ"
-                                      className="w-full"
                                     />
                                   </FormControl>
                                 </FormItem>

@@ -128,7 +128,7 @@ export function DepartmentEmployeesClient({
   const [columnVisibility, setColumnVisibility] = useState<
     Record<string, boolean>
   >({
-    employeeCode: true,
+    username: true,
     fullName: true,
     positionName: true,
     phone: true,
@@ -366,11 +366,11 @@ export function DepartmentEmployeesClient({
         size: 40,
       },
       {
-        accessorKey: "employeeCode",
+        accessorKey: "username",
         header: "Mã NV",
         cell: ({ row }) => (
           <span className="font-medium text-muted-foreground">
-            {row.original.employeeCode || "---"}
+            {row.original.username || "---"}
           </span>
         ),
       },
@@ -664,7 +664,7 @@ export function DepartmentEmployeesClient({
                 setColumnVisibility={setColumnVisibility}
                 columnOptions={[
                   {
-                    key: "employeeCode",
+                    key: "username",
                     label: "Mã NV",
                     icon: BadgeCheck,
                   },

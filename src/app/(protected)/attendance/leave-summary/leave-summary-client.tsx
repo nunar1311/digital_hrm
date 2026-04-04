@@ -344,7 +344,7 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
         },
       },
       {
-        accessorKey: "department",
+        id: "department",
         header: "Phòng ban",
         filterFn: (row, columnId, filterValue: string) => {
           if (filterValue === "all") return true;
@@ -357,7 +357,7 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
         ),
       },
       {
-        accessorKey: "leaveTypeName",
+        id: "leaveTypeName",
         header: "Loại nghỉ",
         filterFn: (row, columnId, filterValue: string) => {
           if (filterValue === "all") return true;

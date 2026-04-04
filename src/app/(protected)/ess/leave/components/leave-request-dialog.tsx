@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -7,10 +8,8 @@ import {
   AlertCircle,
   CalendarIcon,
   CheckCircle2,
-  Clock,
   Loader2,
   Sparkles,
-  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -52,7 +51,6 @@ import { createLeaveRequest } from "../actions";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCallback, useMemo } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -106,8 +104,90 @@ type FormData = z.infer<typeof formSchema>;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+const VIETNAM_HOLIDAYS: Record<number, string[]> = {
+  2026: [
+    "1-1",
+    "1-17",
+    "1-18",
+    "1-19",
+    "1-20",
+    "1-21",
+    "1-22",
+    "1-23",
+    "1-24",
+    "1-25",
+    "1-26",
+    "4-7",
+    "4-30",
+    "9-1",
+    "12-25",
+  ],
+  2025: [
+    "1-1",
+    "1-17",
+    "1-18",
+    "1-19",
+    "1-20",
+    "1-21",
+    "1-22",
+    "1-23",
+    "1-24",
+    "1-25",
+    "1-26",
+    "4-7",
+    "4-30",
+    "9-2",
+    "12-25",
+  ],
+  2024: [
+    "1-1",
+    "1-8",
+    "1-9",
+    "1-10",
+    "1-11",
+    "1-12",
+    "1-13",
+    "1-14",
+    "1-15",
+    "1-16",
+    "1-17",
+    "4-18",
+    "4-30",
+    "9-2",
+    "12-25",
+  ],
+};
+
+function isHoliday(date: Date): boolean {
+  const year = date.getFullYear();
+  const holidays = VIETNAM_HOLIDAYS[year] || [];
+  const key = `${date.getMonth() + 1}-${date.getDate()}`;
+  return holidays.includes(key);
+}
+
+function isWeekend(date: Date): boolean {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+function isWeekendOrHoliday(date: Date): boolean {
+  return isWeekend(date) || isHoliday(date);
+}
+
 function calcDays(start: Date, end: Date): number {
-  return Math.ceil((end.getTime() - start.getTime()) / 86_400_000) + 1;
+  let count = 0;
+  const current = new Date(start);
+  current.setHours(0, 0, 0, 0);
+  const endDay = new Date(end);
+  endDay.setHours(0, 0, 0, 0);
+
+  while (current <= endDay) {
+    if (!isWeekendOrHoliday(current)) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return count;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -171,7 +251,6 @@ function LeaveTypeInfoCard({ type }: { type: LeaveType }) {
               </span>
             )}
           </div>
-
           {type.balance && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
@@ -240,20 +319,6 @@ function DaysPreview({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function DocumentUpload({ note }: { note: string | null }) {
-  return (
-    <div className="border-2 border-dashed rounded-lg p-4 text-center">
-      <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-      <p className="text-sm text-muted-foreground">
-        Kéo thả file hoặc click để tải lên
-      </p>
-      <p className="text-xs text-muted-foreground mt-1">
-        {note || "Hỗ trợ: PDF, JPG, PNG (tối đa 5MB)"}
-      </p>
-    </div>
   );
 }
 
@@ -329,10 +394,7 @@ export function LeaveRequestDialog({
   );
 
   const canSubmit = useMemo(
-    () =>
-      selectedLeaveType &&
-      calculatedDays > 0 &&
-      isBalanceEnough,
+    () => selectedLeaveType && calculatedDays > 0 && isBalanceEnough,
     [selectedLeaveType, calculatedDays, isBalanceEnough],
   );
 
@@ -354,9 +416,7 @@ export function LeaveRequestDialog({
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error("Không thể gửi yêu cầu", {
-        description: error.message,
-      });
+      toast.error("Không thể gửi yêu cầu", { description: error.message });
     },
   });
 
@@ -466,7 +526,9 @@ export function LeaveRequestDialog({
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => date < new Date()}
+                          disabled={(date) =>
+                            date < new Date() || isWeekendOrHoliday(date)
+                          }
                         />
                       </PopoverContent>
                     </Popover>
@@ -505,7 +567,10 @@ export function LeaveRequestDialog({
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => date < (startDate || new Date())}
+                          disabled={(date) =>
+                            date < (startDate || new Date()) ||
+                            isWeekendOrHoliday(date)
+                          }
                           initialFocus
                         />
                       </PopoverContent>
@@ -547,8 +612,6 @@ export function LeaveRequestDialog({
               )}
             />
 
-
-
             {/* Summary */}
             {selectedLeaveType && calculatedDays > 0 && isBalanceEnough && (
               <RequestSummary
@@ -572,13 +635,12 @@ export function LeaveRequestDialog({
               >
                 {submitMutation.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Đang gửi...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang
+                    gửi...
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Gửi yêu cầu
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> Gửi yêu cầu
                   </>
                 )}
               </Button>

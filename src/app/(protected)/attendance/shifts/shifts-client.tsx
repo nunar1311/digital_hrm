@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useCallback } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Shift, UserBasic, DepartmentBasic, WorkCycle } from "../types";
 import { useShiftsData } from "./use-shifts-data";
@@ -20,7 +21,7 @@ import { ArrowLeft } from "lucide-react";
 
 // ─── Main Component ───
 
-export function ShiftsClient({
+export const ShiftsClient = memo(function ShiftsClient({
   initialShifts,
   initialWorkCycles,
   users,
@@ -40,6 +41,13 @@ export function ShiftsClient({
     departments,
     canManage,
   });
+
+  const { setDeleteAssignmentId } = data;
+
+  const onRemoveAssignment = useCallback(
+    (id: string) => setDeleteAssignmentId(id),
+    [setDeleteAssignmentId],
+  );
 
   return (
     <TooltipProvider>
@@ -73,7 +81,7 @@ export function ShiftsClient({
           <ShiftSearchBar
             searchQuery={data.searchQuery}
             onSearchChange={data.handleSearchChange}
-            totalCount={data.filteredUsers.length}
+            totalCount={data.totalCount}
             debouncedSearch={data.debouncedSearch}
             departments={departments}
             departmentIds={data.departmentIds}
@@ -86,21 +94,23 @@ export function ShiftsClient({
         <div className="min-h-0 flex-1 overflow-hidden border-t">
           <ShiftCalendarGrid
             visibleDays={data.visibleDays}
-            calendarData={data.calendarData}
+            sortedUsers={data.calendarData.sortedUsers}
+            userAssignments={data.calendarData.userAssignments}
             shifts={data.shifts}
             shiftColorMap={data.shiftColorMap}
             canManage={canManage}
             isPending={data.isPending}
+            isFetchingAssignments={data.isFetchingAssignments}
+            isFetchingNextPage={data.isFetchingNextPage}
             debouncedSearch={data.debouncedSearch}
-            quickAssignCell={data.quickAssignCell}
-            setQuickAssignCell={data.setQuickAssignCell}
             onQuickAssign={data.handleQuickAssign}
-            onRemoveAssignment={data.setDeleteAssignmentId}
-            getUserShiftCount={data.getUserShiftCount}
+            onRemoveAssignment={onRemoveAssignment}
             hasMore={data.hasMore}
             loadMore={data.loadMore}
             viewMode={data.viewMode}
             workCycles={data.workCycles}
+            totalCount={data.totalCount}
+            loadedCount={data.loadedCount}
           />
         </div>
         {/* ─── Dialogs ─── */}
@@ -121,17 +131,18 @@ export function ShiftsClient({
         />
         <DeleteShiftDialog
           deleteTarget={data.deleteTarget}
-          onClose={() => data.setDeleteTarget(null)}
+          onClose={(open) => {
+            if (!open) data.setDeleteTarget(null);
+          }}
           onConfirm={data.handleDeleteShift}
           isPending={data.isPending}
         />
         <DeleteAssignmentDialog
           deleteAssignmentId={data.deleteAssignmentId}
-          onClose={() => data.setDeleteAssignmentId(null)}
-          onConfirm={() => {
-            if (data.deleteAssignmentId)
-              data.removeAssignMutation.mutate(data.deleteAssignmentId);
+          onClose={(open) => {
+            if (!open) data.setDeleteAssignmentId(null);
           }}
+          onConfirm={data.removeAssignMutation.mutate}
           isPending={data.removeAssignMutation.isPending}
         />
         <AssignCycleDialog
@@ -155,4 +166,4 @@ export function ShiftsClient({
       </div>
     </TooltipProvider>
   );
-}
+});

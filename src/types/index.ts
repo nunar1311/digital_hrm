@@ -70,6 +70,38 @@ export type {
     FilterParams,
 } from './common';
 
+// Onboarding
+export {
+    ONBOARDING_STATUS,
+    ONBOARDING_CATEGORY,
+    ONBOARDING_ASSIGNEE_ROLE,
+    CATEGORY_LABELS,
+    ASSIGNEE_ROLE_LABELS,
+    STATUS_LABELS,
+} from './onboarding';
+export type {
+    OnboardingStatus,
+    OnboardingCategory,
+    OnboardingAssigneeRole,
+    OnboardingTemplateDB,
+    OnboardingTaskDB,
+    OnboardingDB,
+    OnboardingChecklistDB,
+    OnboardingUserInfo,
+    OnboardingCandidateInfo,
+    OnboardingWithProgress,
+    OnboardingListParams,
+    OnboardingListResult,
+    HireCandidateData,
+    CreateOnboardingData,
+    UpdateOnboardingData,
+    UpdateChecklistData,
+    CreateTemplateData,
+    CreateTaskData,
+    UpdateTemplateData,
+    WelcomePortalData,
+} from './onboarding';
+
 // Theme (existing)
 export type {
     ThemeStyleProps,

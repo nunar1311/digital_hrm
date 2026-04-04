@@ -20,7 +20,7 @@ export interface GetEmployeesParams {
 
 export interface EmployeeListItem {
   id: string;
-  employeeCode: string | null;
+  username: string | null;
   fullName: string | null;
   name: string;
   email: string;
@@ -85,7 +85,7 @@ export async function getEmployees(
 
   // Build where clause
   const where: Record<string, unknown> = {
-    employeeCode: { not: null }, // Chỉ lấy user đã được tạo employee
+    username: { not: null }, // Chỉ lấy user đã được tạo employee
   };
 
   if (status !== "ALL") {
@@ -105,7 +105,7 @@ export async function getEmployees(
       { name: { contains: search, mode: "insensitive" } },
       { fullName: { contains: search, mode: "insensitive" } },
       {
-        employeeCode: {
+        username: {
           contains: search,
           mode: "insensitive",
         },
@@ -147,7 +147,7 @@ export async function getEmployees(
   // Transform to list items
   const items: EmployeeListItem[] = employees.map((emp) => ({
     id: emp.id,
-    employeeCode: emp.employeeCode,
+    username: emp.username,
     fullName: emp.fullName,
     name: emp.name,
     email: emp.email,
@@ -265,7 +265,7 @@ export async function checkNationalIdExists(
 export async function createEmployee(data: {
   name: string;
   email: string;
-  employeeCode: string;
+  username: string;
   fullName?: string;
   dateOfBirth?: Date;
   gender?: string;
@@ -301,11 +301,35 @@ export async function createEmployee(data: {
 }) {
   await requirePermission(Permission.EMPLOYEE_CREATE);
 
+  // Validate positionId nếu được cung cấp
+  let positionId = data.positionId;
+  if (positionId) {
+    const positionExists = await prisma.position.findUnique({
+      where: { id: positionId },
+      select: { id: true },
+    });
+    if (!positionExists) {
+      positionId = undefined;
+    }
+  }
+
+  // Validate departmentId nếu được cung cấp
+  let departmentId = data.departmentId;
+  if (departmentId) {
+    const deptExists = await prisma.department.findUnique({
+      where: { id: departmentId },
+      select: { id: true },
+    });
+    if (!deptExists) {
+      departmentId = undefined;
+    }
+  }
+
   const employee = await prisma.user.create({
     data: {
       name: data.name,
       email: data.email,
-      employeeCode: data.employeeCode,
+      username: data.username,
       fullName: data.fullName,
       dateOfBirth: data.dateOfBirth,
       gender: data.gender,
@@ -320,8 +344,8 @@ export async function createEmployee(data: {
       religion: data.religion,
       ethnicity: data.ethnicity,
       maritalStatus: data.maritalStatus,
-      departmentId: data.departmentId,
-      positionId: data.positionId,
+      departmentId: departmentId,
+      positionId: positionId,
       managerId: data.managerId,
       employmentType: data.employmentType,
       employeeStatus: data.employeeStatus || "ACTIVE",
@@ -353,7 +377,7 @@ export async function updateEmployee(
   data: Partial<{
     name: string;
     email: string;
-    employeeCode: string;
+    username: string;
     fullName: string;
     dateOfBirth: Date;
     gender: string;
@@ -476,14 +500,14 @@ export async function getAllEmployees() {
 
   const employees = await prisma.user.findMany({
     where: {
-      employeeCode: { not: null },
+      username: { not: null },
       employeeStatus: { not: "TERMINATED" },
     },
     orderBy: { name: "asc" },
     select: {
       id: true,
       name: true,
-      employeeCode: true,
+      username: true,
       image: true,
       position: { select: { id: true, name: true } },
       departmentId: true,
@@ -507,7 +531,7 @@ export async function getAssignableEmployees(search?: string) {
       { name: { contains: search, mode: "insensitive" } },
       { fullName: { contains: search, mode: "insensitive" } },
       {
-        employeeCode: {
+        username: {
           contains: search,
           mode: "insensitive",
         },
@@ -524,7 +548,7 @@ export async function getAssignableEmployees(search?: string) {
       id: true,
       name: true,
       fullName: true,
-      employeeCode: true,
+      username: true,
       image: true,
       position: { select: { id: true, name: true } },
       phone: true,
@@ -561,17 +585,43 @@ export async function getDepartmentOptions() {
  * Tạo mã nhân viên tự động theo format EMP-xxx
  */
 export async function generateEmployeeCode(): Promise<string> {
-  const lastEmployee = await prisma.user.findFirst({
-    where: { employeeCode: { startsWith: "EMP-" } },
-    orderBy: { employeeCode: "desc" },
-    select: { employeeCode: true },
-  });
+  const today = new Date();
+  const yy = String(today.getFullYear()).slice(-2);
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  const datePrefix = `${yy}${mm}${dd}`;
 
-  const nextNum = lastEmployee?.employeeCode
-    ? parseInt(lastEmployee.employeeCode.replace("EMP-", "")) + 1
-    : 1;
+  // Retry loop để đảm bảo không trùng lặp (xử lý concurrency)
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const lastEmployee = await prisma.user.findFirst({
+      where: {
+        username: {
+          startsWith: datePrefix,
+        },
+      },
+      orderBy: { username: "desc" },
+      select: { username: true },
+    });
 
-  return `EMP-${String(nextNum).padStart(3, "0")}`;
+    const nextSeq = lastEmployee?.username
+      ? parseInt(lastEmployee.username.slice(-3)) + 1
+      : 1;
+
+    const candidateCode = `${datePrefix}${String(nextSeq).padStart(3, "0")}`;
+
+    // Kiểm tra mã có thực sự tồn tại không (phòng trường hợp race condition)
+    const exists = await prisma.user.findUnique({
+      where: { username: candidateCode },
+      select: { id: true },
+    });
+
+    if (!exists) {
+      return candidateCode;
+    }
+    // Nếu trùng, lặp lại để lấy số tiếp theo
+  }
+
+  throw new Error("Không thể tạo mã nhân viên không trùng lặp");
 }
 
 /**
@@ -600,7 +650,7 @@ export async function importEmployeesBatch(
       }
 
       // Generate employee code
-      const employeeCode = await generateEmployeeCode();
+      const username = await generateEmployeeCode();
 
       // Generate email from name if not provided
       let email = String(row["Email"] || "").trim();
@@ -611,7 +661,7 @@ export async function importEmployeesBatch(
           .replace(/[\u0300-\u036f]/g, "")
           .replace(/\s+/g, ".")
           .replace(/[^a-z0-9.]/g, "");
-        email = `${slug}.${employeeCode.toLowerCase()}@placeholder.local`;
+        email = `${slug}.${username.toLowerCase()}@placeholder.local`;
       }
 
       // Parse dates
@@ -665,7 +715,7 @@ export async function importEmployeesBatch(
         data: {
           name: fullName,
           email,
-          employeeCode,
+          username,
           fullName,
           nationalId: nationalId || undefined,
           dateOfBirth,
@@ -722,7 +772,7 @@ export async function exportEmployees(params: {
   const { search, departmentId, status = "ALL", employmentType } = params;
 
   const where: Record<string, unknown> = {
-    employeeCode: { not: null },
+    username: { not: null },
   };
 
   if (status !== "ALL") {
@@ -741,7 +791,7 @@ export async function exportEmployees(params: {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
       { fullName: { contains: search, mode: "insensitive" } },
-      { employeeCode: { contains: search, mode: "insensitive" } },
+      { username: { contains: search, mode: "insensitive" } },
       { email: { contains: search, mode: "insensitive" } },
       { phone: { contains: search, mode: "insensitive" } },
     ];
@@ -762,7 +812,7 @@ export async function exportEmployees(params: {
 
   return employees.map((emp) => ({
     id: emp.id,
-    employeeCode: emp.employeeCode,
+    username: emp.username,
     fullName: emp.fullName,
     name: emp.name,
     email: emp.email,

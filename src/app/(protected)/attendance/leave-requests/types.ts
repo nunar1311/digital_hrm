@@ -7,16 +7,17 @@ import { z } from "zod";
 // ============================================================
 
 export const leaveRequestQuerySchema = z.object({
-  search: z.string().optional(),
-  status: z
-    .enum(["PENDING", "APPROVED", "REJECTED", "CANCELLED", "ALL"])
-    .optional()
-    .default("ALL"),
-  leaveTypeId: z.string().optional(),
-  departmentId: z.string().optional(),
-  year: z.number().optional(),
-  page: z.number().optional().default(1),
-  pageSize: z.number().optional().default(20),
+    search: z.string().optional(),
+    status: z
+        .enum(["PENDING", "APPROVED", "REJECTED", "CANCELLED", "ALL"])
+        .optional()
+        .default("ALL"),
+    leaveTypeId: z.string().optional(),
+    departmentId: z.string().optional(),
+    year: z.number().optional(),
+    month: z.number().min(0).max(12).optional(), // 0 = tất cả, 1-12 = tháng cụ thể
+    page: z.number().optional().default(1),
+    pageSize: z.number().optional().default(20),
 });
 
 export type LeaveRequestQueryInput = z.infer<typeof leaveRequestQuerySchema>;
@@ -40,7 +41,7 @@ export interface LeaveRequestUser {
     email: string;
     avatar: string | null;
     employeeCode: string | null;
-    department: { id: string; name: string } | null;
+    department: { id: string; name: string; logo: string | null } | null;
     position: { id: string; name: string } | null;
 }
 

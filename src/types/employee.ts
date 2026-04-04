@@ -8,7 +8,7 @@ import type { Department, Position } from './department';
 export interface Employee {
     id: string;
     userId: string;
-    employeeCode: string;
+    username: string;
     // Thông tin cá nhân
     fullName: string;
     dateOfBirth: string | null;
@@ -53,7 +53,7 @@ export interface Employee {
     // Resolved relations (optional, for display)
     department?: Department;
     position?: Position;
-    manager?: Pick<Employee, 'id' | 'fullName' | 'employeeCode' | 'avatar'>;
+    manager?: Pick<Employee, 'id' | 'fullName' | 'username' | 'avatar'>;
 }
 
 export interface EmergencyContact {

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth-session";
 import { Permission } from "@/lib/rbac/permissions";
 import { revalidatePath } from "next/cache";
-import { getIO, emitToAll } from "@/lib/socket/server";
+import { getIO } from "@/lib/socket/server";
 import type {
     PositionDetail,
     GetPositionsParams,
@@ -260,7 +260,7 @@ export async function createPosition(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (io as any).emit("position:created", { id: position.id, name: position.name });
             }
-        } catch (_) {
+        } catch {
             // Socket not available
         }
 
@@ -334,7 +334,7 @@ export async function updatePosition(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (io as any).emit("position:updated", { id: position.id, name: position.name });
             }
-        } catch (_) {
+        } catch {
             // Socket not available
         }
 
@@ -401,7 +401,7 @@ export async function deletePosition(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (io as any).emit("position:deleted", { id });
             }
-        } catch (_) {
+        } catch {
             // Socket not available
         }
 

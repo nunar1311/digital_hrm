@@ -520,7 +520,8 @@ export async function calculateMonthlyPayroll(params: {
         where: userFilter,
         include: {
             department: { select: { id: true, name: true } },
-            salaries: { where: { effectiveDate: { lte: new Date(year, month, 0) } } },
+            salaries: true,
+            dependents: { select: { id: true } },
             employeeSalaryComponents: {
                 where: {
                     isActive: true,
@@ -571,7 +572,7 @@ export async function calculateMonthlyPayroll(params: {
     const payrollDetails = [];
 
     for (const user of users) {
-        const baseSalary =  0;
+        const baseSalary = user.salaries ? Number(user.salaries.baseSalary) : 0;
         const summary = summaryMap.get(user.id);
         const userOvertimes = overtimeByUser.get(user.id) || [];
 
@@ -632,10 +633,12 @@ export async function calculateMonthlyPayroll(params: {
 
         // Giảm trừ gia cảnh
         const personalDeduction = getConfigValue("PERSONAL_DEDUCTION", 11000000);
-        const dependentDeduction = getConfigValue(
+        const dependentPerPerson = getConfigValue(
             "DEPENDENT_DEDUCTION",
             4400000,
         );
+        const dependentCount = user.dependents?.length || 0;
+        const dependentDeduction = dependentPerPerson * dependentCount;
 
         // Thu nhập chịu thuế
         const taxableIncome = grossSalaryNum - totalInsurance - personalDeduction;
@@ -762,6 +765,8 @@ export async function getPayrollRecord(id: string) {
             socialInsurance: Number(d.socialInsurance),
             healthInsurance: Number(d.healthInsurance),
             unemploymentInsurance: Number(d.unemploymentInsurance),
+            personalDeduction: Number(d.personalDeduction),
+            dependentDeduction: Number(d.dependentDeduction),
         })),
     };
 }
@@ -1011,7 +1016,7 @@ export async function getPayslips(params: {
         where.year = params.year;
     }
 
-    return prisma.payslip.findMany({
+    const payslips = await prisma.payslip.findMany({
         where,
         include: {
             user: {
@@ -1025,6 +1030,8 @@ export async function getPayslips(params: {
         },
         orderBy: [{ year: "desc" }, { month: "desc" }],
     });
+
+    return JSON.parse(JSON.stringify(payslips));
 }
 
 export async function getPayslip(id: string) {
@@ -1061,17 +1068,19 @@ export async function getPayslip(id: string) {
         });
     }
 
-    return payslip;
+    return JSON.parse(JSON.stringify(payslip));
 }
 
 export async function getMyPayslips() {
     const session = await requireAuth();
 
-    return prisma.payslip.findMany({
+    const payslips = await prisma.payslip.findMany({
         where: { userId: session.user.id },
         include: { payrollRecord: true },
         orderBy: [{ year: "desc" }, { month: "desc" }],
     });
+
+    return JSON.parse(JSON.stringify(payslips));
 }
 
 // ─── EXPORT ───
@@ -1608,10 +1617,7 @@ export async function previewPayroll(params: {
     const users = await prisma.user.findMany({
         where: userFilter,
         include: {
-            salaries: {
-                where: { effectiveDate: { lte: new Date(year, month, 0) } },
-            },
-            
+            salaries: true,
         },
     });
 
@@ -1619,7 +1625,7 @@ export async function previewPayroll(params: {
     let totalNet = 0;
 
     for (const user of users) {
-        const baseSalary =  0;
+        const baseSalary = user.salaries ? Number(user.salaries.baseSalary) : 0;
         const baseSalaryNum = Number(baseSalary);
 
         // Estimate gross (simplified calculation)

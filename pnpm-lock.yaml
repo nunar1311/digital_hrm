@@ -89,6 +89,9 @@ importers:
       gridstack:
         specifier: ^12.4.2
         version: 12.4.2
+      html-to-image:
+        specifier: ^1.11.13
+        version: 1.11.13
       html2canvas-pro:
         specifier: ^2.0.2
         version: 2.0.2
@@ -3772,6 +3775,9 @@ packages:
   hono@4.12.0:
     resolution: {integrity: sha512-NekXntS5M94pUfiVZ8oXXK/kkri+5WpX2/Ik+LVsl+uvw+soj4roXIsPqO+XsWrAw20mOzaXOZf3Q7PfB9A/IA==}
     engines: {node: '>=16.9.0'}
+
+  html-to-image@1.11.13:
+    resolution: {integrity: sha512-cuOPoI7WApyhBElTTb9oqsawRvZ0rHhaHwghRLlTuffoD1B2aDemlCruLeZrUIIdvG7gs9xeELEPm6PhuASqrg==}
 
   html-to-text@9.0.5:
     resolution: {integrity: sha512-qY60FjREgVZL03vJU6IfMV4GDjGBIoOyvuFdpBDIX9yTlDw0TjxVBQp+P8NvpdIXNJvfWBTNul7fsAQJq2FNpg==}
@@ -9353,6 +9359,8 @@ snapshots:
   hono@4.11.4: {}
 
   hono@4.12.0: {}
+
+  html-to-image@1.11.13: {}
 
   html-to-text@9.0.5:
     dependencies:

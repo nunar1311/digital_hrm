@@ -127,6 +127,14 @@ export const ROUTE_PERMISSIONS: Array<{
 
     // ─── Quy trình ───
     {
+        pattern: "/onboarding/settings",
+        permissions: [Permission.ONBOARDING_MANAGE],
+    },
+    {
+        pattern: "/onboarding/welcome",
+        permissions: [Permission.ONBOARDING_VIEW],
+    },
+    {
         pattern: "/onboarding",
         permissions: [Permission.ONBOARDING_VIEW],
     },

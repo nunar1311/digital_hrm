@@ -87,6 +87,7 @@ function computeWorkHours(
 export const shiftFormSchema = z.object({
   name: z.string().min(1, "Vui lòng nhập tên ca"),
   code: z.string().min(1, "Vui lòng nhập mã ca"),
+  type: z.string().min(1, "Vui lòng chọn loại ca"),
   startTime: z.string().min(1, "Vui lòng chọn giờ bắt đầu"),
   endTime: z.string().min(1, "Vui lòng chọn giờ kết thúc"),
   breakMinutes: z.number().min(0),
@@ -164,6 +165,7 @@ export function ShiftFormDialog({
     defaultValues: {
       name: "",
       code: "",
+      type: "fixed",
       startTime: new Date().toISOString().split("T")[0],
       endTime: new Date().toISOString().split("T")[0],
       breakMinutes: 60,
@@ -187,11 +189,13 @@ export function ShiftFormDialog({
           earlyThreshold: editingShift.earlyThreshold,
           isDefault: editingShift.isDefault,
           isActive: editingShift.isActive,
+          type: "fixed",
         });
       } else {
         form.reset({
           name: "",
           code: "",
+          type: "fixed",
           startTime: new Date().toISOString().split("T")[0],
           endTime: new Date().toISOString().split("T")[0],
           breakMinutes: 60,
@@ -473,7 +477,7 @@ interface ShiftManageDialogProps {
 
 interface DeleteShiftDialogProps {
   deleteTarget: Shift | null;
-  onClose: () => void;
+  onClose: (open: boolean) => void;
   onConfirm: () => void;
   isPending: boolean;
 }
@@ -485,7 +489,7 @@ export function DeleteShiftDialog({
   isPending,
 }: DeleteShiftDialogProps) {
   return (
-    <AlertDialog open={!!deleteTarget} onOpenChange={() => onClose()}>
+    <AlertDialog open={!!deleteTarget} onOpenChange={(open) => onClose(open)}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Xóa ca làm việc?</AlertDialogTitle>
@@ -513,8 +517,8 @@ export function DeleteShiftDialog({
 
 interface DeleteAssignmentDialogProps {
   deleteAssignmentId: string | null;
-  onClose: () => void;
-  onConfirm: () => void;
+  onClose: (open: boolean) => void;
+  onConfirm: (id: string) => void;
   isPending: boolean;
 }
 
@@ -525,7 +529,10 @@ export function DeleteAssignmentDialog({
   isPending,
 }: DeleteAssignmentDialogProps) {
   return (
-    <AlertDialog open={!!deleteAssignmentId} onOpenChange={() => onClose()}>
+    <AlertDialog
+      open={!!deleteAssignmentId}
+      onOpenChange={(open) => onClose(open)}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Xóa phân ca?</AlertDialogTitle>
@@ -536,7 +543,7 @@ export function DeleteAssignmentDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>Hủy</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={() => deleteAssignmentId && onConfirm(deleteAssignmentId)}
             className="bg-destructive text-white hover:bg-destructive/90"
           >
             {isPending ? "Đang xóa..." : "Xóa"}

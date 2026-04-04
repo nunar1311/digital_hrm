@@ -26,6 +26,7 @@ import {
   Calendar,
   CalendarCheck,
   CalendarOff,
+  Settings,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -381,6 +382,17 @@ const AttendanceSidebar = () => {
         {
           title: "Tổng hợp ngày nghỉ",
           url: "/attendance/leave-summary",
+        },
+      ],
+    },
+    {
+      title: "Cài đặt",
+      icon: Settings,
+      isActive: true,
+      children: [
+        {
+          title: "Hệ thống chấm công",
+          url: "/attendance/settings",
         },
       ],
     },

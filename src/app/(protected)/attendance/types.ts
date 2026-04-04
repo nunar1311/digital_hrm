@@ -54,6 +54,14 @@ export interface Shift {
     earlyThreshold: number;
     isDefault: boolean;
     isActive: boolean;
+    type: string;
+    checkinWindowStart?: string;
+    checkinWindowEnd?: string;
+    checkoutWindowStart?: string;
+    checkoutWindowEnd?: string;
+    minWorkingHours?: number;
+    maxWorkingHours?: number;
+    gracePeriodMinutes?: number;
     createdAt: string;
     updatedAt: string;
     _count: {
@@ -74,6 +82,14 @@ export interface ShiftBasic {
     earlyThreshold: number;
     isDefault: boolean;
     isActive: boolean;
+    type: string;
+    checkinWindowStart?: string;
+    checkinWindowEnd?: string;
+    checkoutWindowStart?: string;
+    checkoutWindowEnd?: string;
+    minWorkingHours?: number;
+    maxWorkingHours?: number;
+    gracePeriodMinutes?: number;
 }
 
 // ─── Shift Assignment ───

@@ -4,9 +4,9 @@ import { usePathname } from "next/navigation";
 import React, { createContext, useContext, useMemo, useState } from "react";
 import type { DepartmentNode } from "@/types/org-chart";
 import { SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
 import DepartmentSidebar from "@/components/departments/department-sidebar";
 import AttendanceSidebar from "@/components/attendance/attendance-sidebar";
+import ESSSidebar from "@/components/ess/ess-sidebar";
 
 interface SidebarContextValue {
   departmentTree: DepartmentNode[];
@@ -59,6 +59,16 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
     if (pathname === "/attendance" || pathname.startsWith("/attendance/")) {
       return "attendance";
     }
+
+    if (
+      pathname === "/ess" ||
+      pathname.startsWith("/ess/") ||
+      pathname === "/" ||
+      pathname === "/org-chart"
+    ) {
+      return "ess";
+    }
+
     return "default";
   }, [pathname]);
 
@@ -68,6 +78,9 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
     }
     if (sidebarType === "attendance") {
       return <AttendanceSidebar />;
+    }
+    if (sidebarType === "ess") {
+      return <ESSSidebar />;
     }
     // return <AppSidebar />;
     return null;

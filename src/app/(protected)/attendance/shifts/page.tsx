@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import {
     getShifts,
-    getUsers,
+    getUsersPaginated,
     getDepartments,
     getWorkCycles,
 } from "../actions";
@@ -22,10 +22,12 @@ export default async function ShiftsPage() {
         Permission.ATTENDANCE_SHIFT_MANAGE,
     );
 
-    const [shifts, users, departments, workCycles] =
+    const PAGE_SIZE = 20;
+
+    const [shifts, usersData, departments, workCycles] =
         await Promise.all([
             getShifts(),
-            canManage ? getUsers() : Promise.resolve([]),
+            canManage ? getUsersPaginated({ page: 1, pageSize: PAGE_SIZE }) : Promise.resolve({ users: [], totalCount: 0, page: 1, pageSize: PAGE_SIZE }),
             getDepartments(),
             getWorkCycles(),
         ]);
@@ -34,7 +36,7 @@ export default async function ShiftsPage() {
         <ShiftsClient
             initialShifts={JSON.parse(JSON.stringify(shifts))}
             initialWorkCycles={JSON.parse(JSON.stringify(workCycles))}
-            users={JSON.parse(JSON.stringify(users))}
+            users={JSON.parse(JSON.stringify(usersData.users))}
             departments={JSON.parse(JSON.stringify(departments))}
             canManage={canManage}
         />

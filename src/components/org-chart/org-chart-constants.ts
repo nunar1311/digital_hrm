@@ -5,12 +5,17 @@ export const ZOOM_CONFIG = {
     MAX: 2,
     STEP: 0.1,
     DEFAULT: 0.75,
+    // Mobile defaults - start more zoomed out on small screens
+    DEFAULT_MOBILE: 0.5,
 } as const;
 
 export const NODE_CONFIG = {
     WIDTH: 280,
+    // Mobile: narrower cards for small screens
+    WIDTH_MOBILE: 260,
     MIN_HEIGHT: 140,
     EXPAND_BUTTON_SIZE: 28,
+    EXPAND_BUTTON_SIZE_MOBILE: 36,
     CHIP_DISPLAY_LIMIT: 3,
 } as const;
 

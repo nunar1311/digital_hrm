@@ -28,8 +28,9 @@ import {
 } from "./org-chart-constants";
 import { useKeyboardShortcuts } from "./use-keyboard-shortcuts";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-const { MIN: MIN_ZOOM, MAX: MAX_ZOOM, STEP: ZOOM_STEP } = ZOOM_CONFIG;
+const { MIN: MIN_ZOOM, MAX: MAX_ZOOM, STEP: ZOOM_STEP, DEFAULT: DEFAULT_ZOOM, DEFAULT_MOBILE } = ZOOM_CONFIG;
 
 interface OrgChartCanvasProps {
     data: DepartmentNode[];
@@ -50,6 +51,11 @@ interface OrgChartCanvasProps {
         targetDeptId: string,
     ) => void;
     isLocked?: boolean;
+    canvasRef?: React.RefObject<HTMLDivElement | null>;
+    selectedEmployees?: Set<string>;
+    onToggleEmployee?: (employeeId: string) => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
 }
 
 function countEmployees(n: DepartmentNode): number {
@@ -69,10 +75,55 @@ export function OrgChartCanvas({
     onDropEmployee,
     onDropDepartment,
     isLocked,
+    canvasRef,
+    selectedEmployees,
+    onToggleEmployee,
+    onUndo,
+    onRedo,
 }: OrgChartCanvasProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
-    const [zoom, setZoom] = useState(0.75);
+    const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+    const isMobile = useIsMobile();
+
+    // Sync containerRef with external canvasRef
+    useEffect(() => {
+        if (canvasRef && containerRef.current) {
+            canvasRef.current = containerRef.current;
+        }
+    }, [canvasRef]);
+
+    // --- Auto-fit to node when search returns single result ---
+    const autoFitToNode = useCallback((nodeId: string) => {
+        const el = containerRef.current?.querySelector<HTMLElement>(
+            `[data-dept-id="${nodeId}"]`,
+        );
+        if (!el || !containerRef.current) return;
+
+        const nodeRect = el.getBoundingClientRect();
+        const containerRect = containerRef.current.getBoundingClientRect();
+
+        const centerX =
+            (containerRect.width / 2) -
+            (nodeRect.left + nodeRect.width / 2 - containerRect.left);
+        const centerY =
+            (containerRect.height / 2) -
+            (nodeRect.top + nodeRect.height / 2 - containerRect.top);
+
+        setPan({ x: centerX, y: centerY });
+        setZoom(1.0);
+    }, []);
+
+    // Auto-fit when search returns exactly 1 result
+    useEffect(() => {
+        if (highlightedNodes.size === 1) {
+            const firstNodeId = highlightedNodes.values().next().value as string;
+            // Delay to let DOM render
+            const t = setTimeout(() => autoFitToNode(firstNodeId), 100);
+            return () => clearTimeout(t);
+        }
+    }, [highlightedNodes, autoFitToNode]);
+    const [zoom, setZoom] = useState(isMobile ? DEFAULT_MOBILE : DEFAULT_ZOOM);
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
     const panStartRef = useRef({ x: 0, y: 0 });
@@ -102,15 +153,17 @@ export function OrgChartCanvas({
         );
     }, []);
 
-    const resetViewRef = useCallback(() => {
-        setZoom(0.75);
+    const resetView = useCallback(() => {
+        setZoom(isMobile ? DEFAULT_MOBILE : DEFAULT_ZOOM);
         setPan({ x: 0, y: 0 });
-    }, []);
+    }, [isMobile]);
 
     useKeyboardShortcuts({
         onZoomIn: zoomInRef,
         onZoomOut: zoomOutRef,
-        onResetView: resetViewRef,
+        onResetView: resetView,
+        onUndo: onUndo,
+        onRedo: onRedo,
         enabled: !isLocked,
     });
 
@@ -181,13 +234,106 @@ export function OrgChartCanvas({
         [isLocked],
     );
 
+    // Touch gesture state for pinch-zoom on mobile
+    const lastTouchDistRef = useRef<number | null>(null);
+    const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
     // Attach wheel listener with passive: false
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
         el.addEventListener("wheel", handleWheel, { passive: false });
-        return () => el.removeEventListener("wheel", handleWheel);
-    }, [handleWheel]);
+
+        // Touch handlers for mobile pinch-zoom and pan
+        let currentZoom = 0.75;
+        const setZoomProxy = (z: number | ((prev: number) => number)) => {
+            if (typeof z === "function") {
+                currentZoom = z(currentZoom);
+            } else {
+                currentZoom = z;
+            }
+        };
+
+        const handleTouchStart = (e: TouchEvent) => {
+            if (isLocked) return;
+            if (e.touches.length === 1) {
+                touchStartRef.current = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY,
+                };
+            } else if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                lastTouchDistRef.current = Math.sqrt(dx * dx + dy * dy);
+                touchStartRef.current = null;
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (isLocked) return;
+            e.preventDefault();
+
+            if (e.touches.length === 2 && lastTouchDistRef.current !== null) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const delta = (dist - lastTouchDistRef.current) * 0.005;
+                setZoom((prev) =>
+                    Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +(prev + delta * ZOOM_STEP * 10).toFixed(2))),
+                );
+                lastTouchDistRef.current = dist;
+            } else if (e.touches.length === 1 && touchStartRef.current) {
+                const dx = e.touches[0].clientX - touchStartRef.current.x;
+                const dy = e.touches[0].clientY - touchStartRef.current.y;
+                setPan((prev) => ({
+                    x: prev.x + dx,
+                    y: prev.y + dy,
+                }));
+                touchStartRef.current = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY,
+                };
+            }
+        };
+
+        const handleTouchEnd = () => {
+            lastTouchDistRef.current = null;
+            touchStartRef.current = null;
+        };
+
+        el.addEventListener("touchstart", handleTouchStart, { passive: false });
+        el.addEventListener("touchmove", handleTouchMove, { passive: false });
+        el.addEventListener("touchend", handleTouchEnd);
+
+        return () => {
+            el.removeEventListener("wheel", handleWheel);
+            el.removeEventListener("touchstart", handleTouchStart);
+            el.removeEventListener("touchmove", handleTouchMove);
+            el.removeEventListener("touchend", handleTouchEnd);
+        };
+    }, [handleWheel, isLocked]);
+
+    // --- Arrow key navigation ---
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
+            const target = e.target as HTMLElement;
+            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
+            e.preventDefault();
+            const PAN_STEP = 80;
+            setPan((prev) => {
+                switch (e.key) {
+                    case "ArrowUp": return { ...prev, y: prev.y + PAN_STEP };
+                    case "ArrowDown": return { ...prev, y: prev.y - PAN_STEP };
+                    case "ArrowLeft": return { ...prev, x: prev.x + PAN_STEP };
+                    case "ArrowRight": return { ...prev, x: prev.x - PAN_STEP };
+                    default: return prev;
+                }
+            });
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     const handleMouseDown = useCallback(
         (e: React.MouseEvent) => {
@@ -226,11 +372,6 @@ export function OrgChartCanvas({
         const up = () => setIsPanning(false);
         window.addEventListener("mouseup", up);
         return () => window.removeEventListener("mouseup", up);
-    }, []);
-
-    const resetView = useCallback(() => {
-        setZoom(0.75);
-        setPan({ x: 0, y: 0 });
     }, []);
 
     const hasData = data.length > 0;
@@ -383,7 +524,10 @@ export function OrgChartCanvas({
     // -------------------------
 
     return (
-        <div className="relative flex-1 min-h-125 border-t bg-muted/30 overflow-hidden">
+        <div
+            data-org-chart-canvas
+            className="relative flex-1 min-h-125 border-t bg-muted/30 overflow-hidden"
+        >
             {/* Grid background pattern */}
             <div
                 className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06]"
@@ -394,37 +538,60 @@ export function OrgChartCanvas({
                 }}
             />
 
-            {/* Zoom controls */}
-            <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-1 items-center">
+            {/* Zoom controls - touch-friendly on mobile */}
+            <div
+                className={cn(
+                    "absolute z-20 flex flex-col gap-1 items-center",
+                    "bottom-4 right-4",
+                    // Mobile: larger touch targets, move to bottom-center
+                    "sm:bottom-4 sm:right-4",
+                    isMobile
+                        ? "bottom-6 left-1/2 -translate-x-1/2 flex-row gap-2"
+                        : "bottom-4 right-4 flex-col",
+                )}
+            >
                 <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 bg-background/90 backdrop-blur-sm shadow-md"
+                    className={cn(
+                        "bg-background/90 backdrop-blur-sm shadow-md",
+                        isMobile ? "h-11 w-11" : "h-8 w-8",
+                    )}
                     disabled={isLocked}
                     onClick={zoomInRef}
                 >
-                    <ZoomIn className="h-3.5 w-3.5" />
+                    <ZoomIn className={cn(isMobile ? "h-5 w-5" : "h-3.5 w-3.5")} />
                 </Button>
-                <div className="text-[10px] font-mono text-muted-foreground bg-background/90 backdrop-blur-sm rounded-md px-1.5 py-0.5 shadow-sm">
+                <div className={cn(
+                    "font-mono text-muted-foreground bg-background/90 backdrop-blur-sm rounded-md shadow-sm",
+                    "text-[10px] px-1.5 py-0.5 hidden sm:block",
+                    isMobile ? "text-xs px-2 py-1" : "",
+                )}>
                     {Math.round(zoom * 100)}%
                 </div>
                 <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 bg-background/90 backdrop-blur-sm shadow-md"
+                    className={cn(
+                        "bg-background/90 backdrop-blur-sm shadow-md",
+                        isMobile ? "h-11 w-11" : "h-8 w-8",
+                    )}
                     disabled={isLocked}
                     onClick={zoomOutRef}
                 >
-                    <ZoomOut className="h-3.5 w-3.5" />
+                    <ZoomOut className={cn(isMobile ? "h-5 w-5" : "h-3.5 w-3.5")} />
                 </Button>
                 <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 bg-background/90 backdrop-blur-sm shadow-md mt-1"
+                    className={cn(
+                        "bg-background/90 backdrop-blur-sm shadow-md",
+                        isMobile ? "h-11 w-11" : "h-8 w-8",
+                    )}
                     disabled={isLocked}
                     onClick={resetView}
                 >
-                    <RotateCcw className="h-3.5 w-3.5" />
+                    <RotateCcw className={cn(isMobile ? "h-5 w-5" : "h-3.5 w-3.5")} />
                 </Button>
             </div>
 
@@ -577,6 +744,7 @@ export function OrgChartCanvas({
                                                         handleNodeMoveStart
                                                     }
                                                     isRoot
+                                                    focusedNodeId={focusedNodeId}
                                                 />
                                             </div>
                                         </div>
@@ -601,6 +769,7 @@ export function OrgChartCanvas({
                                     nodeOffsets={nodeOffsets}
                                     onNodeMoveStart={handleNodeMoveStart}
                                     isRoot
+                                    focusedNodeId={focusedNodeId}
                                 />
                             ))
                         )
@@ -630,8 +799,8 @@ export function OrgChartCanvas({
                 </div>
             </div>
 
-            {/* Help text */}
-            {hasData && (
+            {/* Help text - hidden on mobile */}
+            {hasData && !isMobile && (
                 <div className="absolute bottom-4 left-4 text-[10px] text-muted-foreground bg-background/80 backdrop-blur-sm px-2.5 py-1 rounded-md shadow-sm">
                     🖱️ Cuộn = zoom • Kéo = di chuyển • Click = chi
                     tiết • Kéo thả nhân viên để chuyển phòng ban
@@ -667,6 +836,9 @@ interface OrgChartBranchProps {
         clientY: number,
     ) => void;
     isRoot?: boolean;
+    focusedNodeId?: string | null;
+    selectedEmployees?: Set<string>;
+    onToggleEmployee?: (employeeId: string) => void;
 }
 
 function OrgChartBranch({
@@ -684,6 +856,9 @@ function OrgChartBranch({
     nodeOffsets,
     onNodeMoveStart,
     isRoot = false,
+    focusedNodeId,
+    selectedEmployees,
+    onToggleEmployee,
 }: OrgChartBranchProps) {
     const isExpanded = expandedNodes.has(node.id);
     const hasChildren = node.children.length > 0;
@@ -723,6 +898,8 @@ function OrgChartBranch({
                 onDropDepartment={onDropDepartment}
                 isLocked={isLocked}
                 onMoveStart={onNodeMoveStart}
+                selectedEmployees={selectedEmployees}
+                onToggleEmployee={onToggleEmployee}
             />
 
             {hasChildren && isExpanded && (
@@ -753,6 +930,9 @@ function OrgChartBranch({
                                     isLocked={isLocked}
                                     nodeOffsets={nodeOffsets}
                                     onNodeMoveStart={onNodeMoveStart}
+                                    focusedNodeId={focusedNodeId}
+                                    selectedEmployees={selectedEmployees}
+                                    onToggleEmployee={onToggleEmployee}
                                 />
                             </div>
                         ))}

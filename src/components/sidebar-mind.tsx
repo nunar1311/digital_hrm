@@ -59,8 +59,14 @@ const MENU_ITEM: MenuItem[] = [
   {
     label: "Orbit",
     icon: OrbitIcon,
-    href: "/orbit",
+    href: "/payroll",
     permissions: [Permission.ORG_CHART_VIEW],
+  },
+  {
+    label: "Tiếp nhận",
+    icon: UsersIcon,
+    href: "/onboarding",
+    permissions: [Permission.ONBOARDING_VIEW],
   },
 ];
 
@@ -73,9 +79,7 @@ const SidebarMind = () => {
   const isSettings = pathname.startsWith("/settings");
 
   // Lọc các menu items dựa trên permissions
-  const visibleMenuItems = MENU_ITEM.filter((item) =>
-    canAny(item.permissions)
-  );
+  const visibleMenuItems = MENU_ITEM.filter((item) => canAny(item.permissions));
 
   return (
     <div className="me-1.5 ms-1.5 rounded-lg grid grid-cols-[1fr_auto] bg-primary dark:bg-primary-dark shadow-xl relative">

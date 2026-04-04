@@ -86,7 +86,7 @@ const DashboardClient = ({
       queryKey: ["dashboard-stats"],
       queryFn: getDashboardStats,
       initialData: initialStats,
-      staleTime: 30 * 1000, // 30 seconds
+      staleTime: 0,
     });
 
   const {
@@ -96,7 +96,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-attendance-trend"],
     queryFn: getAttendanceTrend,
     initialData: attendanceTrendDataProp,
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 
   const {
@@ -106,7 +106,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-department-distribution"],
     queryFn: getDepartmentDistribution,
     initialData: departmentDataProp,
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 
   const {
@@ -116,7 +116,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-turnover-trend"],
     queryFn: getTurnoverRateTrend,
     initialData: turnoverTrendDataProp,
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 
   const {
@@ -126,7 +126,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-gender-distribution"],
     queryFn: getGenderDistribution,
     initialData: genderDataProp,
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 
   const {
@@ -136,7 +136,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-today-attendance"],
     queryFn: getTodayAttendanceSummary,
     initialData: todayAttendanceDataProp,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 0,
   });
 
   // Check if any query is refetching
@@ -529,7 +529,9 @@ const DashboardClient = ({
         <div
           className={cn(
             "flex flex-col bg-background text-foreground",
-            isFullscreen ? "fixed inset-0 z-40" : "h-[calc(100%)] overflow-hidden min-h-0",
+            isFullscreen
+              ? "fixed inset-0 z-40"
+              : "h-[calc(100%)] overflow-hidden min-h-0",
           )}
         >
           <section className="flex flex-col overflow-hidden min-h-0">
@@ -606,7 +608,7 @@ const DashboardClient = ({
 
                 <Separator orientation="vertical" className="h-4!" />
 
-                <AddCardDialog 
+                <AddCardDialog
                   stats={stats}
                   attendanceTrendData={attendanceTrendData}
                   departmentData={departmentData}

@@ -136,6 +136,10 @@ export function MonthlyClient({
         departmentId: departmentId || undefined,
       });
 
+      if (!result || !result.csvContent || !result.fileName) {
+        throw new Error("Không thể tạo file xuất");
+      }
+
       // Create and download CSV file
       const blob = new Blob([result.csvContent], {
         type: "text/csv;charset=utf-8;",

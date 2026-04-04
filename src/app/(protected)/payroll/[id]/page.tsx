@@ -32,12 +32,11 @@ export default async function PayrollDetailPage({
   }
 
   return (
-    // <PayrollDetailClient
-    //     recordId={id}
-    //     initialRecord={record}
-    //     initialPayslips={payslips}
-    //     departments={departments}
-    // />
-    <div></div>
+    <PayrollDetailClient
+      recordId={id}
+      initialRecord={JSON.parse(JSON.stringify(record))}
+      initialPayslips={JSON.parse(JSON.stringify(payslips))}
+      departments={departments}
+    />
   );
 }

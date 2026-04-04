@@ -17,7 +17,7 @@ export default async function LeaveRequestsPage() {
     await requirePermission(Permission.LEAVE_VIEW_ALL);
 
     const [requestsData, statsData, leaveTypes] = await Promise.all([
-        getLeaveRequestsForApproval(),
+        getLeaveRequestsForApproval({ status: "ALL", page: 1, pageSize: 100 }),
         getLeaveRequestStats(),
         getLeaveTypesForFilter(),
     ]);

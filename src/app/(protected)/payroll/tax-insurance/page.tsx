@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 
 export default async function TaxInsurancePage() {
     const configs = await getPayrollConfigs();
-    return <TaxInsuranceClient initialData={configs} />;
+    return <TaxInsuranceClient initialData={JSON.parse(JSON.stringify(configs))} />;
 }

@@ -10,6 +10,7 @@ export interface LeaveType {
     defaultDays: number;
     isPaidLeave: boolean;
     isActive: boolean;
+    sortOrder: number;
 }
 
 export interface LeaveBalance {

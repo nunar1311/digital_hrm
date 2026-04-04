@@ -148,10 +148,10 @@ export function ShiftFormDialog({
     setIsPending(true);
     try {
       if (editingShift) {
-        await updateShift(editingShift.id, values);
+        await updateShift(editingShift.id, { ...values, type: "FIXED" });
         toast.success("Cập nhật ca thành công");
       } else {
-        await createShift(values);
+        await createShift({ ...values, type: "FIXED" });
         toast.success("Tạo ca mới thành công");
       }
       queryClient.invalidateQueries({

@@ -716,7 +716,7 @@ export async function checkIn(
     // Anti-fraud verification
     const verification = await verifyAntiFraud(parsedData);
     if (!verification.verified) {
-        throw new Error(verification.errors.join("\n"));
+        return { success: false, error: verification.errors.join("\n") };
     }
 
     let photoUrl = null;
@@ -731,7 +731,7 @@ export async function checkIn(
     });
 
     if (existing?.checkIn) {
-        throw new Error("Bạn đã check-in cho ngày hôm nay rồi!");
+        return { success: false, error: "Bạn đã check-in cho ngày hôm nay rồi!" };
     }
 
     const now = new Date();
@@ -741,9 +741,11 @@ export async function checkIn(
     const todayShifts = await getTodayShiftsForUser(userId);
 
     if (todayShifts.length === 0) {
-        throw new Error(
-            "Bạn không có ca làm việc hôm nay. Vui lòng liên hệ quản lý để được phân ca.",
-        );
+        return {
+            success: false,
+            error:
+                "Bạn không có ca làm việc hôm nay. Vui lòng liên hệ quản lý để được phân ca.",
+        };
     }
 
     // Xác định ca: ưu tiên shiftId từ client, nếu không thì auto-detect
@@ -751,16 +753,18 @@ export async function checkIn(
     if (parsedData.shiftId) {
         shift = todayShifts.find((s) => s.id === parsedData.shiftId);
         if (!shift) {
-            throw new Error(
-                "Ca làm việc được chọn không hợp lệ cho ngày hôm nay.",
-            );
+            return {
+                success: false,
+                error: "Ca làm việc được chọn không hợp lệ cho ngày hôm nay.",
+            };
         }
     } else {
         shift = detectCurrentShift(todayShifts);
         if (!shift) {
-            throw new Error(
-                "Không xác định được ca làm việc. Vui lòng chọn ca cụ thể.",
-            );
+            return {
+                success: false,
+                error: "Không xác định được ca làm việc. Vui lòng chọn ca cụ thể.",
+            };
         }
     }
 
@@ -793,11 +797,13 @@ export async function checkIn(
             hoursLeft > 0
                 ? `${hoursLeft} giờ ${minsLeft} phút`
                 : `${minsLeft} phút`;
-        throw new Error(
-            `Check-in quá sớm! Ca "${shift.name}" bắt đầu lúc ${shift.startTime}. ` +
+        return {
+            success: false,
+            error:
+                `Check-in quá sớm! Ca "${shift.name}" bắt đầu lúc ${shift.startTime}. ` +
                 `Bạn chỉ được check-in sớm tối đa ${earlyCheckinLimit} phút trước giờ ca. ` +
                 `Vui lòng quay lại sau ${timeStr} nữa.`,
-        );
+        };
     }
 
     if (diffMins > threshold) {
@@ -845,7 +851,7 @@ export async function checkIn(
     });
 
     revalidatePath("/attendance");
-    return attendance;
+    return { success: true, data: attendance };
 }
 
 export async function checkOut(
@@ -861,7 +867,7 @@ export async function checkOut(
     // Anti-fraud
     const verification = await verifyAntiFraud(parsedData);
     if (!verification.verified) {
-        throw new Error(verification.errors.join("\n"));
+        return { success: false, error: verification.errors.join("\n") };
     }
 
     let photoUrl = null;
@@ -877,15 +883,16 @@ export async function checkOut(
     });
 
     if (!existing || !existing.checkIn) {
-        throw new Error("Bạn chưa check-in ngày hôm nay!");
+        return { success: false, error: "Bạn chưa check-in ngày hôm nay!" };
     }
     if (existing.checkOut) {
-        throw new Error("Bạn đã check-out hôm nay rồi!");
+        return { success: false, error: "Bạn đã check-out hôm nay rồi!" };
     }
     if (!existing.shift) {
-        throw new Error(
-            "Bản ghi chấm công không có ca làm việc. Vui lòng liên hệ quản lý.",
-        );
+        return {
+            success: false,
+            error: "Bản ghi chấm công không có ca làm việc. Vui lòng liên hệ quản lý.",
+        };
     }
 
     const now = new Date();
@@ -948,7 +955,7 @@ export async function checkOut(
     });
 
     revalidatePath("/attendance");
-    return attendance;
+    return { success: true, data: attendance };
 }
 
 // ─── SHIFTS ───
@@ -1045,9 +1052,10 @@ export async function deleteShift(id: string) {
         where: { shiftId: id },
     });
     if (count > 0) {
-        throw new Error(
-            "Không thể xóa ca đã có dữ liệu chấm công. Vui lòng vô hiệu hóa thay vì xóa.",
-        );
+        return {
+            success: false,
+            error: "Không thể xóa ca đã có dữ liệu chấm công. Vui lòng vô hiệu hóa thay vì xóa.",
+        };
     }
 
     await prisma.shift.delete({ where: { id } });
@@ -1059,6 +1067,7 @@ export async function deleteShift(id: string) {
     });
 
     revalidatePath("/attendance/shifts");
+    return { success: true };
 }
 
 // ─── SHIFT ASSIGNMENTS ───
@@ -1075,7 +1084,7 @@ export async function assignShift(
     const shift = await prisma.shift.findUnique({
         where: { id: shiftId },
     });
-    if (!shift) throw new Error("Không tìm thấy ca làm việc");
+    if (!shift) return { success: false, error: "Không tìm thấy ca làm việc" };
 
     const startDateObj = startDate;
     const endDateObj = endDate;
@@ -1095,9 +1104,10 @@ export async function assignShift(
             include: { shift: true },
         });
     if (existingSingleShift) {
-        throw new Error(
-            `Nhân viên đã có ca "${existingSingleShift.shift?.name}" trong khoảng thời gian này`,
-        );
+        return {
+            success: false,
+            error: `Nhân viên đã có ca "${existingSingleShift.shift?.name}" trong khoảng thời gian này`,
+        };
     }
 
     // Kiểm tra trùng lịch với chu kỳ
@@ -1114,9 +1124,10 @@ export async function assignShift(
         include: { workCycle: true },
     });
     if (existingCycle) {
-        throw new Error(
-            `Nhân viên đã có chu kỳ "${existingCycle.workCycle?.name}" trong khoảng thời gian này`,
-        );
+        return {
+            success: false,
+            error: `Nhân viên đã có chu kỳ "${existingCycle.workCycle?.name}" trong khoảng thời gian này`,
+        };
     }
 
     const assignment = await prisma.shiftAssignment.create({
@@ -1137,7 +1148,7 @@ export async function assignShift(
         endDate,
     });
 
-    return assignment;
+    return { success: true, data: assignment };
 }
 
 export async function assignWorkCycle(
@@ -1152,8 +1163,8 @@ export async function assignWorkCycle(
         where: { id: workCycleId },
         include: { entries: { orderBy: { dayIndex: "asc" } } },
     });
-    if (!cycle) throw new Error("Không tìm thấy chu kỳ làm việc");
-    if (!cycle.isActive) throw new Error("Chu kỳ đã bị vô hiệu hóa");
+    if (!cycle) return { success: false, error: "Không tìm thấy chu kỳ làm việc" };
+    if (!cycle.isActive) return { success: false, error: "Chu kỳ đã bị vô hiệu hóa" };
 
     const startDateObj = cycleStartDate;
     const endDateObj = endDate || new Date("2099-12-31");
@@ -1173,9 +1184,7 @@ export async function assignWorkCycle(
             include: { shift: true },
         });
     if (existingSingleShift) {
-        throw new Error(
-            `Nhân viên đã có ca "${existingSingleShift.shift?.name}" trong khoảng thời gian này`,
-        );
+        return { success: false, error: `Nhân viên đã có ca "${existingSingleShift.shift?.name}" trong khoảng thời gian này` };
     }
 
     // Kiểm tra trùng lặp: user đã có cycle assignment chồng chéo?
@@ -1195,9 +1204,7 @@ export async function assignWorkCycle(
         },
     });
     if (existing) {
-        throw new Error(
-            "Nhân viên đã có chu kỳ làm việc trong khoảng thời gian này",
-        );
+        return { success: false, error: "Nhân viên đã có chu kỳ làm việc trong khoảng thời gian này" };
     }
 
     const assignment = await prisma.shiftAssignment.create({
@@ -1228,7 +1235,7 @@ export async function assignWorkCycle(
         endDate,
     });
 
-    return assignment;
+    return { success: true, data: assignment };
 }
 
 export async function assignWorkCycleToDepartment(
@@ -1243,21 +1250,21 @@ export async function assignWorkCycleToDepartment(
         where: { id: workCycleId },
         include: { entries: { orderBy: { dayIndex: "asc" } } },
     });
-    if (!cycle) throw new Error("Không tìm thấy chu kỳ làm việc");
-    if (!cycle.isActive) throw new Error("Chu kỳ đã bị vô hiệu hóa");
+    if (!cycle) return { success: false, error: "Không tìm thấy chu kỳ làm việc" };
+    if (!cycle.isActive) return { success: false, error: "Chu kỳ đã bị vô hiệu hóa" };
 
     const dept = await prisma.department.findUnique({
         where: { id: departmentId },
         select: { id: true, name: true },
     });
-    if (!dept) throw new Error("Không tìm thấy phòng ban");
+    if (!dept) return { success: false, error: "Không tìm thấy phòng ban" };
 
     const usersInDept = await prisma.user.findMany({
         where: { departmentId },
         select: { id: true, name: true },
     });
     if (usersInDept.length === 0) {
-        throw new Error("Phòng ban không có nhân viên nào");
+        return { success: false, error: "Phòng ban không có nhân viên nào" };
     }
 
     const endDateObj = endDate ? endDate : new Date("2099-12-31");
@@ -1290,9 +1297,10 @@ export async function assignWorkCycleToDepartment(
                 existingShiftAssignments.map((a) => a.shift?.name),
             ),
         ];
-        throw new Error(
-            `Có ${existingShiftAssignments.length} nhân viên đã có ca làm việc (${shiftNames.join(", ")}) trong khoảng thời gian này: ${userNames.join(", ")}`,
-        );
+        return {
+            success: false,
+            error: `Có ${existingShiftAssignments.length} nhân viên đã có ca làm việc (${shiftNames.join(", ")}) trong khoảng thời gian này: ${userNames.join(", ")}`
+        };
     }
 
     // Find users who already have an overlapping cycle assignment
@@ -1318,9 +1326,7 @@ export async function assignWorkCycleToDepartment(
     );
 
     if (eligibleUsers.length === 0) {
-        throw new Error(
-            "Tất cả nhân viên trong phòng ban đã có chu kỳ làm việc trong khoảng thời gian này",
-        );
+        return { success: false, error: "Tất cả nhân viên trong phòng ban đã có chu kỳ làm việc trong khoảng thời gian này" };
     }
 
     // Batch create assignments for all eligible users
@@ -1376,6 +1382,8 @@ export async function getShiftAssignmentsForRange(
     rangeStart: string,
     rangeEnd: string,
     departmentId?: string,
+    /** Only fetch assignments for these user IDs (for virtual scrolling) */
+    userIds?: string[],
 ) {
     await requirePermission(Permission.ATTENDANCE_VIEW_SELF);
 
@@ -1384,15 +1392,27 @@ export async function getShiftAssignmentsForRange(
     const end = new Date(rangeEnd);
     end.setHours(23, 59, 59, 999);
 
+    const whereClause: {
+        startDate: { lte: Date };
+        OR: Array<{ endDate: Date | null } | { endDate: { gte: Date } }>;
+        user?: { departmentId?: string; id?: { in: string[] } };
+    } = {
+        startDate: { lte: end },
+        OR: [{ endDate: null }, { endDate: { gte: start } }],
+    };
+
+    if (departmentId) {
+        whereClause.user = { departmentId };
+    }
+    if (userIds && userIds.length > 0) {
+        whereClause.user = {
+            ...(whereClause.user ?? {}),
+            id: { in: userIds },
+        };
+    }
+
     return prisma.shiftAssignment.findMany({
-        where: {
-            // assignment overlaps with the requested range
-            startDate: { lte: end },
-            OR: [{ endDate: null }, { endDate: { gte: start } }],
-            ...(departmentId && {
-                user: { departmentId },
-            }),
-        },
+        where: whereClause,
         include: {
             user: {
                 select: {
@@ -1429,6 +1449,8 @@ export async function getShiftAssignmentsForRange(
             },
         },
         orderBy: [{ user: { name: "asc" } }, { startDate: "asc" }],
+        // Performance: limit to 1000 assignments per request (typical month view ~500)
+        take: 1000,
     });
 }
 
@@ -1442,7 +1464,7 @@ export async function removeShiftAssignment(id: string) {
         where: { id },
         include: { shift: true },
     });
-    if (!assignment) throw new Error("Không tìm thấy phân ca");
+    if (!assignment) return { success: false, error: "Không tìm thấy phân ca" };
 
     await prisma.shiftAssignment.delete({ where: { id } });
 
@@ -1477,9 +1499,10 @@ async function validateOtLimits(
     // Giới hạn 1: Không quá 50% giờ làm bình thường/ngày
     const maxDailyOt = standardHours * 0.5;
     if (hours > maxDailyOt) {
-        throw new Error(
-            `Số giờ OT không được vượt quá ${maxDailyOt}h/ngày (50% giờ làm chuẩn ${standardHours}h).`,
-        );
+        return {
+            success: false,
+            error: `Số giờ OT không được vượt quá ${maxDailyOt}h/ngày (50% giờ làm chuẩn ${standardHours}h).`
+        };
     }
 
     // Giới hạn 2: Không quá 40 giờ/tháng
@@ -1516,9 +1539,10 @@ async function validateOtLimits(
 
     const currentMonthHours = monthlyOt._sum.hours ?? 0;
     if (currentMonthHours + hours > 40) {
-        throw new Error(
-            `Tổng giờ OT tháng này sẽ vượt quá 40 giờ (hiện tại: ${currentMonthHours}h, đăng ký: ${hours}h).`,
-        );
+        return {
+            success: false,
+            error: `Tổng giờ OT tháng này sẽ vượt quá 40 giờ (hiện tại: ${currentMonthHours}h, đăng ký: ${hours}h).`
+        };
     }
 }
 
@@ -1541,9 +1565,10 @@ export async function createOvertimeRequest(
             Permission.ATTENDANCE_OVERTIME_APPROVE,
         ]);
         if (!canManage)
-            throw new Error(
-                "Bạn không có quyền tạo đơn OT cho người khác.",
-            );
+            return {
+                success: false,
+                error: "Bạn không có quyền tạo đơn OT cho người khác."
+            };
         targetUserId = parsed.targetUserId;
     }
 
@@ -1568,7 +1593,7 @@ export async function createOvertimeRequest(
     );
 
     if (hours <= 0)
-        throw new Error("Giờ kết thúc phải sau giờ bắt đầu.");
+        return { success: false, error: "Giờ kết thúc phải sau giờ bắt đầu." };
 
     // Kiểm tra giới hạn luật lao động
     await validateOtLimits(targetUserId, dateUTC, hours);
@@ -1591,11 +1616,12 @@ export async function createOvertimeRequest(
         },
     });
     if (existing)
-        throw new Error(
-            targetUserId === session.user.id
+        return {
+            success: false,
+            error: targetUserId === session.user.id
                 ? "Bạn đã có đơn OT cho ngày này."
-                : "Nhân viên này đã có đơn OT cho ngày này.",
-        );
+                : "Nhân viên này đã có đơn OT cho ngày này."
+        };
 
     const result = await prisma.overtimeRequest.create({
         data: {
@@ -1621,7 +1647,7 @@ export async function createOvertimeRequest(
     });
 
     revalidatePath("/attendance/overtime");
-    return result;
+    return { success: true, data: result };
 }
 
 export async function getOvertimeRequests(params?: {
@@ -1736,11 +1762,9 @@ export async function managerApproveOvertimeRequest(
             user: { select: { departmentId: true } },
         },
     });
-    if (!request) throw new Error("Đơn OT không tồn tại.");
+    if (!request) return { success: false, error: "Đơn OT không tồn tại." };
     if (request.status !== "PENDING")
-        throw new Error(
-            "Đơn OT không ở trạng thái chờ duyệt quản lý.",
-        );
+        return { success: false, error: "Đơn OT không ở trạng thái chờ duyệt quản lý." };
 
     // DEPT_MANAGER chỉ được duyệt đơn từ nhân viên trong phòng ban mình quản lý
     const canHrReview = hasAnyPermission(role, [
@@ -1750,9 +1774,10 @@ export async function managerApproveOvertimeRequest(
         // Không phải DIRECTOR/HR_MANAGER → kiểm tra phòng ban
         const employeeDeptId = request.user?.departmentId;
         if (!employeeDeptId) {
-            throw new Error(
-                "Nhân viên chưa thuộc phòng ban nào, không thể duyệt.",
-            );
+            return {
+                success: false,
+                error: "Nhân viên chưa thuộc phòng ban nào, không thể duyệt."
+            };
         }
         const managedDept = await prisma.department.findFirst({
             where: {
@@ -1761,9 +1786,10 @@ export async function managerApproveOvertimeRequest(
             },
         });
         if (!managedDept) {
-            throw new Error(
-                "Bạn chỉ có thể duyệt đơn OT của nhân viên trong phòng ban bạn quản lý.",
-            );
+            return {
+                success: false,
+                error: "Bạn chỉ có thể duyệt đơn OT của nhân viên trong phòng ban bạn quản lý."
+            };
         }
     }
 
@@ -1784,7 +1810,7 @@ export async function managerApproveOvertimeRequest(
             step: "MANAGER",
         });
         revalidatePath("/attendance/overtime");
-        return updated;
+        return { success: true, data: updated };
     }
 
     // Kiểm tra giới hạn luật lao động trước khi duyệt
@@ -1812,7 +1838,7 @@ export async function managerApproveOvertimeRequest(
     });
 
     revalidatePath("/attendance/overtime");
-    return updated;
+    return { success: true, data: updated };
 }
 
 /** HR kiểm soát và duyệt/từ chối đơn OT (Bước 3) */
@@ -1828,11 +1854,9 @@ export async function hrReviewOvertimeRequest(
     const request = await prisma.overtimeRequest.findUnique({
         where: { id },
     });
-    if (!request) throw new Error("Đơn OT không tồn tại.");
+    if (!request) return { success: false, error: "Đơn OT không tồn tại." };
     if (request.status !== "MANAGER_APPROVED")
-        throw new Error(
-            "Đơn OT chưa được quản lý duyệt hoặc đã xử lý.",
-        );
+        return { success: false, error: "Đơn OT chưa được quản lý duyệt hoặc đã xử lý." };
 
     if (action === "REJECT") {
         const updated = await prisma.overtimeRequest.update({
@@ -1851,7 +1875,7 @@ export async function hrReviewOvertimeRequest(
             step: "HR",
         });
         revalidatePath("/attendance/overtime");
-        return updated;
+        return { success: true, data: updated };
     }
 
     const updated = await prisma.overtimeRequest.update({
@@ -1872,7 +1896,7 @@ export async function hrReviewOvertimeRequest(
     });
 
     revalidatePath("/attendance/overtime");
-    return updated;
+    return { success: true, data: updated };
 }
 
 /** NV xác nhận giờ OT thực tế sau khi hoàn thành (Bước 4) */
@@ -1888,11 +1912,11 @@ export async function confirmOvertimeActualHours(
     const request = await prisma.overtimeRequest.findUnique({
         where: { id },
     });
-    if (!request) throw new Error("Đơn OT không tồn tại.");
+    if (!request) return { success: false, error: "Đơn OT không tồn tại." };
     if (request.userId !== session.user.id)
-        throw new Error("Bạn không có quyền xác nhận đơn này.");
+        return { success: false, error: "Bạn không có quyền xác nhận đơn này." };
     if (request.status !== "HR_APPROVED")
-        throw new Error("Đơn OT chưa được HR duyệt.");
+        return { success: false, error: "Đơn OT chưa được HR duyệt." };
 
     const start = parseTime(data.actualStartTime);
     const end = parseTime(data.actualEndTime);
@@ -1906,7 +1930,7 @@ export async function confirmOvertimeActualHours(
     );
 
     if (actualHours <= 0)
-        throw new Error("Giờ kết thúc phải sau giờ bắt đầu.");
+        return { success: false, error: "Giờ kết thúc phải sau giờ bắt đầu." };
 
     const updated = await prisma.overtimeRequest.update({
         where: { id },
@@ -1926,7 +1950,7 @@ export async function confirmOvertimeActualHours(
     });
 
     revalidatePath("/attendance/overtime");
-    return updated;
+    return { success: true, data: updated };
 }
 
 export async function cancelOvertimeRequest(id: string) {
@@ -1935,20 +1959,18 @@ export async function cancelOvertimeRequest(id: string) {
         where: { id },
     });
 
-    if (!request) throw new Error("Đơn OT không tồn tại.");
+    if (!request) return { success: false, error: "Đơn OT không tồn tại." };
 
     // Cho phép hủy nếu: là người tạo/NV được tạo hộ & đơn chưa hoàn thành
     const isOwner =
         request.userId === session.user.id ||
         request.requestedBy === session.user.id;
-    if (!isOwner) throw new Error("Bạn không có quyền hủy đơn này.");
+    if (!isOwner) return { success: false, error: "Bạn không có quyền hủy đơn này." };
     if (
         request.status === "COMPLETED" ||
         request.status === "CANCELLED"
     )
-        throw new Error(
-            "Không thể hủy đơn đã hoàn thành hoặc đã hủy.",
-        );
+        return { success: false, error: "Không thể hủy đơn đã hoàn thành hoặc đã hủy." };
 
     const updated = await prisma.overtimeRequest.update({
         where: { id },
@@ -1956,7 +1978,7 @@ export async function cancelOvertimeRequest(id: string) {
     });
 
     revalidatePath("/attendance/overtime");
-    return updated;
+    return { success: true, data: updated };
 }
 
 /** Lấy tổng hợp OT tháng cho userId */
@@ -2071,14 +2093,14 @@ export async function submitExplanation(
         where: { id: attendanceId },
     });
     if (!attendance || attendance.userId !== userId) {
-        throw new Error("Không tìm thấy bản ghi chấm công hợp lệ.");
+        return { success: false, error: "Không tìm thấy bản ghi chấm công hợp lệ." };
     }
 
     const existing = await prisma.attendanceExplanation.findUnique({
         where: { attendanceId },
     });
     if (existing && existing.status === "APPROVED") {
-        throw new Error("Giải trình đã được duyệt, không thể sửa.");
+        return { success: false, error: "Giải trình đã được duyệt, không thể sửa." };
     }
 
     const explanation = await prisma.attendanceExplanation.upsert({
@@ -2109,7 +2131,7 @@ export async function submitExplanation(
     });
 
     revalidatePath("/attendance/explanations");
-    return explanation;
+    return { success: true, data: explanation };
 }
 
 export async function approveExplanation(
@@ -2601,7 +2623,7 @@ export async function exportMonthlyAttendance(
     const data = await getMonthlyAttendance(params);
 
     if (!data || !data.users || data.users.length === 0) {
-        throw new Error("Không có dữ liệu để xuất");
+        return { success: false, error: "Không có dữ liệu để xuất" };
     }
 
     const { users, attendances, holidays, daysInMonth, year, month } =
@@ -2921,7 +2943,10 @@ export async function getUsersPaginated({
     await requireAuth();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: Record<string, any> = {};
+    const where: Record<string, any> = {
+        // Only active users for shift assignment
+        employeeStatus: "ACTIVE",
+    };
 
     if (departmentId) {
         where.departmentId = departmentId;
@@ -2976,6 +3001,148 @@ export async function getUsersPaginated({
     }));
 
     return { users: mappedUsers, totalCount, page, pageSize };
+}
+
+/**
+ * Combined endpoint: fetch paginated users AND their shift assignments in one call.
+ * This avoids the cascade: load users → load assignments → re-render.
+ * Each page returns users + all their assignments for the given date range.
+ */
+export async function getUsersWithAssignmentsPaginated({
+    page = 1,
+    pageSize = 20,
+    search = "",
+    departmentId,
+    rangeStart,
+    rangeEnd,
+}: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    departmentId?: string;
+    rangeStart: string;
+    rangeEnd: string;
+}) {
+    await requireAuth();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: Record<string, any> = {
+        employeeStatus: "ACTIVE",
+    };
+
+    if (departmentId) {
+        where.departmentId = departmentId;
+    }
+
+    if (search.trim()) {
+        where.OR = [
+            {
+                name: {
+                    contains: search.trim(),
+                    mode: "insensitive",
+                },
+            },
+            {
+                employeeCode: {
+                    contains: search.trim(),
+                    mode: "insensitive",
+                },
+            },
+        ];
+    }
+
+    // 1) Fetch users page + total count
+    const [users, totalCount] = await Promise.all([
+        prisma.user.findMany({
+            where,
+            orderBy: { name: "asc" },
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+            select: {
+                id: true,
+                name: true,
+                employeeCode: true,
+                departmentId: true,
+                image: true,
+                position: {
+                    select: {
+                        departmentId: true,
+                    },
+                },
+            },
+        }),
+        prisma.user.count({ where }),
+    ]);
+
+    const mappedUsers = users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        employeeCode: user.employeeCode,
+        departmentId: user.departmentId ?? user.position?.departmentId ?? null,
+        image: user.image,
+    }));
+
+    // 2) Fetch assignments for these users in the date range
+    const userIds = mappedUsers.map((u) => u.id);
+
+    const start = new Date(rangeStart);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(rangeEnd);
+    end.setHours(23, 59, 59, 999);
+
+    const assignments = userIds.length > 0
+        ? await prisma.shiftAssignment.findMany({
+              where: {
+                  startDate: { lte: end },
+                  OR: [{ endDate: null }, { endDate: { gte: start } }],
+                  user: { id: { in: userIds } },
+              },
+              include: {
+                  user: {
+                      select: {
+                          id: true,
+                          name: true,
+                          employeeCode: true,
+                          departmentId: true,
+                          image: true,
+                      },
+                  },
+                  shift: true,
+                  workCycle: {
+                      include: {
+                          entries: {
+                              orderBy: { dayIndex: "asc" },
+                              include: {
+                                  shift: {
+                                      select: {
+                                          id: true,
+                                          name: true,
+                                          code: true,
+                                          startTime: true,
+                                          endTime: true,
+                                          breakMinutes: true,
+                                          lateThreshold: true,
+                                          earlyThreshold: true,
+                                          isDefault: true,
+                                          isActive: true,
+                                      },
+                                  },
+                              },
+                          },
+                      },
+                  },
+              },
+              orderBy: [{ user: { name: "asc" } }, { startDate: "asc" }],
+          })
+        : [];
+
+    return {
+        users: mappedUsers,
+        assignments: JSON.parse(JSON.stringify(assignments)),
+        totalCount,
+        page,
+        pageSize,
+    };
 }
 
 /** Search users for custom approver selection */
@@ -3101,9 +3268,10 @@ export async function createWorkCycle(
     const parsed = workCycleSchema.parse(data);
 
     if (parsed.entries.length !== parsed.totalDays) {
-        throw new Error(
-            `Số ngày trong entries (${parsed.entries.length}) không khớp totalDays (${parsed.totalDays})`,
-        );
+        return {
+            success: false,
+            error: `Số ngày trong entries (${parsed.entries.length}) không khớp totalDays (${parsed.totalDays})`
+        };
     }
 
     const cycle = await prisma.workCycle.create({
@@ -3128,7 +3296,7 @@ export async function createWorkCycle(
     });
 
     revalidatePath("/attendance/settings");
-    return cycle;
+    return { success: true, data: cycle };
 }
 
 export async function updateWorkCycle(
@@ -3139,9 +3307,10 @@ export async function updateWorkCycle(
     const parsed = workCycleSchema.parse(data);
 
     if (parsed.entries.length !== parsed.totalDays) {
-        throw new Error(
-            `Số ngày trong entries (${parsed.entries.length}) không khớp totalDays (${parsed.totalDays})`,
-        );
+        return {
+            success: false,
+            error: `Số ngày trong entries (${parsed.entries.length}) không khớp totalDays (${parsed.totalDays})`
+        };
     }
 
     // Delete old entries, recreate
@@ -3172,7 +3341,7 @@ export async function updateWorkCycle(
     });
 
     revalidatePath("/attendance/settings");
-    return cycle;
+    return { success: true, data: cycle };
 }
 
 export async function deleteWorkCycle(id: string) {
@@ -3216,7 +3385,7 @@ export async function getAttendanceRecords(params: {
     ]);
 
     if (!canViewAll && !canViewTeam) {
-        throw new Error("Bạn không có quyền xem nhật ký chấm công.");
+        return { success: false, error: "Bạn không có quyền xem nhật ký chấm công." };
     }
 
     const page = params.page ?? 1;
@@ -3546,7 +3715,7 @@ export async function createAttendanceAdjustmentRequest(data: {
     });
 
     if (!attendance) {
-        throw new Error("Bản ghi chấm công không tồn tại");
+        return { success: false, error: "Bản ghi chấm công không tồn tại" };
     }
 
     if (attendance.userId !== session.user.id) {
@@ -3556,7 +3725,7 @@ export async function createAttendanceAdjustmentRequest(data: {
             Permission.ATTENDANCE_APPROVAL_CONFIG,
         ]);
         if (!canApprove) {
-            throw new Error("Bạn không có quyền tạo yêu cầu cho nhân viên khác");
+            return { success: false, error: "Bạn không có quyền tạo yêu cầu cho nhân viên khác" };
         }
     }
 
@@ -3570,9 +3739,10 @@ export async function createAttendanceAdjustmentRequest(data: {
         });
 
     if (existingRequest) {
-        throw new Error(
-            "Đã có yêu cầu điều chỉnh đang chờ duyệt hoặc đã được duyệt cho bản ghi này",
-        );
+        return {
+            success: false,
+            error: "Đã có yêu cầu điều chỉnh đang chờ duyệt hoặc đã được duyệt cho bản ghi này"
+        };
     }
 
     // Get approval process
@@ -3710,7 +3880,7 @@ export async function createAttendanceAdjustmentRequest(data: {
     });
 
     revalidatePath("/attendance/approval-process");
-    return request;
+    return { success: true, data: request };
 }
 
 async function resolveAdjustmentApprovers(
@@ -3941,11 +4111,11 @@ export async function approveAttendanceAdjustment(
     });
 
     if (!request) {
-        throw new Error("Yêu cầu không tồn tại");
+        return { success: false, error: "Yêu cầu không tồn tại" };
     }
 
     if (request.status !== "PENDING") {
-        throw new Error("Yêu cầu không còn ở trạng thái chờ duyệt");
+        return { success: false, error: "Yêu cầu không còn ở trạng thái chờ duyệt" };
     }
 
     const chain = (request.approvalChain as Array<{
@@ -3962,7 +4132,7 @@ export async function approveAttendanceAdjustment(
     );
 
     if (!currentEntry) {
-        throw new Error("Bạn không phải là người duyệt cho bước này");
+        return { success: false, error: "Bạn không phải là người duyệt cho bước này" };
     }
 
     // Update chain entry
@@ -4122,11 +4292,11 @@ export async function rejectAttendanceAdjustment(
     });
 
     if (!request) {
-        throw new Error("Yêu cầu không tồn tại");
+        return { success: false, error: "Yêu cầu không tồn tại" };
     }
 
     if (request.status !== "PENDING") {
-        throw new Error("Yêu cầu không còn ở trạng thái chờ duyệt");
+        return { success: false, error: "Yêu cầu không còn ở trạng thái chờ duyệt" };
     }
 
     const chain = (request.approvalChain as Array<{
@@ -4143,7 +4313,7 @@ export async function rejectAttendanceAdjustment(
     );
 
     if (!currentEntry) {
-        throw new Error("Bạn không phải là người duyệt cho bước này");
+        return { success: false, error: "Bạn không phải là người duyệt cho bước này" };
     }
 
     currentEntry.action = "REJECTED";
@@ -4204,15 +4374,15 @@ export async function cancelAttendanceAdjustmentRequest(requestId: string) {
     });
 
     if (!request) {
-        throw new Error("Yêu cầu không tồn tại");
+        return { success: false, error: "Yêu cầu không tồn tại" };
     }
 
     if (request.userId !== session.user.id) {
-        throw new Error("Bạn không có quyền hủy yêu cầu này");
+        return { success: false, error: "Bạn không có quyền hủy yêu cầu này" };
     }
 
     if (request.status !== "PENDING") {
-        throw new Error("Chỉ có thể hủy yêu cầu đang chờ duyệt");
+        return { success: false, error: "Chỉ có thể hủy yêu cầu đang chờ duyệt" };
     }
 
     await prisma.attendanceAdjustmentRequest.update({
@@ -4326,7 +4496,7 @@ export async function getAttendanceAdjustmentRequest(id: string) {
     });
 
     if (!request) {
-        throw new Error("Yêu cầu không tồn tại");
+        return { success: false, error: "Yêu cầu không tồn tại" };
     }
 
     if (!canViewAll && request.userId !== session.user.id) {
@@ -4336,7 +4506,7 @@ export async function getAttendanceAdjustmentRequest(id: string) {
         }>) || [];
         const isApprover = chain.some((e) => e.approverId === session.user.id);
         if (!isApprover) {
-            throw new Error("Bạn không có quyền xem yêu cầu này");
+            return { success: false, error: "Bạn không có quyền xem yêu cầu này" };
         }
     }
 
@@ -4425,4 +4595,94 @@ export async function getPendingAdjustmentApprovals() {
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
     }));
+}
+
+// ─── LEAVE TYPES SETTINGS ───
+
+export async function getLeaveTypes() {
+    await requireAuth();
+    const types = await prisma.leaveType.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: {
+            _count: {
+                select: {
+                    leaveBalances: true,
+                    leaveRequests: true,
+                },
+            },
+        },
+    });
+    return types;
+}
+
+const leaveTypeSchema = z.object({
+    name: z.string().min(1, "Tên không được để trống"),
+    description: z.string().optional().nullable(),
+    isPaidLeave: z.boolean().default(true),
+    defaultDays: z.number().min(0, "Số ngày không hợp lệ").default(0),
+    isActive: z.boolean().default(true),
+    sortOrder: z.number().default(0),
+});
+
+export async function createLeaveType(data: z.infer<typeof leaveTypeSchema>) {
+    await requirePermission(Permission.ATTENDANCE_SHIFT_MANAGE); // Or a relevant admin permission
+    const parsed = leaveTypeSchema.parse(data);
+
+    const created = await prisma.leaveType.create({
+        data: {
+            name: parsed.name,
+            description: parsed.description,
+            isPaidLeave: parsed.isPaidLeave,
+            defaultDays: parsed.defaultDays,
+            isActive: parsed.isActive,
+            sortOrder: parsed.sortOrder,
+        },
+    });
+    revalidatePath("/attendance/settings");
+    return { success: true, data: created };
+}
+
+export async function updateLeaveType(id: string, data: Partial<z.infer<typeof leaveTypeSchema>>) {
+    await requirePermission(Permission.ATTENDANCE_SHIFT_MANAGE);
+
+    const updated = await prisma.leaveType.update({
+        where: { id },
+        data,
+    });
+    revalidatePath("/attendance/settings");
+    return { success: true, data: updated };
+}
+
+export async function deleteLeaveType(id: string) {
+    await requirePermission(Permission.ATTENDANCE_SHIFT_MANAGE);
+
+    // Kiểm tra xem có đang được sử dụng không
+    const type = await prisma.leaveType.findUnique({
+        where: { id },
+        include: {
+            _count: {
+                select: { leaveRequests: true, leaveBalances: true }
+            }
+        }
+    });
+
+    if (!type) return { success: false, error: "Loại nghỉ phép không tồn tại." };
+
+    if (type._count.leaveRequests > 0 || type._count.leaveBalances > 0) {
+        // Chỉ có thể vô hiệu hóa
+        await prisma.leaveType.update({
+            where: { id },
+            data: { isActive: false },
+        });
+        revalidatePath("/attendance/settings");
+        return { success: true, message: "Loại nghỉ phép này đã được sử dụng nên chỉ bị vô hiệu hóa." };
+    }
+
+    // Nếu chưa được sử dụng, cho phép xóa cứng
+    await prisma.leaveType.delete({
+        where: { id },
+    });
+    
+    revalidatePath("/attendance/settings");
+    return { success: true, message: "Đã xóa loại nghỉ phép thành công." };
 }

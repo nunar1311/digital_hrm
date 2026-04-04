@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/incompatible-library */
 "use client";
 
 import { useEffect } from "react";
@@ -26,6 +27,7 @@ import { Textarea } from "../ui/textarea";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -137,16 +139,7 @@ export function DepartmentFormDialog({
         managerId: department.managerId ?? "__none__",
       });
     } else if (open) {
-      form.reset({
-        name: "",
-        code: "",
-        description: "",
-        logo: "",
-        parentId: "none",
-        secondaryParentIds: [],
-        status: "ACTIVE",
-        managerId: "__none__",
-      });
+      form.reset();
     }
   }, [department, open, form]);
 
@@ -236,8 +229,8 @@ export function DepartmentFormDialog({
       open={open}
       onOpenChange={(o) => (!o || !mutation.isPending) && onClose()}
     >
-      <DialogContent className="sm:max-w-[700px] p-0 flex flex-col overflow-hidden max-h-[90vh]">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="sm:max-w-[700px] p-0 flex flex-col overflow-hidden h-[80vh]">
+        <DialogHeader className="px-6 pt-4">
           <DialogTitle className="text-xl">
             {isEdit ? "Chi tiết phòng ban" : "Tạo phòng ban mới"}
           </DialogTitle>
@@ -255,23 +248,23 @@ export function DepartmentFormDialog({
           >
             <Tabs
               defaultValue="general"
-              className="w-full h-full flex flex-col overflow-hidden"
+              className="w-full h-full flex flex-col overflow-hidden gap-0"
             >
-              <div className="px-6 pt-4">
+              <div className="px-6 pt-2">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="general" className="gap-2">
-                    <Info className="h-4 w-4" />
+                    <Info />
                     Thông tin chung
                   </TabsTrigger>
                   <TabsTrigger value="structure" className="gap-2">
-                    <Network className="h-4 w-4" />
+                    <Network />
                     Cơ cấu tổ chức
                   </TabsTrigger>
                 </TabsList>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
-                <div className="px-6 py-4">
+              <div className="flex-1 overflow-y-auto pt-2 no-scrollbar">
+                <div className="px-6 py-2">
                   <TabsContent value="general" className="space-y-6 mt-0">
                     <div className="flex flex-col md:flex-row gap-6">
                       <div className="w-full md:w-[35%] space-y-6">
@@ -288,10 +281,13 @@ export function DepartmentFormDialog({
                                   <IconPicker
                                     value={field.value ?? ""}
                                     onChange={field.onChange}
-                                    className="w-full justify-center shadow-sm"
+                                    className="w-full justify-center"
                                   />
                                 </div>
                               </FormControl>
+                              <FormDescription>
+                                Chọn biểu tượng cho phòng ban
+                              </FormDescription>
 
                               <FormMessage />
                             </FormItem>
@@ -431,7 +427,7 @@ export function DepartmentFormDialog({
                                 >
                                   <Command>
                                     <CommandInput placeholder="Tìm kiếm nhân viên..." />
-                                    <CommandList>
+                                    <CommandList className="max-h-60 overflow-y-auto">
                                       <CommandEmpty>
                                         Không tìm thấy nhân viên
                                       </CommandEmpty>
@@ -518,26 +514,28 @@ export function DepartmentFormDialog({
                   </TabsContent>
 
                   <TabsContent value="structure" className="space-y-6 mt-0">
-                    <div className="bg-muted/10 p-5 rounded-xl border">
+                    <div className="bg-muted/10 p-3 rounded-lg border">
                       <FormField
                         control={form.control}
                         name="parentId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-base font-medium">
-                              Phòng ban cấp trên trực tiếp
-                            </FormLabel>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              Xác định vị trí chính của phòng ban này trong sơ
-                              đồ tổ chức.
-                            </p>
+                            <div className="flex flex-col gap-0.5">
+                              <FormLabel className="text-base font-medium">
+                                Phòng ban cấp trên trực tiếp
+                              </FormLabel>
+                              <p className="text-xs text-muted-foreground">
+                                Xác định vị trí chính của phòng ban này trong sơ
+                                đồ tổ chức.
+                              </p>
+                            </div>
                             <Select
                               onValueChange={field.onChange}
                               defaultValue={field.value}
                               value={field.value}
                             >
                               <FormControl>
-                                <SelectTrigger className="w-full md:w-2/3 bg-background">
+                                <SelectTrigger className="w-full bg-background">
                                   <SelectValue placeholder="Chọn phòng ban cấp trên" />
                                 </SelectTrigger>
                               </FormControl>
@@ -560,22 +558,24 @@ export function DepartmentFormDialog({
                       />
                     </div>
 
-                    <div className="p-5 rounded-xl border border-dashed">
+                    <div className="p-3 rounded-lg border border-dashed">
                       <FormField
                         control={form.control}
                         name="secondaryParentIds"
                         render={() => (
                           <FormItem>
-                            <FormLabel className="text-base font-medium">
-                              Phòng ban quản lý phụ (Ma trận tổ chức)
-                            </FormLabel>
-                            <p className="text-sm text-muted-foreground">
-                              Lựa chọn các phòng ban khác mà phòng ban này có
-                              trách nhiệm báo cáo phụ. Thường dùng cho sơ đồ tổ
-                              chức dạng ma trận.
-                            </p>
+                            <div className="flex flex-col gap-0.5">
+                              <FormLabel className="text-base font-medium">
+                                Phòng ban quản lý phụ (Ma trận tổ chức)
+                              </FormLabel>
+                              <p className="text-xs text-muted-foreground">
+                                Lựa chọn các phòng ban khác mà phòng ban này có
+                                trách nhiệm báo cáo phụ. Thường dùng cho sơ đồ
+                                tổ chức dạng ma trận.
+                              </p>
+                            </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-muted/10 p-4 rounded-lg min-h-[150px]">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-muted/10 p-2 rounded-lg min-h-[150px]">
                               {allFlat.filter(
                                 (d) =>
                                   d.id !== department?.id &&
@@ -647,20 +647,20 @@ export function DepartmentFormDialog({
                 </div>
               </div>
 
-              <div className="px-6 py-4 border-t bg-muted/10 shrink-0">
+              <div className="px-6 py-4 bg-muted/10 shrink-0">
                 <DialogFooter>
                   <Button
                     type="button"
                     variant="outline"
+                    size={"sm"}
                     onClick={onClose}
-                    className="w-24"
                   >
                     Hủy
                   </Button>
                   <Button
                     type="submit"
+                    size={"sm"}
                     disabled={mutation.isPending}
-                    className="w-32"
                   >
                     {mutation.isPending
                       ? "Đang xử lý..."

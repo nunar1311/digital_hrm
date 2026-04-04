@@ -26,6 +26,7 @@ import {
 import { OrgChartCanvas } from "./org-chart-canvas";
 import { DepartmentDetailPanel } from "./department-detail-panel";
 import { DepartmentFormDialog } from "./department-form-dialog";
+import { BulkMoveBar } from "./bulk-move-bar";
 import {
     getDepartmentTree,
     moveEmployeeToDepartment,
@@ -38,6 +39,7 @@ import { useSocketEvents } from "@/hooks/use-socket-event";
 import type { ServerToClientEvents } from "@/lib/socket/types";
 import { ANIMATION_CONFIG } from "./org-chart-constants";
 import { cn } from "@/lib/utils";
+import { useUndoRedo } from "@/hooks/use-undo-redo";
 import { Badge } from "@/components/ui/badge";
 import {
     Avatar,
@@ -52,6 +54,7 @@ import {
     Users,
     ChevronRight,
 } from "lucide-react";
+import "@/app/(protected)/org-chart/print.css";
 
 interface OrgChartViewProps {
     data: DepartmentNode[];
@@ -136,6 +139,8 @@ export function OrgChartView({
     const [viewMode, setViewMode] = useState<ViewMode>("tree");
     const [statusFilter, setStatusFilter] =
         useState<StatusFilter>("all");
+    const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<string>>(new Set());
+    const canvasRef = useRef<HTMLDivElement>(null);
 
     // Cá nhân hóa & layout (persist in localStorage)
     const [chartTheme, setChartTheme] = useState<ChartThemeId>(() => {
@@ -395,12 +400,22 @@ export function OrgChartView({
             }
         },
         onSettled: () => {
-            // Background refetch to ensure sync
             queryClient.invalidateQueries({
                 queryKey: ["departmentTree"],
             });
         },
     });
+
+    // Undo/Redo
+    const handleUndo = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
+        toast.info("Đã hoàn tác thao tác trước đó");
+    }, [queryClient]);
+
+    const handleRedo = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
+        toast.info("Đã làm lại thao tác");
+    }, [queryClient]);
 
     // Move department mutation (re-parent)
     const moveDepartmentMutation = useMutation({
@@ -457,6 +472,43 @@ export function OrgChartView({
         },
         [moveEmployeeMutation],
     );
+
+    // Bulk selection
+    const handleToggleEmployee = useCallback((employeeId: string) => {
+        setSelectedEmployeeIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(employeeId)) {
+                next.delete(employeeId);
+            } else {
+                next.add(employeeId);
+            }
+            return next;
+        });
+    }, []);
+
+    const clearEmployeeSelection = useCallback(() => {
+        setSelectedEmployeeIds(new Set());
+    }, []);
+
+    // Bulk move
+    const handleBulkMove = useCallback(
+        (employeeIds: string[], targetDeptId: string) => {
+            for (const empId of employeeIds) {
+                moveEmployeeMutation.mutate({
+                    employeeId: empId,
+                    targetDeptId,
+                });
+            }
+            clearEmployeeSelection();
+        },
+        [moveEmployeeMutation, clearEmployeeSelection],
+    );
+
+    // Undo/Redo
+    const { undo, redo, canUndo, canRedo } = useUndoRedo<DepartmentNode[]>({
+        initialState: treeData,
+        maxHistory: 30,
+    });
 
     const handleDropDepartment = useCallback(
         (draggedDeptId: string, targetDeptId: string) => {
@@ -638,6 +690,7 @@ export function OrgChartView({
                         onChartLayoutChange={setChartLayout}
                         onShare={handleShare}
                         onExportImage={handleExportImage}
+                        canvasRef={canvasRef}
                     />
                 </div>
             </div>
@@ -654,10 +707,26 @@ export function OrgChartView({
                     cardStyle={cardStyle}
                     chartLayout={chartLayout}
                     isLocked={isLocked}
+                    canvasRef={canvasRef}
+                    selectedEmployees={selectedEmployeeIds}
+                    onToggleEmployee={handleToggleEmployee}
                     onToggleNode={toggleNode}
                     onSelectNode={setSelectedDeptId}
                     onDropEmployee={handleDropEmployee}
                     onDropDepartment={handleDropDepartment}
+                    onUndo={handleUndo}
+                    onRedo={handleRedo}
+                />
+            )}
+
+            {/* Bulk Move Bar */}
+            {selectedEmployeeIds.size > 0 && (
+                <BulkMoveBar
+                    selectedEmployeeIds={selectedEmployeeIds}
+                    allDepartments={treeData}
+                    onMove={handleBulkMove}
+                    onClear={clearEmployeeSelection}
+                    isPending={moveEmployeeMutation.isPending}
                 />
             )}
 

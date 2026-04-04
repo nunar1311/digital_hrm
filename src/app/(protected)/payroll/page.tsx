@@ -15,7 +15,7 @@ export default async function PayrollPage() {
 
     return (
         <PayrollClient
-            initialRecords={records}
+            initialRecords={JSON.parse(JSON.stringify(records))}
             departments={departments}
         />
     );

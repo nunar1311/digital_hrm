@@ -30,11 +30,13 @@ import { SOCKET_EVENTS } from "@/lib/socket";
 interface ApprovalProcessClientProps {
   initialProcess: ApprovalProcessConfig | null;
   canConfig: boolean;
+  currentUserId: string;
 }
 
 export function ApprovalProcessClient({
   initialProcess,
   canConfig,
+  currentUserId,
 }: ApprovalProcessClientProps) {
   const queryClient = useQueryClient();
 

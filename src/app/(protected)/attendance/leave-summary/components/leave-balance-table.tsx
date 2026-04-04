@@ -61,12 +61,7 @@ export function LeaveBalanceTable({
     };
 
     const getAvailable = (balance: LeaveBalanceWithRelations) => {
-        return (
-            balance.totalDays +
-            balance.carriedForward -
-            balance.usedDays -
-            balance.pendingDays
-        );
+        return balance.totalDays - balance.usedDays - balance.pendingDays;
     };
 
     const formatDate = (date: Date | string | null | undefined) => {
@@ -129,18 +124,7 @@ export function LeaveBalanceTable({
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <div className="flex items-center gap-2">
-                                        {balance.leaveType?.color && (
-                                            <div
-                                                className="w-3 h-3 rounded-full"
-                                                style={{
-                                                    backgroundColor:
-                                                        balance.leaveType.color,
-                                                }}
-                                            />
-                                        )}
-                                        <span>{balance.leaveType?.name || "N/A"}</span>
-                                    </div>
+                                    <span>{balance.leaveType?.name || "N/A"}</span>
                                 </TableCell>
                                 <TableCell className="text-right font-medium">
                                     {balance.totalDays}
@@ -149,7 +133,7 @@ export function LeaveBalanceTable({
                                     {balance.usedDays}
                                 </TableCell>
                                 <TableCell className="text-right text-blue-600">
-                                    {balance.carriedForward}
+                                    0
                                 </TableCell>
                                 <TableCell className="text-right text-yellow-600">
                                     {balance.pendingDays}

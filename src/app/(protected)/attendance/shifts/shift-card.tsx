@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { X, Check, RefreshCw } from "lucide-react";
 import {
     Tooltip,
@@ -17,7 +18,7 @@ interface ShiftCardProps {
     onRemove: () => void;
 }
 
-export function ShiftCard({
+export const ShiftCard = memo(function ShiftCard({
     assignment,
     color,
     canManage,
@@ -83,4 +84,4 @@ export function ShiftCard({
             </TooltipContent>
         </Tooltip>
     );
-}
+});

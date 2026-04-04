@@ -117,7 +117,7 @@ function LeaveRequestCard({
     isCancelling 
 }: { 
     request: LeaveRequestItem; 
-    onCancel: () => void;
+    onCancel: (id: string) => void;
     isCancelling: boolean;
 }) {
     const [isExpanded, setIsExpanded] = useState(false);

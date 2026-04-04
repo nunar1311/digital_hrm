@@ -25,6 +25,7 @@ export const createPositionSchema = z.object({
     description: z.string().optional(),
     parentId: z.string().optional(),
     status: positionStatusEnum.default("ACTIVE"),
+    sortOrder: z.number().int().min(0).default(0),
 });
 
 export const updatePositionSchema = createPositionSchema.partial();

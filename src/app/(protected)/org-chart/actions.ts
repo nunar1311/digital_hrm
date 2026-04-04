@@ -45,6 +45,7 @@ export async function getDepartmentTree(): Promise<DepartmentNode[]> {
         select: {
             id: true,
             name: true,
+            username: true,
             image: true,
             position: { select: { name: true } },
             employeeCode: true,
@@ -62,6 +63,7 @@ export async function getDepartmentTree(): Promise<DepartmentNode[]> {
         usersByDept[user.departmentId].push({
             id: user.id,
             name: user.name,
+            username: user.username,
             image: user.image,
             position: user.position?.name ?? null,
             employeeCode: user.employeeCode,

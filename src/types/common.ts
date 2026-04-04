@@ -1,7 +1,7 @@
 // =============================================================================
 // Common / Shared Types
-// Mirrors Prisma models: Reward, Asset, AssetAssignment, Onboarding,
-//   Offboarding, TimelineEvent, Notification, AuditLog, SystemSetting
+// Mirrors Prisma models: Reward, Asset, AssetAssignment, Offboarding,
+//   TimelineEvent, Notification, AuditLog, SystemSetting
 // Also includes shared utility types.
 // =============================================================================
 
@@ -53,47 +53,6 @@ export interface AssetAssignment {
     employeeCode?: string;
 }
 
-// ─── Onboarding / Offboarding ────────────────────────────────────────────────
-
-export interface OnboardingTemplate {
-    id: string;
-    name: string;
-    isActive: boolean;
-    tasks: OnboardingTask[];
-}
-
-export interface OnboardingTask {
-    id: string;
-    templateId: string;
-    title: string;
-    description: string | null;
-    assigneeRole: string | null;
-    dueDay: number;
-    sortOrder: number;
-}
-
-export interface Onboarding {
-    id: string;
-    employeeId: string;
-    startDate: string;
-    status: 'IN_PROGRESS' | 'COMPLETED';
-    completedAt: string | null;
-    checklist: OnboardingChecklist[];
-    // Resolved
-    employeeName?: string;
-    employeeCode?: string;
-    progress?: number;
-}
-
-export interface OnboardingChecklist {
-    id: string;
-    onboardingId: string;
-    taskTitle: string;
-    isCompleted: boolean;
-    completedBy: string | null;
-    completedAt: string | null;
-    notes: string | null;
-}
 
 export interface Offboarding {
     id: string;

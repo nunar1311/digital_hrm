@@ -15,6 +15,8 @@ model User {
   image                        String?
   createdAt                    DateTime                      @default(now())
   updatedAt                    DateTime                      @updatedAt
+  username                     String?                       @unique
+  displayUsername              String?
   employeeCode                 String?                       @unique
   departmentId                 String?
   departmentRole               String?                       @default("MEMBER")
@@ -84,7 +86,16 @@ model User {
   roleAssignments              UserCustomRoleAssignment[]
   payrollCompany               Organization?                 @relation("PayrollCompanyEmployees", fields: [payrollCompanyId], references: [id])
   leaveBalances                LeaveBalance[]
-  leaveRequests                LeaveRequest[]                  @relation("LeaveRequestsByUser")
+  leaveRequests                LeaveRequest[]                @relation("LeaveRequestsByUser")
+  contracts                    Contract[]
+
+  role                 String?
+  banned               Boolean?              @default(false)
+  banReason            String?
+  banExpires           DateTime?
+  invitations          Invitation[]
+  onboardings          Onboarding[]
+  onboardingChecklists OnboardingChecklist[]
 
   @@map("users")
 }
@@ -184,6 +195,10 @@ model Session {
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  impersonatedBy       String?
+  activeOrganizationId String?
+
+  @@index([userId])
   @@map("sessions")
 }
 
@@ -203,6 +218,7 @@ model Account {
   updatedAt             DateTime  @updatedAt
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("accounts")
 }
 
@@ -214,6 +230,7 @@ model Verification {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@index([identifier])
   @@map("verifications")
 }
 
@@ -232,6 +249,8 @@ model Organization {
   members           Member[]
   payrollEmployees  User[]    @relation("PayrollCompanyEmployees")
 
+  invitations Invitation[]
+
   @@map("organizations")
 }
 
@@ -244,6 +263,8 @@ model Member {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([organizationId])
+  @@index([userId])
   @@map("members")
 }
 
@@ -467,18 +488,18 @@ model TimekeeperDevice {
 }
 
 model Holiday {
-  id              String    @id @default(cuid())
-  holidayCalendarId String?             // FK đến HolidayCalendar
+  id                String  @id @default(cuid())
+  holidayCalendarId String? // FK đến HolidayCalendar
 
-  name            String
-  date            DateTime  @db.Date
-  endDate         DateTime? @db.Date
-  isRecurring     Boolean   @default(false)
-  year            Int?
-  halfDay         String?   @default("FULL") // FULL | MORNING | AFTERNOON
+  name        String
+  date        DateTime  @db.Date
+  endDate     DateTime? @db.Date
+  isRecurring Boolean   @default(false)
+  year        Int?
+  halfDay     String?   @default("FULL") // FULL | MORNING | AFTERNOON
 
   holidayCalendar HolidayCalendar? @relation(fields: [holidayCalendarId], references: [id])
-  createdAt       DateTime  @default(now())
+  createdAt       DateTime         @default(now())
 
   @@map("holidays")
 }
@@ -628,6 +649,8 @@ model Candidate {
   CandidateToCandidateTag CandidateToCandidateTag[]
   jobPosting              JobPosting                @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
   interviews              Interview[]
+  onboarding              Onboarding?               @relation(fields: [onboardingid], references: [id])
+  onboardingid            String?
 
   @@unique([email, jobPostingId])
   @@map("candidates")
@@ -841,6 +864,84 @@ model OffboardingAsset {
 
   @@index([offboardingId])
   @@map("offboarding_assets")
+}
+
+// =============================================
+// ONBOARDING - Tiếp nhận nhân sự
+// =============================================
+
+model OnboardingTemplate {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  tasks       OnboardingTask[]
+  onboardings Onboarding[]
+
+  @@map("onboarding_templates")
+}
+
+model OnboardingTask {
+  id           String             @id @default(cuid())
+  templateId   String
+  title        String
+  description  String?
+  category     String             @default("GENERAL") // GENERAL | EQUIPMENT | ACCOUNT | DOCUMENTS | TRAINING
+  assigneeRole String? // IT_ADMIN | HR | ADMIN | DEPT_MANAGER | EMPLOYEE
+  dueDays      Int                @default(3) // Số ngày sau khi vào làm
+  sortOrder    Int                @default(0)
+  isRequired   Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  template     OnboardingTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_tasks")
+}
+
+model Onboarding {
+  id            String                @id @default(cuid())
+  userId        String
+  templateId    String?
+  candidateId   String? // Nếu chuyển từ ứng viên
+  startDate     DateTime              @db.Date
+  completedDate DateTime?
+  status        String                @default("PENDING") // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
+  notes         String?
+  createdBy     String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  checklist     OnboardingChecklist[]
+  template      OnboardingTemplate?   @relation(fields: [templateId], references: [id])
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  candidates    Candidate[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([candidateId])
+  @@map("onboardings")
+}
+
+model OnboardingChecklist {
+  id              String     @id @default(cuid())
+  onboardingId    String
+  taskTitle       String
+  taskDescription String?
+  category        String     @default("GENERAL")
+  assigneeId      String? // User cụ thể được giao
+  assigneeRole    String? // Role mặc định từ template
+  isCompleted     Boolean    @default(false)
+  completedBy     String?
+  completedAt     DateTime?
+  dueDate         DateTime?
+  notes           String?
+  createdAt       DateTime   @default(now())
+  onboarding      Onboarding @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+  assignee        User?      @relation(fields: [assigneeId], references: [id])
+
+  @@index([onboardingId])
+  @@index([assigneeId])
+  @@map("onboarding_checklists")
 }
 
 model Salary {
@@ -1354,6 +1455,7 @@ model Role {
 }
 
 // Lưu các permission key dưới dạng chuỗi (đồng bộ với enum Permission)
+
 model PermissionKey {
   id    String @id @default(cuid())
   key   String @unique
@@ -1366,6 +1468,7 @@ model PermissionKey {
 }
 
 // Bảng trung gian: Role <-> PermissionKey (nhiều-nhiều)
+
 model RolePermission {
   id            String @id @default(cuid())
   roleId        String
@@ -1381,6 +1484,7 @@ model RolePermission {
 }
 
 // Gán User <-> Role (nhiều role per user)
+
 model UserCustomRoleAssignment {
   id         String   @id @default(cuid())
   userId     String
@@ -1402,38 +1506,40 @@ model UserCustomRoleAssignment {
 // =============================================
 
 // Loại ngày nghỉ
+
 model LeaveType {
-  id              String   @id @default(cuid())
-  name            String                    // "Phép năm", "Nghỉ ốm", "Nghỉ thai sản"
-  description     String?
-  sortOrder       Int @default(0)
-  isPaidLeave     Boolean @default(true)     // Nghỉ có lương
-  defaultDays     Float @default(12)         // Số ngày phép mặc định/năm
-  isActive        Boolean @default(true)
+  id          String  @id @default(cuid())
+  name        String // "Phép năm", "Nghỉ ốm", "Nghỉ thai sản"
+  description String?
+  sortOrder   Int     @default(0)
+  isPaidLeave Boolean @default(true) // Nghỉ có lương
+  defaultDays Float   @default(12) // Số ngày phép mặc định/năm
+  isActive    Boolean @default(true)
 
-  leaveBalances   LeaveBalance[]
-  leaveRequests   LeaveRequest[]
+  leaveBalances LeaveBalance[]
+  leaveRequests LeaveRequest[]
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("leave_types")
 }
 
 // Số dư ngày nghỉ của nhân viên
+
 model LeaveBalance {
-  id              String   @id @default(cuid())
-  userId          String
-  leaveTypeId     String
+  id          String @id @default(cuid())
+  userId      String
+  leaveTypeId String
 
-  totalDays       Float @default(0)           // Tổng số ngày được cấp trong kỳ
-  usedDays        Float @default(0)           // Số ngày đã dùng
-  pendingDays     Float @default(0)           // Số ngày đang chờ duyệt
-  policyYear      Int                        // Năm
+  totalDays   Float @default(0) // Tổng số ngày được cấp trong kỳ
+  usedDays    Float @default(0) // Số ngày đã dùng
+  pendingDays Float @default(0) // Số ngày đang chờ duyệt
+  policyYear  Int // Năm
 
-  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  leaveType       LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
-  leaveRequests   LeaveRequest[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaveType     LeaveType      @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  leaveRequests LeaveRequest[]
 
   @@unique([userId, leaveTypeId, policyYear])
   @@index([userId])
@@ -1442,30 +1548,31 @@ model LeaveBalance {
 }
 
 // Đơn xin nghỉ
+
 model LeaveRequest {
-  id              String   @id @default(cuid())
-  userId          String
-  leaveTypeId     String
-  leaveBalanceId  String?
+  id             String  @id @default(cuid())
+  userId         String
+  leaveTypeId    String
+  leaveBalanceId String?
 
-  startDate       DateTime
-  endDate         DateTime
-  totalDays       Float                     // Số ngày nghỉ
-  reason          String?
-  status          String @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  startDate DateTime
+  endDate   DateTime
+  totalDays Float // Số ngày nghỉ
+  reason    String?
+  status    String   @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
 
-  documentUrl     String?                   // URL tài liệu chứng minh
+  documentUrl     String? // URL tài liệu chứng minh
   approvedBy      String?
   approvedAt      DateTime?
   rejectionReason String?
 
-  leaveBalance    LeaveBalance? @relation(fields: [leaveBalanceId], references: [id], onDelete: SetNull)
+  leaveBalance LeaveBalance? @relation(fields: [leaveBalanceId], references: [id], onDelete: SetNull)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user            User     @relation("LeaveRequestsByUser", fields: [userId], references: [id], onDelete: Cascade)
-  leaveType       LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  user      User      @relation("LeaveRequestsByUser", fields: [userId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([leaveTypeId])
@@ -1474,6 +1581,7 @@ model LeaveRequest {
 }
 
 // Bảng trung gian: Position <-> Role (mỗi Position có một Role mặc định)
+
 model PositionRoleMapping {
   id         String   @id @default(cuid())
   positionId String   @unique
@@ -1486,20 +1594,78 @@ model PositionRoleMapping {
   @@map("position_role_mappings")
 }
 
+// ==================== HỢP ĐỒNG LAO ĐỘNG ====================
+
+model Contract {
+  id              String    @id @default(cuid())
+  userId          String
+  contractNumber  String    @unique
+  title           String
+  contractTypeId  String?
+  startDate       DateTime
+  endDate         DateTime?
+  signedDate      DateTime?
+  status          String    @default("DRAFT") // DRAFT, PENDING, ACTIVE, EXPIRED, TERMINATED
+  salary          Float?
+  currency        String    @default("VND")
+  probationSalary Float?
+  fileUrl         String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  contractType ContractType? @relation(fields: [contractTypeId], references: [id])
+
+  @@map("contracts")
+}
+
+model ContractType {
+  id             String   @id @default(cuid())
+  name           String // "Hợp đồng thử việc", "Hợp đồng có thời hạn", ...
+  durationMonths Int? // null = không thời hạn
+  description    String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  contracts Contract[]
+
+  @@map("contract_types")
+}
+
 // Lịch nghỉ lễ - nhóm ngày lễ theo quốc gia/năm
+
 model HolidayCalendar {
-  id          String    @id @default(cuid())
-  name        String                    // "Lịch nghỉ lễ Việt Nam 2025"
+  id          String  @id @default(cuid())
+  name        String // "Lịch nghỉ lễ Việt Nam 2025"
   description String?
-  year        Int                       // 2025, 2026...
-  country     String?                   // "Vietnam", "Singapore", ...
-  isDefault   Boolean @default(false)   // Lịch mặc định
+  year        Int // 2025, 2026...
+  country     String? // "Vietnam", "Singapore", ...
+  isDefault   Boolean @default(false) // Lịch mặc định
   isActive    Boolean @default(true)
 
-  holidays    Holiday[]
+  holidays Holiday[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("holiday_calendars")
+}
+
+model Invitation {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
 }

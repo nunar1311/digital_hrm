@@ -343,24 +343,49 @@ Ban Quản lý HR`,
 
 Chào mừng bạn đến với {{companyName}}!
 
-Thông tin đăng nhập:
-- Email: {{email}}
-- Mật khẩu: {{password}}
+Chúng tôi rất vui được chào đón bạn gia nhập đội ngũ tại {{department}} với vị trí {{position}}.
+
+📋 Thông tin đăng nhập hệ thống:
+- Mã nhân viên: {{employeeCode}}
+- Email đăng nhập: {{email}}
+- Mật khẩu tạm: {{password}}
+
+📅 Ngày bắt đầu: {{startDate}}
 
 Vui lòng đăng nhập và đổi mật khẩu ngay lần đầu sử dụng.
+
+{{#welcomeGuideUrl}}
+Truy cập cổng chào mừng để xem tiến độ tiếp nhận: {{welcomeGuideUrl}}
+{{/welcomeGuideUrl}}
+
+Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ HR qua email: hr@company.vn
 
 Trân trọng,
 Ban Quản lý HR`,
     bodyHtml: `<h2>Xin chào {{employeeName}},</h2>
 <p>Chào mừng bạn đến với <strong>{{companyName}}</strong>!</p>
-<h3>Thông tin đăng nhập:</h3>
+<p>Chúng tôi rất vui được chào đón bạn gia nhập đội ngũ tại <strong>{{department}}</strong> với vị trí <strong>{{position}}</strong>.</p>
+
+<h3>📋 Thông tin đăng nhập hệ thống:</h3>
 <ul>
-<li>Email: {{email}}</li>
-<li>Mật khẩu: {{password}}</li>
+<li><strong>Mã nhân viên:</strong> {{employeeCode}}</li>
+<li><strong>Email đăng nhập:</strong> {{email}}</li>
+<li><strong>Mật khẩu tạm:</strong> {{password}}</li>
 </ul>
+
+<h3>📅 Ngày bắt đầu:</h3>
+<p><strong>{{startDate}}</strong></p>
+
 <p>Vui lòng đăng nhập và đổi mật khẩu ngay lần đầu sử dụng.</p>
+
+{{#welcomeGuideUrl}}
+<p><a href="{{loginUrl}}" style="display:inline-block;background:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Truy cập cổng chào mừng</a></p>
+<p>Hoặc truy cập: <a href="{{welcomeGuideUrl}}">{{welcomeGuideUrl}}</a></p>
+{{/welcomeGuideUrl}}
+
+<p>Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ HR qua email: <a href="mailto:hr@company.vn">hr@company.vn</a></p>
 <p>Trân trọng,<br>Ban Quản lý HR</p>`,
-    variables: ["employeeName", "companyName", "email", "password"],
+    variables: ["employeeName", "companyName", "email", "password", "employeeCode", "department", "position", "startDate", "loginUrl", "welcomeGuideUrl"],
   },
   {
     code: "SYSTEM_ANNOUNCEMENT",

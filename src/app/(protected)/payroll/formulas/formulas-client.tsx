@@ -50,7 +50,7 @@ import {
   updateSalaryComponentType,
   deleteSalaryComponentType,
 } from "../actions";
-import { Plus, Pencil, Trash2, Settings } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings, Loader2, Layers, Banknote, Gift, AlertTriangle, Minus, Shield, Receipt, Clock } from "lucide-react";
 
 // ─── Schema ───
 
@@ -81,37 +81,18 @@ type SalaryComponentTypeForm = z.infer<typeof salaryComponentTypeSchema>;
 
 // ─── Helpers ───
 
-function getCategoryLabel(category: string) {
-  const labels: Record<string, string> = {
-    BASIC: "Lương cơ bản",
-    ALLOWANCE: "Phụ cấp",
-    BONUS: "Thưởng",
-    DISCIPLINE: "Kỷ luật",
-    DEDUCTION: "Khấu trừ",
-    INSURANCE: "Bảo hiểm",
-    TAX: "Thuế",
-    OVERTIME: "Tăng ca",
+function getCategoryConfig(category: string) {
+  const configs: Record<string, { label: string; icon: typeof Banknote; bg: string; color: string; badgeClass: string }> = {
+    BASIC: { label: "Lương cơ bản", icon: Banknote, bg: "bg-blue-50", color: "text-blue-600", badgeClass: "bg-blue-50 text-blue-700 border-blue-200" },
+    ALLOWANCE: { label: "Phụ cấp", icon: Layers, bg: "bg-emerald-50", color: "text-emerald-600", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    BONUS: { label: "Thưởng", icon: Gift, bg: "bg-violet-50", color: "text-violet-600", badgeClass: "bg-violet-50 text-violet-700 border-violet-200" },
+    DISCIPLINE: { label: "Kỷ luật", icon: AlertTriangle, bg: "bg-red-50", color: "text-red-600", badgeClass: "bg-red-50 text-red-700 border-red-200" },
+    DEDUCTION: { label: "Khấu trừ", icon: Minus, bg: "bg-orange-50", color: "text-orange-600", badgeClass: "bg-orange-50 text-orange-700 border-orange-200" },
+    INSURANCE: { label: "Bảo hiểm", icon: Shield, bg: "bg-rose-50", color: "text-rose-600", badgeClass: "bg-rose-50 text-rose-700 border-rose-200" },
+    TAX: { label: "Thuế", icon: Receipt, bg: "bg-amber-50", color: "text-amber-600", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
+    OVERTIME: { label: "Tăng ca", icon: Clock, bg: "bg-cyan-50", color: "text-cyan-600", badgeClass: "bg-cyan-50 text-cyan-700 border-cyan-200" },
   };
-  return labels[category] || category;
-}
-
-function getCategoryBadgeVariant(
-  category: string,
-): "default" | "secondary" | "outline" | "destructive" {
-  const variants: Record<
-    string,
-    "default" | "secondary" | "outline" | "destructive"
-  > = {
-    BASIC: "default",
-    ALLOWANCE: "secondary",
-    BONUS: "secondary",
-    DISCIPLINE: "destructive",
-    DEDUCTION: "destructive",
-    INSURANCE: "outline",
-    TAX: "outline",
-    OVERTIME: "secondary",
-  };
-  return variants[category] || "secondary";
+  return configs[category] || { label: category, icon: Settings, bg: "bg-slate-50", color: "text-slate-600", badgeClass: "" };
 }
 
 // ─── Component Type Dialog ───
@@ -386,104 +367,132 @@ export default function FormulasClient({
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Cấu hình lương</h1>
-          <p className="text-muted-foreground">
-            Quản lý các loại khoản lương, phụ cấp, thưởng
-          </p>
+    <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
+      {/* Header */}
+      <div className="shrink-0 border-b bg-gradient-to-r from-violet-500/5 via-primary/5 to-emerald-500/5">
+        <div className="px-4 md:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-violet-100">
+                <Settings className="h-6 w-6 text-violet-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">Cấu hình lương</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Quản lý các loại khoản lương, phụ cấp, thưởng
+                </p>
+              </div>
+            </div>
+            <SalaryComponentTypeDialog
+              onSuccess={() =>
+                queryClient.invalidateQueries({
+                  queryKey: ["salary-component-types"],
+                })
+              }
+            >
+              <Button className="gap-2 shadow-sm">
+                <Plus className="h-4 w-4" />
+                Thêm loại khoản lương
+              </Button>
+            </SalaryComponentTypeDialog>
+          </div>
         </div>
-        <SalaryComponentTypeDialog
-          onSuccess={() =>
-            queryClient.invalidateQueries({
-              queryKey: ["salary-component-types"],
-            })
-          }
-        >
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Thêm loại khoản lương
-          </Button>
-        </SalaryComponentTypeDialog>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-muted-foreground">Đang tải...</div>
-        </div>
-      ) : (
-        <div className="grid gap-6">
-          {Object.entries(grouped || {}).map(([category, items]) => (
-            <Card key={category}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Badge variant={getCategoryBadgeVariant(category)}>
-                    {getCategoryLabel(category)}
-                  </Badge>
-                  <span className="text-sm font-normal text-muted-foreground">
-                    ({items.length} khoản)
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Mã</TableHead>
-                      <TableHead>Tên</TableHead>
-                      <TableHead>Mô tả</TableHead>
-                      <TableHead>Chịu thuế</TableHead>
-                      <TableHead>Hoạt động</TableHead>
-                      <TableHead className="text-right">Thao tác</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-mono text-sm">
-                          {item.code}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {item.name}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {item.description || "—"}
-                        </TableCell>
-                        <TableCell>{item.isTaxable ? "Có" : "Không"}</TableCell>
-                        <TableCell>{item.isActive ? "Có" : "Không"}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <SalaryComponentTypeDialog
-                              editData={item}
-                              onSuccess={() =>
-                                queryClient.invalidateQueries({
-                                  queryKey: ["salary-component-types"],
-                                })
-                              }
-                            >
-                              <Button variant="ghost" size="icon">
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </SalaryComponentTypeDialog>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => deleteMutation.mutate(item.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="grid gap-6">
+            {Object.entries(grouped || {}).map(([category, items]) => {
+              const cfg = getCategoryConfig(category);
+              return (
+                <Card key={category} className="overflow-hidden">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-3 text-base">
+                      <div className={`p-2 rounded-lg ${cfg.bg}`}>
+                        <cfg.icon className={`h-4 w-4 ${cfg.color}`} />
+                      </div>
+                      <span>{cfg.label}</span>
+                      <Badge variant="outline" className={`text-xs ${cfg.badgeClass}`}>
+                        {items.length} khoản
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="rounded-b-lg border-t overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30 hover:bg-muted/30">
+                            <TableHead className="font-semibold">Mã</TableHead>
+                            <TableHead className="font-semibold">Tên</TableHead>
+                            <TableHead className="font-semibold">Mô tả</TableHead>
+                            <TableHead className="font-semibold text-center">Chịu thuế</TableHead>
+                            <TableHead className="font-semibold text-center">Hoạt động</TableHead>
+                            <TableHead className="font-semibold text-right">Thao tác</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {items.map((item) => (
+                            <TableRow key={item.id} className="group">
+                              <TableCell className="font-mono text-sm">
+                                {item.code}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {item.name}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {item.description || "—"}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant="outline" className={item.isTaxable ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-slate-50 text-slate-500"}>
+                                  {item.isTaxable ? "Có" : "Không"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant="outline" className={item.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-500 border-red-200"}>
+                                  {item.isActive ? "Có" : "Không"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <SalaryComponentTypeDialog
+                                    editData={item}
+                                    onSuccess={() =>
+                                      queryClient.invalidateQueries({
+                                        queryKey: ["salary-component-types"],
+                                      })
+                                    }
+                                  >
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </SalaryComponentTypeDialog>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
+                                    onClick={() => deleteMutation.mutate(item.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

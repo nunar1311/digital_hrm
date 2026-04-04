@@ -8,6 +8,77 @@ import { emitToAll } from "@/lib/socket/server";
 import { SOCKET_EVENTS } from "@/lib/socket";
 import { LeaveRequestInput, leaveRequestSchema } from "./types";
 
+// ============================================================
+// HELPER: Tính số ngày làm việc (loại trừ Thứ 7, CN, ngày lễ)
+// ============================================================
+
+const VIETNAM_HOLIDAYS: Record<number, number[]> = {
+    2026: [
+        // Tết Dương lịch
+        1,
+        // Tết Nguyên Đán 2026 (Mùng 1 - Mùng 10)
+        17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+        // Giỗ Tổ Hùng Vương
+        7,
+        // Ngày Giải phóng Miền Nam
+        30,
+        // Quốc khánh
+        1,
+        // Ngày Noel
+        25,
+    ],
+    2025: [
+        1,
+        17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+        7,
+        30,
+        1,
+        25,
+    ],
+    2024: [
+        1,
+        8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+        18,
+        30,
+        2,
+        25,
+    ],
+};
+
+function isWeekend(date: Date): boolean {
+    const day = date.getDay();
+    return day === 0 || day === 6;
+}
+
+function calculateWorkingDays(startDate: Date, endDate: Date): number {
+    let count = 0;
+    const year = startDate.getFullYear();
+    const holidays = VIETNAM_HOLIDAYS[year] || [];
+
+    const current = new Date(startDate);
+    current.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+
+    while (current <= end) {
+        if (!isWeekend(current)) {
+            const month = current.getMonth();
+            const day = current.getDate();
+            if (!holidays.includes(day) || current.getMonth() !== month) {
+                const isHoliday = holidays.some((h) => {
+                    const holidayDate = new Date(year, month, h);
+                    return holidayDate.getTime() === current.getTime();
+                });
+                if (!isHoliday) {
+                    count++;
+                }
+            }
+        }
+        current.setDate(current.getDate() + 1);
+    }
+
+    return count;
+}
 
 // ============================================================
 // GET LEAVE TYPES FOR CURRENT USER
@@ -237,20 +308,22 @@ export async function createLeaveRequest(data: LeaveRequestInput) {
         throw new Error("Không tìm thấy loại nghỉ phép");
     }
 
-    // Tính số ngày nghỉ
-    const startDate = new Date(validated.startDate);
-    const endDate = new Date(validated.endDate);
-    const totalDays = Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-    ) + 1;
+    // Tính số ngày nghỉ (chỉ đếm ngày làm việc, loại trừ Thứ 7, CN, ngày lễ)
+    const startDateObj = new Date(validated.startDate);
+    const endDateObj = new Date(validated.endDate);
+    const totalDays = calculateWorkingDays(startDateObj, endDateObj);
+
+    if (totalDays <= 0) {
+        throw new Error("Không có ngày làm việc nào trong khoảng đã chọn");
+    }
 
     // Kiểm tra trùng ngày
     const overlapping = await prisma.leaveRequest.findFirst({
         where: {
             userId: session.user.id,
             status: { in: ["PENDING", "APPROVED"] },
-            startDate: { lte: endDate },
-            endDate: { gte: startDate },
+            startDate: { lte: endDateObj },
+            endDate: { gte: startDateObj },
         },
     });
     if (overlapping) {
@@ -371,16 +444,20 @@ export async function cancelLeaveRequest(requestId: string) {
     // Hoàn lại pendingDays
     const currentYear = new Date().getFullYear();
     await prisma.$transaction(async (tx) => {
-        await tx.leaveBalance.updateMany({
-            where: {
-                userId: session.user.id,
-                leaveTypeId: leaveRequest.leaveTypeId,
-                policyYear: currentYear,
-            },
-            data: {
-                pendingDays: { decrement: leaveRequest.totalDays },
-            },
-        });
+        if (leaveRequest.leaveBalanceId) {
+            await tx.leaveBalance.update({
+                where: {
+                    userId_leaveTypeId_policyYear: {
+                        userId: session.user.id,
+                        leaveTypeId: leaveRequest.leaveTypeId,
+                        policyYear: currentYear,
+                    },
+                },
+                data: {
+                    pendingDays: { decrement: leaveRequest.totalDays },
+                },
+            });
+        }
 
         await tx.leaveRequest.update({
             where: { id: requestId },
