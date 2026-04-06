@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
+import { DepartmentsClient } from "./departments-client";
 
 export const metadata: Metadata = {
-    title: "Quản lý phòng ban | Digital HRM",
+  title: "Quản lý phòng ban",
 };
 
-export default function DepartmentsPage() {
-    return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Quản lý phòng ban
-            </h1>
-            {/* TODO: Department CRUD, tree view */}
-        </div>
-    );
+export default async function DepartmentsPage() {
+  return <DepartmentsClient />;
 }

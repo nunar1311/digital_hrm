@@ -1,135 +1,144 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+const loginSchema = z.object({
+  username: z.string().min(1, "Vui lòng nhập tên đăng nhập").trim(),
+  password: z.string().min(1, "Vui lòng nhập mật khẩu"),
+});
+
+type LoginValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-    const router = useRouter();
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
-        setLoading(true);
+  const form = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
 
-        try {
-            const result = await signIn.email({
-                email,
-                password,
-            });
+  const isSubmitting = form.formState.isSubmitting;
 
-            if (result.error) {
-                setError(
-                    result.error.message ??
-                        "Email hoặc mật khẩu không đúng",
-                );
-            } else {
-                router.push("/");
-                router.refresh();
-            }
-        } catch {
-            setError("Đã xảy ra lỗi. Vui lòng thử lại.");
-        } finally {
-            setLoading(false);
-        }
-    };
+  async function onSubmit(values: LoginValues) {
+    const result = await signIn.username({
+      username: values.username.trim(),
+      password: values.password,
+    });
 
-    return (
-        <Card className="w-full max-w-md">
-            <CardHeader className="space-y-1 text-center">
-                <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground text-lg font-bold">
-                    HR
+    if (result.error) {
+      form.setError("root", {
+        message:
+          result.error.message ?? "Tên đăng nhập hoặc mật khẩu không đúng",
+      });
+      return;
+    }
+
+    router.push("/");
+    router.refresh();
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-sm px-4 sm:px-6 py-8 sm:py-12 md:py-20">
+      <h2 className="text-primary text-2xl font-semibold md:text-xl">
+        Đăng nhập
+      </h2>
+      <p className="text-muted-foreground text-sm mt-1">
+        Nhập tên đăng nhập và mật khẩu để tiếp tục
+      </p>
+
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="mt-6 sm:mt-8 space-y-4 sm:space-y-5"
+          noValidate
+        >
+          {form.formState.errors.root && (
+            <div className="rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-700">
+              {form.formState.errors.root.message}
+            </div>
+          )}
+
+          <FormField
+            control={form.control}
+            name="username"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tên đăng nhập</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    placeholder="Nhập tên đăng nhập"
+                    autoComplete="username"
+                    tabIndex={1}
+                    disabled={isSubmitting}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center justify-between gap-2">
+                  <FormLabel>Mật khẩu</FormLabel>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs font-medium text-primary hover:underline"
+                    tabIndex={4}
+                  >
+                    Quên mật khẩu?
+                  </Link>
                 </div>
-                <CardTitle className="text-2xl font-bold">
-                    Đăng nhập
-                </CardTitle>
-                <CardDescription>
-                    Đăng nhập vào hệ thống quản lý nhân sự
-                </CardDescription>
-            </CardHeader>
-            <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-4">
-                    {error && (
-                        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                            {error}
-                        </div>
-                    )}
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            placeholder="email@company.vn"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            autoComplete="email"
-                            disabled={loading}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="password">Mật khẩu</Label>
-                            <Link
-                                href="/forgot-password"
-                                className="text-xs text-muted-foreground hover:text-primary"
-                            >
-                                Quên mật khẩu?
-                            </Link>
-                        </div>
-                        <Input
-                            id="password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) =>
-                                setPassword(e.target.value)
-                            }
-                            required
-                            autoComplete="current-password"
-                            disabled={loading}
-                        />
-                    </div>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-4">
-                    <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={loading}
-                    >
-                        {loading && (
-                            <Loader2 className="mr-2 size-4 animate-spin" />
-                        )}
-                        Đăng nhập
-                    </Button>
-                    <p className="text-center text-sm text-muted-foreground">
-                        Chưa có tài khoản?{" "}
-                        <Link
-                            href="/register"
-                            className="font-medium text-primary hover:underline"
-                        >
-                            Đăng ký
-                        </Link>
-                    </p>
-                </CardFooter>
-            </form>
-        </Card>
-    );
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="Nhập mật khẩu"
+                    tabIndex={2}
+                    autoComplete="current-password"
+                    disabled={isSubmitting}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <Button
+            type="submit"
+            tabIndex={3}
+            disabled={isSubmitting}
+            className="w-full"
+          >
+            {isSubmitting ? <Loader2 className="animate-spin" /> : null}
+            Đăng nhập
+          </Button>
+        </form>
+      </Form>
+    </div>
+  );
 }

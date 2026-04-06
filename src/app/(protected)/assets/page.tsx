@@ -1,16 +1,19 @@
+import { requirePermission } from "@/lib/auth-session";
+import { Permission } from "@/lib/rbac/permissions";
+import { AssetsClient } from "./assets-client";
+
+
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Quản lý tài sản | Digital HRM",
+    title: "Quản lý tài sản",
 };
 
-export default function AssetsPage() {
-    return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Quản lý tài sản
-            </h1>
-            {/* TODO: Asset assignment, retrieval, inventory */}
-        </div>
+export default async function AssetsPage() {
+    await requirePermission(
+        Permission.ASSET_VIEW_SELF,
+        Permission.ASSET_VIEW_ALL,
     );
+
+    return <AssetsClient />;
 }

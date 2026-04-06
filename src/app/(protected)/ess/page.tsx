@@ -1,16 +1,8 @@
-import type { Metadata } from "next";
+import { getESSDashboardData } from "./actions";
+import { ESSClient } from "./ess-client";
 
-export const metadata: Metadata = {
-    title: "Cổng nhân viên | Digital HRM",
-};
+export default async function ESSPage() {
+  const data = await getESSDashboardData();
 
-export default function ESSPage() {
-    return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Cổng nhân viên (Self-Service)
-            </h1>
-            {/* TODO: Employee self-service portal */}
-        </div>
-    );
+  return <ESSClient initialData={JSON.parse(JSON.stringify(data))} />;
 }

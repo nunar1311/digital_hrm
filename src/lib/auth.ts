@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { admin, organization } from "better-auth/plugins";
+import { admin, organization, username } from "better-auth/plugins";
 import { prisma } from "@/lib/prisma";
 
 export const auth = betterAuth({
@@ -33,9 +33,15 @@ export const auth = betterAuth({
             defaultRole: "employee",
         }),
 
-        // Plugin organization: phòng ban, roles
+        // Plugin organization: Công ty, chi nhánh
         organization({
             allowUserToCreateOrganization: false,
+        }),
+
+        // Plugin username: đăng nhập bằng mã nhân viên (username)
+        username({
+            minUsernameLength: 2,
+            maxUsernameLength: 50,
         }),
     ],
 
@@ -66,6 +72,8 @@ export const auth = betterAuth({
         window: 60,
         max: 100,
     },
+    // ---Trust host ---
+    trustHost: true,
 
     // ─── Trusted origins ───
     trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL!],

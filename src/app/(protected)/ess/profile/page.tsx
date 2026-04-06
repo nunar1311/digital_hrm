@@ -1,16 +1,14 @@
-import type { Metadata } from "next";
+import { Metadata } from "next";
+import { ESSProfileClient } from "./profile-client";
+import { getEmployeeProfile } from "../actions";
 
 export const metadata: Metadata = {
-    title: "Hồ sơ cá nhân | Digital HRM",
+    title: "Hồ sơ cá nhân | Cổng nhân viên - Digital HRM",
+    description: "Xem và cập nhật thông tin cá nhân của bạn",
 };
 
-export default function ESSProfilePage() {
-    return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Hồ sơ cá nhân
-            </h1>
-            {/* TODO: Self-update profile, pending approval */}
-        </div>
-    );
+export default async function ESSProfilePage() {
+    const profile = await getEmployeeProfile();
+    
+    return <ESSProfileClient initialProfile={profile} />;
 }

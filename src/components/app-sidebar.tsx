@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, SearchIcon } from "lucide-react";
 import {
     Sidebar,
     SidebarContent,
@@ -17,6 +17,7 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
     SidebarRail,
+    SidebarTrigger,
 } from "@/components/ui/sidebar";
 import {
     Collapsible,
@@ -25,24 +26,33 @@ import {
 } from "@/components/ui/collapsible";
 import { sidebarNav } from "@/config/sidebar-nav";
 import { useAuth } from "@/hooks/use-auth";
-import Logo from "./logo";
 
 export function AppSidebar() {
     const pathname = usePathname();
     const { canAny } = useAuth();
 
+    const isSettings = pathname.includes("/settings");
+    const isDashboard = pathname.includes("/dashboard");
+    const isEmployees = pathname.includes("/employees");
+
+    if (isSettings || isDashboard || isEmployees) {
+        return null;
+    }
+
     return (
-        <Sidebar collapsible="icon">
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href="/">
-                                <Logo className="max-[425px]:[&_span]:hidden" />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+        <Sidebar
+            collapsible="offcanvas"
+            className="absolute h-full! group/sidebar"
+        >
+            <SidebarHeader className="flex-row h-[44px] items-center justify-between">
+                <div className="group-data-[collapsible=icon]:hidden px-2 font-bold">
+                    Home
+                </div>
+                <div className="flex items-center gap-0.5">
+                    <div className="flex items-center transition-all duration-150 transform-gpu translate-x-2 group-hover:translate-x-0 gap-0.5 ease-linear opacity-0 group-hover:opacity-100">
+                        <SidebarTrigger className="group-data-[collapsible=icon]:hidden gap-0!" />
+                    </div>
+                </div>
             </SidebarHeader>
 
             <SidebarContent>

@@ -1,11 +1,13 @@
 import { presets } from "@/utils/theme-presets";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { ThemeStyleProps } from "@/types/theme";
 import { defaultThemeState } from "@/config/theme";
 import { useSettings } from "@/contexts/settings-context";
+import { cn } from "@/lib/utils";
+import { colorFormatter } from "@/utils/color-converter";
 
-const ThemePreset = () => {
+const ThemePreset = ({ className }: { className?: string }) => {
     const { settings, applyThemePreset } = useSettings();
 
     const presetNames = useMemo(() => {
@@ -50,22 +52,34 @@ const ThemePreset = () => {
                 ? defaultThemeState
                 : presets[themeName];
 
-        return theme?.[
+        const rawValue = theme?.[
             settings.mode === "system" ? "light" : settings.mode
         ]?.[color];
+
+        if (!rawValue) return undefined;
+
+        // CSSOM (style.backgroundColor) doesn't support oklch(),
+        // so convert to rgb which all browsers support.
+        return colorFormatter(rawValue, "rgb");
     };
     return (
-        <Tabs value={value || ""} onValueChange={applyThemePreset}>
-            <TabsList className="bg-transparent w-full group-data-[orientation=horizontal]/tabs:h-full gap-2 justify-between grid md:grid-cols-6 lg:grid-cols-6">
+        <Tabs value={value || ""}>
+            <TabsList
+                className={cn(
+                    "bg-transparent w-full group-data-[orientation=horizontal]/tabs:h-full gap-2 justify-between grid grid-cols-6",
+                    className,
+                )}
+            >
                 {presetNames.map((name) => {
                     return (
                         <div
                             key={name}
-                            className="flex flex-col items-center gap-2"
+                            className="flex flex-col items-center gap-1"
                         >
                             <TabsTrigger
                                 value={name}
                                 className="h-14 w-fit px-px py-px data-[state=active]:shadow-none data-[state=active]:ring-primary data-[state=active]:ring-2 ring-offset-0 rounded-[8px]"
+                                onClick={() => applyThemePreset(name)}
                             >
                                 <div className="flex items-center">
                                     <div

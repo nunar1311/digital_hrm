@@ -41,6 +41,12 @@ export const defaultLightThemeStyles: ThemeStyles["light"] = {
     accent: "oklch(0.97 0 0)",
     "accent-foreground": "oklch(0.205 0 0)",
     destructive: "oklch(0.577 0.245 27.325)",
+    "chart-1": "oklch(0.922 0 0)",
+    "chart-2": "oklch(0.704 0.191 22.216)",
+    "chart-3": "oklch(0.552 0.016 285.938)",
+    "chart-4": "oklch(0.205 0 0)",
+    "chart-5": "oklch(0.922 0 0)",
+    "chart-6": "oklch(0.704 0.191 22.216)",
 };
 
 // Default dark theme styles
@@ -60,6 +66,12 @@ export const defaultDarkThemeStyles: ThemeStyles["dark"] = {
     accent: "oklch(0.269 0 0)",
     "accent-foreground": "oklch(0.985 0 0)",
     destructive: "oklch(0.704 0.191 22.216)",
+    "chart-1": "oklch(0.922 0 0)",
+    "chart-2": "oklch(0.704 0.191 22.216)",
+    "chart-3": "oklch(0.552 0.016 285.938)",
+    "chart-4": "oklch(0.205 0 0)",
+    "chart-5": "oklch(0.922 0 0)",
+    "chart-6": "oklch(0.704 0.191 22.216)",
 };
 
 // Default theme state

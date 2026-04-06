@@ -1,0 +1,31 @@
+@media print {
+  /* Hide all UI chrome except the chart itself */
+  [data-org-chart-canvas],
+  [data-org-chart-canvas] * {
+    visibility: visible !important;
+  }
+
+  /* Hide zoom controls, minimap, toolbar, help text */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset all transforms to show full chart */
+  [data-org-chart-canvas] {
+    transform: none !important;
+    overflow: visible !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: landscape;
+    margin: 1cm;
+  }
+
+  body {
+    background: white !important;
+  }
+}

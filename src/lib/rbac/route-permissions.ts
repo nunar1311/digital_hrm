@@ -8,8 +8,8 @@ export const ROUTE_PERMISSIONS: Array<{
     pattern: string;
     permissions: Permission[];
 }> = [
-    // ─── Dashboard ───
-    { pattern: "/", permissions: [Permission.DASHBOARD_VIEW] },
+    // ─── Dashboard / ESS ───
+    { pattern: "/", permissions: [Permission.ESS_VIEW] },
 
     // ─── Tổ chức ───
     {
@@ -68,6 +68,13 @@ export const ROUTE_PERMISSIONS: Array<{
 
     // ─── Chấm công ───
     {
+        pattern: "/attendance/records",
+        permissions: [
+            Permission.ATTENDANCE_VIEW_TEAM,
+            Permission.ATTENDANCE_VIEW_ALL,
+        ],
+    },
+    {
         pattern: "/attendance/shifts",
         permissions: [Permission.ATTENDANCE_SHIFT_MANAGE],
     },
@@ -119,6 +126,14 @@ export const ROUTE_PERMISSIONS: Array<{
     },
 
     // ─── Quy trình ───
+    {
+        pattern: "/onboarding/settings",
+        permissions: [Permission.ONBOARDING_MANAGE],
+    },
+    {
+        pattern: "/onboarding/welcome",
+        permissions: [Permission.ONBOARDING_VIEW],
+    },
     {
         pattern: "/onboarding",
         permissions: [Permission.ONBOARDING_VIEW],

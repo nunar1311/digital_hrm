@@ -1,16 +1,26 @@
-import type { Metadata } from "next";
+import { Metadata } from "next";
+import { OnboardingClient } from "./onboarding-client";
+import { getOnboardings, getOnboardingStats } from "./actions";
+import { requirePermission } from "@/lib/auth-session";
+import { Permission } from "@/lib/rbac/permissions";
 
 export const metadata: Metadata = {
-    title: "Onboarding | Digital HRM",
+  title: "Tiếp nhận nhân sự | Digital HRM",
+  description: "Quản lý quy trình tiếp nhận nhân viên mới vào công ty",
 };
 
-export default function OnboardingPage() {
-    return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-                Onboarding - Tiếp nhận nhân viên mới
-            </h1>
-            {/* TODO: Onboarding checklist and welcome portal */}
-        </div>
-    );
+export default async function OnboardingPage() {
+  await requirePermission(Permission.ONBOARDING_VIEW);
+
+  const [onboardingsData, statsData] = await Promise.all([
+    getOnboardings({ page: 1, pageSize: 100 }),
+    getOnboardingStats(),
+  ]);
+
+  return (
+    <OnboardingClient
+      initialOnboardings={JSON.parse(JSON.stringify(onboardingsData))}
+      initialStats={statsData}
+    />
+  );
 }

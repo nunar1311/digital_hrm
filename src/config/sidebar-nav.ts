@@ -17,6 +17,8 @@ import {
     BarChart3,
     Settings,
     UserCircle,
+    Bell,
+    FileCheck,
     type LucideIcon,
 } from "lucide-react";
 import { Permission } from "@/lib/rbac/permissions";
@@ -46,7 +48,7 @@ export const sidebarNav: NavGroup[] = [
         items: [
             {
                 title: "Dashboard",
-                url: "/",
+                url: "/dashboard",
                 icon: LayoutDashboard,
                 permissions: [Permission.DASHBOARD_VIEW],
             },
@@ -66,6 +68,12 @@ export const sidebarNav: NavGroup[] = [
                 url: "/departments",
                 icon: Building2,
                 permissions: [Permission.DEPT_VIEW],
+            },
+            {
+                title: "Chức vụ",
+                url: "/positions",
+                icon: Briefcase,
+                permissions: [Permission.POSITION_VIEW_ALL],
             },
         ],
     },
@@ -95,6 +103,14 @@ export const sidebarNav: NavGroup[] = [
                         title: "Thêm mới",
                         url: "/employees/new",
                         permissions: [Permission.EMPLOYEE_CREATE],
+                    },
+                    {
+                        title: "Nhập/Xuất Excel",
+                        url: "/employees/import-export",
+                        permissions: [
+                            Permission.EMPLOYEE_IMPORT,
+                            Permission.EMPLOYEE_EXPORT,
+                        ],
                     },
                 ],
             },
@@ -131,7 +147,7 @@ export const sidebarNav: NavGroup[] = [
         items: [
             {
                 title: "Nghỉ phép",
-                url: "/leaves",
+                url: "/attendance/leave-summary",
                 icon: CalendarDays,
                 permissions: [
                     Permission.LEAVE_VIEW_SELF,
@@ -140,23 +156,23 @@ export const sidebarNav: NavGroup[] = [
                 ],
                 children: [
                     {
-                        title: "Đơn nghỉ phép",
-                        url: "/leaves",
+                        title: "Tổng hợp số dư",
+                        url: "/attendance/leave-summary",
+                        permissions: [Permission.LEAVE_VIEW_ALL],
+                    },
+                    {
+                        title: "Lịch nghỉ lễ",
+                        url: "/attendance/holidays",
+                        permissions: [Permission.HOLIDAY_VIEW],
+                    },
+                    {
+                        title: "Duyệt đơn nghỉ",
+                        url: "/attendance/leave-requests",
                         permissions: [
-                            Permission.LEAVE_VIEW_SELF,
-                            Permission.LEAVE_VIEW_TEAM,
                             Permission.LEAVE_VIEW_ALL,
+                            Permission.LEAVE_APPROVE_ALL,
+                            Permission.LEAVE_APPROVE_TEAM,
                         ],
-                    },
-                    {
-                        title: "Lịch Team",
-                        url: "/leaves/calendar",
-                        permissions: [Permission.LEAVE_CALENDAR_VIEW],
-                    },
-                    {
-                        title: "Chính sách",
-                        url: "/leaves/policies",
-                        permissions: [Permission.LEAVE_POLICY_MANAGE],
                     },
                 ],
             },
@@ -189,6 +205,14 @@ export const sidebarNav: NavGroup[] = [
                         ],
                     },
                     {
+                        title: "Nhật ký chấm công",
+                        url: "/attendance/records",
+                        permissions: [
+                            Permission.ATTENDANCE_VIEW_TEAM,
+                            Permission.ATTENDANCE_VIEW_ALL,
+                        ],
+                    },
+                    {
                         title: "Ca làm việc",
                         url: "/attendance/shifts",
                         permissions: [
@@ -209,6 +233,21 @@ export const sidebarNav: NavGroup[] = [
                         permissions: [
                             Permission.ATTENDANCE_EXPLANATION,
                             Permission.ATTENDANCE_APPROVE,
+                        ],
+                    },
+                    {
+                        title: "Yêu cầu HC",
+                        url: "/attendance/admin-requests",
+                        permissions: [
+                            Permission.ADMIN_REQUEST_VIEW,
+                            Permission.ADMIN_REQUEST_APPROVE,
+                        ],
+                    },
+                    {
+                        title: "Thiết lập",
+                        url: "/attendance/settings",
+                        permissions: [
+                            Permission.ATTENDANCE_SHIFT_MANAGE,
                         ],
                     },
                 ],
@@ -340,12 +379,42 @@ export const sidebarNav: NavGroup[] = [
                         permissions: [Permission.ESS_VIEW],
                     },
                     {
+                        title: "Đơn của tôi",
+                        url: "/ess/my-requests",
+                        permissions: [Permission.ESS_VIEW],
+                    },
+                    {
+                        title: "Chấm công",
+                        url: "/ess/attendance",
+                        permissions: [Permission.ESS_VIEW],
+                    },
+                    {
+                        title: "Nghỉ phép",
+                        url: "/ess/leave",
+                        permissions: [Permission.ESS_VIEW],
+                    },
+                    {
+                        title: "Phiếu lương",
+                        url: "/ess/payroll",
+                        permissions: [Permission.PAYROLL_VIEW_SELF],
+                    },
+                    {
                         title: "Hồ sơ cá nhân",
                         url: "/ess/profile",
                         permissions: [Permission.ESS_UPDATE_PROFILE],
                     },
                     {
-                        title: "Yêu cầu",
+                        title: "Hợp đồng",
+                        url: "/ess/contracts",
+                        permissions: [Permission.CONTRACT_VIEW_SELF],
+                    },
+                    {
+                        title: "Tài sản",
+                        url: "/ess/assets",
+                        permissions: [Permission.ASSET_VIEW_SELF],
+                    },
+                    {
+                        title: "Yêu cầu HC",
                         url: "/ess/requests",
                         permissions: [Permission.ESS_SEND_REQUEST],
                     },

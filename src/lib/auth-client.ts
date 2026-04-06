@@ -3,6 +3,7 @@ import {
     adminClient,
     organizationClient,
     inferAdditionalFields,
+    usernameClient,
 } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
@@ -10,6 +11,7 @@ export const authClient = createAuthClient({
     plugins: [
         adminClient(),
         organizationClient(),
+        usernameClient(),
         inferAdditionalFields({
             user: {
                 employeeCode: {
