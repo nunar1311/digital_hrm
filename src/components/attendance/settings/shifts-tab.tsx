@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
@@ -12,8 +13,8 @@ import {
     createShift,
     updateShift,
     deleteShift,
-} from "@/app/(protected)/attendance/actions";
-import type { Shift } from "@/app/(protected)/attendance/types";
+} from "@/app/[locale]/(protected)/attendance/actions";
+import type { Shift } from "@/app/[locale]/(protected)/attendance/types";
 
 import {
     Card,
@@ -52,21 +53,28 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 
-// ─── Schema ───
+// Schema
 
-const shiftFormSchema = z.object({
-    name: z.string().min(1, "Vui lòng nhập tên ca"),
-    code: z.string().min(1, "Vui lòng nhập mã ca"),
-    startTime: z.string().min(1, "Vui lòng chọn giờ bắt đầu"),
-    endTime: z.string().min(1, "Vui lòng chọn giờ kết thúc"),
-    breakMinutes: z.number().min(0),
-    lateThreshold: z.number().min(0),
-    earlyThreshold: z.number().min(0),
-    isDefault: z.boolean(),
-    isActive: z.boolean(),
-});
+function createShiftFormSchema(t: ReturnType<typeof useTranslations>) {
+    return z.object({
+        name: z.string().min(1, t("attendanceShiftsValidationNameRequired")),
+        code: z.string().min(1, t("attendanceShiftsValidationCodeRequired")),
+        startTime: z
+            .string()
+            .min(1, t("attendanceShiftsValidationStartTimeRequired")),
+        endTime: z
+            .string()
+            .min(1, t("attendanceShiftsValidationEndTimeRequired")),
+        breakMinutes: z.number().min(0),
+        lateThreshold: z.number().min(0),
+        earlyThreshold: z.number().min(0),
+        isDefault: z.boolean(),
+        isActive: z.boolean(),
+        type: z.string().default("FIXED"),
+    });
+}
 
-type ShiftFormValues = z.infer<typeof shiftFormSchema>;
+type ShiftFormValues = z.infer<ReturnType<typeof createShiftFormSchema>>;
 
 function computeWorkHours(
     startTime: string,
@@ -86,7 +94,7 @@ function computeWorkHours(
     return minutes > 0 ? `${hours}h${minutes}p` : `${hours}h`;
 }
 
-// ─── Component ───
+// Component
 
 interface Props {
     shifts: Shift[];
@@ -94,6 +102,9 @@ interface Props {
 }
 
 export function ShiftsTab({ shifts, queryClient }: Props) {
+    const t = useTranslations("ProtectedPages");
+    const shiftFormSchema = createShiftFormSchema(t);
+
     const [showDialog, setShowDialog] = useState(false);
     const [editShift, setEditShift] = useState<Shift | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -110,12 +121,22 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
             earlyThreshold: 15,
             isDefault: false,
             isActive: true,
+            type: "FIXED",
         },
     });
 
-    const watchStart = form.watch("startTime");
-    const watchEnd = form.watch("endTime");
-    const watchBreak = form.watch("breakMinutes");
+    const watchStart = useWatch({
+        control: form.control,
+        name: "startTime",
+    });
+    const watchEnd = useWatch({
+        control: form.control,
+        name: "endTime",
+    });
+    const watchBreak = useWatch({
+        control: form.control,
+        name: "breakMinutes",
+    });
 
     const workHoursPreview = useMemo(
         () => computeWorkHours(watchStart, watchEnd, watchBreak),
@@ -133,6 +154,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
             earlyThreshold: 15,
             isDefault: false,
             isActive: true,
+            type: "FIXED",
         });
         setEditShift(null);
         setShowDialog(true);
@@ -149,6 +171,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
             earlyThreshold: s.earlyThreshold,
             isDefault: s.isDefault,
             isActive: s.isActive,
+            type: "FIXED",
         });
         setEditShift(s);
         setShowDialog(true);
@@ -162,12 +185,12 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
     const createMutation = useMutation({
         mutationFn: (values: ShiftFormValues) => createShift(values),
         onSuccess: () => {
-            toast.success("Đã thêm ca làm việc");
+            toast.success(t("attendanceShiftsToastCreated"));
             setShowDialog(false);
             invalidate();
         },
         onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+            toast.error(err.message || t("attendanceShiftsToastError")),
     });
 
     const updateMutation = useMutation({
@@ -176,24 +199,24 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
             return updateShift(editShift.id, values);
         },
         onSuccess: () => {
-            toast.success("Đã cập nhật ca làm việc");
+            toast.success(t("attendanceShiftsToastUpdated"));
             setShowDialog(false);
             setEditShift(null);
             invalidate();
         },
         onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+            toast.error(err.message || t("attendanceShiftsToastError")),
     });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteShift(id),
         onSuccess: () => {
-            toast.success("Đã xoá ca làm việc");
+            toast.success(t("attendanceShiftsToastDeleted"));
             setDeleteId(null);
             invalidate();
         },
         onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+            toast.error(err.message || t("attendanceShiftsToastError")),
     });
 
     const toggleMutation = useMutation({
@@ -208,10 +231,11 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                 earlyThreshold: shift.earlyThreshold,
                 isDefault: shift.isDefault,
                 isActive,
+                type: "FIXED",
             }),
         onSuccess: () => invalidate(),
         onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+            toast.error(err.message || t("attendanceShiftsToastError")),
     });
 
     const isSaving =
@@ -235,22 +259,21 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                 <div>
                     <CardTitle className="flex items-center gap-2">
                         <Clock className="h-5 w-5" />
-                        Quản lý ca làm việc
+                        {t("attendanceShiftsManageTitle")}
                     </CardTitle>
                     <CardDescription>
-                        Thiết lập các ca làm việc, giờ bắt đầu/kết
-                        thúc và ngưỡng đi trễ/về sớm
+                        {t("attendanceShiftsManageDescription")}
                     </CardDescription>
                 </div>
                 <Button onClick={openCreate} size="sm">
                     <Plus className="mr-1.5 h-4 w-4" />
-                    Thêm ca
+                    {t("attendanceShiftsAddShift")}
                 </Button>
             </CardHeader>
             <CardContent>
                 {shifts.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">
-                        Chưa có ca làm việc nào
+                        {t("attendanceShiftsNoShiftYet")}
                     </p>
                 ) : (
                     <div className="space-y-2">
@@ -278,23 +301,27 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                                     className="text-xs"
                                                 >
                                                     <Star className="mr-1 h-3 w-3" />
-                                                    Mặc định
+                                                    {t("attendanceShiftsDefault")}
                                                 </Badge>
                                             )}
                                         </div>
                                         <p className="text-xs text-muted-foreground">
-                                            {s.startTime} – {s.endTime}
-                                            {" · "}
-                                            Nghỉ {s.breakMinutes}p
-                                            {" · "}
+                                            {s.startTime} - {s.endTime}
+                                            {" | "}
+                                            {t("attendanceShiftsBreakMinutesShort", {
+                                                minutes: s.breakMinutes,
+                                            })}
+                                            {" | "}
                                             {computeWorkHours(
                                                 s.startTime,
                                                 s.endTime,
                                                 s.breakMinutes,
-                                            ) ?? "—"}
-                                            {" · "}
-                                            Trễ {s.lateThreshold}p / Sớm{" "}
-                                            {s.earlyThreshold}p
+                                            ) ?? "-"}
+                                            {" | "}
+                                            {t("attendanceShiftsLateEarlySummary", {
+                                                late: s.lateThreshold,
+                                                early: s.earlyThreshold,
+                                            })}
                                         </p>
                                     </div>
                                 </div>
@@ -345,8 +372,8 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                     <DialogHeader>
                         <DialogTitle>
                             {editShift
-                                ? "Chỉnh sửa ca làm việc"
-                                : "Thêm ca làm việc"}
+                                ? t("attendanceShiftsEditDialogTitle")
+                                : t("attendanceShiftsCreateDialogTitle")}
                         </DialogTitle>
                     </DialogHeader>
                     <Form {...form}>
@@ -360,10 +387,10 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                     name="name"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Tên ca</FormLabel>
+                                            <FormLabel>{t("attendanceShiftsNameLabel")}</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="VD: Ca sáng"
+                                                    placeholder={t("attendanceShiftsNamePlaceholder")}
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -376,10 +403,10 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                     name="code"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Mã ca</FormLabel>
+                                            <FormLabel>{t("attendanceShiftsCodeLabel")}</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="VD: SANG"
+                                                    placeholder={t("attendanceShiftsCodePlaceholder")}
                                                     disabled={!!editShift}
                                                     {...field}
                                                 />
@@ -397,7 +424,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Giờ bắt đầu
+                                                {t("attendanceShiftsStartTimeLabel")}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
@@ -415,7 +442,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Giờ kết thúc
+                                                {t("attendanceShiftsEndTimeLabel")}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
@@ -436,7 +463,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Nghỉ trưa (phút)
+                                                {t("attendanceShiftsBreakMinutesLabel")}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
@@ -463,7 +490,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Trễ cho phép (phút)
+                                                {t("attendanceShiftsLateThresholdLabel")}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
@@ -490,7 +517,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Sớm cho phép (phút)
+                                                {t("attendanceShiftsEarlyThresholdLabel")}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
@@ -515,7 +542,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
 
                             {workHoursPreview && (
                                 <p className="text-sm text-muted-foreground">
-                                    Thời gian làm việc thực tế:{" "}
+                                    {t("attendanceShiftsActualWorkHoursLabel")}{" "}
                                     <span className="font-medium text-foreground">
                                         {workHoursPreview}
                                     </span>
@@ -537,7 +564,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0">
-                                                Ca mặc định
+                                                {t("attendanceShiftsDefaultShiftLabel")}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -556,7 +583,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0">
-                                                Đang hoạt động
+                                                {t("attendanceShiftsActiveLabel")}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -572,7 +599,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                         setEditShift(null);
                                     }}
                                 >
-                                    Huỷ
+                                    {t("attendanceShiftsCancel")}
                                 </Button>
                                 <Button
                                     type="submit"
@@ -581,7 +608,9 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                                     {isSaving && (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     )}
-                                    {editShift ? "Cập nhật" : "Thêm"}
+                                    {editShift
+                                        ? t("attendanceShiftsUpdate")
+                                        : t("attendanceShiftsCreate")}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -597,17 +626,17 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
-                            Xoá ca làm việc?
+                            {t("attendanceShiftsDeleteTitle")}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                             {deleteTarget &&
                             deleteTarget._count.attendances > 0
-                                ? "Ca này đã có dữ liệu chấm công. Vui lòng vô hiệu hóa thay vì xoá."
-                                : "Ca làm việc sẽ bị xoá khỏi hệ thống. Hành động này không thể hoàn tác."}
+                                ? t("attendanceShiftsDeleteBlockedDescription")
+                                : t("attendanceShiftsDeleteDescription")}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Huỷ</AlertDialogCancel>
+                        <AlertDialogCancel>{t("attendanceShiftsCancel")}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() =>
                                 deleteId &&
@@ -619,7 +648,7 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
                             }
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            Xoá
+                            {t("attendanceShiftsDelete")}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -627,3 +656,4 @@ export function ShiftsTab({ shifts, queryClient }: Props) {
         </Card>
     );
 }
+

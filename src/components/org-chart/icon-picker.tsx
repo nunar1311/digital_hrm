@@ -52,41 +52,41 @@ export const DEPARTMENT_ICONS: Record<
     string,
     { icon: LucideIcon; label: string }
 > = {
-    Building2: { icon: Building2, label: "Tòa nhà" },
-    Code: { icon: Code, label: "Lập trình" },
-    Users: { icon: Users, label: "Nhân sự" },
-    Briefcase: { icon: Briefcase, label: "Kinh doanh" },
-    GraduationCap: { icon: GraduationCap, label: "Đào tạo" },
-    HeartPulse: { icon: HeartPulse, label: "Y tế" },
-    Scale: { icon: Scale, label: "Pháp lý" },
-    Wallet: { icon: Wallet, label: "Tài chính" },
-    Settings: { icon: Settings, label: "Cài đặt" },
-    ShieldCheck: { icon: ShieldCheck, label: "An ninh" },
+    Building2: { icon: Building2, label: "Building" },
+    Code: { icon: Code, label: "Engineering" },
+    Users: { icon: Users, label: "HR" },
+    Briefcase: { icon: Briefcase, label: "Business" },
+    GraduationCap: { icon: GraduationCap, label: "Training" },
+    HeartPulse: { icon: HeartPulse, label: "Medical" },
+    Scale: { icon: Scale, label: "Legal" },
+    Wallet: { icon: Wallet, label: "Finance" },
+    Settings: { icon: Settings, label: "Settings" },
+    ShieldCheck: { icon: ShieldCheck, label: "Security" },
     Megaphone: { icon: Megaphone, label: "Marketing" },
-    BarChart3: { icon: BarChart3, label: "Phân tích" },
-    Truck: { icon: Truck, label: "Vận chuyển" },
-    Factory: { icon: Factory, label: "Sản xuất" },
-    Wrench: { icon: Wrench, label: "Kỹ thuật" },
-    Globe: { icon: Globe, label: "Quốc tế" },
-    Landmark: { icon: Landmark, label: "Hành chính" },
-    Store: { icon: Store, label: "Cửa hàng" },
-    HardHat: { icon: HardHat, label: "Xây dựng" },
+    BarChart3: { icon: BarChart3, label: "Analytics" },
+    Truck: { icon: Truck, label: "Logistics" },
+    Factory: { icon: Factory, label: "Manufacturing" },
+    Wrench: { icon: Wrench, label: "Technical" },
+    Globe: { icon: Globe, label: "Global" },
+    Landmark: { icon: Landmark, label: "Administration" },
+    Store: { icon: Store, label: "Store" },
+    HardHat: { icon: HardHat, label: "Construction" },
     FlaskConical: { icon: FlaskConical, label: "R&D" },
-    Palette: { icon: Palette, label: "Thiết kế" },
+    Palette: { icon: Palette, label: "Design" },
     Monitor: { icon: Monitor, label: "IT" },
-    Server: { icon: Server, label: "Hạ tầng" },
-    Database: { icon: Database, label: "Dữ liệu" },
+    Server: { icon: Server, label: "Infrastructure" },
+    Database: { icon: Database, label: "Data" },
     CloudCog: { icon: CloudCog, label: "Cloud" },
-    Phone: { icon: Phone, label: "CSKH" },
-    Mail: { icon: Mail, label: "Truyền thông" },
-    BookOpen: { icon: BookOpen, label: "Thư viện" },
-    Lightbulb: { icon: Lightbulb, label: "Sáng tạo" },
-    Target: { icon: Target, label: "Chiến lược" },
-    TrendingUp: { icon: TrendingUp, label: "Tăng trưởng" },
-    PieChart: { icon: PieChart, label: "Báo cáo" },
-    Layers: { icon: Layers, label: "Tổng hợp" },
-    Boxes: { icon: Boxes, label: "Kho vận" },
-    Package: { icon: Package, label: "Đóng gói" },
+    Phone: { icon: Phone, label: "Support" },
+    Mail: { icon: Mail, label: "Communications" },
+    BookOpen: { icon: BookOpen, label: "Library" },
+    Lightbulb: { icon: Lightbulb, label: "Innovation" },
+    Target: { icon: Target, label: "Strategy" },
+    TrendingUp: { icon: TrendingUp, label: "Growth" },
+    PieChart: { icon: PieChart, label: "Reports" },
+    Layers: { icon: Layers, label: "General" },
+    Boxes: { icon: Boxes, label: "Warehouse" },
+    Package: { icon: Package, label: "Packaging" },
 };
 
 interface IconPickerProps {
@@ -132,14 +132,14 @@ export function IconPicker({ value, onChange, className }: IconPickerProps) {
                     <span className="text-muted-foreground truncate flex-1 text-left">
                         {value && DEPARTMENT_ICONS[value]
                             ? DEPARTMENT_ICONS[value].label
-                            : "Chọn icon..."}
+                            : "Select icon..."}
                     </span>
                 </button>
             </PopoverTrigger>
             <PopoverContent className="w-[320px] p-0" align="start">
                 <div className="p-2 border-b">
                     <Input
-                        placeholder="Tìm icon..."
+                        placeholder="Search icon..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="h-8"
@@ -171,7 +171,7 @@ export function IconPicker({ value, onChange, className }: IconPickerProps) {
                         )}
                         {filtered.length === 0 && (
                             <p className="col-span-6 text-center text-xs text-muted-foreground py-4">
-                                Không tìm thấy icon
+                                No icon found
                             </p>
                         )}
                     </div>

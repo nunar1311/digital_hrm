@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getAllPositions } from "@/app/(protected)/positions/actions";
+import { useTranslations } from "next-intl";
+import { getAllPositions } from "@/app/[locale]/(protected)/positions/actions";
 import {
   Select,
   SelectContent,
@@ -18,23 +19,31 @@ interface PositionDropdownProps {
   disabled?: boolean;
 }
 
-const AUTHORITY_LABELS: Record<string, string> = {
-  EXECUTIVE: "HĐQT",
-  DIRECTOR: "Giám đốc",
-  MANAGER: "Trưởng phòng",
-  DEPUTY: "Phó phòng",
-  TEAM_LEAD: "Tổ trưởng",
-  STAFF: "Nhân viên",
-  INTERN: "Thực tập sinh",
-};
 
 export function PositionDropdown({
   value,
   onValueChange,
   departmentId,
-  placeholder = "Chọn chức vụ",
+  placeholder,
   disabled = false,
 }: PositionDropdownProps) {
+  const t = useTranslations("ProtectedPages");
+
+  const AUTHORITY_LABELS: Record<string, string> = {
+    EXECUTIVE: t("positionsAuthorityExecutive"),
+    DIRECTOR: t("positionsAuthorityDirector"),
+    MANAGER: t("positionsAuthorityManager"),
+    DEPUTY: t("positionsAuthorityDeputy"),
+    TEAM_LEAD: t("positionsAuthorityTeamLead"),
+    STAFF: t("positionsAuthorityStaff"),
+    INTERN: t("positionsAuthorityIntern"),
+  };
+
+  const resolvedPlaceholder =
+    placeholder && placeholder.trim().length > 0
+      ? placeholder
+      : t("recruitmentPipelineSelectPosition");
+
   const { data: positions = [], isLoading } = useQuery({
     queryKey: ["positions", "dropdown", departmentId],
     queryFn: () =>
@@ -50,7 +59,9 @@ export function PositionDropdown({
       disabled={disabled || isLoading}
     >
       <SelectTrigger className={"w-full"}>
-        <SelectValue placeholder={isLoading ? "Đang tải..." : placeholder} />
+        <SelectValue
+          placeholder={isLoading ? t("attendanceShiftsLoading") : resolvedPlaceholder}
+        />
       </SelectTrigger>
       <SelectContent>
         {positions.map((pos) => (
@@ -65,10 +76,11 @@ export function PositionDropdown({
         ))}
         {positions.length === 0 && !isLoading && (
           <div className="py-2 px-2 text-sm text-muted-foreground text-center">
-            Không có chức vụ nào
+            {t("positionsTableEmpty")}
           </div>
         )}
       </SelectContent>
     </Select>
   );
 }
+

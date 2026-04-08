@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+﻿import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Search, Plus, Filter, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { DEPARTMENT_STATUS_OPTIONS } from "@/app/(protected)/departments/constants";
-import type { DepartmentListItem } from "@/app/(protected)/departments/types";
+import { DEPARTMENT_STATUS_OPTIONS } from "@/app/[locale]/(protected)/departments/constants";
+import type { DepartmentListItem } from "@/app/[locale]/(protected)/departments/types";
 
 interface DepartmentToolbarProps {
     searchValue: string;
@@ -35,6 +36,7 @@ export function DepartmentToolbar({
     onCreateClick,
     isLoading,
 }: DepartmentToolbarProps) {
+    const t = useTranslations("ProtectedPages");
     const [localSearch, setLocalSearch] = useState(searchValue);
 
     const handleSearchChange = useCallback(
@@ -74,7 +76,7 @@ export function DepartmentToolbar({
                     <div className="relative flex-1 max-w-sm">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Tìm kiếm phòng ban..."
+                            placeholder={t("departmentsToolbarSearchPlaceholder")}
                             value={localSearch}
                             onChange={handleSearchChange}
                             onKeyDown={handleSearchKeyDown}
@@ -86,7 +88,7 @@ export function DepartmentToolbar({
                     <Select value={statusFilter} onValueChange={onStatusFilterChange}>
                         <SelectTrigger className="w-[180px]">
                             <Filter className="h-4 w-4 mr-2" />
-                            <SelectValue placeholder="Trạng thái" />
+                            <SelectValue placeholder={t("departmentsToolbarStatusPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
                             {DEPARTMENT_STATUS_OPTIONS.map((option) => (
@@ -99,11 +101,11 @@ export function DepartmentToolbar({
 
                     <Select value={parentFilter} onValueChange={onParentFilterChange}>
                         <SelectTrigger className="w-[200px]">
-                            <SelectValue placeholder="Phòng ban cha" />
+                            <SelectValue placeholder={t("departmentsToolbarParentPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Tất cả</SelectItem>
-                            <SelectItem value="none">Không có (gốc)</SelectItem>
+                            <SelectItem value="all">{t("departmentsToolbarParentAll")}</SelectItem>
+                            <SelectItem value="none">{t("departmentsToolbarParentNone")}</SelectItem>
                             {allDepartments
                                 .filter((d) => d.parentId === null)
                                 .map((dept) => (
@@ -122,16 +124,17 @@ export function DepartmentToolbar({
                             className="text-muted-foreground"
                         >
                             <X className="h-4 w-4 mr-1" />
-                            Xóa lọc
+                            {t("departmentsToolbarClearFilters")}
                         </Button>
                     )}
                 </div>
 
                 <Button onClick={onCreateClick} disabled={isLoading}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Thêm phòng ban
+                    {t("departmentsToolbarAdd")}
                 </Button>
             </div>
         </div>
     );
 }
+

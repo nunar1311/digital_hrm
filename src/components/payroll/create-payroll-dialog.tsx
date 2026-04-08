@@ -1,15 +1,14 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -42,17 +41,18 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import { createPayrollRecord } from "@/app/(protected)/payroll/actions";
-import type { PayrollRecord } from "@/app/(protected)/payroll/types";
+import { createPayrollRecord } from "@/app/[locale]/(protected)/payroll/actions";
+import type { PayrollRecord } from "@/app/[locale]/(protected)/payroll/types";
 
-const createPayrollSchema = z.object({
-  month: z.string().min(1, "Tháng không được trống"),
-  year: z.string().min(1, "Năm không được trống"),
-  departmentId: z.string().optional(),
-  standardWorkDays: z.number().min(1).max(31),
-});
+const createPayrollSchema = (t: ReturnType<typeof useTranslations>) =>
+  z.object({
+    month: z.string().min(1, t("payrollCreateValidationMonthRequired")),
+    year: z.string().min(1, t("payrollCreateValidationYearRequired")),
+    departmentId: z.string().optional(),
+    standardWorkDays: z.number().min(1).max(31),
+  });
 
-type CreatePayrollForm = z.infer<typeof createPayrollSchema>;
+type CreatePayrollForm = z.infer<ReturnType<typeof createPayrollSchema>>;
 
 interface CreatePayrollDialogProps {
   children: React.ReactNode;
@@ -65,6 +65,8 @@ export function CreatePayrollDialog({
   departments,
   onSuccess,
 }: CreatePayrollDialogProps) {
+  const t = useTranslations("ProtectedPages");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [previewData, setPreviewData] = useState<{
     employeeCount: number;
@@ -79,7 +81,7 @@ export function CreatePayrollDialog({
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
   const form = useForm<CreatePayrollForm>({
-    resolver: zodResolver(createPayrollSchema),
+    resolver: zodResolver(createPayrollSchema(t)),
     defaultValues: {
       month: String(new Date().getMonth() + 1),
       year: String(currentYear),
@@ -104,13 +106,14 @@ export function CreatePayrollDialog({
       return {};
     },
     onSuccess: (result) => {
-      toast.success(`Đã tạo bảng lương tháng ${result.month}/${result.year}`);
+      toast.success(t("payrollCreateToastSuccess", { month: result.month, year: result.year }));
+      onSuccess?.(result as PayrollRecord);
       setPreviewData(null);
       form.reset();
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Lỗi khi tạo bảng lương",
+        error instanceof Error ? error.message : t("payrollCreateToastError"),
       );
       queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
     },
@@ -130,7 +133,7 @@ export function CreatePayrollDialog({
             departmentId: values.departmentId || "",
           }),
       );
-      if (!response.ok) throw new Error("Lỗi khi xem trước");
+      if (!response.ok) throw new Error(t("payrollCreatePreviewError"));
       return response.json();
     },
     onSuccess: (data) => {
@@ -138,7 +141,7 @@ export function CreatePayrollDialog({
       setShowPreview(true);
     },
     onError: () => {
-      toast.error("Không thể xem trước. Vui lòng thử lại.");
+      toast.error(t("payrollCreatePreviewRetry"));
     },
   });
 
@@ -151,18 +154,13 @@ export function CreatePayrollDialog({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: "VND",
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
-  const selectedDepartment = form.watch("departmentId");
-  const selectedDepartmentName =
-    selectedDepartment && selectedDepartment !== "all"
-      ? departments.find((d) => d.id === selectedDepartment)?.name
-      : "Toàn công ty";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -171,11 +169,10 @@ export function CreatePayrollDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="h-5 w-5" />
-            Tạo bảng lương mới
+            {t("payrollCreateTitle")}
           </DialogTitle>
           <DialogDescription>
-            Tính lương cho nhân viên trong tháng. Hệ thống sẽ tự động tính toán
-            các khoản BHXH, BHYT, BHTN và thuế TNCN.
+            {t("payrollCreateDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -187,20 +184,20 @@ export function CreatePayrollDialog({
                 name="month"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tháng</FormLabel>
+                    <FormLabel>{t("payrollMonth")}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Chọn tháng" />
+                          <SelectValue placeholder={t("payrollCreateSelectMonth")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {months.map((m) => (
                           <SelectItem key={m} value={String(m)}>
-                            Tháng {m}
+                            {t("payrollCreateMonthOption", { month: m })}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -214,14 +211,14 @@ export function CreatePayrollDialog({
                 name="year"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Năm</FormLabel>
+                    <FormLabel>{t("payrollYear")}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Chọn năm" />
+                          <SelectValue placeholder={t("payrollCreateSelectYear")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -243,18 +240,18 @@ export function CreatePayrollDialog({
               name="departmentId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phòng ban (tùy chọn)</FormLabel>
+                  <FormLabel>{t("payrollCreateDepartmentOptional")}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Toàn công ty" />
+                        <SelectValue placeholder={t("payrollWholeCompany")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="all">Toàn công ty</SelectItem>
+                      <SelectItem value="all">{t("payrollWholeCompany")}</SelectItem>
                       {departments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>
                           {dept.name}
@@ -272,7 +269,7 @@ export function CreatePayrollDialog({
               name="standardWorkDays"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Số ngày công chuẩn (mặc định: 22)</FormLabel>
+                  <FormLabel>{t("payrollCreateStandardWorkDays")}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -294,7 +291,7 @@ export function CreatePayrollDialog({
               <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Eye className="h-4 w-4" />
-                  Xem trước bảng lương
+                  {t("payrollCreatePreviewTitle")}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -302,7 +299,7 @@ export function CreatePayrollDialog({
                     <Users className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        Số nhân viên
+                        {t("payrollSummaryTotalEmployees")}
                       </p>
                       <p className="font-semibold">
                         {previewData.employeeCount}
@@ -311,7 +308,7 @@ export function CreatePayrollDialog({
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">
-                      Tổng Gross ước tính
+                      {t("payrollCreateEstimatedGross")}
                     </p>
                     <p className="font-semibold text-blue-600">
                       {formatCurrency(previewData.estimatedGross)}
@@ -319,7 +316,7 @@ export function CreatePayrollDialog({
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">
-                      Tổng Net ước tính
+                      {t("payrollCreateEstimatedNet")}
                     </p>
                     <p className="font-semibold text-green-600">
                       {formatCurrency(previewData.estimatedNet)}
@@ -330,7 +327,7 @@ export function CreatePayrollDialog({
                 {previewData.employeeCount === 0 && (
                   <div className="flex items-center gap-2 text-amber-600 text-sm">
                     <AlertCircle className="h-4 w-4" />
-                    Không có nhân viên nào trong phạm vi này
+                    {t("payrollCreateNoEmployees")}
                   </div>
                 )}
               </div>
@@ -350,12 +347,12 @@ export function CreatePayrollDialog({
                     {previewMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Đang xem trước...
+                        {t("payrollCreatePreviewing")}
                       </>
                     ) : (
                       <>
                         <Eye className="mr-2 h-4 w-4" />
-                        Xem trước
+                        {t("payrollCreatePreview")}
                       </>
                     )}
                   </Button>
@@ -363,12 +360,12 @@ export function CreatePayrollDialog({
                     {createMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Đang tạo...
+                        {t("payrollCreating")}
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Tạo bảng lương
+                        {t("payrollCreateSubmit")}
                       </>
                     )}
                   </Button>
@@ -380,7 +377,7 @@ export function CreatePayrollDialog({
                     variant="outline"
                     onClick={() => setShowPreview(false)}
                   >
-                    Quay lại
+                    {t("payrollCreateBack")}
                   </Button>
                   <Button
                     type="button"
@@ -394,12 +391,12 @@ export function CreatePayrollDialog({
                     {createMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Đang tạo...
+                        {t("payrollCreating")}
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Xác nhận tạo
+                        {t("payrollCreateConfirm")}
                       </>
                     )}
                   </Button>
@@ -412,3 +409,4 @@ export function CreatePayrollDialog({
     </Dialog>
   );
 }
+

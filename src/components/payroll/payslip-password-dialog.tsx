@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,11 +33,12 @@ import {
     Loader2,
 } from "lucide-react";
 
-const passwordSchema = z.object({
-    password: z.string().min(1, "Vui lòng nhập mật khẩu"),
-});
+const passwordSchema = (t: ReturnType<typeof useTranslations>) =>
+    z.object({
+        password: z.string().min(1, t("payrollPasswordDialogPasswordRequired")),
+    });
 
-type PasswordForm = z.infer<typeof passwordSchema>;
+type PasswordForm = z.infer<ReturnType<typeof passwordSchema>>;
 
 interface PayslipPasswordDialogProps {
     open: boolean;
@@ -55,13 +57,14 @@ export function PayslipPasswordDialog({
     maxAttempts = 3,
     employeeName,
 }: PayslipPasswordDialogProps) {
+    const t = useTranslations("ProtectedPages");
     const [showPassword, setShowPassword] = useState(false);
     const [attempts, setAttempts] = useState(0);
     const [isLocked, setIsLocked] = useState(false);
     const [lockUntil, setLockUntil] = useState<Date | null>(null);
 
     const form = useForm<PasswordForm>({
-        resolver: zodResolver(passwordSchema),
+        resolver: zodResolver(passwordSchema(t)),
         defaultValues: {
             password: "",
         },
@@ -71,7 +74,7 @@ export function PayslipPasswordDialog({
 
     const onSubmit = async (data: PasswordForm) => {
         if (isLocked) {
-            toast.error("Tài khoản đã bị khóa. Vui lòng thử lại sau.");
+            toast.error(t("payrollPasswordDialogAccountLocked"));
             return;
         }
 
@@ -83,7 +86,7 @@ export function PayslipPasswordDialog({
             });
 
             if (response.ok) {
-                toast.success("Xác thực thành công");
+                toast.success(t("payrollPasswordDialogVerifySuccess"));
                 onOpenChange(false);
                 form.reset();
                 setAttempts(0);
@@ -94,19 +97,22 @@ export function PayslipPasswordDialog({
 
                 if (newAttempts >= maxAttempts) {
                     setIsLocked(true);
-                    const lockDuration = new Date(Date.now() + 15 * 60 * 1000);
+                    const lockDuration = new Date();
+                    lockDuration.setMinutes(lockDuration.getMinutes() + 15);
                     setLockUntil(lockDuration);
-                    toast.error("Bạn đã nhập sai quá nhiều lần. Tài khoản bị khóa trong 15 phút.");
+                    toast.error(t("payrollPasswordDialogTooManyAttempts"));
                 } else {
                     toast.error(
-                        `Mật khẩu không đúng. Còn ${maxAttempts - newAttempts} lần thử.`
+                        t("payrollPasswordDialogWrongPasswordRemaining", {
+                            count: maxAttempts - newAttempts,
+                        })
                     );
                 }
 
                 form.setValue("password", "");
             }
         } catch {
-            toast.error("Đã xảy ra lỗi. Vui lòng thử lại.");
+            toast.error(t("payrollPasswordDialogUnexpectedError"));
         }
     };
 
@@ -145,12 +151,12 @@ export function PayslipPasswordDialog({
                         </div>
                     </div>
                     <DialogTitle className="text-center">
-                        Xác thực mật khẩu phiếu lương
+                        {t("payrollPasswordDialogTitle")}
                     </DialogTitle>
                     <DialogDescription className="text-center">
                         {employeeName
-                            ? `Nhập mật khẩu để xem phiếu lương của ${employeeName}`
-                            : "Nhập mật khẩu để xem phiếu lương của bạn"}
+                            ? t("payrollPasswordDialogDescriptionWithName", { employeeName })
+                            : t("payrollPasswordDialogDescription")}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -164,13 +170,13 @@ export function PayslipPasswordDialog({
                             name="password"
                             render={({ field }) => (
                                 <FormItem>
-                                    <Label htmlFor="password">Mật khẩu</Label>
+                                    <Label htmlFor="password">{t("payrollPasswordDialogPasswordLabel")}</Label>
                                     <FormControl>
                                         <div className="relative">
                                             <Input
                                                 id="password"
                                                 type={showPassword ? "text" : "password"}
-                                                placeholder="Nhập mật khẩu"
+                                                placeholder={t("payrollPasswordDialogPasswordPlaceholder")}
                                                 className="pr-10"
                                                 disabled={isLocked}
                                                 autoComplete="off"
@@ -203,8 +209,8 @@ export function PayslipPasswordDialog({
                             <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-3 rounded-lg">
                                 <AlertCircle className="h-4 w-4" />
                                 <span>
-                                    Mật khẩu không đúng. Còn{" "}
-                                    <strong>{remainingAttempts}</strong> lần thử.
+                                    {t("payrollPasswordDialogWrongPassword")}{" "}
+                                    <strong>{remainingAttempts}</strong> {t("payrollPasswordDialogAttemptsLeft")}
                                 </span>
                             </div>
                         )}
@@ -213,7 +219,7 @@ export function PayslipPasswordDialog({
                             <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
                                 <AlertCircle className="h-4 w-4" />
                                 <span>
-                                    Tài khoản bị khóa tạm thời. Vui lòng thử lại sau{" "}
+                                    {t("payrollPasswordDialogLockedUntil")}{" "}
                                     <strong>{getTimeRemaining()}</strong>.
                                 </span>
                             </div>
@@ -232,10 +238,10 @@ export function PayslipPasswordDialog({
                                 {form.formState.isSubmitting ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Đang xác thực...
+                                        {t("payrollPasswordDialogVerifying")}
                                     </>
                                 ) : (
-                                    "Xác nhận"
+                                    t("payrollPasswordDialogConfirm")
                                 )}
                             </Button>
 
@@ -247,7 +253,7 @@ export function PayslipPasswordDialog({
                                     onClick={onForgotPassword}
                                 >
                                     <HelpCircle className="mr-2 h-4 w-4" />
-                                    Quên mật khẩu?
+                                    {t("payrollPasswordDialogForgotPassword")}
                                 </Button>
                             )}
                         </DialogFooter>
@@ -256,10 +262,10 @@ export function PayslipPasswordDialog({
 
                 <div className="text-center text-xs text-muted-foreground mt-4">
                     <p>
-                        Mật khẩu phiếu lương được cung cấp bởi phòng Nhân sự.
+                        {t("payrollPasswordDialogFooterProvidedByHr")}
                     </p>
                     <p className="mt-1">
-                        Nếu bạn quên mật khẩu, vui lòng liên hệ HR để được hỗ trợ.
+                        {t("payrollPasswordDialogFooterContactHr")}
                     </p>
                 </div>
             </DialogContent>

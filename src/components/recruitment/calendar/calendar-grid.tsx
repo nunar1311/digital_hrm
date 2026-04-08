@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo } from "react";
 import {
@@ -24,7 +24,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { InterviewResponse } from "@/app/(protected)/recruitment/types";
+import type { InterviewResponse } from "@/app/[locale]/(protected)/recruitment/types";
 import {
     getStatusColor,
     getInterviewTypeIcon,
@@ -98,10 +98,10 @@ export function CalendarGrid({
             </div>
             <div className="flex items-center gap-2 text-xs">
                 <Clock className="h-3 w-3" />
-                {interview.scheduledTime} - {interview.duration} phút
+                {interview.scheduledTime} - {interview.duration} phÃºt
             </div>
             <div className="flex items-center gap-2 text-xs">
-                Vòng {interview.round}
+                VÃ²ng {interview.round}
             </div>
             <Badge
                 variant={
@@ -218,8 +218,8 @@ export function CalendarGrid({
                                 )}
                             {dayInterviews.length > 4 && (
                                 <div className="text-[10px] text-muted-foreground text-center py-0.5">
-                                    +{dayInterviews.length - 4} phỏng
-                                    vấn
+                                    +{dayInterviews.length - 4} phá»ng
+                                    váº¥n
                                 </div>
                             )}
                         </div>
@@ -414,7 +414,7 @@ export function CalendarGrid({
                                                                 {
                                                                     interview.duration
                                                                 }{" "}
-                                                                phút
+                                                                phÃºt
                                                             </div>
                                                             <div className="text-xs opacity-90 truncate">
                                                                 {
@@ -530,3 +530,4 @@ export function CalendarGrid({
         </Card>
     );
 }
+

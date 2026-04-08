@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,14 +17,17 @@ import {
 import {
   getEmergencyContacts,
   getDependents,
-} from "@/app/(protected)/employees/actions";
-import Loading from "@/app/(protected)/loading";
+} from "@/app/[locale]/(protected)/employees/actions";
+import Loading from "@/app/[locale]/(protected)/loading";
+import { useTranslations } from "next-intl";
 
 interface Props {
   employeeId: string;
 }
 
 export function FamilyTab({ employeeId }: Props) {
+  const t = useTranslations("ProtectedPages");
+
   const { data: emergencyContacts = [], isLoading: loadingContacts } = useQuery(
     {
       queryKey: ["emergencyContacts", employeeId],
@@ -55,11 +58,11 @@ export function FamilyTab({ employeeId }: Props) {
   const getRelationshipLabel = (rel: string) => {
     switch (rel) {
       case "SPOUSE":
-        return "Vợ/Chồng";
+        return t("employeesFamilyRelationshipSpouse");
       case "CHILD":
-        return "Con cái";
+        return t("employeesFamilyRelationshipChild");
       case "PARENT":
-        return "Bố/Mẹ";
+        return t("employeesFamilyRelationshipParent");
       default:
         return rel;
     }
@@ -96,7 +99,7 @@ export function FamilyTab({ employeeId }: Props) {
                 {dependents.length}
               </div>
               <div className="text-xs text-muted-foreground">
-                Người phụ thuộc
+                {t("employeesFamilyDependents")}
               </div>
             </div>
           </CardContent>
@@ -112,7 +115,7 @@ export function FamilyTab({ employeeId }: Props) {
                 {emergencyContacts.length}
               </div>
               <div className="text-xs text-muted-foreground">
-                Liên hệ khẩn cấp
+                {t("employeesFamilyEmergencyContacts")}
               </div>
             </div>
           </CardContent>
@@ -128,7 +131,7 @@ export function FamilyTab({ employeeId }: Props) {
                 {dependents.length}
               </div>
               <div className="text-xs text-muted-foreground">
-                Giảm trừ gia cảnh
+                {t("employeesFamilyTaxDependents")}
               </div>
             </div>
           </CardContent>
@@ -136,12 +139,12 @@ export function FamilyTab({ employeeId }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {/* Người phụ thuộc */}
+        {/* Dependents */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              Người phụ thuộc (Giảm trừ gia cảnh)
+              {t("employeesFamilyDependentsCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -173,10 +176,8 @@ export function FamilyTab({ employeeId }: Props) {
                             <div className="flex items-center gap-1.5">
                               <Calendar className="h-3 w-3" />
                               <span>
-                                Sinh:{" "}
-                                {new Date(dep.dateOfBirth).toLocaleDateString(
-                                  "vi-VN",
-                                )}
+                                {t("employeesFamilyBirthDate")}: {" "}
+                                {new Date(dep.dateOfBirth).toLocaleDateString()}
                               </span>
                             </div>
                           )}
@@ -184,7 +185,7 @@ export function FamilyTab({ employeeId }: Props) {
                             <div className="flex items-center gap-1.5">
                               <CreditCard className="h-3 w-3" />
                               <span className="font-mono text-xs">
-                                CCCD: {dep.nationalId}
+                                {t("employeesExportFieldNationalId")}: {dep.nationalId}
                               </span>
                             </div>
                           )}
@@ -197,18 +198,18 @@ export function FamilyTab({ employeeId }: Props) {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">Chưa có thông tin người phụ thuộc.</p>
+                <p className="text-sm">{t("employeesFamilyDependentsEmpty")}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Liên hệ khẩn cấp */}
+        {/* Emergency contacts */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-orange-500" />
-              Liên hệ khẩn cấp
+              {t("employeesFamilyEmergencyContacts")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -259,7 +260,7 @@ export function FamilyTab({ employeeId }: Props) {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Phone className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">Chưa có thông tin liên hệ khẩn cấp.</p>
+                <p className="text-sm">{t("employeesFamilyEmergencyEmpty")}</p>
               </div>
             )}
           </CardContent>
@@ -268,3 +269,4 @@ export function FamilyTab({ employeeId }: Props) {
     </div>
   );
 }
+

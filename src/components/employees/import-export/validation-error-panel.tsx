@@ -5,6 +5,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ interface ValidationErrorPanelProps {
 
 export function ValidationErrorPanel({ errors }: ValidationErrorPanelProps) {
     const [isExpanded, setIsExpanded] = useState(true);
+    const t = useTranslations('ProtectedPages');
 
     if (errors.length === 0) return null;
 
@@ -29,7 +31,7 @@ export function ValidationErrorPanel({ errors }: ValidationErrorPanelProps) {
                 <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
                     <span className="text-sm font-medium text-destructive">
-                        Phát hiện {errors.length} lỗi
+                        {t('employeesImportValidationDetectedErrors', { count: errors.length })}
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -59,7 +61,7 @@ export function ValidationErrorPanel({ errors }: ValidationErrorPanelProps) {
                                     variant="outline"
                                     className="shrink-0 text-xs font-mono mt-0.5 border-destructive/40 text-destructive"
                                 >
-                                    Dòng {error.row}
+                                    {t('employeesImportValidationRow', { row: error.row })}
                                 </Badge>
                                 <span className="text-muted-foreground">{error.message}</span>
                             </li>

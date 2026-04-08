@@ -1,12 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -26,22 +27,31 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import type { Shift } from "@/app/(protected)/attendance/types";
-import { updateShift, createShift } from "@/app/(protected)/attendance/actions";
+import type { Shift } from "@/app/[locale]/(protected)/attendance/types";
+import { updateShift, createShift } from "@/app/[locale]/(protected)/attendance/actions";
 
-export const shiftFormSchema = z.object({
-  name: z.string().min(1, "Vui lòng nhập tên ca"),
-  code: z.string().min(1, "Vui lòng nhập mã ca"),
-  startTime: z.string().min(1, "Vui lòng chọn giờ bắt đầu"),
-  endTime: z.string().min(1, "Vui lòng chọn giờ kết thúc"),
-  breakMinutes: z.number().min(0),
-  lateThreshold: z.number().min(0),
-  earlyThreshold: z.number().min(0),
-  isDefault: z.boolean(),
-  isActive: z.boolean(),
-});
+function createShiftFormSchema(t: ReturnType<typeof useTranslations>) {
+  return z.object({
+    name: z.string().min(1, t("attendanceShiftsValidationNameRequired")),
+    code: z.string().min(1, t("attendanceShiftsValidationCodeRequired")),
+    startTime: z
+      .string()
+      .min(1, t("attendanceShiftsValidationStartTimeRequired")),
+    endTime: z
+      .string()
+      .min(1, t("attendanceShiftsValidationEndTimeRequired")),
+    breakMinutes: z.number().min(0),
+    lateThreshold: z.number().min(0),
+    earlyThreshold: z.number().min(0),
+    isDefault: z.boolean(),
+    isActive: z.boolean(),
+    type: z.string(),
+  });
+}
 
-export type ShiftFormValues = z.infer<typeof shiftFormSchema>;
+type ShiftFormSchema = ReturnType<typeof createShiftFormSchema>;
+type ShiftFormInput = z.input<ShiftFormSchema>;
+export type ShiftFormValues = z.output<ShiftFormSchema>;
 
 function computeWorkHours(
   startTime: string,
@@ -77,8 +87,10 @@ export function ShiftFormDialog({
 }: ShiftFormDialogProps) {
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
+  const t = useTranslations("ProtectedPages");
+  const shiftFormSchema = createShiftFormSchema(t);
 
-  const form = useForm<ShiftFormValues>({
+  const form = useForm<ShiftFormInput, unknown, ShiftFormValues>({
     resolver: zodResolver(shiftFormSchema),
     defaultValues: {
       name: "",
@@ -90,6 +102,7 @@ export function ShiftFormDialog({
       earlyThreshold: 15,
       isDefault: false,
       isActive: true,
+      type: "FIXED",
     },
   });
 
@@ -106,6 +119,7 @@ export function ShiftFormDialog({
           earlyThreshold: editingShift.earlyThreshold,
           isDefault: editingShift.isDefault,
           isActive: editingShift.isActive,
+          type: "FIXED",
         });
       } else {
         form.reset({
@@ -118,15 +132,16 @@ export function ShiftFormDialog({
           earlyThreshold: 15,
           isDefault: false,
           isActive: true,
+          type: "FIXED",
         });
       }
     }
   }, [open, editingShift, form]);
 
-  const nameValue = form.watch("name");
-  const startTime = form.watch("startTime");
-  const endTime = form.watch("endTime");
-  const breakMinutes = form.watch("breakMinutes");
+  const nameValue = useWatch({ control: form.control, name: "name" });
+  const startTime = useWatch({ control: form.control, name: "startTime" });
+  const endTime = useWatch({ control: form.control, name: "endTime" });
+  const breakMinutes = useWatch({ control: form.control, name: "breakMinutes" });
 
   useEffect(() => {
     if (!editingShift && nameValue) {
@@ -149,10 +164,10 @@ export function ShiftFormDialog({
     try {
       if (editingShift) {
         await updateShift(editingShift.id, values);
-        toast.success("Cập nhật ca thành công");
+        toast.success(t("attendanceShiftsToastUpdated"));
       } else {
         await createShift(values);
-        toast.success("Tạo ca mới thành công");
+        toast.success(t("attendanceShiftsToastCreated"));
       }
       queryClient.invalidateQueries({
         queryKey: ["attendance", "shifts-sidebar"],
@@ -164,7 +179,7 @@ export function ShiftFormDialog({
       onSuccess?.();
     } catch (err: unknown) {
       const error = err as Error;
-      toast.error(error.message || "Có lỗi xảy ra");
+      toast.error(error.message || t("attendanceShiftsToastError"));
     } finally {
       setIsPending(false);
     }
@@ -175,12 +190,14 @@ export function ShiftFormDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {editingShift ? "Sửa ca làm việc" : "Tạo ca mới"}
+            {editingShift
+              ? t("attendanceShiftsEditDialogTitle")
+              : t("attendanceShiftsCreateDialogTitle")}
           </DialogTitle>
           <DialogDescription>
             {editingShift
-              ? "Chỉnh sửa thông tin ca làm việc"
-              : "Thêm ca làm việc mới vào hệ thống"}
+              ? t("attendanceShiftsEditDialogDescription")
+              : t("attendanceShiftsCreateDialogDescription")}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -195,7 +212,7 @@ export function ShiftFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs">
-                      Tên ca <span className="text-destructive">*</span>
+                      {t("attendanceShiftsNameLabel")} <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input {...field} className="h-8 text-xs" />
@@ -210,7 +227,7 @@ export function ShiftFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs">
-                      Mã ca <span className="text-destructive">*</span>
+                      {t("attendanceShiftsCodeLabel")} <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -218,7 +235,7 @@ export function ShiftFormDialog({
                         onChange={(e) =>
                           field.onChange(e.target.value.toUpperCase())
                         }
-                        disabled={!!form.watch("name")}
+                        disabled={!!nameValue}
                         readOnly
                         maxLength={10}
                         className="h-8 text-xs font-mono"
@@ -237,7 +254,7 @@ export function ShiftFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs">
-                      Giờ bắt đầu <span className="text-destructive">*</span>
+                      {t("attendanceShiftsStartTimeLabel")} <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input type="time" {...field} className="h-8 text-xs" />
@@ -252,7 +269,7 @@ export function ShiftFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs">
-                      Giờ kết thúc <span className="text-destructive">*</span>
+                      {t("attendanceShiftsEndTimeLabel")} <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input type="time" {...field} className="h-8 text-xs" />
@@ -268,18 +285,18 @@ export function ShiftFormDialog({
                 <p className="text-[10px] text-muted-foreground">
                   {workHours ? (
                     <>
-                      Tổng giờ làm:{" "}
+                      {t("attendanceShiftsTotalWorkHours")} {" "}
                       <strong>
                         {workHours.hours}h
                         {workHours.minutes > 0 ? ` ${workHours.minutes}p` : ""}
                       </strong>
                       <span className="ml-1">
-                        (đã trừ {breakMinutes}p nghỉ)
+                        {t("attendanceShiftsBreakDeduction", { minutes: breakMinutes })}
                       </span>
                     </>
                   ) : (
                     <span className="text-destructive">
-                      Thời gian không hợp lệ
+                      {t("attendanceShiftsInvalidTimeRange")}
                     </span>
                   )}
                 </p>
@@ -292,7 +309,7 @@ export function ShiftFormDialog({
                 name="breakMinutes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs">Nghỉ (p)</FormLabel>
+                    <FormLabel className="text-xs">{t("attendanceShiftsBreakMinutesLabel")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -313,7 +330,7 @@ export function ShiftFormDialog({
                 name="lateThreshold"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs">Muộn (p)</FormLabel>
+                    <FormLabel className="text-xs">{t("attendanceShiftsLateThresholdLabel")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -334,7 +351,7 @@ export function ShiftFormDialog({
                 name="earlyThreshold"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs">Sớm (p)</FormLabel>
+                    <FormLabel className="text-xs">{t("attendanceShiftsEarlyThresholdLabel")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -365,7 +382,7 @@ export function ShiftFormDialog({
                       />
                     </FormControl>
                     <FormLabel className="mt-0! text-xs cursor-pointer">
-                      Mặc định
+                      {t("attendanceShiftsDefault")}
                     </FormLabel>
                   </FormItem>
                 )}
@@ -382,7 +399,7 @@ export function ShiftFormDialog({
                       />
                     </FormControl>
                     <FormLabel className="mt-0! text-xs cursor-pointer">
-                      Hoạt động
+                      {t("attendanceShiftsActiveLabel")}
                     </FormLabel>
                   </FormItem>
                 )}
@@ -396,18 +413,18 @@ export function ShiftFormDialog({
                 size="sm"
                 onClick={() => onOpenChange(false)}
               >
-                Hủy
+                {t("attendanceShiftsCancel")}
               </Button>
               <Button type="submit" size="sm" disabled={isPending}>
                 {isPending ? (
                   <>
                     <Loader2 className="size-3.5 animate-spin" />
-                    Đang lưu...
+                    {t("attendanceShiftsSaving")}
                   </>
                 ) : editingShift ? (
-                  "Cập nhật"
+                  t("attendanceShiftsUpdate")
                 ) : (
-                  "Tạo mới"
+                  t("attendanceShiftsCreate")
                 )}
               </Button>
             </DialogFooter>
@@ -417,3 +434,4 @@ export function ShiftFormDialog({
     </Dialog>
   );
 }
+

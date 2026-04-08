@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,7 +24,7 @@ import {
   getDepartmentOptions,
   suggestRoleForPositionChange,
   updateUserRoleFromPosition,
-} from "@/app/(protected)/employees/actions";
+} from "@/app/[locale]/(protected)/employees/actions";
 import { toast } from "sonner";
 import {
   Form,
@@ -73,46 +74,50 @@ import { Badge } from "../ui/badge";
 import {
   getRoleBadgeColor,
   ROLE_LABELS,
-} from "@/app/(protected)/settings/roles/constants";
+} from "@/app/[locale]/(protected)/settings/roles/constants";
 
-// ─── Zod Schema ─────────────────────────────────────────────────────────────
+// Employee form schema
+function createAddEmployeeSchema(t: ReturnType<typeof useTranslations>) {
+  return z.object({
+    fullName: z.string().min(1, t("employeesAddValidationFullNameRequired")),
+    nationalId: z
+      .string()
+      .min(9, t("employeesAddValidationNationalIdMin"))
+      .max(12, t("employeesAddValidationNationalIdMax"))
+      .regex(/^\d+$/, t("employeesAddValidationNationalIdNumeric")),
+    nationalIdDate: z.date().optional(),
+    nationalIdPlace: z.string().optional(),
+    dateOfBirth: z.date().min(1, t("employeesAddValidationDateOfBirthRequired")),
+    gender: z.string().optional(),
+    nationality: z.string().optional(),
+    ethnicity: z.string().optional(),
+    religion: z.string().optional(),
+    maritalStatus: z.string().optional(),
+    departmentId: z.string().optional(),
+    positionId: z.string().optional(),
+    employmentType: z.string().optional(),
+    hireDate: z.date().optional(),
+    probationEnd: z.date().optional(),
+    employeeStatus: z.string().optional(),
+    phone: z
+      .string()
+      .regex(/^(0|\+84)\d{9,10}$/, t("employeesAddValidationPhoneInvalid"))
+      .optional(),
+    personalEmail: z
+      .string()
+      .email(t("employeesAddValidationEmailInvalid"))
+      .optional(),
+    address: z.string().optional(),
+    educationLevel: z.string().optional(),
+    university: z.string().optional(),
+    major: z.string().optional(),
+    bankName: z.string().optional(),
+    bankAccount: z.string().optional(),
+    taxCode: z.string().optional(),
+  });
+}
 
-const addEmployeeSchema = z.object({
-  fullName: z.string().min(1, "Vui lòng nhập họ và tên"),
-  nationalId: z
-    .string()
-    .min(9, "CCCD phải có ít nhất 9 số")
-    .max(12, "CCCD tối đa 12 số")
-    .regex(/^\d+$/, "CCCD phải là số"),
-  nationalIdDate: z.date().optional(),
-  nationalIdPlace: z.string().optional(),
-  dateOfBirth: z.date().min(1, "Vui lòng chọn ngày sinh"),
-  gender: z.string().optional(),
-  nationality: z.string().optional(),
-  ethnicity: z.string().optional(),
-  religion: z.string().optional(),
-  maritalStatus: z.string().optional(),
-  departmentId: z.string().optional(),
-  positionId: z.string().optional(),
-  employmentType: z.string().optional(),
-  hireDate: z.date().optional(),
-  probationEnd: z.date().optional(),
-  employeeStatus: z.string().optional(),
-  phone: z
-    .string()
-    .regex(/^(0|\+84)\d{9,10}$/, "SĐT không hợp lệ (0/84 + 9-10 số)")
-    .optional(),
-  personalEmail: z.string().email("Email không hợp lệ").optional(),
-  address: z.string().optional(),
-  educationLevel: z.string().optional(),
-  university: z.string().optional(),
-  major: z.string().optional(),
-  bankName: z.string().optional(),
-  bankAccount: z.string().optional(),
-  taxCode: z.string().optional(),
-});
-
-type AddEmployeeFormValues = z.infer<typeof addEmployeeSchema>;
+type AddEmployeeFormValues = z.infer<ReturnType<typeof createAddEmployeeSchema>>;
 
 export interface EmployeeEditData {
   id: string;
@@ -150,43 +155,43 @@ interface AddEmployeeDialogProps {
   employee?: EmployeeEditData;
 }
 
-// ─── Section config ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Section config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type SectionKey = "basic" | "work" | "contact" | "banking";
 
 const SECTIONS: {
   key: SectionKey;
-  label: string;
-  description: string;
+  labelKey: string;
+  descriptionKey: string;
   icon: React.ElementType;
 }[] = [
   {
     key: "basic",
-    label: "Thông tin cơ bản",
-    description: "Họ tên, CCCD, ngày sinh...",
+    labelKey: "employeesAddSectionBasicLabel",
+    descriptionKey: "employeesAddSectionBasicDescription",
     icon: User,
   },
   {
     key: "work",
-    label: "Công việc",
-    description: "Phòng ban, chức vụ, hợp đồng...",
+    labelKey: "employeesAddSectionWorkLabel",
+    descriptionKey: "employeesAddSectionWorkDescription",
     icon: Briefcase,
   },
   {
     key: "contact",
-    label: "Liên hệ & Học vấn",
-    description: "Điện thoại, email, trình độ...",
+    labelKey: "employeesAddSectionContactLabel",
+    descriptionKey: "employeesAddSectionContactDescription",
     icon: Contact,
   },
   {
     key: "banking",
-    label: "Tài khoản ngân hàng",
-    description: "Ngân hàng, số TK, mã số thuế",
+    labelKey: "employeesAddSectionBankingLabel",
+    descriptionKey: "employeesAddSectionBankingDescription",
     icon: CreditCard,
   },
 ];
 
-// ─── Import Sheet (sub-component) ────────────────────────────────────────────
+// â”€â”€â”€ Import Sheet (sub-component) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface ImportEmployeeSheetProps {
   open: boolean;
@@ -194,6 +199,7 @@ interface ImportEmployeeSheetProps {
 }
 
 function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
+  const t = useTranslations("ProtectedPages");
   const queryClient = useQueryClient();
   const [importResult, setImportResult] = useState<ParsedImportResult | null>(
     null,
@@ -212,9 +218,18 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
     },
     onSuccess: (result) => {
       if (result.failed === 0) {
-        toast.success(`Đã nhập thành công ${result.success} nhân viên`);
+        toast.success(
+          t("employeesAddImportSuccess", {
+            count: result.success,
+          }),
+        );
       } else {
-        toast.warning(`Nhập được ${result.success}, thất bại ${result.failed}`);
+        toast.warning(
+          t("employeesAddImportPartial", {
+            success: result.success,
+            failed: result.failed,
+          }),
+        );
       }
       if (result.errors.length > 0) {
         setImportErrors(result.errors.slice(0, 5));
@@ -229,7 +244,7 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
     },
     onError: (err) => {
       const error = err as Error;
-      toast.error(error.message || "Có lỗi xảy ra khi nhập");
+      toast.error(error.message || t("employeesAddImportError"));
       setIsImporting(false);
     },
   });
@@ -261,13 +276,13 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
     setIsDownloading(true);
     try {
       await downloadEmployeeImportTemplate();
-      toast.success("Đã tải file mẫu thành công");
+      toast.success(t("employeesAddTemplateDownloadSuccess"));
     } catch {
-      toast.error("Không thể tải file mẫu");
+      toast.error(t("employeesAddTemplateDownloadError"));
     } finally {
       setIsDownloading(false);
     }
-  }, []);
+  }, [t]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
@@ -275,10 +290,10 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5 text-primary" />
-            Nhập nhân viên từ file Excel
+            {t("employeesAddImportSheetTitle")}
           </DialogTitle>
           <DialogDescription>
-            Tải lên file Excel (.xlsx, .xls) chứa danh sách nhân viên
+            {t("employeesAddImportSheetDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -297,7 +312,7 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              Tải file mẫu
+              {t("employeesAddTemplateDownload")}
             </Button>
           </div>
 
@@ -309,7 +324,7 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
             >
               <span className="flex items-center gap-2 text-sm font-medium">
                 <FileText className="h-4 w-4 text-primary" />
-                Hướng dẫn nhập dữ liệu
+                {t("employeesAddImportGuideTitle")}
               </span>
               {guideOpen ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -323,14 +338,14 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
                   {/* Required columns */}
                   <div>
                     <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
-                      <span className="text-destructive">*</span> Cột bắt buộc:
+                      <span className="text-destructive">*</span> {t("employeesAddImportRequiredColumns")}
                     </p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                       <span className="text-xs">
-                        <strong>Mã nhân viên</strong> — duy nhất, không trùng
+                        <strong>{t("employeesExportFieldEmployeeCode")}</strong> — {t("employeesAddImportEmployeeCodeHint")}
                       </span>
                       <span className="text-xs">
-                        <strong>Họ và tên</strong> — bắt buộc
+                        <strong>{t("employeesExportFieldFullName")}</strong> — {t("employeesAddImportFullNameHint")}
                       </span>
                     </div>
                   </div>
@@ -338,75 +353,63 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
                   {/* Optional columns */}
                   <div>
                     <p className="text-xs font-semibold text-foreground mb-2">
-                      Cột tùy chọn:
+                      {t("employeesAddImportOptionalColumns")}
                     </p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
                       <span>
-                        Ngày sinh{" "}
+                        {t("employeesExportFieldDateOfBirth")}{" "}
+                        <span className="text-[10px] text-muted-foreground/70">(dd/MM/yyyy)</span>
+                      </span>
+                      <span>
+                        {t("employeesExportFieldGender")}{" "}
                         <span className="text-[10px] text-muted-foreground/70">
-                          (dd/MM/yyyy)
+                          ({t("employeesExportGenderMale")}/{t("employeesExportGenderFemale")}/{t("employeesExportGenderOther")})
+                        </span>
+                      </span>
+                      <span>{t("employeesExportFieldPhone")}</span>
+                      <span>{t("employeesExportFieldPersonalEmail")}</span>
+                      <span>{t("employeesExportFieldAddress")}</span>
+                      <span>{t("employeesExportFieldDepartment")}</span>
+                      <span>{t("employeesExportFieldPosition")}</span>
+                      <span>
+                        {t("employeesExportFieldEmploymentType")}{" "}
+                        <span className="text-[10px] text-muted-foreground/70">
+                          ({t("employeesExportEmploymentTypeFullTime")}/{t("employeesExportEmploymentTypePartTime")}/{t("employeesExportEmploymentTypeContract")}/{t("employeesExportEmploymentTypeIntern")})
                         </span>
                       </span>
                       <span>
-                        Giới tính{" "}
-                        <span className="text-[10px] text-muted-foreground/70">
-                          (Nam/Nữ/Khác)
-                        </span>
-                      </span>
-                      <span>Số điện thoại</span>
-                      <span>Email</span>
-                      <span>Địa chỉ</span>
-                      <span>Phòng ban</span>
-                      <span>Chức vụ</span>
-                      <span>
-                        Loại hình{" "}
-                        <span className="text-[10px] text-muted-foreground/70">
-                          (Toàn thời gian/Bán thời gian/Hợp đồng/Thực tập)
-                        </span>
+                        {t("employeesExportFieldHireDate")}{" "}
+                        <span className="text-[10px] text-muted-foreground/70">(dd/MM/yyyy)</span>
                       </span>
                       <span>
-                        Ngày vào làm{" "}
+                        {t("employeesExportFieldEmployeeStatus")}{" "}
                         <span className="text-[10px] text-muted-foreground/70">
-                          (dd/MM/yyyy)
+                          ({t("employeesStatusActive")}/{t("employeesStatusOnLeave")}/{t("employeesStatusResigned")})
                         </span>
                       </span>
+                      <span>{t("employeesExportFieldBankName")}</span>
+                      <span>{t("employeesExportFieldBankAccount")}</span>
                       <span>
-                        Trạng thái{" "}
+                        {t("employeesExportFieldEducationLevel")}{" "}
                         <span className="text-[10px] text-muted-foreground/70">
-                          (Đang làm/Nghỉ phép/Đã nghỉ)
+                          ({t("employeesExportEducationHighSchool")}/{t("employeesExportEducationCollege")}/{t("employeesExportEducationBachelor")}/{t("employeesExportEducationMaster")})
                         </span>
                       </span>
-                      <span>Ngân hàng</span>
-                      <span>Số tài khoản</span>
-                      <span>
-                        Trình độ{" "}
-                        <span className="text-[10px] text-muted-foreground/70">
-                          (THPT/Cao đẳng/Đại học/Thạc sĩ)
-                        </span>
-                      </span>
-                      <span>Trường</span>
+                      <span>{t("employeesExportFieldUniversity")}</span>
                     </div>
                   </div>
 
                   {/* Tips */}
                   <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-md p-3">
                     <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-1.5">
-                      Lưu ý khi nhập:
+                      {t("employeesAddImportTipsTitle")}
                     </p>
                     <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-0.5 list-disc list-inside">
-                      <li>
-                        Tên cột phải <strong>chính xác</strong> như mẫu (có dấu,
-                        viết hoa đúng)
-                      </li>
-                      <li>Không chỉnh sửa dòng tiêu đề (dòng 1)</li>
-                      <li>
-                        Ngày sinh / Ngày vào làm: định dạng{" "}
-                        <strong>dd/MM/yyyy</strong>
-                      </li>
-                      <li>
-                        Số điện thoại: bắt đầu bằng <strong>0</strong>, 10–11 số
-                      </li>
-                      <li>Nên dùng file mẫu để đảm bảo đúng định dạng</li>
+                      <li>{t("employeesAddImportTipExactColumns")}</li>
+                      <li>{t("employeesAddImportTipKeepHeader")}</li>
+                      <li>{t("employeesAddImportTipDateFormat")}</li>
+                      <li>{t("employeesAddImportTipPhoneFormat")}</li>
+                      <li>{t("employeesAddImportTipUseTemplate")}</li>
                     </ul>
                   </div>
                 </div>
@@ -427,8 +430,9 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
               <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg">
                 <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
                 <span className="text-sm text-green-800 dark:text-green-300">
-                  Đọc được <strong>{importResult.rows.length}</strong> bản ghi
-                  từ file
+                  {t("employeesAddImportReadRecords", {
+                    count: importResult.rows.length,
+                  })}
                 </span>
                 <Button
                   variant="ghost"
@@ -444,7 +448,7 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
               {importPreview && importPreview.length > 0 && (
                 <div className="border rounded-lg overflow-hidden">
                   <p className="text-xs text-muted-foreground px-3 py-2 bg-muted/30 border-b">
-                    Xem trước 5 bản ghi đầu tiên:
+                    {t("employeesAddImportPreviewFirstFive")}
                   </p>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
@@ -454,19 +458,19 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
                             STT
                           </th>
                           <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                            Họ và tên
+                            {t("employeesExportFieldFullName")}
                           </th>
                           <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                            CCCD
+                            {t("employeesExportFieldNationalId")}
                           </th>
                           <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                            Ngày sinh
+                            {t("employeesExportFieldDateOfBirth")}
                           </th>
                           <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                            Giới tính
+                            {t("employeesExportFieldGender")}
                           </th>
                           <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                            SĐT
+                            {t("employeesExportHeaderPhoneShort")}
                           </th>
                         </tr>
                       </thead>
@@ -477,19 +481,19 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
                               {idx + 1}
                             </td>
                             <td className="px-3 py-2 font-medium">
-                              {String(row["Họ và tên"] || "")}
+                              {String(row[t("employeesExportFieldFullName")] || row["fullName"] || "")}
                             </td>
                             <td className="px-3 py-2">
                               {String(row["CCCD"] || "")}
                             </td>
                             <td className="px-3 py-2">
-                              {String(row["Ngày sinh"] || "")}
+                              {String(row[t("employeesExportFieldDateOfBirth")] || row["dateOfBirth"] || "")}
                             </td>
                             <td className="px-3 py-2">
-                              {String(row["Giới tính"] || "")}
+                              {String(row[t("employeesExportFieldGender")] || row["gender"] || "")}
                             </td>
                             <td className="px-3 py-2">
-                              {String(row["Số điện thoại"] || "")}
+                              {String(row[t("employeesExportFieldPhone")] || row["phone"] || "")}
                             </td>
                           </tr>
                         ))}
@@ -504,7 +508,7 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
                 <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg">
                   <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                   <div className="text-sm text-red-800 dark:text-red-300">
-                    <p className="font-medium mb-1">Một số dòng bị bỏ qua:</p>
+                    <p className="font-medium mb-1">{t("employeesAddImportSkippedRows")}</p>
                     <ul className="list-disc list-inside space-y-0.5">
                       {importErrors.map((err, i) => (
                         <li key={i}>{err}</li>
@@ -517,23 +521,23 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
               {/* Format note */}
               <div className="p-3 bg-muted/30 rounded-lg border">
                 <p className="text-xs font-medium mb-2">
-                  Cột bắt buộc trong file Excel:
+                  {t("employeesAddImportRequiredColumnsNote")}
                 </p>
                 <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
                   <span>
-                    <strong>Họ và tên</strong> (bắt buộc)
+                    <strong>{t("employeesExportFieldFullName")}</strong> ({t("employeesAddRequired")})
                   </span>
                   <span>
-                    <strong>CCCD</strong> (bắt buộc)
+                    <strong>{t("employeesExportFieldNationalId")}</strong> ({t("employeesAddRequired")})
                   </span>
-                  <span>Ngày sinh</span>
-                  <span>Giới tính (Nam/Nữ/Khác)</span>
-                  <span>Số điện thoại</span>
-                  <span>Email</span>
-                  <span>Phòng ban</span>
-                  <span>Chức vụ</span>
-                  <span>Ngày vào làm (dd/MM/yyyy)</span>
-                  <span>Trình độ (THPT/Cao đẳng/Đại học...)</span>
+                  <span>{t("employeesExportFieldDateOfBirth")}</span>
+                  <span>{t("employeesExportFieldGender")} ({t("employeesExportGenderMale")}/{t("employeesExportGenderFemale")}/{t("employeesExportGenderOther")})</span>
+                  <span>{t("employeesExportFieldPhone")}</span>
+                  <span>{t("employeesExportFieldPersonalEmail")}</span>
+                  <span>{t("employeesExportFieldDepartment")}</span>
+                  <span>{t("employeesExportFieldPosition")}</span>
+                  <span>{t("employeesExportFieldHireDate")} (dd/MM/yyyy)</span>
+                  <span>{t("employeesExportFieldEducationLevel")} ({t("employeesExportEducationHighSchool")}/{t("employeesExportEducationCollege")}/{t("employeesExportEducationBachelor")}...)</span>
                 </div>
               </div>
 
@@ -544,7 +548,7 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
                   onClick={handleClear}
                   disabled={isImporting}
                 >
-                  Chọn file khác
+                  {t("employeesAddChooseOtherFile")}
                 </Button>
                 <Button
                   onClick={handleConfirm}
@@ -553,12 +557,14 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
                   {isImporting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Đang nhập...
+                      {t("employeesAddImporting")}
                     </>
                   ) : (
                     <>
                       <FileSpreadsheet className="h-4 w-4" />
-                      Nhập {importResult.rows.length} nhân viên
+                      {t("employeesAddImportEmployeesCount", {
+                        count: importResult.rows.length,
+                      })}
                     </>
                   )}
                 </Button>
@@ -571,23 +577,24 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
   );
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+// Main Component
 
 export function AddEmployeeDialog({
   open,
   onClose,
   employee,
 }: AddEmployeeDialogProps) {
+  const t = useTranslations("ProtectedPages");
   const isEditMode = !!employee;
   const queryClient = useQueryClient();
 
-  // ── Active section ──
+  // Active section
   const [activeSection, setActiveSection] = useState<SectionKey>("basic");
 
-  // ── Import sheet ──
+  // Import sheet
   const [importOpen, setImportOpen] = useState(false);
 
-  // ── Role suggestion state ──
+  // Role suggestion state
   const [roleSuggestion, setRoleSuggestion] = useState<{
     roleKey: string | null;
     roleName: string | null;
@@ -597,14 +604,14 @@ export function AddEmployeeDialog({
   } | null>(null);
   const [showRoleSuggestion, setShowRoleSuggestion] = useState(false);
 
-  // ── Fetch departments for select ──
+  // Fetch departments for select
   const { data: departments = [] } = useQuery({
     queryKey: ["departmentOptions"],
     queryFn: getDepartmentOptions,
     enabled: open,
   });
 
-  // ── Auto-generate employee code on open ──
+  // Auto-generate employee code on open
   const [employeeCode, setEmployeeCode] = useState<string>("");
 
   useEffect(() => {
@@ -615,9 +622,9 @@ export function AddEmployeeDialog({
     }
   }, [open, isEditMode, employee?.employeeCode]);
 
-  // ── Form ──
+  // Form
   const form = useForm<AddEmployeeFormValues>({
-    resolver: zodResolver(addEmployeeSchema),
+    resolver: zodResolver(createAddEmployeeSchema(t)),
     defaultValues: {
       fullName: "",
       nationalId: "",
@@ -625,8 +632,8 @@ export function AddEmployeeDialog({
       nationalIdPlace: "",
       dateOfBirth: new Date(),
       gender: undefined,
-      nationality: "Việt Nam",
-      ethnicity: "Kinh",
+      nationality: t("employeesAddDefaultNationality"),
+      ethnicity: t("employeesAddDefaultEthnicity"),
       religion: "",
       maritalStatus: undefined,
       departmentId: undefined,
@@ -662,8 +669,8 @@ export function AddEmployeeDialog({
             ? new Date(employee.dateOfBirth)
             : new Date(),
           gender: employee.gender || undefined,
-          nationality: employee.nationality || "Việt Nam",
-          ethnicity: employee.ethnicity || "Kinh",
+          nationality: employee.nationality || t("employeesAddDefaultNationality"),
+          ethnicity: employee.ethnicity || t("employeesAddDefaultEthnicity"),
           religion: employee.religion || "",
           maritalStatus: employee.maritalStatus || undefined,
           departmentId: employee.departmentId || undefined,
@@ -694,8 +701,8 @@ export function AddEmployeeDialog({
           nationalIdPlace: "",
           dateOfBirth: new Date(),
           gender: undefined,
-          nationality: "Việt Nam",
-          ethnicity: "Kinh",
+          nationality: t("employeesAddDefaultNationality"),
+          ethnicity: t("employeesAddDefaultEthnicity"),
           religion: "",
           maritalStatus: undefined,
           departmentId: undefined,
@@ -720,9 +727,9 @@ export function AddEmployeeDialog({
       setRoleSuggestion(null);
       setShowRoleSuggestion(false);
     }
-  }, [open, form, isEditMode, employee]);
+  }, [open, form, isEditMode, employee, t]);
 
-  // ── Watch positionId for changes and fetch role suggestion ──
+  // â”€â”€ Watch positionId for changes and fetch role suggestion â”€â”€
   useEffect(() => {
     if (!isEditMode || !employee?.id) {
       setRoleSuggestion(null);
@@ -766,7 +773,7 @@ export function AddEmployeeDialog({
     return () => clearTimeout(timer);
   }, [form, isEditMode, employee?.id, employee?.positionId]);
 
-  // ── Debounced CCCD existence check ──
+  // â”€â”€ Debounced CCCD existence check â”€â”€
   const cccdDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [cccdStatus, setCccdStatus] = useState<
     "idle" | "checking" | "exists" | "available"
@@ -805,7 +812,7 @@ export function AddEmployeeDialog({
         setCccdStatus("idle");
       }
     }, 600);
-  }, [nationalId, form]);
+  }, [nationalId, form, isEditMode, employee?.nationalId]);
 
   // Clear CCCD status when dialog closes
   useEffect(() => {
@@ -815,12 +822,12 @@ export function AddEmployeeDialog({
     }
   }, [open]);
 
-  // ── Create employee mutation ──
+  // â”€â”€ Create employee mutation â”€â”€
   const createMutation = useMutation({
     mutationFn: async (data: AddEmployeeFormValues) => {
       if (cccdStatus === "exists") {
         throw new Error(
-          `CCCD ${data.nationalId} đã được đăng ký cho nhân viên khác. Vui lòng kiểm tra lại.`,
+          t("employeesAddNationalIdDuplicate", { nationalId: data.nationalId }),
         );
       }
 
@@ -864,7 +871,7 @@ export function AddEmployeeDialog({
       });
     },
     onSuccess: () => {
-      toast.success("Tạo nhân viên thành công");
+      toast.success(t("employeesAddCreateSuccess"));
       queryClient.invalidateQueries({
         queryKey: ["employees"],
       });
@@ -872,17 +879,17 @@ export function AddEmployeeDialog({
     },
     onError: (err) => {
       const error = err as Error;
-      toast.error(error.message || "Có lỗi xảy ra");
+      toast.error(error.message || t("employeesAddCommonError"));
     },
   });
 
-  // ── Update employee mutation ──
+  // â”€â”€ Update employee mutation â”€â”€
   const updateMutation = useMutation({
     mutationFn: async (data: AddEmployeeFormValues) => {
-      if (!employee) throw new Error("Không tìm thấy nhân viên");
+      if (!employee) throw new Error(t("employeesAddNotFoundError"));
       if (cccdStatus === "exists" && data.nationalId !== employee.nationalId) {
         throw new Error(
-          `CCCD ${data.nationalId} đã được đăng ký cho nhân viên khác. Vui lòng kiểm tra lại.`,
+          t("employeesAddNationalIdDuplicate", { nationalId: data.nationalId }),
         );
       }
 
@@ -919,7 +926,7 @@ export function AddEmployeeDialog({
         taxCode: data.taxCode,
       });
 
-      // Cập nhật role tự động nếu position thay đổi và có role mapping
+      // Cáº­p nháº­t role tá»± Ä‘á»™ng náº¿u position thay Ä‘á»•i vÃ  cÃ³ role mapping
       if (showRoleSuggestion && roleSuggestion?.roleKey && data.positionId) {
         await updateUserRoleFromPosition(employee.id, data.positionId);
       }
@@ -927,7 +934,7 @@ export function AddEmployeeDialog({
       return result;
     },
     onSuccess: () => {
-      toast.success("Cập nhật nhân viên thành công");
+      toast.success(t("employeesAddUpdateSuccess"));
       queryClient.invalidateQueries({
         queryKey: ["employees"],
       });
@@ -935,7 +942,7 @@ export function AddEmployeeDialog({
     },
     onError: (err) => {
       const error = err as Error;
-      toast.error(error.message || "Có lỗi xảy ra");
+      toast.error(error.message || t("employeesAddCommonError"));
     },
   });
 
@@ -993,12 +1000,14 @@ export function AddEmployeeDialog({
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle className="text-xl">
-                  {isEditMode ? "Chỉnh sửa nhân viên" : "Thêm nhân viên mới"}
+                  {isEditMode
+                    ? t("employeesAddDialogTitleEdit")
+                    : t("employeesAddDialogTitleCreate")}
                 </DialogTitle>
                 <DialogDescription className="mt-1">
                   {isEditMode
-                    ? "Cập nhật thông tin nhân viên"
-                    : "Nhập thông tin nhân viên hoặc import từ file Excel"}
+                    ? t("employeesAddDialogDescriptionEdit")
+                    : t("employeesAddDialogDescriptionCreate")}
                 </DialogDescription>
               </div>
             </div>
@@ -1025,7 +1034,7 @@ export function AddEmployeeDialog({
                           isActive ? "text-primary" : "text-muted-foreground"
                         }`}
                       />
-                      <span className="truncate">{section.label}</span>
+                      <span className="truncate">{t(section.labelKey)}</span>
                     </SidebarMenuButton>
                   );
                 })}
@@ -1043,7 +1052,7 @@ export function AddEmployeeDialog({
                     }}
                   >
                     <Upload className="h-4 w-4" />
-                    Nhập từ file Excel
+                    {t("employeesAddImportFromExcel")}
                   </Button>
                 </div>
               )}
@@ -1058,23 +1067,23 @@ export function AddEmployeeDialog({
                 >
                   {/* Scrollable content */}
                   <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
-                    {/* ── Section 1: Thông tin cơ bản ── */}
+                    {/* â”€â”€ Section 1: ThÃ´ng tin cÆ¡ báº£n â”€â”€ */}
                     {activeSection === "basic" && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex flex-col items-start">
                             <h3 className="text-base font-semibold">
-                              Thông tin cơ bản
+                              {t("employeesAddSectionBasicTitle")}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              Thông tin cá nhân bắt buộc của nhân viên
+                              {t("employeesAddSectionBasicDescription")}
                             </p>
                           </div>
 
                           {/* Employee code badge */}
                           <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-lg border shrink-0">
                             <span className="text-xs text-muted-foreground">
-                              Mã NV:
+                              {t("employeesAddEmployeeCodeLabel")}
                             </span>
                             <span className="font-mono font-semibold text-sm text-foreground">
                               {employeeCode || "---"}
@@ -1083,7 +1092,7 @@ export function AddEmployeeDialog({
                         </div>
                         {cccdStatus === "exists" && cccdExistsName && (
                           <p className="text-xs text-destructive">
-                            CCCD đã tồn tại:{" "}
+                            {t("employeesAddCccdExists")} {" "}
                             <span className="font-medium">
                               {cccdExistsName}
                             </span>
@@ -1097,12 +1106,12 @@ export function AddEmployeeDialog({
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>
-                                    Họ và tên{" "}
+                                    {t("employeesAddFieldFullName")}{" "}
                                     <span className="text-destructive">*</span>
                                   </FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Nhập họ và tên"
+                                      placeholder={t("employeesAddPlaceholderFullName")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1115,7 +1124,7 @@ export function AddEmployeeDialog({
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>
-                                    Ngày sinh{" "}
+                                    {t("employeesAddFieldDateOfBirth")}{" "}
                                     <span className="text-destructive">*</span>
                                   </FormLabel>
                                   <FormControl>
@@ -1144,7 +1153,7 @@ export function AddEmployeeDialog({
                                       <Input
                                         maxLength={12}
                                         minLength={9}
-                                        placeholder="Nhập số CCCD"
+                                        placeholder={t("employeesAddPlaceholderNationalId")}
                                         {...field}
                                         className={
                                           cccdStatus === "exists"
@@ -1177,21 +1186,27 @@ export function AddEmployeeDialog({
                               name="gender"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Giới tính</FormLabel>
+                                  <FormLabel>{t("employeesAddFieldGender")}</FormLabel>
                                   <Select
                                     onValueChange={field.onChange}
                                     value={field.value}
                                   >
                                     <FormControl>
                                       <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Chọn giới tính" />
+                                        <SelectValue
+                                          placeholder={t("employeesAddPlaceholderSelectGender")}
+                                        />
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      <SelectItem value="MALE">Nam</SelectItem>
-                                      <SelectItem value="FEMALE">Nữ</SelectItem>
+                                      <SelectItem value="MALE">
+                                        {t("employeesExportGenderMale")}
+                                      </SelectItem>
+                                      <SelectItem value="FEMALE">
+                                        {t("employeesExportGenderFemale")}
+                                      </SelectItem>
                                       <SelectItem value="OTHER">
-                                        Khác
+                                        {t("employeesExportGenderOther")}
                                       </SelectItem>
                                     </SelectContent>
                                   </Select>
@@ -1206,7 +1221,7 @@ export function AddEmployeeDialog({
                               name="nationalIdDate"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Ngày cấp CCCD</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldNationalIdDate")}</FormLabel>
                                   <FormControl>
                                     <DatePicker
                                       date={field.value}
@@ -1221,10 +1236,10 @@ export function AddEmployeeDialog({
                               name="nationalIdPlace"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Nơi cấp CCCD</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldNationalIdPlace")}</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Nhập nơi cấp CCCD"
+                                      placeholder={t("employeesAddPlaceholderNationalIdPlace")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1239,10 +1254,10 @@ export function AddEmployeeDialog({
                               name="nationality"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Quốc tịch</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldNationality")}</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Nhập quốc tịch"
+                                      placeholder={t("employeesAddPlaceholderNationality")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1254,10 +1269,10 @@ export function AddEmployeeDialog({
                               name="ethnicity"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Dân tộc</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldEthnicity")}</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Nhập dân tộc"
+                                      placeholder={t("employeesAddPlaceholderEthnicity")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1272,28 +1287,28 @@ export function AddEmployeeDialog({
                               name="maritalStatus"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Tình trạng hôn nhân</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldMaritalStatus")}</FormLabel>
                                   <Select
                                     onValueChange={field.onChange}
                                     value={field.value}
                                   >
                                     <FormControl>
                                       <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Chọn" />
+                                        <SelectValue placeholder={t("employeesAddPlaceholderSelect")} />
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                       <SelectItem value="SINGLE">
-                                        Độc thân
+                                        {t("employeesExportMaritalSingle")}
                                       </SelectItem>
                                       <SelectItem value="MARRIED">
-                                        Đã kết hôn
+                                        {t("employeesExportMaritalMarried")}
                                       </SelectItem>
                                       <SelectItem value="DIVORCED">
-                                        Ly hôn
+                                        {t("employeesExportMaritalDivorced")}
                                       </SelectItem>
                                       <SelectItem value="WIDOWED">
-                                        Góa
+                                        {t("employeesAddMaritalWidowed")}
                                       </SelectItem>
                                     </SelectContent>
                                   </Select>
@@ -1306,10 +1321,10 @@ export function AddEmployeeDialog({
                               name="religion"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Tôn giáo</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldReligion")}</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Nhập tôn giáo"
+                                      placeholder={t("employeesAddPlaceholderReligion")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1321,15 +1336,15 @@ export function AddEmployeeDialog({
                       </div>
                     )}
 
-                    {/* ── Section 2: Công việc ── */}
+                    {/* â”€â”€ Section 2: CÃ´ng viá»‡c â”€â”€ */}
                     {activeSection === "work" && (
                       <div className="space-y-4">
                         <div className="flex flex-col items-start">
                           <h3 className="text-base font-semibold">
-                            Thông tin công việc
+                            {t("employeesAddSectionWorkTitle")}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            Phòng ban, chức vụ và trạng thái nhân viên
+                            {t("employeesAddSectionWorkDescription")}
                           </p>
                         </div>
                         <div className="space-y-4">
@@ -1339,14 +1354,16 @@ export function AddEmployeeDialog({
                               name="departmentId"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Phòng ban</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldDepartment")}</FormLabel>
                                   <Select
                                     onValueChange={field.onChange}
                                     value={field.value}
                                   >
                                     <FormControl>
                                       <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Chọn phòng ban" />
+                                        <SelectValue
+                                          placeholder={t("employeesAddPlaceholderSelectDepartment")}
+                                        />
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -1368,13 +1385,12 @@ export function AddEmployeeDialog({
                               name="positionId"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Chức vụ</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldPosition")}</FormLabel>
                                   <FormControl>
                                     <PositionDropdown
                                       value={field.value}
                                       onValueChange={field.onChange}
-                                      placeholder="Chọn chức vụ"
-                                      className="w-full"
+                                      placeholder={t("employeesAddPlaceholderSelectPosition")}
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -1388,12 +1404,12 @@ export function AddEmployeeDialog({
                               <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                  Chức vụ này gợi ý vai trò khác
+                                  {t("employeesAddRoleSuggestionTitle")}
                                 </p>
                                 <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
-                                  Chức vụ{" "}
+                                  {t("employeesAddRoleSuggestionDescriptionStart")} {" "}
                                   <strong>{roleSuggestion.positionName}</strong>{" "}
-                                  thường gắn với vai trò{" "}
+                                  {t("employeesAddRoleSuggestionDescriptionMiddle")} {" "}
                                   <Badge
                                     variant="outline"
                                     className={
@@ -1404,7 +1420,7 @@ export function AddEmployeeDialog({
                                   >
                                     {roleSuggestion.roleName}
                                   </Badge>
-                                  , khác với vai trò hiện tại{" "}
+                                  , {t("employeesAddRoleSuggestionDescriptionCurrentRole")} {" "}
                                   <Badge
                                     variant="outline"
                                     className={
@@ -1417,7 +1433,7 @@ export function AddEmployeeDialog({
                                       roleSuggestion.currentRoleKey!
                                     ] || roleSuggestion.currentRoleKey}
                                   </Badge>
-                                  của nhân viên.
+                                  {t("employeesAddRoleSuggestionDescriptionEnd")}
                                 </p>
                                 <div className="flex items-center gap-2 mt-2">
                                   <Button
@@ -1427,12 +1443,12 @@ export function AddEmployeeDialog({
                                     className="h-7 text-xs gap-1 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40"
                                     onClick={() => setShowRoleSuggestion(false)}
                                   >
-                                    Bỏ qua
+                                    {t("employeesAddSkip")}
                                   </Button>
                                   <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                                     <Sparkles className="h-3 w-3" />
                                     <span>
-                                      Vai trò sẽ được cập nhật khi lưu
+                                      {t("employeesAddRoleWillUpdateOnSave")}
                                     </span>
                                   </div>
                                 </div>
@@ -1446,28 +1462,30 @@ export function AddEmployeeDialog({
                               name="employmentType"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Loại hình</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldEmploymentType")}</FormLabel>
                                   <Select
                                     onValueChange={field.onChange}
                                     value={field.value}
                                   >
                                     <FormControl>
                                       <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Chọn loại hình" />
+                                        <SelectValue
+                                          placeholder={t("employeesAddPlaceholderSelectEmploymentType")}
+                                        />
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                       <SelectItem value="FULL_TIME">
-                                        Toàn thời gian
+                                        {t("employeesExportEmploymentTypeFullTime")}
                                       </SelectItem>
                                       <SelectItem value="PART_TIME">
-                                        Bán thời gian
+                                        {t("employeesExportEmploymentTypePartTime")}
                                       </SelectItem>
                                       <SelectItem value="CONTRACT">
-                                        Hợp đồng
+                                        {t("employeesExportEmploymentTypeContract")}
                                       </SelectItem>
                                       <SelectItem value="INTERN">
-                                        Thực tập
+                                        {t("employeesExportEmploymentTypeIntern")}
                                       </SelectItem>
                                     </SelectContent>
                                   </Select>
@@ -1479,25 +1497,27 @@ export function AddEmployeeDialog({
                               name="employeeStatus"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Trạng thái</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldEmployeeStatus")}</FormLabel>
                                   <Select
                                     onValueChange={field.onChange}
                                     value={field.value}
                                   >
                                     <FormControl>
                                       <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Chọn trạng thái" />
+                                        <SelectValue
+                                          placeholder={t("employeesAddPlaceholderSelectStatus")}
+                                        />
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                       <SelectItem value="ACTIVE">
-                                        Đang làm việc
+                                        {t("employeesStatusActive")}
                                       </SelectItem>
                                       <SelectItem value="ON_LEAVE">
-                                        Nghỉ phép
+                                        {t("employeesStatusOnLeave")}
                                       </SelectItem>
                                       <SelectItem value="RESIGNED">
-                                        Đã nghỉ việc
+                                        {t("employeesStatusResigned")}
                                       </SelectItem>
                                     </SelectContent>
                                   </Select>
@@ -1512,7 +1532,7 @@ export function AddEmployeeDialog({
                               name="hireDate"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Ngày vào làm</FormLabel>
+                                  <FormLabel>{t("hireDate")}</FormLabel>
                                   <FormControl>
                                     <DatePicker
                                       date={field.value}
@@ -1527,7 +1547,7 @@ export function AddEmployeeDialog({
                               name="probationEnd"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Ngày hết thử việc</FormLabel>
+                                  <FormLabel>{t("employeesAddFieldProbationEnd")}</FormLabel>
                                   <FormControl>
                                     <DatePicker
                                       date={field.value}
@@ -1542,15 +1562,15 @@ export function AddEmployeeDialog({
                       </div>
                     )}
 
-                    {/* ── Section 3: Liên hệ & Học vấn ── */}
+                    {/* â”€â”€ Section 3: LiÃªn há»‡ & Há»c váº¥n â”€â”€ */}
                     {activeSection === "contact" && (
                       <div className="space-y-4">
                         <div>
                           <h3 className="text-base font-semibold">
-                            Liên hệ & Học vấn
+                            {t("employeesAddSectionContactTitle")}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            Thông tin liên lạc và trình độ học vấn
+                            {t("employeesAddSectionContactDescription")}
                           </p>
                         </div>
                         <div className="space-y-4">
@@ -1561,12 +1581,12 @@ export function AddEmployeeDialog({
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>
-                                    Số điện thoại
+                                    {t("employeesExportFieldPhone")}
                                     <span className="text-destructive">*</span>
                                   </FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Nhập số điện thoại"
+                                      placeholder={t("employeesAddPlaceholderPhone")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1579,13 +1599,13 @@ export function AddEmployeeDialog({
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>
-                                    Email cá nhân
+                                    {t("employeesExportFieldPersonalEmail")}
                                     <span className="text-destructive">*</span>
                                   </FormLabel>
                                   <FormControl>
                                     <Input
                                       type="email"
-                                      placeholder="Nhập email"
+                                      placeholder={t("employeesAddPlaceholderEmail")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1599,10 +1619,10 @@ export function AddEmployeeDialog({
                             name="address"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Địa chỉ</FormLabel>
+                                <FormLabel>{t("employeesExportFieldAddress")}</FormLabel>
                                 <FormControl>
                                   <Textarea
-                                    placeholder="Nhập địa chỉ"
+                                    placeholder={t("employeesAddPlaceholderAddress")}
                                     {...field}
                                   />
                                 </FormControl>
@@ -1615,10 +1635,10 @@ export function AddEmployeeDialog({
                             name="university"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Trường học</FormLabel>
+                                <FormLabel>{t("employeesExportFieldUniversity")}</FormLabel>
                                 <FormControl>
                                   <Input
-                                    placeholder="Nhập trường học"
+                                    placeholder={t("employeesAddPlaceholderUniversity")}
                                     {...field}
                                   />
                                 </FormControl>
@@ -1632,31 +1652,31 @@ export function AddEmployeeDialog({
                               name="educationLevel"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Trình độ</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldEducationLevel")}</FormLabel>
                                   <Select
                                     onValueChange={field.onChange}
                                     value={field.value}
                                   >
                                     <FormControl>
                                       <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Chọn" />
+                                        <SelectValue placeholder={t("employeesAddPlaceholderSelect")} />
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                       <SelectItem value="HIGHSCHOOL">
-                                        THPT
+                                        {t("employeesExportEducationHighSchool")}
                                       </SelectItem>
                                       <SelectItem value="COLLEGE">
-                                        Cao đẳng
+                                        {t("employeesExportEducationCollege")}
                                       </SelectItem>
                                       <SelectItem value="BACHELOR">
-                                        Đại học
+                                        {t("employeesExportEducationBachelor")}
                                       </SelectItem>
                                       <SelectItem value="MASTER">
-                                        Thạc sĩ
+                                        {t("employeesExportEducationMaster")}
                                       </SelectItem>
                                       <SelectItem value="PHD">
-                                        Tiến sĩ
+                                        {t("employeesExportEducationPhd")}
                                       </SelectItem>
                                     </SelectContent>
                                   </Select>
@@ -1669,10 +1689,10 @@ export function AddEmployeeDialog({
                               name="major"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Chuyên ngành</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldMajor")}</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Nhập chuyên ngành"
+                                      placeholder={t("employeesAddPlaceholderMajor")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1684,15 +1704,15 @@ export function AddEmployeeDialog({
                       </div>
                     )}
 
-                    {/* ── Section 4: Tài khoản ngân hàng ── */}
+                    {/* â”€â”€ Section 4: TÃ i khoáº£n ngÃ¢n hÃ ng â”€â”€ */}
                     {activeSection === "banking" && (
                       <div className="space-y-4">
                         <div>
                           <h3 className="text-base font-semibold">
-                            Tài khoản ngân hàng
+                            {t("employeesAddSectionBankingTitle")}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            Thông tin tài khoản để nhận lương và mã số thuế
+                            {t("employeesAddSectionBankingDescription")}
                           </p>
                         </div>
                         <div className="space-y-4">
@@ -1702,10 +1722,10 @@ export function AddEmployeeDialog({
                               name="bankName"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Ngân hàng</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldBankName")}</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Nhập tên ngân hàng"
+                                      placeholder={t("employeesAddPlaceholderBankName")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1717,10 +1737,10 @@ export function AddEmployeeDialog({
                               name="bankAccount"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Số tài khoản</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldBankAccount")}</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Nhập số tài khoản"
+                                      placeholder={t("employeesAddPlaceholderBankAccount")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1735,10 +1755,10 @@ export function AddEmployeeDialog({
                               name="taxCode"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Mã số thuế</FormLabel>
+                                  <FormLabel>{t("employeesExportFieldTaxCode")}</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Nhập mã số thuế"
+                                      placeholder={t("employeesAddPlaceholderTaxCode")}
                                       {...field}
                                     />
                                   </FormControl>
@@ -1753,7 +1773,7 @@ export function AddEmployeeDialog({
                     {/* Scrollable inner div ends; footer nav below stays inside <form> */}
                   </div>
 
-                  {/* Footer navigation — always visible at bottom */}
+                  {/* Footer navigation â€” always visible at bottom */}
                   <div className="flex items-center justify-between pt-3 pb-2 px-6 shrink-0 border-t bg-background">
                     <Button
                       type="button"
@@ -1764,7 +1784,7 @@ export function AddEmployeeDialog({
                       className={cn(isFirstSection && "invisible")}
                     >
                       <ArrowLeft className="h-4 w-4" />
-                      Trước
+                      {t("employeesImportPreviewPrevious")}
                     </Button>
 
                     {/* Section dots */}
@@ -1778,7 +1798,7 @@ export function AddEmployeeDialog({
                               ? "w-5 bg-primary"
                               : "w-2 bg-muted-foreground/30"
                           }`}
-                          title={s.label}
+                          title={t(s.labelKey)}
                         />
                       ))}
                     </div>
@@ -1788,12 +1808,12 @@ export function AddEmployeeDialog({
                         {isPending ? (
                           <>
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            Đang lưu...
+                            {t("employeesAddSaving")}
                           </>
                         ) : isEditMode ? (
-                          "Lưu thay đổi"
+                          t("employeesAddSaveChanges")
                         ) : (
-                          "Tạo nhân viên"
+                          t("employeesAddCreateEmployee")
                         )}
                       </Button>
                     ) : (
@@ -1804,7 +1824,7 @@ export function AddEmployeeDialog({
                         disabled={isPending}
                         className="gap-1"
                       >
-                        Tiếp theo
+                        {t("employeesImportPreviewNext")}
                         <ArrowRight className="h-4 w-4" />
                       </Button>
                     )}
@@ -1825,7 +1845,7 @@ export function AddEmployeeDialog({
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function getSectionRequiredFields(
   section: SectionKey,
@@ -1837,3 +1857,4 @@ function getSectionRequiredFields(
       return [];
   }
 }
+

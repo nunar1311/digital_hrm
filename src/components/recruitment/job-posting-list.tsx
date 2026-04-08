@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -70,22 +70,22 @@ import {
     deleteJobPosting,
     getDepartments,
     getPositions,
-} from "@/app/(protected)/recruitment/actions";
+} from "@/app/[locale]/(protected)/recruitment/actions";
 import type {
     JobPostingWithStats,
     JobPostingFilters,
     Department,
     Position,
     CreateJobPostingForm,
-} from "@/app/(protected)/recruitment/types";
+} from "@/app/[locale]/(protected)/recruitment/types";
 import { DatePicker } from "../ui/date-picker";
 
 const jobPostingFormSchema = z.object({
-    title: z.string().min(1, "Tiêu đề không được để trống"),
+    title: z.string().min(1, "Title is required"),
     departmentId: z.string().optional(),
     positionId: z.string().optional(),
-    description: z.string().min(1, "Mô tả không được để trống"),
-    requirements: z.string().min(1, "Yêu cầu không được để trống"),
+    description: z.string().min(1, "Description is required"),
+    requirements: z.string().min(1, "Requirements are required"),
     salaryMin: z.number().optional(),
     salaryMax: z.number().optional(),
     headcount: z.number().int().positive(),
@@ -110,36 +110,36 @@ const STATUS_LABELS: Record<
     string,
     { label: string; color: string }
 > = {
-    DRAFT: { label: "Nháp", color: "bg-gray-100 text-gray-700" },
+    DRAFT: { label: "Draft", color: "bg-gray-100 text-gray-700" },
     OPEN: {
-        label: "Đang tuyển",
+        label: "Open",
         color: "bg-green-100 text-green-700",
     },
     ON_HOLD: {
-        label: "Tạm dừng",
+        label: "On hold",
         color: "bg-yellow-100 text-yellow-700",
     },
-    CLOSED: { label: "Đã đóng", color: "bg-red-100 text-red-700" },
+    CLOSED: { label: "Closed", color: "bg-red-100 text-red-700" },
 };
 
 const PRIORITY_LABELS: Record<
     string,
     { label: string; color: string }
 > = {
-    LOW: { label: "Thấp", color: "bg-gray-100 text-gray-700" },
+    LOW: { label: "Low", color: "bg-gray-100 text-gray-700" },
     NORMAL: {
-        label: "Bình thường",
+        label: "Normal",
         color: "bg-blue-100 text-blue-700",
     },
     HIGH: { label: "Cao", color: "bg-orange-100 text-orange-700" },
-    URGENT: { label: "Khẩn cấp", color: "bg-red-100 text-red-700" },
+    URGENT: { label: "Urgent", color: "bg-red-100 text-red-700" },
 };
 
 const EMPLOYMENT_TYPE_LABELS: Record<string, string> = {
-    FULL_TIME: "Toàn thời gian",
-    PART_TIME: "Bán thời gian",
-    INTERN: "Thực tập",
-    CONTRACT: "Hợp đồng",
+    FULL_TIME: "Full-time",
+    PART_TIME: "Part-time",
+    INTERN: "Internship",
+    CONTRACT: "Contract",
 };
 
 function formatSalary(
@@ -147,7 +147,7 @@ function formatSalary(
     max?: number | null,
     currency = "VND",
 ) {
-    if (!min && !max) return "Thỏa thuận";
+    if (!min && !max) return "Negotiable";
     const fmt = (n: number) =>
         new Intl.NumberFormat("vi-VN", {
             style: "currency",
@@ -155,8 +155,8 @@ function formatSalary(
             maximumFractionDigits: 0,
         }).format(n);
     if (min && max) return `${fmt(min)} - ${fmt(max)}`;
-    if (min) return `Từ ${fmt(min)}`;
-    return max ? `Đến ${fmt(max)}` : "Thỏa thuận";
+    if (min) return `From ${fmt(min)}`;
+    return max ? `Up to ${fmt(max)}` : "Negotiable";
 }
 
 export function JobPostingList() {
@@ -193,11 +193,11 @@ export function JobPostingList() {
             return {};
         },
         onSuccess: () => {
-            toast.success("Tạo tin tuyển dụng thành công");
+            toast.success("Job posting created successfully");
         },
         onError: (error: Error) => {
             toast.error(
-                error.message || "Lỗi khi tạo tin tuyển dụng",
+                error.message || "Failed to create job posting",
             );
             queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
         },
@@ -222,11 +222,11 @@ export function JobPostingList() {
             return {};
         },
         onSuccess: () => {
-            toast.success("Cập nhật tin tuyển dụng thành công");
+            toast.success("Job posting updated successfully");
         },
         onError: (error: Error) => {
             toast.error(
-                error.message || "Lỗi khi cập nhật tin tuyển dụng",
+                error.message || "Failed to update job posting",
             );
             queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
         },
@@ -242,11 +242,11 @@ export function JobPostingList() {
             return {};
         },
         onSuccess: () => {
-            toast.success("Xóa tin tuyển dụng thành công");
+            toast.success("Job posting deleted successfully");
         },
         onError: (error: Error) => {
             toast.error(
-                error.message || "Lỗi khi xóa tin tuyển dụng",
+                error.message || "Failed to delete job posting",
             );
             queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
         },
@@ -269,7 +269,7 @@ export function JobPostingList() {
             {/* Filters */}
             <div className="flex flex-wrap gap-4">
                 <Input
-                    placeholder="Tìm kiếm tin tuyển dụng..."
+                    placeholder="Search job postings..."
                     className="max-w-xs"
                     value={filters.search || ""}
                     onChange={(e) =>
@@ -291,21 +291,21 @@ export function JobPostingList() {
                     }
                 >
                     <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Trạng thái" />
+                        <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="__all__">
-                            Tất cả
+                            Táº¥t cáº£
                         </SelectItem>
-                        <SelectItem value="DRAFT">Nháp</SelectItem>
+                        <SelectItem value="DRAFT">NhÃ¡p</SelectItem>
                         <SelectItem value="OPEN">
-                            Đang tuyển
+                            Äang tuyá»ƒn
                         </SelectItem>
                         <SelectItem value="ON_HOLD">
-                            Tạm dừng
+                            Táº¡m dá»«ng
                         </SelectItem>
                         <SelectItem value="CLOSED">
-                            Đã đóng
+                            ÄÃ£ Ä‘Ã³ng
                         </SelectItem>
                     </SelectContent>
                 </Select>
@@ -321,19 +321,19 @@ export function JobPostingList() {
                     }
                 >
                     <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Độ ưu tiên" />
+                        <SelectValue placeholder="Priority" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="__all__">
-                            Tất cả
+                            Táº¥t cáº£
                         </SelectItem>
-                        <SelectItem value="LOW">Thấp</SelectItem>
+                        <SelectItem value="LOW">Tháº¥p</SelectItem>
                         <SelectItem value="NORMAL">
-                            Bình thường
+                            BÃ¬nh thÆ°á»ng
                         </SelectItem>
                         <SelectItem value="HIGH">Cao</SelectItem>
                         <SelectItem value="URGENT">
-                            Khẩn cấp
+                            Kháº©n cáº¥p
                         </SelectItem>
                     </SelectContent>
                 </Select>
@@ -347,10 +347,10 @@ export function JobPostingList() {
                     }
                 >
                     <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Phòng ban" />
+                        <SelectValue placeholder="Department" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="all">Táº¥t cáº£</SelectItem>
                         {departments.map((d) => (
                             <SelectItem key={d.id} value={d.id}>
                                 {d.name}
@@ -363,15 +363,15 @@ export function JobPostingList() {
                     onOpenChange={setIsCreateOpen}
                 >
                     <DialogTrigger asChild>
-                        <Button>+ Tạo tin tuyển dụng</Button>
+                        <Button>+ Táº¡o tin tuyá»ƒn dá»¥ng</Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>
-                                Tạo tin tuyển dụng mới
+                                Táº¡o tin tuyá»ƒn dá»¥ng má»›i
                             </DialogTitle>
                             <DialogDescription>
-                                Điền thông tin tin tuyển dụng mới
+                                Äiá»n thÃ´ng tin tin tuyá»ƒn dá»¥ng má»›i
                             </DialogDescription>
                         </DialogHeader>
                         <JobPostingForm
@@ -390,28 +390,28 @@ export function JobPostingList() {
             {/* Table */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Danh sách tin tuyển dụng</CardTitle>
+                    <CardTitle>Danh sÃ¡ch tin tuyá»ƒn dá»¥ng</CardTitle>
                     <CardDescription>
-                        {jobPostingsData?.total || 0} tin tuyển dụng
+                        {jobPostingsData?.total || 0} tin tuyá»ƒn dá»¥ng
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <div className="text-center py-8">
-                            Đang tải...
+                            Äang táº£i...
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Tiêu đề</TableHead>
-                                    <TableHead>Phòng ban</TableHead>
-                                    <TableHead>Lương</TableHead>
-                                    <TableHead>Số lượng</TableHead>
-                                    <TableHead>Trạng thái</TableHead>
-                                    <TableHead>Ưu tiên</TableHead>
-                                    <TableHead>Hạn nộp</TableHead>
-                                    <TableHead>Ứng viên</TableHead>
+                                    <TableHead>TiÃªu Ä‘á»</TableHead>
+                                    <TableHead>PhÃ²ng ban</TableHead>
+                                    <TableHead>LÆ°Æ¡ng</TableHead>
+                                    <TableHead>Sá»‘ lÆ°á»£ng</TableHead>
+                                    <TableHead>Tráº¡ng thÃ¡i</TableHead>
+                                    <TableHead>Æ¯u tiÃªn</TableHead>
+                                    <TableHead>Háº¡n ná»™p</TableHead>
+                                    <TableHead>á»¨ng viÃªn</TableHead>
                                     <TableHead></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -423,8 +423,8 @@ export function JobPostingList() {
                                             colSpan={9}
                                             className="text-center py-8"
                                         >
-                                            Không có tin tuyển dụng
-                                            nào
+                                            KhÃ´ng cÃ³ tin tuyá»ƒn dá»¥ng
+                                            nÃ o
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -534,8 +534,8 @@ export function JobPostingList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Chỉnh
-                                                                sửa
+                                                                Chá»‰nh
+                                                                sá»­a
                                                             </DropdownMenuItem>
                                                             {post.status ===
                                                                 "DRAFT" && (
@@ -547,7 +547,7 @@ export function JobPostingList() {
                                                                         )
                                                                     }
                                                                 >
-                                                                    Đăng
+                                                                    ÄÄƒng
                                                                     tin
                                                                 </DropdownMenuItem>
                                                             )}
@@ -562,8 +562,8 @@ export function JobPostingList() {
                                                                             )
                                                                         }
                                                                     >
-                                                                        Tạm
-                                                                        dừng
+                                                                        Táº¡m
+                                                                        dá»«ng
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuItem
                                                                         onClick={() =>
@@ -573,7 +573,7 @@ export function JobPostingList() {
                                                                             )
                                                                         }
                                                                     >
-                                                                        Đóng
+                                                                        ÄÃ³ng
                                                                         tin
                                                                     </DropdownMenuItem>
                                                                 </>
@@ -588,8 +588,8 @@ export function JobPostingList() {
                                                                         )
                                                                     }
                                                                 >
-                                                                    Mở
-                                                                    lại
+                                                                    Má»Ÿ
+                                                                    láº¡i
                                                                 </DropdownMenuItem>
                                                             )}
                                                             <DropdownMenuItem
@@ -597,7 +597,7 @@ export function JobPostingList() {
                                                                 onClick={() => {
                                                                     if (
                                                                         confirm(
-                                                                            "Bạn có chắc chắn muốn xóa tin tuyển dụng này?",
+                                                                            "Are you sure you want to delete this job posting?",
                                                                         )
                                                                     ) {
                                                                         deleteMutation.mutate(
@@ -606,7 +606,7 @@ export function JobPostingList() {
                                                                     }
                                                                 }}
                                                             >
-                                                                Xóa
+                                                                XÃ³a
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -629,7 +629,7 @@ export function JobPostingList() {
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>
-                            Chỉnh sửa tin tuyển dụng
+                            Chá»‰nh sá»­a tin tuyá»ƒn dá»¥ng
                         </DialogTitle>
                     </DialogHeader>
                     {editingPost && (
@@ -744,7 +744,7 @@ function JobPostingForm({
                     name="title"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Tiêu đề *</FormLabel>
+                            <FormLabel>TiÃªu Ä‘á» *</FormLabel>
                             <FormControl>
                                 <Input {...field} />
                             </FormControl>
@@ -758,14 +758,14 @@ function JobPostingForm({
                         name="departmentId"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Phòng ban</FormLabel>
+                                <FormLabel>PhÃ²ng ban</FormLabel>
                                 <Select
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
                                 >
                                     <FormControl>
                                         <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Chọn phòng ban" />
+                                            <SelectValue placeholder="Select department" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -788,14 +788,14 @@ function JobPostingForm({
                         name="positionId"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Chức vụ</FormLabel>
+                                <FormLabel>Chá»©c vá»¥</FormLabel>
                                 <Select
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
                                 >
                                     <FormControl>
                                         <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Chọn chức vụ" />
+                                            <SelectValue placeholder="Select position" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -819,10 +819,10 @@ function JobPostingForm({
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Mô tả công việc *</FormLabel>
+                            <FormLabel>MÃ´ táº£ cÃ´ng viá»‡c *</FormLabel>
                             <FormControl>
                                 <Textarea
-                                    placeholder="Mô tả công việc..."
+                                    placeholder="Describe the job..."
                                     rows={4}
                                     {...field}
                                 />
@@ -836,10 +836,10 @@ function JobPostingForm({
                     name="requirements"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Yêu cầu *</FormLabel>
+                            <FormLabel>YÃªu cáº§u *</FormLabel>
                             <FormControl>
                                 <Textarea
-                                    placeholder="Yêu cầu ứng viên..."
+                                    placeholder="Candidate requirements..."
                                     rows={4}
                                     {...field}
                                 />
@@ -854,7 +854,7 @@ function JobPostingForm({
                         name="salaryMin"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Lương tối thiểu</FormLabel>
+                                <FormLabel>LÆ°Æ¡ng tá»‘i thiá»ƒu</FormLabel>
                                 <FormControl>
                                     <Input
                                         type="number"
@@ -881,7 +881,7 @@ function JobPostingForm({
                         name="salaryMax"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Lương tối đa</FormLabel>
+                                <FormLabel>LÆ°Æ¡ng tá»‘i Ä‘a</FormLabel>
                                 <FormControl>
                                     <Input
                                         type="number"
@@ -910,7 +910,7 @@ function JobPostingForm({
                         name="headcount"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Số lượng</FormLabel>
+                                <FormLabel>Sá»‘ lÆ°á»£ng</FormLabel>
                                 <FormControl>
                                     <Input
                                         type="number"
@@ -934,7 +934,7 @@ function JobPostingForm({
                         name="employmentType"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Loại hình</FormLabel>
+                                <FormLabel>Loáº¡i hÃ¬nh</FormLabel>
                                 <Select
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
@@ -946,16 +946,16 @@ function JobPostingForm({
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="FULL_TIME">
-                                            Toàn thời gian
+                                            ToÃ n thá»i gian
                                         </SelectItem>
                                         <SelectItem value="PART_TIME">
-                                            Bán thời gian
+                                            BÃ¡n thá»i gian
                                         </SelectItem>
                                         <SelectItem value="INTERN">
-                                            Thực tập
+                                            Thá»±c táº­p
                                         </SelectItem>
                                         <SelectItem value="CONTRACT">
-                                            Hợp đồng
+                                            Há»£p Ä‘á»“ng
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -968,7 +968,7 @@ function JobPostingForm({
                         name="priority"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Độ ưu tiên</FormLabel>
+                                <FormLabel>Äá»™ Æ°u tiÃªn</FormLabel>
                                 <Select
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
@@ -980,16 +980,16 @@ function JobPostingForm({
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="LOW">
-                                            Thấp
+                                            Tháº¥p
                                         </SelectItem>
                                         <SelectItem value="NORMAL">
-                                            Bình thường
+                                            BÃ¬nh thÆ°á»ng
                                         </SelectItem>
                                         <SelectItem value="HIGH">
                                             Cao
                                         </SelectItem>
                                         <SelectItem value="URGENT">
-                                            Khẩn cấp
+                                            Kháº©n cáº¥p
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -1004,7 +1004,7 @@ function JobPostingForm({
                         name="deadline"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Hạn nộp hồ sơ</FormLabel>
+                                <FormLabel>Háº¡n ná»™p há»“ sÆ¡</FormLabel>
                                 <FormControl>
                                     <DatePicker
                                         date={
@@ -1027,11 +1027,11 @@ function JobPostingForm({
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>
-                                    Địa điểm làm việc
+                                    Äá»‹a Ä‘iá»ƒm lÃ m viá»‡c
                                 </FormLabel>
                                 <FormControl>
                                     <Input
-                                        placeholder="Hà Nội / Remote"
+                                        placeholder="Hanoi / Remote"
                                         {...field}
                                     />
                                 </FormControl>
@@ -1047,7 +1047,7 @@ function JobPostingForm({
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>
-                                    Số vòng phỏng vấn
+                                    Sá»‘ vÃ²ng phá»ng váº¥n
                                 </FormLabel>
                                 <FormControl>
                                     <Input
@@ -1072,10 +1072,10 @@ function JobPostingForm({
                         name="benefits"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Phúc lợi</FormLabel>
+                                <FormLabel>PhÃºc lá»£i</FormLabel>
                                 <FormControl>
                                     <Input
-                                        placeholder="Bảo hiểm, laptop..."
+                                        placeholder="Insurance, laptop..."
                                         {...field}
                                     />
                                 </FormControl>
@@ -1090,7 +1090,7 @@ function JobPostingForm({
                         name="status"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Trạng thái</FormLabel>
+                                <FormLabel>Tráº¡ng thÃ¡i</FormLabel>
                                 <Select
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
@@ -1102,16 +1102,16 @@ function JobPostingForm({
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="DRAFT">
-                                            Nháp
+                                            NhÃ¡p
                                         </SelectItem>
                                         <SelectItem value="OPEN">
-                                            Đang tuyển
+                                            Äang tuyá»ƒn
                                         </SelectItem>
                                         <SelectItem value="ON_HOLD">
-                                            Tạm dừng
+                                            Táº¡m dá»«ng
                                         </SelectItem>
                                         <SelectItem value="CLOSED">
-                                            Đã đóng
+                                            ÄÃ£ Ä‘Ã³ng
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -1126,14 +1126,14 @@ function JobPostingForm({
                         variant="outline"
                         onClick={onCancel}
                     >
-                        Hủy
+                        Há»§y
                     </Button>
                     <Button type="submit" disabled={isLoading}>
                         {isLoading
-                            ? "Đang lưu..."
+                            ? "Äang lÆ°u..."
                             : isEdit
-                              ? "Lưu"
-                              : "Tạo"}
+                              ? "LÆ°u"
+                              : "Create"}
                     </Button>
                 </div>
             </form>
@@ -1148,3 +1148,4 @@ interface EditJobPostingFormProps extends JobPostingFormProps {
 function EditJobPostingForm(props: EditJobPostingFormProps) {
     return <JobPostingForm {...props} isEdit={true} />;
 }
+

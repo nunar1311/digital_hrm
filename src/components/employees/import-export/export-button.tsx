@@ -5,6 +5,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -18,10 +19,11 @@ interface ExportButtonProps {
 
 export function ExportButton({ employees, filename = 'danh-sach-nhan-vien' }: ExportButtonProps) {
     const [isExporting, setIsExporting] = useState(false);
+    const t = useTranslations('ProtectedPages');
 
     const handleExport = async () => {
         if (employees.length === 0) {
-            toast.warning('Không có dữ liệu để xuất');
+            toast.warning(t('employeesExportNoData'));
             return;
         }
 
@@ -31,9 +33,9 @@ export function ExportButton({ employees, filename = 'danh-sach-nhan-vien' }: Ex
             // Small delay for UX feedback
             await new Promise((resolve) => setTimeout(resolve, 300));
             await exportEmployeesToExcel(employees, filename);
-            toast.success(`Đã xuất ${employees.length} nhân viên ra file Excel thành công`);
+            toast.success(t('employeesExportSuccess', { count: employees.length }));
         } catch {
-            toast.error('Lỗi khi xuất file. Vui lòng thử lại.');
+            toast.error(t('employeesExportError'));
         } finally {
             setIsExporting(false);
         }
@@ -49,12 +51,12 @@ export function ExportButton({ employees, filename = 'danh-sach-nhan-vien' }: Ex
             {isExporting ? (
                 <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
-                    Đang xuất...
+                    {t('employeesExportLoading')}
                 </>
             ) : (
                 <>
                     <Download className="h-4 w-4" />
-                    Xuất Excel
+                    {t('employeesExportExcel')}
                 </>
             )}
         </Button>

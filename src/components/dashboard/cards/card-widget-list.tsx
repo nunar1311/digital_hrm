@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
     useState,
@@ -59,8 +59,8 @@ import CardToolbar, { type CardToolbarRef } from "./card-toolbar";
 import type {
     EmployeeListItem,
     GetEmployeesResult,
-} from "@/app/(protected)/employees/actions";
-import { getDashboardEmployees } from "@/app/(protected)/dashboard/actions";
+} from "@/app/[locale]/(protected)/employees/actions";
+import { getDashboardEmployees } from "@/app/[locale]/(protected)/dashboard/actions";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -71,27 +71,12 @@ import {
     Tag,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// --- Constants ---
 
 const PAGE_SIZE = 20;
 
-const STATUS_OPTIONS = [
-    { value: "ALL", label: "Tất cả trạng thái" },
-    { value: "ACTIVE", label: "Đang làm việc" },
-    { value: "PROBATION", label: "Thử việc" },
-    { value: "ON_LEAVE", label: "Nghỉ phép" },
-    { value: "SUSPENDED", label: "Tạm ngưng" },
-    { value: "TERMINATED", label: "Đã nghỉ việc" },
-];
-
-const STATUS_LABELS: Record<string, string> = {
-    ACTIVE: "Đang làm việc",
-    PROBATION: "Thử việc",
-    ON_LEAVE: "Nghỉ phép",
-    SUSPENDED: "Tạm ngưng",
-    TERMINATED: "Đã nghỉ việc",
-};
 
 const STATUS_COLORS: Record<string, string> = {
     ACTIVE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -105,22 +90,8 @@ const STATUS_COLORS: Record<string, string> = {
         "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
 
-const EMPLOYMENT_TYPE_OPTIONS = [
-    { value: "ALL", label: "Tất cả loại hợp đồng" },
-    { value: "FULL_TIME", label: "Toàn thời gian" },
-    { value: "PART_TIME", label: "Bán thời gian" },
-    { value: "CONTRACTOR", label: "Hợp đồng" },
-    { value: "INTERN", label: "Thực tập sinh" },
-];
 
-const EMPLOYMENT_TYPE_LABELS: Record<string, string> = {
-    FULL_TIME: "Toàn thời gian",
-    PART_TIME: "Bán thời gian",
-    CONTRACTOR: "Hợp đồng",
-    INTERN: "Thực tập sinh",
-};
-
-// ─── Types ───────────────────────────────────────────────────────────────────
+// --- Types ---
 
 // interface ApiResponse {
 //     employees: EmployeeListItem[];
@@ -130,7 +101,7 @@ const EMPLOYMENT_TYPE_LABELS: Record<string, string> = {
 //     totalPages: number;
 // }
 
-// ─── Fetcher ─────────────────────────────────────────────────────────────────
+// --- Fetcher ---
 
 // async function fetchEmployeesPage(
 //     pageParam: number,
@@ -162,7 +133,7 @@ const EMPLOYMENT_TYPE_LABELS: Record<string, string> = {
 //     return res.json();
 // }
 
-// ─── EmployeeTable ────────────────────────────────────────────────────────────
+// --- EmployeeTable ---
 
 interface EmployeeTableProps {
     employees: EmployeeListItem[];
@@ -173,6 +144,9 @@ interface EmployeeTableProps {
     columnVisibility: Record<string, boolean>;
     showEmptyDepartments: boolean;
     wrapText: boolean;
+    t: (key: string) => string;
+    statusLabels: Record<string, string>;
+    employmentTypeLabels: Record<string, string>;
 }
 
 function EmployeeTable({
@@ -183,6 +157,9 @@ function EmployeeTable({
     columnVisibility,
     showEmptyDepartments,
     wrapText,
+    t,
+    statusLabels,
+    employmentTypeLabels,
 }: EmployeeTableProps) {
     const filteredEmployees = useMemo(() => {
         if (showEmptyDepartments) return employees;
@@ -209,7 +186,7 @@ function EmployeeTable({
                         onCheckedChange={(value) =>
                             table.toggleAllPageRowsSelected(!!value)
                         }
-                        aria-label="Chọn tất cả"
+                        aria-label={t("selectAll")}
                     />
                 ),
                 cell: ({ row }) => (
@@ -218,7 +195,7 @@ function EmployeeTable({
                         onCheckedChange={(value) =>
                             row.toggleSelected(!!value)
                         }
-                        aria-label="Chọn"
+                        aria-label={t("select")}
                         onClick={(e) => e.stopPropagation()}
                         className="opacity-0 group-hover/row:opacity-100 transition-opacity data-[state=checked]:opacity-100"
                     />
@@ -229,7 +206,7 @@ function EmployeeTable({
             {
                 accessorKey: "name",
                 id: "employee",
-                header: "Nhân viên",
+                header: t("employee"),
                 size: 250,
                 maxSize: 250,
                 cell: ({ row }) => {
@@ -266,7 +243,7 @@ function EmployeeTable({
             },
             {
                 accessorKey: "departmentName",
-                header: "Phòng ban",
+                header: t("department"),
                 size: 200,
                 maxSize: 200,
                 cell: ({ row }) => (
@@ -289,7 +266,7 @@ function EmployeeTable({
             {
                 accessorKey: "positionName",
                 id: "position",
-                header: "Chức vụ",
+                header: t("position"),
                 cell: ({ row }) => (
                     <span
                         className={cn(
@@ -309,11 +286,11 @@ function EmployeeTable({
             },
             {
                 accessorKey: "employmentType",
-                header: "Loại hợp đồng",
+                header: t("employmentType"),
                 cell: ({ row }) => (
                     <span className="text-xs whitespace-nowrap">
                         {row.original.employmentType
-                            ? EMPLOYMENT_TYPE_LABELS[
+                            ? employmentTypeLabels[
                                   row.original.employmentType
                               ] || row.original.employmentType
                             : "—"}
@@ -322,7 +299,7 @@ function EmployeeTable({
             },
             {
                 accessorKey: "employeeStatus",
-                header: "Trạng thái",
+                header: t("status"),
                 cell: ({ row }) => (
                     <Badge
                         variant="secondary"
@@ -337,7 +314,7 @@ function EmployeeTable({
                         )}
                     >
                         {row.original.employeeStatus
-                            ? STATUS_LABELS[
+                            ? statusLabels[
                                   row.original.employeeStatus
                               ] || row.original.employeeStatus
                             : "—"}
@@ -368,7 +345,7 @@ function EmployeeTable({
                                 }
                             >
                                 <Eye className="mr-2 h-3.5 w-3.5" />
-                                Xem chi tiết
+                                {t("viewDetails")}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -377,10 +354,10 @@ function EmployeeTable({
                 enableSorting: false,
             },
         ],
-        [onViewEmployee, wrapText],
+        [employmentTypeLabels, onViewEmployee, statusLabels, t, wrapText],
     );
 
-    // TanStack Table's useReactTable() returns unstable functions — known limitation.
+    // TanStack Table's useReactTable() returns unstable functions - known limitation.
     // eslint-disable-next-line
     const table = useReactTable({
         data: filteredEmployees,
@@ -480,7 +457,7 @@ function EmployeeTable({
                                 <div className="flex flex-col items-center gap-1.5">
                                     <Users className="h-6 w-6 text-muted-foreground" />
                                     <p className="text-xs text-muted-foreground">
-                                        Không có nhân viên nào
+                                        {t("noEmployees")}
                                     </p>
                                 </div>
                             </TableCell>
@@ -512,18 +489,20 @@ function EmployeeTable({
     );
 }
 
-// ─── LoadMore sentinel (Intersection Observer for infinite scroll) ────────────
+// --- LoadMore sentinel (Intersection Observer for infinite scroll) ---
 
 interface LoadMoreSentinelProps {
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
     onLoadMore: () => void;
+    t: (key: string) => string;
 }
 
 function LoadMoreSentinel({
     hasNextPage,
     isFetchingNextPage,
     onLoadMore,
+    t,
 }: LoadMoreSentinelProps) {
     const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -549,7 +528,7 @@ function LoadMoreSentinel({
                 <div className="flex items-center justify-center py-2">
                     <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
                     <span className="ml-2 text-[10px] text-muted-foreground">
-                        Đang tải thêm...
+                        {t("loadingMore")}
                     </span>
                 </div>
             )}
@@ -557,7 +536,7 @@ function LoadMoreSentinel({
     );
 }
 
-// ─── EmployeeTableDashboard ───────────────────────────────────────────────────
+// --- EmployeeTableDashboard ---
 
 interface EmployeeTableDashboardProps {
     employees: EmployeeListItem[];
@@ -577,6 +556,11 @@ interface EmployeeTableDashboardProps {
     setSearchValue: (v: string) => void;
     toolbarRef: React.RefObject<CardToolbarRef>;
     editMode: boolean;
+    t: (key: string) => string;
+    statusOptions: { value: string; label: string }[];
+    employmentTypeOptions: { value: string; label: string }[];
+    statusLabels: Record<string, string>;
+    employmentTypeLabels: Record<string, string>;
 }
 
 const EmployeeTableDashboard = ({
@@ -596,6 +580,11 @@ const EmployeeTableDashboard = ({
     setSearchValue,
     toolbarRef,
     editMode,
+    t,
+    statusOptions,
+    employmentTypeOptions,
+    statusLabels,
+    employmentTypeLabels,
 }: EmployeeTableDashboardProps) => {
     const [searchExpanded, setSearchExpanded] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -639,7 +628,7 @@ const EmployeeTableDashboard = ({
 
     return (
         <div className="flex flex-col h-full w-full gap-2">
-            {/* ── Filters ── */}
+            {/* Filters */}
             {editMode && (
                 <div className="flex items-center justify-end gap-2 flex-wrap shrink-0">
                     <Select
@@ -652,7 +641,7 @@ const EmployeeTableDashboard = ({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {STATUS_OPTIONS.map((opt) => (
+                            {statusOptions.map((opt) => (
                                 <SelectItem
                                     key={opt.value}
                                     value={opt.value}
@@ -673,7 +662,7 @@ const EmployeeTableDashboard = ({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {EMPLOYMENT_TYPE_OPTIONS.map((opt) => (
+                            {employmentTypeOptions.map((opt) => (
                                 <SelectItem
                                     key={opt.value}
                                     value={opt.value}
@@ -696,7 +685,7 @@ const EmployeeTableDashboard = ({
                                 setSearchValue(e.target.value)
                             }
                             onKeyDown={handleSearchKeyDown}
-                            placeholder="Tìm kiếm..."
+                            placeholder={t("searchPlaceholder")}
                             className={cn(
                                 "h-7 text-xs transition-all duration-300 ease-in-out pr-6",
                                 searchExpanded
@@ -734,7 +723,7 @@ const EmployeeTableDashboard = ({
                 </div>
             )}
 
-            {/* ── Table ── */}
+            {/* Table */}
             <EmployeeTable
                 employees={employees}
                 isLoading={isLoading}
@@ -744,12 +733,15 @@ const EmployeeTableDashboard = ({
                 columnVisibility={columnVisibility}
                 showEmptyDepartments={showEmptyDepartments}
                 wrapText={wrapText}
+                t={t}
+                statusLabels={statusLabels}
+                employmentTypeLabels={employmentTypeLabels}
             />
         </div>
     );
 };
 
-// ─── CardWidgetList ──────────────────────────────────────────────────────────
+// --- CardWidgetList ---
 
 interface CardWidgetListProps {
     initialEmployees: GetEmployeesResult;
@@ -760,9 +752,54 @@ const CardWidgetList = ({
     initialEmployees,
     editMode = false,
 }: CardWidgetListProps) => {
+    const t = useTranslations("Dashboard");
     const toolbarRef = useRef<CardToolbarRef>(null);
 
-    // ── Infinite Query ──
+    const statusOptions = useMemo(
+        () => [
+            { value: "ALL", label: t("allStatus") },
+            { value: "ACTIVE", label: t("working") },
+            { value: "PROBATION", label: t("probation") },
+            { value: "ON_LEAVE", label: t("onLeave") },
+            { value: "SUSPENDED", label: t("suspended") },
+            { value: "TERMINATED", label: t("terminated") },
+        ],
+        [t],
+    );
+
+    const statusLabels = useMemo(
+        () => ({
+            ACTIVE: t("working"),
+            PROBATION: t("probation"),
+            ON_LEAVE: t("onLeave"),
+            SUSPENDED: t("suspended"),
+            TERMINATED: t("terminated"),
+        }),
+        [t],
+    );
+
+    const employmentTypeOptions = useMemo(
+        () => [
+            { value: "ALL", label: t("allEmploymentTypes") },
+            { value: "FULL_TIME", label: t("fullTime") },
+            { value: "PART_TIME", label: t("partTime") },
+            { value: "CONTRACTOR", label: t("contractor") },
+            { value: "INTERN", label: t("intern") },
+        ],
+        [t],
+    );
+
+    const employmentTypeLabels = useMemo(
+        () => ({
+            FULL_TIME: t("fullTime"),
+            PART_TIME: t("partTime"),
+            CONTRACTOR: t("contractor"),
+            INTERN: t("intern"),
+        }),
+        [t],
+    );
+
+    // --- Infinite Query ---
     const [sorting, setSorting] = useState<SortingState>([]);
     const [statusFilter, setStatusFilter] = useState("ALL");
     const [employmentFilter, setEmploymentFilter] = useState("ALL");
@@ -830,7 +867,7 @@ const CardWidgetList = ({
 
     const handleViewEmployee = useCallback(
         (employee: EmployeeListItem) => {
-            // Navigate to employee detail — can be wired later
+            // Navigate to employee detail - can be wired later
             window.open(`/employees/${employee.id}`, "_blank");
         },
         [],
@@ -853,19 +890,19 @@ const CardWidgetList = ({
     const [wrapText, setWrapText] = useState(false);
 
     const columnOptions = [
-        { key: "employee", label: "Tên nhân viên", icon: User },
+        { key: "employee", label: t("employee"), icon: User },
         {
             key: "departmentName",
-            label: "Phòng ban",
+            label: t("department"),
             icon: Building2,
         },
-        { key: "position", label: "Chức vụ", icon: Briefcase },
+        { key: "position", label: t("position"), icon: Briefcase },
         {
             key: "employmentType",
-            label: "Loại hợp đồng",
+            label: t("employmentType"),
             icon: FileText,
         },
-        { key: "employeeStatus", label: "Trạng thái", icon: Tag },
+        { key: "employeeStatus", label: t("status"), icon: Tag },
     ];
 
     const settingsContent = (
@@ -879,7 +916,7 @@ const CardWidgetList = ({
                     })}
                 >
                     <Label htmlFor="show-empty-departments">
-                        Hiện phòng ban trống
+                        {t("showEmptyDepartments")}
                     </Label>
                     <Switch
                         id="show-empty-departments"
@@ -894,7 +931,7 @@ const CardWidgetList = ({
                         className: "justify-between! px-0",
                     })}
                 >
-                    <Label htmlFor="wrap-text">Xuống dòng</Label>
+                    <Label htmlFor="wrap-text">{t("wrapText")}</Label>
                     <Switch
                         id="wrap-text"
                         checked={wrapText}
@@ -918,7 +955,7 @@ const CardWidgetList = ({
                         }));
                     }}
                 >
-                    Ẩn tất cả cột
+                    {t("hideAllColumns")}
                 </span>
                 {columnOptions.map(
                     ({ key, label, icon: Icon }, index) => (
@@ -970,7 +1007,7 @@ const CardWidgetList = ({
     return (
         <CardToolbar
             ref={toolbarRef}
-            title="Danh sách nhân viên"
+            title={t("employeeList")}
             settingsContent={settingsContent}
         >
             <EmployeeTableDashboard
@@ -993,12 +1030,18 @@ const CardWidgetList = ({
                 setEmploymentFilter={setEmploymentFilter}
                 searchValue={searchValue}
                 setSearchValue={setSearchValue}
+                t={t}
+                statusOptions={statusOptions}
+                employmentTypeOptions={employmentTypeOptions}
+                statusLabels={statusLabels}
+                employmentTypeLabels={employmentTypeLabels}
             />
             {hasNextPage && (
                 <LoadMoreSentinel
                     hasNextPage={!!hasNextPage}
                     isFetchingNextPage={!!isFetchingNextPage}
                     onLoadMore={handleFetchNextPage}
+                    t={t}
                 />
             )}
         </CardToolbar>
@@ -1006,3 +1049,4 @@ const CardWidgetList = ({
 };
 
 export default CardWidgetList;
+

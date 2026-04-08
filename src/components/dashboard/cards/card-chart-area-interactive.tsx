@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
     Area,
@@ -16,18 +16,8 @@ import {
     ChartLegend,
     ChartLegendContent,
 } from "@/components/ui/chart";
-import type { AttendanceTrendItem } from "@/app/(protected)/dashboard/actions";
-
-const chartConfig = {
-    onTime: {
-        label: "Đúng giờ",
-        color: "var(--chart-1)",
-    },
-    late: {
-        label: "Đi trễ",
-        color: "var(--chart-2)",
-    },
-} satisfies ChartConfig;
+import type { AttendanceTrendItem } from "@/app/[locale]/(protected)/dashboard/actions";
+import { useTranslations } from "next-intl";
 
 interface CardChartAreaInteractiveProps {
     trendData: AttendanceTrendItem[];
@@ -36,8 +26,21 @@ interface CardChartAreaInteractiveProps {
 const CardChartAreaInteractive = ({
     trendData,
 }: CardChartAreaInteractiveProps) => {
+    const t = useTranslations("Dashboard");
+
+    const chartConfig = {
+        onTime: {
+            label: t("onTime"),
+            color: "var(--chart-1)",
+        },
+        late: {
+            label: t("late"),
+            color: "var(--chart-2)",
+        },
+    } satisfies ChartConfig;
+
     return (
-        <CardToolbar title="Nhân sự đang hoạt động">
+        <CardToolbar title={t("activeEmployees")}>
             <div className="h-full w-full">
                 <ChartContainer
                     config={chartConfig}
@@ -98,3 +101,4 @@ const CardChartAreaInteractive = ({
 };
 
 export default CardChartAreaInteractive;
+

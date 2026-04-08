@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -31,9 +31,10 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
-import { returnAsset } from "@/app/(protected)/assets/actions";
-import { CONDITION_OPTIONS } from "@/app/(protected)/assets/constants";
+import { returnAsset } from "@/app/[locale]/(protected)/assets/actions";
+import { CONDITION_OPTIONS } from "@/app/[locale]/(protected)/assets/constants";
 
 const formSchema = z.object({
     assignmentId: z.string().min(1),
@@ -55,6 +56,7 @@ export function AssetReturnDialog({
     assignmentId,
 }: AssetReturnDialogProps) {
     const queryClient = useQueryClient();
+    const t = useTranslations("ProtectedPages");
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -68,13 +70,13 @@ export function AssetReturnDialog({
     const mutation = useMutation({
         mutationFn: returnAsset,
         onSuccess: () => {
-            toast.success("Đã thu hồi tài sản thành công");
+            toast.success(t("assetsReturnToastSuccess"));
             queryClient.invalidateQueries({ queryKey: ["assets"] });
             onOpenChange(false);
             form.reset();
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Không thể thu hồi tài sản");
+            toast.error(err.message || t("assetsReturnToastError"));
         },
     });
 
@@ -82,9 +84,9 @@ export function AssetReturnDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Thu hồi tài sản</DialogTitle>
+                    <DialogTitle>{t("assetsReturnDialogTitle")}</DialogTitle>
                     <DialogDescription>
-                        Kiểm tra tình trạng tài sản và xác nhận thu hồi
+                        {t("assetsReturnDialogDescription")}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -100,14 +102,16 @@ export function AssetReturnDialog({
                             name="condition"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Tình trạng tài sản</FormLabel>
+                                    <FormLabel>{t("assetsReturnConditionLabel")}</FormLabel>
                                     <Select
                                         onValueChange={field.onChange}
                                         defaultValue={field.value}
                                     >
                                         <FormControl>
                                             <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Chọn tình trạng" />
+                                                <SelectValue
+                                                    placeholder={t("assetsReturnConditionPlaceholder")}
+                                                />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -131,10 +135,10 @@ export function AssetReturnDialog({
                             name="notes"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Ghi chú</FormLabel>
+                                    <FormLabel>{t("assetsReturnNotesLabel")}</FormLabel>
                                     <FormControl>
                                         <Textarea
-                                            placeholder="Ghi chú về tình trạng khi thu hồi..."
+                                            placeholder={t("assetsReturnNotesPlaceholder")}
                                             rows={3}
                                             {...field}
                                         />
@@ -150,7 +154,7 @@ export function AssetReturnDialog({
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
                             >
-                                Hủy
+                                {t("assetsReturnCancelButton")}
                             </Button>
                             <Button
                                 type="submit"
@@ -159,7 +163,7 @@ export function AssetReturnDialog({
                                 {mutation.isPending && (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}
-                                Xác nhận thu hồi
+                                {t("assetsReturnConfirmButton")}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -168,3 +172,4 @@ export function AssetReturnDialog({
         </Dialog>
     );
 }
+

@@ -1,14 +1,14 @@
-// =============================================================================
-// ExportEmployeesDialog — Dialog chọn trường và xuất danh sách nhân viên ra Excel
+﻿// =============================================================================
+// ExportEmployeesDialog — Field selection dialog and Excel export for employee list
 // =============================================================================
 
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
     Download,
     Loader2,
-    Check,
     FileSpreadsheet,
     Info,
 } from "lucide-react";
@@ -25,10 +25,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { exportEmployees } from "@/app/(protected)/employees/actions";
+import { exportEmployees } from "@/app/[locale]/(protected)/employees/actions";
 
 interface ExportEmployeesDialogProps {
     open: boolean;
@@ -41,232 +38,264 @@ interface ExportEmployeesDialogProps {
 
 interface ExportField {
     key: string;
-    label: string;
-    group: string;
+    labelKey: string;
+    groupKey: string;
     defaultChecked: boolean;
 }
 
+type ExportDialogTranslator = ReturnType<typeof useTranslations>;
+
 const EXPORT_FIELDS: ExportField[] = [
-    // Thông tin cơ bản
     {
         key: "employeeCode",
-        label: "Mã nhân viên",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldEmployeeCode",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: true,
     },
     {
         key: "fullName",
-        label: "Họ và tên",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldFullName",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: true,
     },
     {
         key: "gender",
-        label: "Giới tính",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldGender",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: true,
     },
     {
         key: "dateOfBirth",
-        label: "Ngày sinh",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldDateOfBirth",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: true,
     },
     {
         key: "nationalId",
-        label: "Số CCCD",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldNationalId",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: false,
     },
     {
         key: "nationalIdDate",
-        label: "Ngày cấp CCCD",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldNationalIdDate",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: false,
     },
     {
         key: "nationalIdPlace",
-        label: "Nơi cấp CCCD",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldNationalIdPlace",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: false,
     },
     {
         key: "maritalStatus",
-        label: "Tình trạng hôn nhân",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldMaritalStatus",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: false,
     },
     {
         key: "nationality",
-        label: "Quốc tịch",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldNationality",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: false,
     },
     {
         key: "ethnicity",
-        label: "Dân tộc",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldEthnicity",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: false,
     },
     {
         key: "religion",
-        label: "Tôn giáo",
-        group: "Thông tin cơ bản",
+        labelKey: "employeesExportFieldReligion",
+        groupKey: "employeesExportGroupBasicInfo",
         defaultChecked: false,
     },
-
-    // Liên lạc
     {
         key: "phone",
-        label: "Số điện thoại",
-        group: "Liên lạc",
+        labelKey: "employeesExportFieldPhone",
+        groupKey: "employeesExportGroupContact",
         defaultChecked: true,
     },
     {
         key: "personalEmail",
-        label: "Email cá nhân",
-        group: "Liên lạc",
+        labelKey: "employeesExportFieldPersonalEmail",
+        groupKey: "employeesExportGroupContact",
         defaultChecked: true,
     },
     {
         key: "email",
-        label: "Email công ty",
-        group: "Liên lạc",
+        labelKey: "employeesExportFieldCompanyEmail",
+        groupKey: "employeesExportGroupContact",
         defaultChecked: false,
     },
     {
         key: "address",
-        label: "Địa chỉ",
-        group: "Liên lạc",
+        labelKey: "employeesExportFieldAddress",
+        groupKey: "employeesExportGroupContact",
         defaultChecked: true,
     },
-
-    // Công việc
     {
         key: "departmentName",
-        label: "Phòng ban",
-        group: "Công việc",
+        labelKey: "employeesExportFieldDepartment",
+        groupKey: "employeesExportGroupWork",
         defaultChecked: true,
     },
     {
         key: "positionName",
-        label: "Chức vụ",
-        group: "Công việc",
+        labelKey: "employeesExportFieldPosition",
+        groupKey: "employeesExportGroupWork",
         defaultChecked: true,
     },
     {
         key: "employmentType",
-        label: "Loại hình lao động",
-        group: "Công việc",
+        labelKey: "employeesExportFieldEmploymentType",
+        groupKey: "employeesExportGroupWork",
         defaultChecked: true,
     },
     {
         key: "hireDate",
-        label: "Ngày vào làm",
-        group: "Công việc",
+        labelKey: "employeesExportFieldHireDate",
+        groupKey: "employeesExportGroupWork",
         defaultChecked: true,
     },
     {
         key: "employeeStatus",
-        label: "Trạng thái",
-        group: "Công việc",
+        labelKey: "employeesExportFieldEmployeeStatus",
+        groupKey: "employeesExportGroupWork",
         defaultChecked: true,
     },
-
-    // Tài khoản ngân hàng
     {
         key: "bankName",
-        label: "Tên ngân hàng",
-        group: "Tài khoản ngân hàng",
+        labelKey: "employeesExportFieldBankName",
+        groupKey: "employeesExportGroupBank",
         defaultChecked: false,
     },
     {
         key: "bankAccount",
-        label: "Số tài khoản",
-        group: "Tài khoản ngân hàng",
+        labelKey: "employeesExportFieldBankAccount",
+        groupKey: "employeesExportGroupBank",
         defaultChecked: false,
     },
     {
         key: "bankBranch",
-        label: "Chi nhánh",
-        group: "Tài khoản ngân hàng",
+        labelKey: "employeesExportFieldBankBranch",
+        groupKey: "employeesExportGroupBank",
         defaultChecked: false,
     },
-
-    // Bảo hiểm & thuế
     {
         key: "socialInsuranceNo",
-        label: "Số BHXH",
-        group: "Bảo hiểm & Thuế",
+        labelKey: "employeesExportFieldSocialInsuranceNo",
+        groupKey: "employeesExportGroupInsuranceTax",
         defaultChecked: false,
     },
     {
         key: "healthInsuranceNo",
-        label: "Số BHYT",
-        group: "Bảo hiểm & Thuế",
+        labelKey: "employeesExportFieldHealthInsuranceNo",
+        groupKey: "employeesExportGroupInsuranceTax",
         defaultChecked: false,
     },
     {
         key: "taxCode",
-        label: "Mã số thuế",
-        group: "Bảo hiểm & Thuế",
+        labelKey: "employeesExportFieldTaxCode",
+        groupKey: "employeesExportGroupInsuranceTax",
         defaultChecked: false,
     },
-
-    // Học vấn
     {
         key: "educationLevel",
-        label: "Trình độ",
-        group: "Học vấn",
+        labelKey: "employeesExportFieldEducationLevel",
+        groupKey: "employeesExportGroupEducation",
         defaultChecked: false,
     },
     {
         key: "university",
-        label: "Trường",
-        group: "Học vấn",
+        labelKey: "employeesExportFieldUniversity",
+        groupKey: "employeesExportGroupEducation",
         defaultChecked: false,
     },
     {
         key: "major",
-        label: "Chuyên ngành",
-        group: "Học vấn",
+        labelKey: "employeesExportFieldMajor",
+        groupKey: "employeesExportGroupEducation",
         defaultChecked: false,
     },
 ];
 
-const GENDER_MAP: Record<string, string> = {
-    MALE: "Nam",
-    FEMALE: "Nữ",
-    OTHER: "Khác",
+const DISPLAY_LABEL_KEYS: Record<string, string> = {
+    employeeCode: "employeesExportHeaderEmployeeCodeShort",
+    fullName: "employeesExportFieldFullName",
+    name: "employeesExportHeaderName",
+    gender: "employeesExportFieldGender",
+    dateOfBirth: "employeesExportFieldDateOfBirth",
+    nationalId: "employeesExportFieldNationalId",
+    nationalIdDate: "employeesExportFieldNationalIdDate",
+    nationalIdPlace: "employeesExportFieldNationalIdPlace",
+    maritalStatus: "employeesExportFieldMaritalStatus",
+    nationality: "employeesExportFieldNationality",
+    ethnicity: "employeesExportFieldEthnicity",
+    religion: "employeesExportFieldReligion",
+    phone: "employeesExportHeaderPhoneShort",
+    personalEmail: "employeesExportFieldPersonalEmail",
+    email: "employeesExportFieldCompanyEmail",
+    address: "employeesExportFieldAddress",
+    departmentName: "employeesExportFieldDepartment",
+    positionName: "employeesExportFieldPosition",
+    employmentType: "employeesExportHeaderEmploymentTypeShort",
+    hireDate: "employeesExportHeaderHireDateShort",
+    employeeStatus: "employeesExportFieldEmployeeStatus",
+    bankName: "employeesExportHeaderBankShort",
+    bankAccount: "employeesExportHeaderBankAccountShort",
+    bankBranch: "employeesExportFieldBankBranch",
+    socialInsuranceNo: "employeesExportHeaderSocialInsuranceShort",
+    healthInsuranceNo: "employeesExportHeaderHealthInsuranceShort",
+    taxCode: "employeesExportFieldTaxCode",
+    educationLevel: "employeesExportFieldEducationLevel",
+    university: "employeesExportFieldUniversity",
+    major: "employeesExportFieldMajor",
+    createdAt: "employeesExportHeaderCreatedAt",
 };
 
-const STATUS_MAP: Record<string, string> = {
-    ACTIVE: "Đang làm",
-    ON_LEAVE: "Nghỉ phép",
-    RESIGNED: "Đã nghỉ",
-    TERMINATED: "Đã chấm dứt",
-};
+function mapEnumValue(
+    field: string,
+    value: unknown,
+    t: ExportDialogTranslator,
+): unknown {
+    const map: Record<string, Record<string, string>> = {
+        gender: {
+            MALE: t("employeesExportGenderMale"),
+            FEMALE: t("employeesExportGenderFemale"),
+            OTHER: t("employeesExportGenderOther"),
+        },
+        employeeStatus: {
+            ACTIVE: t("employeesExportStatusActive"),
+            ON_LEAVE: t("employeesExportStatusOnLeave"),
+            RESIGNED: t("employeesExportStatusResigned"),
+            TERMINATED: t("employeesExportStatusTerminated"),
+        },
+        employmentType: {
+            FULL_TIME: t("employeesExportEmploymentTypeFullTime"),
+            PART_TIME: t("employeesExportEmploymentTypePartTime"),
+            CONTRACT: t("employeesExportEmploymentTypeContract"),
+            INTERN: t("employeesExportEmploymentTypeIntern"),
+        },
+        educationLevel: {
+            HIGHSCHOOL: t("employeesExportEducationHighSchool"),
+            COLLEGE: t("employeesExportEducationCollege"),
+            BACHELOR: t("employeesExportEducationBachelor"),
+            MASTER: t("employeesExportEducationMaster"),
+            PHD: t("employeesExportEducationPhd"),
+        },
+        maritalStatus: {
+            SINGLE: t("employeesExportMaritalSingle"),
+            MARRIED: t("employeesExportMaritalMarried"),
+            DIVORCED: t("employeesExportMaritalDivorced"),
+        },
+    };
 
-const EMPLOYMENT_TYPE_MAP: Record<string, string> = {
-    FULL_TIME: "Toàn thời gian",
-    PART_TIME: "Bán thời gian",
-    CONTRACT: "Hợp đồng",
-    INTERN: "Thực tập",
-};
-
-const EDUCATION_MAP: Record<string, string> = {
-    HIGHSCHOOL: "THPT",
-    COLLEGE: "Cao đẳng",
-    BACHELOR: "Đại học",
-    MASTER: "Thạc sĩ",
-    PHD: "Tiến sĩ",
-};
-
-const MARITAL_STATUS_MAP: Record<string, string> = {
-    SINGLE: "Độc thân",
-    MARRIED: "Đã kết hôn",
-    DIVORCED: "Ly hôn",
-};
+    const mapped = map[field]?.[String(value)];
+    return mapped ?? value;
+}
 
 function formatDateForExcel(date: Date | string | null): string {
     if (!date) return "";
@@ -281,71 +310,29 @@ function formatDateForExcel(date: Date | string | null): string {
 async function exportToExcel(
     employees: Record<string, unknown>[],
     selectedFields: string[],
+    t: ExportDialogTranslator,
 ) {
     const XLSX = await import("xlsx");
 
-    const displayLabels: Record<string, string> = {
-        employeeCode: "Mã NV",
-        fullName: "Họ và tên",
-        name: "Tên",
-        gender: "Giới tính",
-        dateOfBirth: "Ngày sinh",
-        nationalId: "Số CCCD",
-        nationalIdDate: "Ngày cấp CCCD",
-        nationalIdPlace: "Nơi cấp CCCD",
-        maritalStatus: "Tình trạng hôn nhân",
-        nationality: "Quốc tịch",
-        ethnicity: "Dân tộc",
-        religion: "Tôn giáo",
-        phone: "SĐT",
-        personalEmail: "Email cá nhân",
-        email: "Email công ty",
-        address: "Địa chỉ",
-        departmentName: "Phòng ban",
-        positionName: "Chức vụ",
-        employmentType: "Loại hình",
-        hireDate: "Ngày vào",
-        employeeStatus: "Trạng thái",
-        bankName: "Ngân hàng",
-        bankAccount: "Số TK",
-        bankBranch: "Chi nhánh",
-        socialInsuranceNo: "BHXH",
-        healthInsuranceNo: "BHYT",
-        taxCode: "Mã số thuế",
-        educationLevel: "Trình độ",
-        university: "Trường",
-        major: "Chuyên ngành",
-        createdAt: "Ngày tạo",
-    };
+    const displayLabels = Object.fromEntries(
+        Object.entries(DISPLAY_LABEL_KEYS).map(([field, key]) => [field, t(key)]),
+    );
 
-    const vietnameseData = employees.map((emp) => {
+    const localizedData = employees.map((emp) => {
         const row: Record<string, unknown> = {};
         for (const field of selectedFields) {
             let value = emp[field];
 
-            // Format dates
             if (
                 field === "dateOfBirth" ||
                 field === "nationalIdDate" ||
                 field === "hireDate" ||
                 field === "createdAt"
             ) {
-                value = formatDateForExcel(
-                    value as Date | string | null,
-                );
-            }
-            // Format enums
-            else if (field === "gender" && value) {
-                value = GENDER_MAP[String(value)] || value;
-            } else if (field === "employeeStatus" && value) {
-                value = STATUS_MAP[String(value)] || value;
-            } else if (field === "employmentType" && value) {
-                value = EMPLOYMENT_TYPE_MAP[String(value)] || value;
-            } else if (field === "educationLevel" && value) {
-                value = EDUCATION_MAP[String(value)] || value;
-            } else if (field === "maritalStatus" && value) {
-                value = MARITAL_STATUS_MAP[String(value)] || value;
-            } else if (value === null || value === undefined) {
+                value = formatDateForExcel(value as Date | string | null);
+            } else if (value !== null && value !== undefined) {
+                value = mapEnumValue(field, value, t);
+            } else {
                 value = "";
             }
 
@@ -354,17 +341,14 @@ async function exportToExcel(
         return row;
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(vietnameseData);
+    const worksheet = XLSX.utils.json_to_sheet(localizedData);
 
-    // Auto column widths
     const colWidths: { wch: number }[] = [];
-    const headers = Object.keys(vietnameseData[0] || {});
+    const headers = Object.keys(localizedData[0] || {});
     for (const header of headers) {
         const maxLen = Math.max(
             header.length,
-            ...vietnameseData.map(
-                (r) => String(r[header] ?? "").length,
-            ),
+            ...localizedData.map((r) => String(r[header] ?? "").length),
         );
         colWidths.push({ wch: Math.min(maxLen + 2, 40) });
     }
@@ -374,14 +358,14 @@ async function exportToExcel(
     XLSX.utils.book_append_sheet(
         workbook,
         worksheet,
-        "Danh sách nhân viên",
+        t("employeesExportSheetName"),
     );
 
     const now = new Date();
     const dateStr = `${now.getFullYear()}${String(
         now.getMonth() + 1,
     ).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
-    XLSX.writeFile(workbook, `danh-sach-nhan-vien-${dateStr}.xlsx`);
+    XLSX.writeFile(workbook, `${t("employeesExportFilenamePrefix")}-${dateStr}.xlsx`);
 }
 
 export function ExportEmployeesDialog({
@@ -398,16 +382,14 @@ export function ExportEmployeesDialog({
             (f) => f.key,
         ),
     );
-    const [previewCount, setPreviewCount] = useState<number | null>(
-        null,
-    );
-    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+    const t = useTranslations("ProtectedPages");
+    const tCommon = useTranslations("Common");
 
     const groupedFields = useCallback(() => {
         const groups: Record<string, ExportField[]> = {};
         for (const field of EXPORT_FIELDS) {
-            if (!groups[field.group]) groups[field.group] = [];
-            groups[field.group].push(field);
+            if (!groups[field.groupKey]) groups[field.groupKey] = [];
+            groups[field.groupKey].push(field);
         }
         return groups;
     }, []);
@@ -421,9 +403,9 @@ export function ExportEmployeesDialog({
     }, []);
 
     const handleToggleGroup = useCallback(
-        (group: string, checked: boolean) => {
+        (groupKey: string, checked: boolean) => {
             const groupKeys = EXPORT_FIELDS.filter(
-                (f) => f.group === group,
+                (f) => f.groupKey === groupKey,
             ).map((f) => f.key);
             setSelectedFields((prev) => {
                 if (checked) {
@@ -436,9 +418,9 @@ export function ExportEmployeesDialog({
     );
 
     const isGroupAllChecked = useCallback(
-        (group: string) => {
+        (groupKey: string) => {
             const groupKeys = EXPORT_FIELDS.filter(
-                (f) => f.group === group,
+                (f) => f.groupKey === groupKey,
             ).map((f) => f.key);
             return groupKeys.every((k) => selectedFields.includes(k));
         },
@@ -446,9 +428,9 @@ export function ExportEmployeesDialog({
     );
 
     const isGroupSomeChecked = useCallback(
-        (group: string) => {
+        (groupKey: string) => {
             const groupKeys = EXPORT_FIELDS.filter(
-                (f) => f.group === group,
+                (f) => f.groupKey === groupKey,
             ).map((f) => f.key);
             const checkedCount = groupKeys.filter((k) =>
                 selectedFields.includes(k),
@@ -462,7 +444,7 @@ export function ExportEmployeesDialog({
 
     const handleExport = async () => {
         if (selectedFields.length === 0) {
-            toast.error("Vui lòng chọn ít nhất một trường để xuất");
+            toast.error(t("employeesExportMinFieldRequired"));
             return;
         }
 
@@ -476,20 +458,18 @@ export function ExportEmployeesDialog({
             });
 
             if (!employees || employees.length === 0) {
-                toast.warning(
-                    "Không có nhân viên nào phù hợp với điều kiện lọc",
-                );
+                toast.warning(t("employeesExportNoFilteredData"));
                 return;
             }
 
-            await exportToExcel(employees, selectedFields);
+            await exportToExcel(employees, selectedFields, t);
             toast.success(
-                `Đã xuất thành công ${employees.length} nhân viên ra file Excel`,
+                t("employeesExportSuccess", { count: employees.length }),
             );
             onOpenChange(false);
         } catch (err) {
             console.error("Export error:", err);
-            toast.error("Lỗi khi xuất file. Vui lòng thử lại.");
+            toast.error(t("employeesExportError"));
         } finally {
             setIsExporting(false);
         }
@@ -501,10 +481,10 @@ export function ExportEmployeesDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <FileSpreadsheet className="h-5 w-5 text-primary" />
-                        Xuất danh sách nhân viên
+                        {t("employeesExportDialogTitle")}
                     </DialogTitle>
                     <DialogDescription>
-                        Chọn các trường cần xuất và tải về file Excel.
+                        {t("employeesExportDialogDescription")}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -512,9 +492,7 @@ export function ExportEmployeesDialog({
                 <div className="flex items-center gap-2 px-1 py-2 rounded-md bg-muted/50 text-sm">
                     <Info className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="text-muted-foreground">
-                        File sẽ chứa toàn bộ nhân viên phù hợp với
-                        điều kiện lọc hiện tại. Bạn có thể chọn các
-                        trường muốn xuất bên dưới.
+                        {t("employeesExportDialogHint")}
                     </span>
                 </div>
 
@@ -552,7 +530,7 @@ export function ExportEmployeesDialog({
                                             htmlFor={`group-${group}`}
                                             className="text-sm font-semibold cursor-pointer select-none"
                                         >
-                                            {group}
+                                            {t(group)}
                                         </Label>
                                     </div>
 
@@ -578,7 +556,7 @@ export function ExportEmployeesDialog({
                                                     htmlFor={`field-${field.key}`}
                                                     className="text-sm cursor-pointer select-none text-muted-foreground"
                                                 >
-                                                    {field.label}
+                                                    {t(field.labelKey)}
                                                 </Label>
                                             </div>
                                         ))}
@@ -592,15 +570,14 @@ export function ExportEmployeesDialog({
                 {/* Selected count */}
                 <div className="flex items-center justify-between px-1 py-2 border-t">
                     <span className="text-xs text-muted-foreground">
-                        Đã chọn{" "}
-                        <strong className="text-foreground">
-                            {selectedFields.length}
-                        </strong>{" "}
-                        / {EXPORT_FIELDS.length} trường
+                        {t("employeesExportSelectedCount", {
+                            selected: selectedFields.length,
+                            total: EXPORT_FIELDS.length,
+                        })}
                     </span>
                     {selectedFields.length === 0 && (
                         <span className="text-xs text-destructive">
-                            Cần chọn ít nhất 1 trường
+                            {t("employeesExportMinFieldWarning")}
                         </span>
                     )}
                 </div>
@@ -611,7 +588,7 @@ export function ExportEmployeesDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={isExporting}
                     >
-                        Hủy
+                        {tCommon("cancel")}
                     </Button>
                     <Button
                         onClick={handleExport}
@@ -622,12 +599,12 @@ export function ExportEmployeesDialog({
                         {isExporting ? (
                             <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Đang xuất...
+                                {t("employeesExportLoading")}
                             </>
                         ) : (
                             <>
                                 <Download className="h-4 w-4 mr-2" />
-                                Xuất Excel
+                                {t("employeesExportExcel")}
                             </>
                         )}
                     </Button>
@@ -636,3 +613,4 @@ export function ExportEmployeesDialog({
         </Dialog>
     );
 }
+

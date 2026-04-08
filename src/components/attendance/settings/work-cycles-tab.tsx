@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RefreshCw, Plus } from "lucide-react";
@@ -10,11 +11,11 @@ import {
     updateWorkCycle,
     deleteWorkCycle,
     toggleWorkCycleActive,
-} from "@/app/(protected)/attendance/actions";
+} from "@/app/[locale]/(protected)/attendance/actions";
 import type {
     WorkCycle,
     Shift,
-} from "@/app/(protected)/attendance/types";
+} from "@/app/[locale]/(protected)/attendance/types";
 
 import {
     Card,
@@ -49,6 +50,7 @@ export function WorkCyclesTab({
         null,
     );
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const t = useTranslations("ProtectedPages");
 
     const openCreate = () => {
         setEditCycle(null);
@@ -77,14 +79,14 @@ export function WorkCyclesTab({
                 })),
             }),
         onSuccess: () => {
-            toast.success("Đã tạo chu kỳ làm việc");
+            toast.success(t("attendanceWorkCyclesTabToastCreateSuccess"));
             setShowDialog(false);
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "workCycles"],
             });
         },
         onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+            toast.error(err.message || t("attendanceWorkCyclesTabToastGenericError")),
     });
 
     const updateMutation = useMutation({
@@ -106,7 +108,7 @@ export function WorkCyclesTab({
             });
         },
         onSuccess: () => {
-            toast.success("Đã cập nhật chu kỳ làm việc");
+            toast.success(t("attendanceWorkCyclesTabToastUpdateSuccess"));
             setShowDialog(false);
             setEditCycle(null);
             queryClient.invalidateQueries({
@@ -114,20 +116,20 @@ export function WorkCyclesTab({
             });
         },
         onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+            toast.error(err.message || t("attendanceWorkCyclesTabToastGenericError")),
     });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteWorkCycle(id),
         onSuccess: () => {
-            toast.success("Đã xoá chu kỳ làm việc");
+            toast.success(t("attendanceWorkCyclesTabToastDeleteSuccess"));
             setDeleteId(null);
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "workCycles"],
             });
         },
         onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+            toast.error(err.message || t("attendanceWorkCyclesTabToastGenericError")),
     });
 
     const toggleMutation = useMutation({
@@ -144,7 +146,7 @@ export function WorkCyclesTab({
             });
         },
         onError: (err: Error) =>
-            toast.error(err.message || "Có lỗi xảy ra"),
+            toast.error(err.message || t("attendanceWorkCyclesTabToastGenericError")),
     });
 
     const isSaving =
@@ -167,23 +169,21 @@ export function WorkCyclesTab({
                 <div>
                     <CardTitle className="flex items-center gap-2">
                         <RefreshCw className="h-5 w-5" />
-                        Chu kỳ làm việc
+                        {t("attendanceWorkCyclesTabTitle")}
                     </CardTitle>
                     <CardDescription>
-                        Tạo các chu kỳ làm việc linh động, xoay ca.
-                        Mỗi chu kỳ xác định lịch ca làm lặp lại theo
-                        số ngày.
+                        {t("attendanceWorkCyclesTabDescription")}
                     </CardDescription>
                 </div>
                 <Button onClick={openCreate} size="sm">
                     <Plus className="h-4 w-4" />
-                    Tạo chu kỳ
+                    {t("attendanceWorkCyclesTabCreate")}
                 </Button>
             </CardHeader>
             <CardContent>
                 {workCycles.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">
-                        Chưa có chu kỳ làm việc nào
+                        {t("attendanceWorkCyclesTabEmpty")}
                     </p>
                 ) : (
                     <div className="space-y-3">
@@ -229,3 +229,4 @@ export function WorkCyclesTab({
         </Card>
     );
 }
+

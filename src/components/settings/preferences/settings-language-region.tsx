@@ -9,12 +9,13 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { SettingsSection } from "./settings-section";
-import { LANGUAGE_OPTIONS } from "../../../app/(protected)/settings/constants";
+import { LANGUAGE_OPTIONS } from "@/app/[locale]/(protected)/settings/constants";
 import { TIMEZONE_OPTIONS } from "@/hooks/use-timezone";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useLocalStorage } from "@mantine/hooks";
 import { useTimezone } from "@/hooks/use-timezone";
+import { useTranslations } from "next-intl";
 
 interface SettingsLanguageRegionProps {
     timezone: string;
@@ -47,6 +48,7 @@ export function SettingsLanguageRegion({
         ? onNotifyTimezoneChange 
         : setInternalNotifyTimezone;
     
+    const t = useTranslations("ProtectedPages");
     const { setTimezone } = useTimezone();
 
     const handleTimezoneChange = (value: string) => {
@@ -56,13 +58,13 @@ export function SettingsLanguageRegion({
 
     return (
         <SettingsSection
-            title="Ngôn ngữ & Khu vực"
-            description="Tùy chỉnh ngôn ngữ và múi giờ."
+            title={t("settingsLanguageRegionTitle")}
+            description={t("settingsLanguageRegionDescription")}
         >
             <div className="space-y-4 w-full min-w-[200px]">
                 <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">
-                        Ngôn ngữ
+                        {t("settingsLanguageLabel")}
                     </Label>
                     <Select
                         value={language}
@@ -87,7 +89,7 @@ export function SettingsLanguageRegion({
                 </div>
                 <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">
-                        Múi giờ
+                        {t("settingsTimezoneLabel")}
                     </Label>
                     <Select
                         value={timezone}
@@ -123,7 +125,7 @@ export function SettingsLanguageRegion({
                         htmlFor="notify-timezone"
                         className="text-sm font-normal cursor-pointer"
                     >
-                        Thông báo khi đổi múi giờ
+                        {t("settingsTimezoneNotify")}
                     </Label>
                 </div>
             </div>

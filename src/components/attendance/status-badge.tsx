@@ -9,74 +9,82 @@ import {
     Coffee,
     Ban,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const STATUS_CONFIG: Record<
     string,
     {
-        label: string;
+        labelKey: string;
         variant: "default" | "secondary" | "destructive" | "outline";
         icon: typeof CheckCircle;
         className?: string;
     }
 > = {
     PRESENT: {
-        label: "Đúng giờ",
+        labelKey: "attendanceStatusBadgePresent",
         variant: "default",
         icon: CheckCircle,
         className: "bg-green-600",
     },
     LATE: {
-        label: "Đi muộn",
+        labelKey: "attendanceStatusBadgeLate",
         variant: "secondary",
         icon: Clock,
         className: "bg-yellow-500 text-white",
     },
     EARLY_LEAVE: {
-        label: "Về sớm",
+        labelKey: "attendanceStatusBadgeEarlyLeave",
         variant: "secondary",
         icon: Clock,
         className: "bg-orange-500 text-white",
     },
     LATE_AND_EARLY: {
-        label: "Muộn & Sớm",
+        labelKey: "attendanceStatusBadgeLateAndEarly",
         variant: "destructive",
         icon: AlertCircle,
     },
     ABSENT: {
-        label: "Vắng mặt",
+        labelKey: "attendanceStatusBadgeAbsent",
         variant: "destructive",
         icon: XCircle,
     },
-    HALF_DAY: { label: "Nửa ngày", variant: "outline", icon: Coffee },
+    HALF_DAY: {
+        labelKey: "attendanceStatusBadgeHalfDay",
+        variant: "outline",
+        icon: Coffee,
+    },
     ON_LEAVE: {
-        label: "Nghỉ phép",
+        labelKey: "attendanceStatusBadgeOnLeave",
         variant: "secondary",
         icon: CalendarOff,
         className: "bg-purple-500 text-white",
     },
     HOLIDAY: {
-        label: "Ngày lễ",
+        labelKey: "attendanceStatusBadgeHoliday",
         variant: "secondary",
         icon: CalendarCheck,
         className: "bg-indigo-500 text-white",
     },
-    // Approval statuses
     PENDING: {
-        label: "Chờ duyệt",
+        labelKey: "attendanceStatusBadgePending",
         variant: "secondary",
         icon: AlertCircle,
     },
     APPROVED: {
-        label: "Đã duyệt",
+        labelKey: "attendanceStatusBadgeApproved",
         variant: "default",
         icon: CheckCircle,
     },
     REJECTED: {
-        label: "Từ chối",
+        labelKey: "attendanceStatusBadgeRejected",
         variant: "destructive",
         icon: XCircle,
     },
-    CANCELLED: { label: "Đã hủy", variant: "outline", icon: Ban },
+    CANCELLED: {
+        labelKey: "attendanceStatusBadgeCancelled",
+        variant: "outline",
+        icon: Ban,
+    },
 };
 
 export function StatusBadge({
@@ -86,7 +94,9 @@ export function StatusBadge({
     status: string;
     className?: string;
 }) {
+    const t = useTranslations("ProtectedPages");
     const config = STATUS_CONFIG[status];
+
     if (!config) {
         return (
             <Badge variant="outline" className={className}>
@@ -101,7 +111,7 @@ export function StatusBadge({
             variant={config.variant}
             className={`${config.className || ""} ${className || ""}`}
         >
-            <Icon className="mr-1 h-3 w-3" /> {config.label}
+            <Icon className="mr-1 h-3 w-3" /> {t(config.labelKey)}
         </Badge>
     );
 }
@@ -111,6 +121,7 @@ export function AttendanceStatusLabel({
 }: {
     status: string;
 }) {
+    const t = useTranslations("ProtectedPages");
     const config = STATUS_CONFIG[status];
-    return config?.label || status;
+    return config ? t(config.labelKey) : status;
 }

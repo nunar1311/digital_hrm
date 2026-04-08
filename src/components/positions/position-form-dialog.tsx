@@ -1,21 +1,22 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   createPosition,
   updatePosition,
   getAllPositions,
-} from "@/app/(protected)/positions/actions";
+} from "@/app/[locale]/(protected)/positions/actions";
 import {
   getPositionRoleMapping,
   setPositionRoleMapping,
-} from "@/app/(protected)/positions/position-role-actions";
-import { updatePositionSchema } from "@/app/(protected)/positions/schemas";
-import type { PositionListItem } from "@/app/(protected)/positions/types";
-import { getDepartments } from "@/app/(protected)/departments/actions";
+} from "@/app/[locale]/(protected)/positions/position-role-actions";
+import { updatePositionSchema } from "@/app/[locale]/(protected)/positions/schemas";
+import type { PositionListItem } from "@/app/[locale]/(protected)/positions/types";
+import { getDepartments } from "@/app/[locale]/(protected)/departments/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +46,7 @@ import {
 import { Loader2, CheckCircle2, Plus, X } from "lucide-react";
 import z from "zod";
 
-/** Sinh mã chức vụ từ chữ cái đầu của mỗi từ trong tên */
+/** Sinh mÃ£ chá»©c vá»¥ tá»« chá»¯ cÃ¡i Ä‘áº§u cá»§a má»—i tá»« trong tÃªn */
 function generateCode(name: string): string {
   return name
     .trim()
@@ -59,11 +60,11 @@ function generateCode(name: string): string {
 const STATUS_OPTIONS = [
   {
     value: "ACTIVE",
-    label: "Hoạt động",
+    labelKey: "positionsStatusActive",
   },
   {
     value: "INACTIVE",
-    label: "Không hoạt động",
+    labelKey: "positionsStatusInactive",
   },
 ];
 
@@ -91,6 +92,7 @@ export function PositionFormDialog({
   const queryClient = useQueryClient();
   const isEdit = !!resolvedEditData;
   const [selectedRoleKey, setSelectedRoleKey] = useState<string>("");
+  const t = useTranslations("ProtectedPages");
 
   const form = useForm<z.infer<typeof updatePositionSchema>>({
     resolver: zodResolver(updatePositionSchema),
@@ -132,21 +134,21 @@ export function PositionFormDialog({
     }
   }, [resolvedEditData, form, defaultDepartmentId]);
 
-  // Reset role key khi đóng/mở dialog tạo mới
+  // Reset role key khi Ä‘Ã³ng/má»Ÿ dialog táº¡o má»›i
   useEffect(() => {
     if (!open) {
       queueMicrotask(() => setSelectedRoleKey(""));
     }
   }, [open]);
 
-  // Lấy role mapping mới nhất từ query cache khi edit
+  // Láº¥y role mapping má»›i nháº¥t tá»« query cache khi edit
   const { data: existingMapping } = useQuery({
     queryKey: ["position-role-mapping", resolvedEditData?.id],
     queryFn: () => getPositionRoleMapping(resolvedEditData!.id),
     enabled: !!open && !!resolvedEditData?.id,
   });
 
-  // Khi mapping có dữ liệu, sync vào state
+  // Khi mapping cÃ³ dá»¯ liá»‡u, sync vÃ o state
   const prevMappingIdRef = useRef<string | null>(null);
   useEffect(() => {
     const mapping = existingMapping;
@@ -180,7 +182,7 @@ export function PositionFormDialog({
     enabled: open,
   });
 
-  // Tự sinh mã chức vụ khi tên thay đổi (chỉ khi tạo mới)
+  // Tá»± sinh mÃ£ chá»©c vá»¥ khi tÃªn thay Ä‘á»•i (chá»‰ khi táº¡o má»›i)
   const watchedName = useWatch({ control: form.control, name: "name" });
   useEffect(() => {
     if (!isEdit && watchedName && watchedName.trim().length > 0) {
@@ -200,7 +202,7 @@ export function PositionFormDialog({
     },
     onSuccess: (result) => {
       if (result.success) {
-        toast.success("Tạo chức vụ thành công");
+        toast.success(t("positionsCreateSuccess"));
         if (selectedRoleKey && selectedRoleKey !== "__none__") {
           roleMappingMutation.mutate({
             positionId: result.id,
@@ -213,7 +215,7 @@ export function PositionFormDialog({
       }
     },
     onError: () => {
-      toast.error("Đã xảy ra lỗi khi tạo chức vụ");
+      toast.error(t("positionsCreateError"));
       queryClient.invalidateQueries({ queryKey: ["positions"] });
     },
     onSettled: () => {
@@ -236,14 +238,14 @@ export function PositionFormDialog({
     },
     onSuccess: (result) => {
       if (result.success) {
-        toast.success("Cập nhật chức vụ thành công");
+        toast.success(t("positionsUpdateSuccess"));
       } else {
         toast.error(result.error);
         queryClient.invalidateQueries({ queryKey: ["positions"] });
       }
     },
     onError: () => {
-      toast.error("Đã xảy ra lỗi khi cập nhật chức vụ");
+      toast.error(t("positionsUpdateError"));
       queryClient.invalidateQueries({ queryKey: ["positions"] });
     },
     onSettled: () => {
@@ -305,14 +307,20 @@ export function PositionFormDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            {isEdit ? "Chỉnh sửa chức vụ" : "Thêm chức vụ mới"}
+            {isEdit
+              ? t("positionsDialogTitleEdit")
+              : t("positionsDialogTitleCreate")}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
             {isEdit
-              ? `Cập nhật thông tin cho chức vụ ${resolvedEditData?.name}`
+              ? t("positionsDialogDescriptionEdit", {
+                  name: resolvedEditData?.name ?? "",
+                })
               : defaultDepartmentName
-                ? `Tạo chức vụ mới trong ${defaultDepartmentName}`
-                : "Điền thông tin để tạo chức vụ mới"}
+                ? t("positionsDialogDescriptionCreateInDepartment", {
+                    department: defaultDepartmentName,
+                  })
+                : t("positionsDialogDescriptionCreate")}
           </p>
         </DialogHeader>
 
@@ -325,28 +333,28 @@ export function PositionFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Tên chức vụ <span className="text-destructive">*</span>
+                      {t("positionsFieldName")} <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Nhập tên chức vụ" {...field} />
+                      <Input placeholder={t("positionsPlaceholderName")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Mã chức vụ */}
+              {/* MÃ£ chá»©c vá»¥ */}
               <FormField
                 control={form.control}
                 name="code"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Mã chức vụ <span className="text-destructive">*</span>
+                      {t("positionsFieldCode")} <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Tự động tạo từ tên chức vụ"
+                        placeholder={t("positionsPlaceholderCodeAuto")}
                         {...field}
                         disabled={isEdit}
                         readOnly={!isEdit}
@@ -360,19 +368,19 @@ export function PositionFormDialog({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Cấp bậc */}
+              {/* Cáº¥p báº­c */}
               <FormField
                 control={form.control}
                 name="level"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cấp bậc</FormLabel>
+                    <FormLabel>{t("positionsFieldLevel")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         min={1}
                         max={10}
-                        placeholder="Nhập cấp bậc (1-10)"
+                        placeholder={t("positionsPlaceholderLevel")}
                         {...field}
                       />
                     </FormControl>
@@ -386,11 +394,11 @@ export function PositionFormDialog({
                 name="parentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Chức vụ cha</FormLabel>
+                    <FormLabel>{t("positionsFieldParent")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Chọn chức vụ cha" />
+                          <SelectValue placeholder={t("positionsPlaceholderParent")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -408,21 +416,21 @@ export function PositionFormDialog({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Phòng ban */}
+              {/* PhÃ²ng ban */}
               {(!defaultDepartmentId || isEdit) && (
                 <FormField
                   control={form.control}
                   name="departmentId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phòng ban</FormLabel>
+                      <FormLabel>{t("positionsFieldDepartment")}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Chọn phòng ban" />
+                            <SelectValue placeholder={t("positionsPlaceholderDepartment")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -441,13 +449,13 @@ export function PositionFormDialog({
                 />
               )}
 
-              {/* Trạng thái */}
+              {/* Tráº¡ng thÃ¡i */}
               <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Trạng thái</FormLabel>
+                    <FormLabel>{t("positionsStatusLabel")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -457,7 +465,9 @@ export function PositionFormDialog({
                       <SelectContent>
                         {STATUS_OPTIONS.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
+                            {t(opt.labelKey as
+                              | "positionsStatusActive"
+                              | "positionsStatusInactive")}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -473,10 +483,10 @@ export function PositionFormDialog({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mô tả</FormLabel>
+                  <FormLabel>{t("positionsFieldDescription")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Mô tả chi tiết về chức vụ, trách nhiệm và quyền hạn..."
+                      placeholder={t("positionsPlaceholderDescription")}
                       rows={4}
                       className="resize-none"
                       {...field}
@@ -496,23 +506,23 @@ export function PositionFormDialog({
                 className="gap-2"
               >
                 <X className="w-4 h-4" />
-                Hủy bỏ
+                {t("positionsCancelAction")}
               </Button>
               <Button type="submit" disabled={isLoading} className="gap-2">
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Đang xử lý...
+                    {t("positionsProcessing")}
                   </>
                 ) : isEdit ? (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
-                    Lưu thay đổi
+                    {t("positionsSaveChanges")}
                   </>
                 ) : (
                   <>
                     <Plus className="w-4 h-4" />
-                    Tạo chức vụ
+                    {t("positionsCreateAction")}
                   </>
                 )}
               </Button>
@@ -523,3 +533,4 @@ export function PositionFormDialog({
     </Dialog>
   );
 }
+

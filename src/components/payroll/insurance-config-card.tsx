@@ -1,14 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -25,13 +24,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -41,53 +33,53 @@ import {
   Calendar,
   Save,
   RotateCcw,
-  CheckCircle2,
   AlertTriangle,
 } from "lucide-react";
 import {
   INSURANCE_CAPS_2024,
   DEFAULT_INSURANCE_RATES,
-} from "@/app/(protected)/payroll/types";
+} from "@/app/[locale]/(protected)/payroll/types";
 
-const insuranceConfigSchema = z.object({
-  socialRate: z
-    .string()
-    .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
-      message: "Tỷ lệ BHXH phải >= 0",
-    }),
-  healthRate: z
-    .string()
-    .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
-      message: "Tỷ lệ BHYT phải >= 0",
-    }),
-  unemploymentRate: z
-    .string()
-    .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
-      message: "Tỷ lệ BHTN phải >= 0",
-    }),
-  minSalary: z
-    .string()
-    .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-      message: "Lương tối thiểu phải > 0",
-    }),
-  socialMaxSalary: z
-    .string()
-    .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-      message: "Mức lương tối đa BHXH phải > 0",
-    }),
-  healthMaxSalary: z
-    .string()
-    .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-      message: "Mức lương tối đa BHYT phải > 0",
-    }),
-  unemploymentMaxSalary: z
-    .string()
-    .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-      message: "Mức lương tối đa BHTN phải > 0",
-    }),
-});
+const insuranceConfigSchema = (t: ReturnType<typeof useTranslations>) =>
+  z.object({
+    socialRate: z
+      .string()
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
+        message: t("payrollInsuranceValidationSocialRate"),
+      }),
+    healthRate: z
+      .string()
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
+        message: t("payrollInsuranceValidationHealthRate"),
+      }),
+    unemploymentRate: z
+      .string()
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
+        message: t("payrollInsuranceValidationUnemploymentRate"),
+      }),
+    minSalary: z
+      .string()
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+        message: t("payrollInsuranceValidationMinSalary"),
+      }),
+    socialMaxSalary: z
+      .string()
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+        message: t("payrollInsuranceValidationSocialMaxSalary"),
+      }),
+    healthMaxSalary: z
+      .string()
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+        message: t("payrollInsuranceValidationHealthMaxSalary"),
+      }),
+    unemploymentMaxSalary: z
+      .string()
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+        message: t("payrollInsuranceValidationUnemploymentMaxSalary"),
+      }),
+  });
 
-type InsuranceConfigForm = z.infer<typeof insuranceConfigSchema>;
+type InsuranceConfigForm = z.infer<ReturnType<typeof insuranceConfigSchema>>;
 
 interface InsuranceConfigCardProps {
   initialConfig?: {
@@ -134,13 +126,15 @@ const PRESETS = [
 export function InsuranceConfigCard({
   initialConfig,
   onSave,
-  region = "Hà Nội",
+  region,
 }: InsuranceConfigCardProps) {
+  const t = useTranslations("ProtectedPages");
+  const locale = useLocale();
   const [selectedPreset, setSelectedPreset] = useState<string>("2026");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<InsuranceConfigForm>({
-    resolver: zodResolver(insuranceConfigSchema),
+    resolver: zodResolver(insuranceConfigSchema(t)),
     defaultValues: initialConfig
       ? {
           socialRate: String(initialConfig.socialRate * 100),
@@ -185,10 +179,10 @@ export function InsuranceConfigCard({
     setIsSubmitting(true);
     try {
       await onSave(data);
-      toast.success("Đã lưu cấu hình bảo hiểm");
+      toast.success(t("payrollInsuranceToastSaved"));
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Lỗi khi lưu cấu hình",
+        error instanceof Error ? error.message : t("payrollInsuranceToastSaveError"),
       );
     } finally {
       setIsSubmitting(false);
@@ -196,7 +190,7 @@ export function InsuranceConfigCard({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: "VND",
       maximumFractionDigits: 0,
@@ -211,15 +205,14 @@ export function InsuranceConfigCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            <CardTitle>Cấu hình bảo hiểm</CardTitle>
+            <CardTitle>{t("payrollInsuranceTitle")}</CardTitle>
           </div>
           <Badge variant="outline" className="font-normal">
-            Vùng: {region}
+            {t("payrollInsuranceRegion", { region: region || t("payrollNotAvailable") })}
           </Badge>
         </div>
         <CardDescription>
-          Cấu hình tỷ lệ và mức lương tối đa đóng bảo hiểm xã hội, y tế, thất
-          nghiệp
+          {t("payrollInsuranceDescription")}
         </CardDescription>
       </CardHeader>
 
@@ -228,11 +221,11 @@ export function InsuranceConfigCard({
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="config">
               <Shield className="h-4 w-4 mr-2" />
-              Cấu hình
+              {t("payrollInsuranceTabConfig")}
             </TabsTrigger>
             <TabsTrigger value="presets">
               <Calendar className="h-4 w-4 mr-2" />
-              Presets
+              {t("payrollInsuranceTabPresets")}
             </TabsTrigger>
           </TabsList>
 
@@ -249,41 +242,8 @@ export function InsuranceConfigCard({
                   onClick={() => handlePresetChange(String(preset.year))}
                 >
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Năm {preset.year}</CardTitle>
+                    <CardTitle className="text-lg">{t("payrollInsuranceYear", { year: preset.year })}</CardTitle>
                   </CardHeader>
-                  {/* <CardContent className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Lương tối thiểu:</span>
-                                            <span className="font-medium">
-                                                {formatCurrency(preset.caps.minSalary)}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">BHXH tối đa:</span>
-                                            <span className="font-medium">
-                                                {formatCurrency(preset.caps.socialMaxSalary)}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">BHYT tối đa:</span>
-                                            <span className="font-medium">
-                                                {formatCurrency(preset.caps.healthMaxSalary)}
-                                            </span>
-                                        </div>
-                                        <Separator className="my-2" />
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-muted-foreground">Tổng tỷ lệ:</span>
-                                            <span className="font-medium">
-                                                {(preset.rates.socialRate + preset.rates.healthRate + preset.rates.unemploymentRate) * 100}%
-                                            </span>
-                                        </div>
-                                        {selectedPreset === String(preset.year) && (
-                                            <div className="flex items-center gap-1 text-primary text-xs">
-                                                <CheckCircle2 className="h-3 w-3" />
-                                                Đang chọn
-                                            </div>
-                                        )}
-                                    </CardContent> */}
                 </Card>
               ))}
             </div>
@@ -298,7 +258,7 @@ export function InsuranceConfigCard({
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium flex items-center gap-2">
                     <Percent className="h-4 w-4" />
-                    Tỷ lệ đóng (Người lao động)
+                    {t("payrollInsuranceContributionRate")}
                   </h4>
                   <div className="grid grid-cols-3 gap-4">
                     <FormField
@@ -366,14 +326,14 @@ export function InsuranceConfigCard({
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium flex items-center gap-2">
                     <Banknote className="h-4 w-4" />
-                    Mức lương tối thiểu vùng
+                    {t("payrollInsuranceRegionalMinSalary")}
                   </h4>
                   <FormField
                     control={form.control}
                     name="minSalary"
                     render={({ field }) => (
                       <FormItem className="max-w-xs">
-                        <FormLabel>Lương tối thiểu</FormLabel>
+                        <FormLabel>{t("payrollInsuranceMinSalary")}</FormLabel>
                         <FormControl>
                           <Input type="number" min="0" {...field} />
                         </FormControl>
@@ -388,7 +348,7 @@ export function InsuranceConfigCard({
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium flex items-center gap-2">
                     <Shield className="h-4 w-4" />
-                    Mức lương tối đa đóng BH
+                    {t("payrollInsuranceMaxSalaryCap")}
                   </h4>
                   <div className="grid grid-cols-3 gap-4">
                     <FormField
@@ -396,7 +356,7 @@ export function InsuranceConfigCard({
                       name="socialMaxSalary"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>BHXH tối đa</FormLabel>
+                          <FormLabel>{t("payrollInsuranceSocialMax")}</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" {...field} />
                           </FormControl>
@@ -409,7 +369,7 @@ export function InsuranceConfigCard({
                       name="healthMaxSalary"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>BHYT tối đa</FormLabel>
+                          <FormLabel>{t("payrollInsuranceHealthMax")}</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" {...field} />
                           </FormControl>
@@ -422,7 +382,7 @@ export function InsuranceConfigCard({
                       name="unemploymentMaxSalary"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>BHTN tối đa</FormLabel>
+                          <FormLabel>{t("payrollInsuranceUnemploymentMax")}</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" {...field} />
                           </FormControl>
@@ -438,12 +398,12 @@ export function InsuranceConfigCard({
                 <div className="rounded-lg bg-muted/50 p-4 space-y-2">
                   <h4 className="text-sm font-medium flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-amber-600" />
-                    Tóm tắt cấu hình
+                    {t("payrollInsuranceSummary")}
                   </h4>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
-                        Tổng tỷ lệ đóng:
+                        {t("payrollInsuranceTotalContribution")}
                       </span>
                       <span className="font-medium">
                         {(
@@ -456,7 +416,7 @@ export function InsuranceConfigCard({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
-                        Mức đóng BHXH (lương 10M):
+                        {t("payrollInsuranceBhxhAt10m")}
                       </span>
                       <span className="font-medium">
                         {formatCurrency(
@@ -478,11 +438,11 @@ export function InsuranceConfigCard({
                     onClick={() => form.reset()}
                   >
                     <RotateCcw className="mr-2 h-4 w-4" />
-                    Đặt lại
+                    {t("payrollReset")}
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Đang lưu..." : "Lưu cấu hình"}
+                    {isSubmitting ? t("payrollSaving") : t("payrollInsuranceSaveConfig")}
                   </Button>
                 </div>
               </form>
@@ -493,3 +453,4 @@ export function InsuranceConfigCard({
     </Card>
   );
 }
+

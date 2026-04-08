@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import {
@@ -39,17 +39,17 @@ import {
     UserPlus,
     RotateCcw,
     Eye,
-    Trash2,
     ChevronLeft,
     ChevronRight,
     Package,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import {
     getAssets,
     deleteAsset,
-} from "@/app/(protected)/assets/actions";
+} from "@/app/[locale]/(protected)/assets/actions";
 import {
     ASSET_CATEGORY_OPTIONS,
     ASSET_STATUS_OPTIONS,
@@ -57,13 +57,13 @@ import {
     ASSET_STATUS_LABELS,
     ASSET_STATUS_COLORS,
     formatCurrency,
-} from "@/app/(protected)/assets/constants";
+} from "@/app/[locale]/(protected)/assets/constants";
 import type {
     AssetWithCurrentUser,
     AssetFilters,
     AssetCategory,
     AssetStatus,
-} from "@/app/(protected)/assets/types";
+} from "@/app/[locale]/(protected)/assets/types";
 
 import { AssetFormDialog } from "./asset-form-dialog";
 import { AssetAssignDialog } from "./asset-assign-dialog";
@@ -74,6 +74,7 @@ import { useSocketEvents } from "@/hooks/use-socket-event";
 
 export function AssetList() {
     const queryClient = useQueryClient();
+    const t = useTranslations("ProtectedPages");
 
     // Filters
     const [search, setSearch] = useState("");
@@ -123,11 +124,11 @@ export function AssetList() {
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteAsset(id),
         onSuccess: () => {
-            toast.success("Đã xóa tài sản");
+            toast.success(t("assetsListToastDeleteSuccess"));
             queryClient.invalidateQueries({ queryKey: ["assets"] });
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Không thể xóa tài sản");
+            toast.error(err.message || t("assetsListToastDeleteError"));
         },
     });
 
@@ -142,7 +143,7 @@ export function AssetList() {
                     <div className="relative flex-1 max-w-sm">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Tìm kiếm tài sản..."
+                            placeholder={t("assetsListSearchPlaceholder")}
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value);
@@ -162,11 +163,13 @@ export function AssetList() {
                             size="sm"
                             className="w-[160px]"
                         >
-                            <SelectValue placeholder="Loại tài sản" />
+                            <SelectValue
+                                placeholder={t("assetsListCategoryPlaceholder")}
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="ALL">
-                                Tất cả loại
+                                Táº¥t cáº£ loáº¡i
                             </SelectItem>
                             {ASSET_CATEGORY_OPTIONS.map((o) => (
                                 <SelectItem
@@ -189,11 +192,13 @@ export function AssetList() {
                             size="sm"
                             className="w-[160px]"
                         >
-                            <SelectValue placeholder="Trạng thái" />
+                            <SelectValue
+                                placeholder={t("assetsListStatusPlaceholder")}
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="ALL">
-                                Tất cả
+                                Táº¥t cáº£
                             </SelectItem>
                             {ASSET_STATUS_OPTIONS.map((o) => (
                                 <SelectItem
@@ -211,7 +216,7 @@ export function AssetList() {
                     onClick={() => setCreateOpen(true)}
                 >
                     <Plus className="h-4 w-4" />
-                    Thêm tài sản
+                    ThÃªm tÃ i sáº£n
                 </Button>
             </div>
 
@@ -220,13 +225,13 @@ export function AssetList() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Mã</TableHead>
-                            <TableHead>Tên tài sản</TableHead>
-                            <TableHead>Loại</TableHead>
-                            <TableHead>Trạng thái</TableHead>
-                            <TableHead>Thương hiệu</TableHead>
-                            <TableHead>Giá mua</TableHead>
-                            <TableHead>Người sử dụng</TableHead>
+                            <TableHead>MÃ£</TableHead>
+                            <TableHead>TÃªn tÃ i sáº£n</TableHead>
+                            <TableHead>Loáº¡i</TableHead>
+                            <TableHead>Tráº¡ng thÃ¡i</TableHead>
+                            <TableHead>ThÆ°Æ¡ng hiá»‡u</TableHead>
+                            <TableHead>GiÃ¡ mua</TableHead>
+                            <TableHead>NgÆ°á»i sá»­ dá»¥ng</TableHead>
                             <TableHead className="w-[60px]"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -252,7 +257,7 @@ export function AssetList() {
                                     <div className="flex flex-col items-center gap-2">
                                         <Package className="h-8 w-8 text-muted-foreground" />
                                         <p className="text-muted-foreground">
-                                            Chưa có tài sản nào
+                                            ChÆ°a cÃ³ tÃ i sáº£n nÃ o
                                         </p>
                                     </div>
                                 </TableCell>
@@ -291,7 +296,8 @@ export function AssetList() {
                                     <TableCell>
                                         {[asset.brand, asset.model]
                                             .filter(Boolean)
-                                            .join(" ") || "—"}
+                                            .join(" ") ||
+                                            t("assetsListFallbackValue")}
                                     </TableCell>
                                     <TableCell>
                                         {formatCurrency(
@@ -299,7 +305,8 @@ export function AssetList() {
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        {asset.currentUserName || "—"}
+                                        {asset.currentUserName ||
+                                            t("assetsListFallbackValue")}
                                     </TableCell>
                                     <TableCell>
                                         <DropdownMenu>
@@ -326,7 +333,7 @@ export function AssetList() {
                                                     }}
                                                 >
                                                     <Eye className="mr-2 h-4 w-4" />
-                                                    Xem chi tiết
+                                                    Xem chi tiáº¿t
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     onClick={(e) => {
@@ -337,7 +344,7 @@ export function AssetList() {
                                                     }}
                                                 >
                                                     <Pencil className="mr-2 h-4 w-4" />
-                                                    Chỉnh sửa
+                                                    Chá»‰nh sá»­a
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 {asset.status !==
@@ -355,7 +362,7 @@ export function AssetList() {
                                                             }}
                                                         >
                                                             <UserPlus className="mr-2 h-4 w-4" />
-                                                            Cấp phát
+                                                            Cáº¥p phÃ¡t
                                                         </DropdownMenuItem>
                                                     )}
                                                 {asset.status ===
@@ -372,13 +379,21 @@ export function AssetList() {
                                                             }}
                                                         >
                                                             <RotateCcw className="mr-2 h-4 w-4" />
-                                                            Thu hồi
+                                                            Thu há»“i
                                                         </DropdownMenuItem>
                                                     )}
                                                 <DropdownMenuSeparator />
                                                 <DeleteConfirm
-                                                    title="Xóa tài sản"
-                                                    description={`Bạn có chắc muốn xóa tài sản "${asset.name}" (${asset.code})? Hành động này không thể hoàn tác.`}
+                                                    title={t(
+                                                        "assetsListDeleteConfirmTitle",
+                                                    )}
+                                                    description={t(
+                                                        "assetsListDeleteConfirmDescription",
+                                                        {
+                                                            name: asset.name,
+                                                            code: asset.code,
+                                                        },
+                                                    )}
                                                     onConfirm={() =>
                                                         deleteMutation.mutate(
                                                             asset.id,
@@ -399,8 +414,8 @@ export function AssetList() {
             {totalPages > 1 && (
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                        Trang {page} / {totalPages} — Tổng{" "}
-                        {data?.total || 0} tài sản
+                        Trang {page} / {totalPages} â€” Tá»•ng{" "}
+                        {data?.total || 0} tÃ i sáº£n
                     </p>
                     <div className="flex gap-2">
                         <Button
@@ -473,3 +488,4 @@ export function AssetList() {
         </div>
     );
 }
+

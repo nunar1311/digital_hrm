@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getUsers, getDepartments } from "@/app/(protected)/attendance/actions";
-import type { UserBasic, DepartmentBasic } from "@/app/(protected)/attendance/types";
+import { getUsers, getDepartments } from "@/app/[locale]/(protected)/attendance/actions";
+import type { UserBasic, DepartmentBasic } from "@/app/[locale]/(protected)/attendance/types";
 
 export interface UseSidebarAssignReturn {
     users: UserBasic[];
@@ -83,3 +83,4 @@ export function useSidebarAssignData(): UseSidebarAssignReturn {
         defaultStartDate,
     };
 }
+

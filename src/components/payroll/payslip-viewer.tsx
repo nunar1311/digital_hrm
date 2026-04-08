@@ -1,12 +1,12 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Printer,
     Download,
@@ -17,7 +17,7 @@ import {
     Calendar,
     Banknote,
 } from "lucide-react";
-import type { Payslip, PayslipItem, PayslipInsurance, PayslipTax } from "@/app/(protected)/payroll/types";
+import type { Payslip, PayslipItem, PayslipInsurance, PayslipTax } from "@/app/[locale]/(protected)/payroll/types";
 
 interface PayslipViewerProps {
     payslip: Payslip;
@@ -29,11 +29,13 @@ interface PayslipViewerProps {
 
 export function PayslipViewer({
     payslip,
-    companyName = "Công ty TNHH Digital HRM",
+    companyName,
     companyLogo,
     isSecure = false,
     onPasswordRequired,
 }: PayslipViewerProps) {
+    const t = useTranslations("ProtectedPages");
+    const locale = useLocale();
     const [showContent, setShowContent] = useState(!isSecure);
     const [isSendingEmail, setIsSendingEmail] = useState(false);
 
@@ -51,7 +53,7 @@ export function PayslipViewer({
         : { taxableIncome: 0, taxAmount: 0, personalDeduction: 0, dependentDeduction: 0, totalDependents: 0 };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat("vi-VN", {
+        return new Intl.NumberFormat(locale, {
             style: "currency",
             currency: "VND",
             maximumFractionDigits: 0,
@@ -59,7 +61,7 @@ export function PayslipViewer({
     };
 
     const formatDate = (date: string | Date) => {
-        return new Date(date).toLocaleDateString("vi-VN", {
+        return new Date(date).toLocaleDateString(locale, {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
@@ -71,16 +73,16 @@ export function PayslipViewer({
     };
 
     const handleDownload = () => {
-        toast.success("Đang tải phiếu lương...");
+        toast.success(t("payrollPayslipViewerDownloading"));
     };
 
     const handleSendEmail = async () => {
         setIsSendingEmail(true);
         try {
             await new Promise((resolve) => setTimeout(resolve, 1000));
-            toast.success("Đã gửi phiếu lương qua email");
+            toast.success(t("payrollPayslipViewerEmailSent"));
         } catch {
-            toast.error("Lỗi khi gửi email");
+            toast.error(t("payrollPayslipViewerEmailError"));
         } finally {
             setIsSendingEmail(false);
         }
@@ -104,12 +106,12 @@ export function PayslipViewer({
                 <Card className="flex flex-col items-center justify-center py-16">
                     <Shield className="h-16 w-16 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">
-                        Phiếu lương được bảo mật
+                        {t("payrollPayslipViewerSecureTitle")}
                     </h3>
                     <p className="text-muted-foreground text-center mb-6 max-w-md">
-                        Vui lòng nhập mật khẩu để xem chi tiết phiếu lương này
+                        {t("payrollPayslipViewerSecureDescription")}
                     </p>
-                    <Button onClick={handleUnlock}>Nhập mật khẩu</Button>
+                    <Button onClick={handleUnlock}>{t("payrollPayslipViewerEnterPassword")}</Button>
                 </Card>
             ) : (
                 <>
@@ -117,11 +119,11 @@ export function PayslipViewer({
                         <div className="flex items-center gap-2">
                             <Button variant="outline" onClick={handlePrint}>
                                 <Printer className="mr-2 h-4 w-4" />
-                                In
+                                {t("payrollPayslipViewerPrint")}
                             </Button>
                             <Button variant="outline" onClick={handleDownload}>
                                 <Download className="mr-2 h-4 w-4" />
-                                Tải PDF
+                                {t("payrollPayslipViewerDownloadPdf")}
                             </Button>
                             <Button
                                 variant="outline"
@@ -129,11 +131,11 @@ export function PayslipViewer({
                                 disabled={isSendingEmail}
                             >
                                 <Mail className="mr-2 h-4 w-4" />
-                                {isSendingEmail ? "Đang gửi..." : "Gửi email"}
+                                {isSendingEmail ? t("payrollPayslipViewerSending") : t("payrollPayslipViewerSendEmail")}
                             </Button>
                         </div>
                         <Badge variant="outline" className="text-sm">
-                            Phiếu lương tháng {payslip.month}/{payslip.year}
+                            {t("payrollPayslipViewerMonthBadge", { month: payslip.month, year: payslip.year })}
                         </Badge>
                     </div>
 
@@ -155,19 +157,19 @@ export function PayslipViewer({
                                         )}
                                         <div>
                                             <h2 className="text-xl font-bold">
-                                                {companyName}
+                                                {companyName || t("payrollPayslipViewerDefaultCompanyName")}
                                             </h2>
                                             <p className="text-sm text-muted-foreground">
-                                                Phiếu lương
+                                                {t("payrollPayslipViewerDocument")}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-sm text-muted-foreground">
-                                            Kỳ lương
+                                            {t("payrollPayslipViewerPayrollPeriod")}
                                         </p>
                                         <p className="text-lg font-semibold">
-                                            Tháng {payslip.month}/{payslip.year}
+                                            {t("payrollPayslipViewerMonthYear", { month: payslip.month, year: payslip.year })}
                                         </p>
                                     </div>
                                 </div>
@@ -179,7 +181,7 @@ export function PayslipViewer({
                                         <User className="h-4 w-4 text-muted-foreground" />
                                         <div>
                                             <p className="text-xs text-muted-foreground">
-                                                Nhân viên
+                                                {t("payrollPayslipViewerEmployee")}
                                             </p>
                                             <p className="font-medium">
                                                 {payslip.employeeName}
@@ -190,10 +192,10 @@ export function PayslipViewer({
                                         <Building2 className="h-4 w-4 text-muted-foreground" />
                                         <div>
                                             <p className="text-xs text-muted-foreground">
-                                                Phòng ban
+                                                {t("payrollPayslipViewerDepartment")}
                                             </p>
                                             <p className="font-medium">
-                                                {payslip.departmentName || "—"}
+                                                {payslip.departmentName || t("payrollNotAvailable")}
                                             </p>
                                         </div>
                                     </div>
@@ -201,10 +203,10 @@ export function PayslipViewer({
                                         <Calendar className="h-4 w-4 text-muted-foreground" />
                                         <div>
                                             <p className="text-xs text-muted-foreground">
-                                                Mã nhân viên
+                                                {t("payrollPayslipViewerEmployeeCode")}
                                             </p>
                                             <p className="font-medium font-mono">
-                                                {payslip.employeeCode || "—"}
+                                                {payslip.employeeCode || t("payrollNotAvailable")}
                                             </p>
                                         </div>
                                     </div>
@@ -212,10 +214,10 @@ export function PayslipViewer({
                                         <Banknote className="h-4 w-4 text-muted-foreground" />
                                         <div>
                                             <p className="text-xs text-muted-foreground">
-                                                Chức vụ
+                                                {t("payrollPayslipViewerPosition")}
                                             </p>
                                             <p className="font-medium">
-                                                {payslip.position || "—"}
+                                                {payslip.position || t("payrollNotAvailable")}
                                             </p>
                                         </div>
                                     </div>
@@ -227,7 +229,7 @@ export function PayslipViewer({
                                     <div>
                                         <h3 className="font-semibold mb-3 text-green-600 flex items-center gap-2">
                                             <span className="h-6 w-1 bg-green-600 rounded-full" />
-                                            THU NHẬP
+                                            {t("payrollPayslipViewerIncome")}
                                         </h3>
                                         <div className="space-y-2">
                                             {earnings.map((item, index) => (
@@ -243,7 +245,7 @@ export function PayslipViewer({
                                             ))}
                                             <Separator className="my-2" />
                                             <div className="flex justify-between font-semibold">
-                                                <span>Tổng thu nhập</span>
+                                                <span>{t("payrollPayslipViewerTotalIncome")}</span>
                                                 <span className="text-green-600">
                                                     {formatCurrency(totalEarnings)}
                                                 </span>
@@ -255,7 +257,7 @@ export function PayslipViewer({
                                         <div>
                                             <h3 className="font-semibold mb-3 text-red-600 flex items-center gap-2">
                                                 <span className="h-6 w-1 bg-red-600 rounded-full" />
-                                                BẢO HIỂM (Người lao động)
+                                                {t("payrollPayslipViewerInsuranceEmployee")}
                                             </h3>
                                             <div className="space-y-2">
                                                 <div className="flex justify-between text-sm">
@@ -293,7 +295,7 @@ export function PayslipViewer({
                                                 </div>
                                                 <Separator className="my-2" />
                                                 <div className="flex justify-between text-sm font-medium">
-                                                    <span>Tổng bảo hiểm</span>
+                                                    <span>{t("payrollPayslipViewerTotalInsurance")}</span>
                                                     <span className="text-red-600">
                                                         -{formatCurrency(totalInsurance)}
                                                     </span>
@@ -304,24 +306,24 @@ export function PayslipViewer({
                                         <div>
                                             <h3 className="font-semibold mb-3 text-amber-600 flex items-center gap-2">
                                                 <span className="h-6 w-1 bg-amber-600 rounded-full" />
-                                                THUẾ TNCN
+                                                {t("payrollPayslipViewerPit")}
                                             </h3>
                                             <div className="space-y-2 text-sm">
                                                 <div className="flex justify-between">
-                                                    <span>Thu nhập chịu thuế</span>
+                                                    <span>{t("payrollPayslipViewerTaxableIncome")}</span>
                                                     <span>
                                                         {formatCurrency(tax.taxableIncome)}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between text-muted-foreground">
-                                                    <span>Giảm trừ cá nhân</span>
+                                                    <span>{t("payrollPayslipViewerPersonalDeduction")}</span>
                                                     <span>
                                                         -{formatCurrency(tax.personalDeduction)}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between text-muted-foreground">
                                                     <span>
-                                                        Giảm trừ phụ thuộc ({tax.totalDependents} người)
+                                                        {t("payrollPayslipViewerDependentDeduction", { count: tax.totalDependents })}
                                                     </span>
                                                     <span>
                                                         -{formatCurrency(tax.dependentDeduction)}
@@ -329,7 +331,7 @@ export function PayslipViewer({
                                                 </div>
                                                 <Separator className="my-2" />
                                                 <div className="flex justify-between font-medium">
-                                                    <span>Thuế phải nộp</span>
+                                                    <span>{t("payrollPayslipViewerTaxPayable")}</span>
                                                     <span className="text-amber-600">
                                                         -{formatCurrency(tax.taxAmount)}
                                                     </span>
@@ -344,7 +346,7 @@ export function PayslipViewer({
                                         <Separator />
                                         <div>
                                             <h3 className="font-semibold mb-3 text-red-600">
-                                                KHẤU TRỪ KHÁC
+                                                {t("payrollPayslipViewerOtherDeductions")}
                                             </h3>
                                             <div className="space-y-2">
                                                 {deductions.map((item, index) => (
@@ -368,7 +370,7 @@ export function PayslipViewer({
                                 <div className="flex justify-between items-center bg-primary/5 -mx-6 -mb-6 p-6 rounded-b-lg">
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">
-                                            Lương Gross
+                                            {t("payrollPayslipViewerGrossSalary")}
                                         </p>
                                         <p className="text-2xl font-bold text-blue-600">
                                             {formatCurrency(payslip.grossSalary)}
@@ -377,7 +379,7 @@ export function PayslipViewer({
                                     <div className="h-12 w-px bg-border" />
                                     <div className="text-center space-y-1">
                                         <p className="text-sm text-muted-foreground">
-                                            Các khoản khấu trừ
+                                            {t("payrollPayslipViewerTotalDeductions")}
                                         </p>
                                         <p className="text-lg font-semibold text-red-600">
                                             -{formatCurrency(
@@ -390,7 +392,7 @@ export function PayslipViewer({
                                     <div className="h-12 w-px bg-border" />
                                     <div className="text-right space-y-1">
                                         <p className="text-sm text-muted-foreground">
-                                            Lương Net (Thực nhận)
+                                            {t("payrollPayslipViewerNetSalary")}
                                         </p>
                                         <p className="text-3xl font-bold text-green-600">
                                             {formatCurrency(payslip.netSalary)}
@@ -406,12 +408,12 @@ export function PayslipViewer({
                             <div className="flex items-center justify-between text-sm text-muted-foreground">
                                 <div className="space-y-1">
                                     <p>
-                                        Ngày tạo:{" "}
+                                        {t("payrollPayslipViewerCreatedAt")}
                                         {formatDate(payslip.createdAt)}
                                     </p>
                                     {payslip.signedAt && (
                                         <p>
-                                            Ngày ký:{" "}
+                                            {t("payrollPayslipViewerSignedAt")}
                                             {formatDate(payslip.signedAt)}
                                         </p>
                                     )}
@@ -419,11 +421,10 @@ export function PayslipViewer({
                                 <div className="text-right">
                                     <p className="flex items-center gap-1">
                                         <Shield className="h-3 w-3" />
-                                        Thông tin bảo mật - Chỉ người được xem
+                                        {t("payrollPayslipViewerSecurityNotice")}
                                     </p>
                                     <p className="text-xs mt-1">
-                                        Nếu có thắc mắc, vui lòng liên hệ phòng
-                                        Nhân sự
+                                        {t("payrollPayslipViewerContactHr")}
                                     </p>
                                 </div>
                             </div>
@@ -431,18 +432,18 @@ export function PayslipViewer({
                             <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
                                 <div className="text-center">
                                     <p className="text-sm text-muted-foreground mb-12">
-                                        Người lập phiếu
+                                        {t("payrollPayslipViewerPreparedBy")}
                                     </p>
                                     <p className="text-xs">
-                                        (Ký và ghi rõ họ tên)
+                                        {t("payrollPayslipViewerSignHint")}
                                     </p>
                                 </div>
                                 <div className="text-center">
                                     <p className="text-sm text-muted-foreground mb-12">
-                                        Phê duyệt
+                                        {t("payrollPayslipViewerApprovedBy")}
                                     </p>
                                     <p className="text-xs">
-                                        (Ký và ghi rõ họ tên)
+                                        {t("payrollPayslipViewerSignHint")}
                                     </p>
                                 </div>
                             </div>
@@ -462,3 +463,4 @@ export function PayslipViewer({
         </div>
     );
 }
+

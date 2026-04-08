@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,8 +21,11 @@ import {
     updateAttendanceConfig,
     addWifiWhitelist,
     removeWifiWhitelist,
-} from "@/app/(protected)/attendance/actions";
-import type { AttendanceConfig } from "@/app/(protected)/attendance/types";
+} from "@/app/[locale]/(protected)/attendance/actions";
+import type {
+    AttendanceConfig,
+    WifiWhitelist,
+} from "@/app/[locale]/(protected)/attendance/types";
 
 import {
     Card,
@@ -44,19 +48,21 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 
-const methodSchema = z.object({
-    requireGps: z.boolean(),
-    requireWifi: z.boolean(),
-    requireSelfie: z.boolean(),
-    maxGpsDistanceMeters: z
-        .number()
-        .min(10, "Tối thiểu 10m")
-        .max(5000, "Tối đa 5000m"),
-    officeLat: z.number().nullable(),
-    officeLng: z.number().nullable(),
-});
+function createMethodSchema(t: ReturnType<typeof useTranslations>) {
+    return z.object({
+        requireGps: z.boolean(),
+        requireWifi: z.boolean(),
+        requireSelfie: z.boolean(),
+        maxGpsDistanceMeters: z
+            .number()
+            .min(10, t("attendanceMethodSettingsTabValidationDistanceMin"))
+            .max(5000, t("attendanceMethodSettingsTabValidationDistanceMax")),
+        officeLat: z.number().nullable(),
+        officeLng: z.number().nullable(),
+    });
+}
 
-type MethodFormValues = z.infer<typeof methodSchema>;
+type MethodFormValues = z.infer<ReturnType<typeof createMethodSchema>>;
 
 interface Props {
     config: AttendanceConfig | null;
@@ -64,6 +70,9 @@ interface Props {
 }
 
 export function MethodSettingsTab({ config, queryClient }: Props) {
+    const t = useTranslations("ProtectedPages");
+    const methodSchema = createMethodSchema(t);
+
     const form = useForm<MethodFormValues>({
         resolver: zodResolver(methodSchema),
         defaultValues: {
@@ -92,17 +101,20 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
             }),
         onMutate: async (values) => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
-            queryClient.setQueryData(["attendance", "config"], (old: any) => {
-                if (!old) return old;
-                return { ...old, ...values };
-            });
+            queryClient.setQueryData<AttendanceConfig>(
+                ["attendance", "config"],
+                (old) => {
+                    if (!old) return old;
+                    return { ...old, ...values };
+                },
+            );
             return {};
         },
         onSuccess: () => {
-            toast.success("Đã lưu phương thức chấm công");
+            toast.success(t("attendanceMethodSettingsTabToastSaveSuccess"));
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceMethodSettingsTabToastGenericError"));
             queryClient.invalidateQueries({ queryKey: ["attendance", "config"] });
         },
         onSettled: () => {
@@ -115,35 +127,41 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
     const addWifiMutation = useMutation({
         mutationFn: () => {
             if (!config?.id)
-                throw new Error("Chưa có cấu hình, hãy lưu cài đặt trước");
+                throw new Error(
+                    t("attendanceMethodSettingsTabErrorConfigMissing"),
+                );
             return addWifiWhitelist(config.id, wifiSsid, wifiBssid || undefined);
         },
         onMutate: async () => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
-            const optimisticWifi = {
+            const optimisticWifi: WifiWhitelist = {
                 id: `optimistic-${Date.now()}`,
                 configId: config?.id || "",
                 ssid: wifiSsid,
                 bssid: wifiBssid || null,
-                createdAt: new Date(),
-                updatedAt: new Date(),
             };
-            queryClient.setQueryData(["attendance", "config"], (old: any) => {
-                if (!old) return old;
-                return {
-                    ...old,
-                    wifiWhitelist: [...(old.wifiWhitelist || []), optimisticWifi],
-                };
-            });
+            queryClient.setQueryData<AttendanceConfig>(
+                ["attendance", "config"],
+                (old) => {
+                    if (!old) return old;
+                    return {
+                        ...old,
+                        wifiWhitelist: [
+                            ...(old.wifiWhitelist || []),
+                            optimisticWifi,
+                        ],
+                    };
+                },
+            );
             return {};
         },
         onSuccess: () => {
-            toast.success("Đã thêm WiFi");
+            toast.success(t("attendanceMethodSettingsTabToastAddWifiSuccess"));
             setWifiSsid("");
             setWifiBssid("");
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceMethodSettingsTabToastGenericError"));
             queryClient.invalidateQueries({ queryKey: ["attendance", "config"] });
         },
         onSettled: () => {
@@ -157,20 +175,25 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
         mutationFn: removeWifiWhitelist,
         onMutate: async (id) => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
-            queryClient.setQueryData(["attendance", "config"], (old: any) => {
-                if (!old) return old;
-                return {
-                    ...old,
-                    wifiWhitelist: (old.wifiWhitelist || []).filter((w: any) => w.id !== id),
-                };
-            });
+            queryClient.setQueryData<AttendanceConfig>(
+                ["attendance", "config"],
+                (old) => {
+                    if (!old) return old;
+                    return {
+                        ...old,
+                        wifiWhitelist: (old.wifiWhitelist || []).filter(
+                            (w) => w.id !== id,
+                        ),
+                    };
+                },
+            );
             return {};
         },
         onSuccess: () => {
-            toast.success("Đã xoá WiFi");
+            toast.success(t("attendanceMethodSettingsTabToastRemoveWifiSuccess"));
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceMethodSettingsTabToastGenericError"));
             queryClient.invalidateQueries({ queryKey: ["attendance", "config"] });
         },
         onSettled: () => {
@@ -192,11 +215,10 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Settings className="h-5 w-5" />
-                            Yêu cầu chấm công
+                            {t("attendanceMethodSettingsTabRequirementsTitle")}
                         </CardTitle>
                         <CardDescription>
-                            Bật/tắt các phương thức xác minh khi chấm
-                            công
+                            {t("attendanceMethodSettingsTabRequirementsDescription")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -209,11 +231,10 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                                         <MapPin className="h-5 w-5 text-blue-500" />
                                         <div>
                                             <FormLabel className="text-sm font-medium">
-                                                Yêu cầu GPS
+                                                {t("attendanceMethodSettingsTabRequireGpsLabel")}
                                             </FormLabel>
                                             <FormDescription>
-                                                Nhân viên phải ở gần
-                                                văn phòng
+                                                {t("attendanceMethodSettingsTabRequireGpsDescription")}
                                             </FormDescription>
                                         </div>
                                     </div>
@@ -240,11 +261,10 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                                         <Wifi className="h-5 w-5 text-green-500" />
                                         <div>
                                             <FormLabel className="text-sm font-medium">
-                                                Yêu cầu WiFi
+                                                {t("attendanceMethodSettingsTabRequireWifiLabel")}
                                             </FormLabel>
                                             <FormDescription>
-                                                Phải kết nối WiFi văn
-                                                phòng
+                                                {t("attendanceMethodSettingsTabRequireWifiDescription")}
                                             </FormDescription>
                                         </div>
                                     </div>
@@ -271,11 +291,10 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                                         <Camera className="h-5 w-5 text-orange-500" />
                                         <div>
                                             <FormLabel className="text-sm font-medium">
-                                                Yêu cầu chụp ảnh
+                                                {t("attendanceMethodSettingsTabRequireSelfieLabel")}
                                             </FormLabel>
                                             <FormDescription>
-                                                Chụp ảnh selfie khi
-                                                chấm công
+                                                {t("attendanceMethodSettingsTabRequireSelfieDescription")}
                                             </FormDescription>
                                         </div>
                                     </div>
@@ -297,11 +316,10 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <MapPin className="h-5 w-5" />
-                            Vị trí văn phòng
+                            {t("attendanceMethodSettingsTabOfficeLocationTitle")}
                         </CardTitle>
                         <CardDescription>
-                            Toạ độ GPS và khoảng cách cho phép chấm
-                            công
+                            {t("attendanceMethodSettingsTabOfficeLocationDescription")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -312,7 +330,7 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Vĩ độ (Lat)
+                                            {t("attendanceMethodSettingsTabOfficeLatLabel")}
                                         </FormLabel>
                                         <FormControl>
                                             <Input
@@ -345,7 +363,7 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Kinh độ (Lng)
+                                            {t("attendanceMethodSettingsTabOfficeLngLabel")}
                                         </FormLabel>
                                         <FormControl>
                                             <Input
@@ -379,7 +397,7 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>
-                                        Khoảng cách cho phép (mét)
+                                        {t("attendanceMethodSettingsTabMaxDistanceLabel")}
                                     </FormLabel>
                                     <FormControl>
                                         <Input
@@ -396,9 +414,10 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                                         />
                                     </FormControl>
                                     <FormDescription>
-                                        Nhân viên cách văn phòng tối
-                                        đa {field.value}m mới được
-                                        chấm công
+                                        {t(
+                                            "attendanceMethodSettingsTabMaxDistanceDescription",
+                                            { meters: field.value },
+                                        )}
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
@@ -411,18 +430,18 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Wifi className="h-5 w-5" />
-                            Danh sách WiFi được phép
+                            {t("attendanceMethodSettingsTabWifiListTitle")}
                         </CardTitle>
                         <CardDescription>
-                            Thêm mạng WiFi văn phòng. Nhân viên cần
-                            kết nối vào một trong các mạng này để chấm
-                            công hợp lệ.
+                            {t("attendanceMethodSettingsTabWifiListDescription")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex gap-2">
                             <Input
-                                placeholder="Tên WiFi (SSID)"
+                                placeholder={t(
+                                    "attendanceMethodSettingsTabWifiSsidPlaceholder",
+                                )}
                                 value={wifiSsid}
                                 onChange={(e) =>
                                     setWifiSsid(e.target.value)
@@ -430,7 +449,9 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                                 className="flex-1"
                             />
                             <Input
-                                placeholder="BSSID (tuỳ chọn)"
+                                placeholder={t(
+                                    "attendanceMethodSettingsTabWifiBssidPlaceholder",
+                                )}
                                 value={wifiBssid}
                                 onChange={(e) =>
                                     setWifiBssid(e.target.value)
@@ -449,13 +470,13 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                                 size="sm"
                             >
                                 <Plus className="mr-1 h-4 w-4" />
-                                Thêm
+                                {t("attendanceMethodSettingsTabAdd")}
                             </Button>
                         </div>
 
                         {wifiList.length === 0 ? (
                             <p className="text-sm text-muted-foreground py-4 text-center">
-                                Chưa có WiFi nào được thêm
+                                {t("attendanceMethodSettingsTabWifiEmpty")}
                             </p>
                         ) : (
                             <div className="space-y-2">
@@ -470,7 +491,7 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                                             </p>
                                             {wifi.bssid && (
                                                 <p className="text-xs text-muted-foreground">
-                                                    BSSID:{" "}
+                                                    {t("attendanceMethodSettingsTabBssidLabel")} {" "}
                                                     {wifi.bssid}
                                                 </p>
                                             )}
@@ -505,10 +526,11 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                         {saveMutation.isPending && (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         )}
-                        Lưu phương thức chấm công
+                        {t("attendanceMethodSettingsTabSave")}
                     </Button>
                 </div>
             </form>
         </Form>
     );
 }
+

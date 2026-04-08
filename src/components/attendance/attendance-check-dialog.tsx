@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Clock, CalendarClock, Timer, X, ArrowRight } from "lucide-react";
+import { Clock, CalendarClock, Timer, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,18 +26,20 @@ import { Progress } from "@/components/ui/progress";
 import {
   checkTodayShiftOnLogin,
   checkIn,
-  getAttendanceConfig,
-} from "@/app/(protected)/attendance/actions";
-import type { AttendanceConfig } from "@/app/(protected)/attendance/types";
+} from "@/app/[locale]/(protected)/attendance/actions";
 import { CameraConfirmDialog } from "./camera-confirm-dialog";
 import { useTimezone } from "@/hooks/use-timezone";
 
 const SESSION_KEY = "attendance-check-dismissed";
 
 export function AttendanceCheckDialog() {
+  const t = useTranslations("ProtectedPages");
   const queryClient = useQueryClient();
   const { timezone } = useTimezone();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !!window.sessionStorage.getItem(SESSION_KEY);
+  });
   const [currentTime, setCurrentTime] = useState(new Date());
   const [cameraOpen, setCameraOpen] = useState(false);
   const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
@@ -44,13 +47,6 @@ export function AttendanceCheckDialog() {
     lat: number;
     lng: number;
   } | null>(null);
-
-  // Check sessionStorage on mount
-  useEffect(() => {
-    if (sessionStorage.getItem(SESSION_KEY)) {
-      setDismissed(true);
-    }
-  }, []);
 
   // Update clock every second
   useEffect(() => {
@@ -88,21 +84,11 @@ export function AttendanceCheckDialog() {
     refetchOnWindowFocus: false,
   });
 
-  // Query: attendance config
-  const { data: config } = useQuery<AttendanceConfig | null>({
-    queryKey: ["attendance", "config"],
-    queryFn: async () => {
-      const res = await getAttendanceConfig();
-      return res ? (JSON.parse(JSON.stringify(res)) as AttendanceConfig) : null;
-    },
-    enabled: !dismissed && !!data?.hasShift,
-  });
-
   // Check-in mutation
   const checkInMutation = useMutation({
     mutationFn: checkIn,
     onSuccess: () => {
-      toast.success("Check-in thành công!");
+      toast.success(t("attendanceCheckDialogToastSuccess"));
       queryClient.invalidateQueries({
         queryKey: ["attendance", "today"],
       });
@@ -112,7 +98,7 @@ export function AttendanceCheckDialog() {
       handleDismiss();
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Có lỗi xảy ra khi chấm công");
+      toast.error(error.message || t("attendanceCheckDialogToastError"));
     },
   });
 
@@ -195,10 +181,10 @@ export function AttendanceCheckDialog() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarClock className="h-5 w-5 text-primary" />
-              Chấm công hôm nay
+              {t("attendanceCheckDialogTitle")}
             </DialogTitle>
             <DialogDescription>
-              Bạn có ca làm việc hôm nay. Hãy chấm công ngay!
+              {t("attendanceCheckDialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -241,20 +227,20 @@ export function AttendanceCheckDialog() {
                       <Timer className="h-3 w-3" />
                       {timeWindowInfo.isLate ? (
                         <span className="text-destructive font-medium">
-                          Trễ {timeWindowInfo.lateBy} phút
+                          {t("attendanceCheckDialogLateBy", {
+                            minutes: timeWindowInfo.lateBy,
+                          })}
                         </span>
                       ) : (
                         <span className="text-green-600 dark:text-green-400 font-medium">
-                          Còn sớm
+                          {t("attendanceCheckDialogEarly")}
                         </span>
                       )}
                     </span>
                     <span>
-                      Còn lại{" "}
-                      <span className="font-semibold text-foreground">
-                        {timeWindowInfo.minutesLeft}
-                      </span>{" "}
-                      phút
+                      {t("attendanceCheckDialogMinutesLeft", {
+                        minutes: timeWindowInfo.minutesLeft,
+                      })}
                     </span>
                   </div>
                   <Progress value={timeWindowInfo.progress} className="h-1.5" />
@@ -266,13 +252,17 @@ export function AttendanceCheckDialog() {
           {/* Multi-shift selector */}
           {data?.todayShifts && data.todayShifts.length > 1 && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Chọn ca làm việc</label>
+              <label className="text-sm font-medium">
+                {t("attendanceCheckDialogSelectShiftLabel")}
+              </label>
               <Select
                 value={currentShift?.id ?? ""}
                 onValueChange={setSelectedShiftId}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn ca" />
+                  <SelectValue
+                    placeholder={t("attendanceCheckDialogSelectShiftPlaceholder")}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {data.todayShifts.map((s) => (
@@ -291,7 +281,7 @@ export function AttendanceCheckDialog() {
               onClick={handleDismiss}
               className="text-muted-foreground"
             >
-              Để sau
+              {t("attendanceCheckDialogLater")}
             </Button>
             <Button
               onClick={handleCheckIn}
@@ -299,7 +289,7 @@ export function AttendanceCheckDialog() {
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <ArrowRight className="mr-1.5 h-4 w-4" />
-              Check-in ngay
+              {t("attendanceCheckDialogCheckInNow")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -311,11 +301,12 @@ export function AttendanceCheckDialog() {
         onOpenChange={(open) => {
           if (!open) setCameraOpen(false);
         }}
-        title="Xác nhận Check-in"
-        description="Chụp ảnh selfie để xác minh danh tính trước khi chấm công."
+        title={t("attendanceCheckDialogCameraTitle")}
+        description={t("attendanceCheckDialogCameraDescription")}
         onConfirm={handleCameraConfirm}
         isPending={checkInMutation.isPending}
       />
     </>
   );
 }
+

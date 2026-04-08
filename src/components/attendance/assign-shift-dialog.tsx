@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useId, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -52,20 +53,22 @@ import {
 import type {
     Shift,
     ShiftAssignment,
-} from "@/app/(protected)/attendance/types";
-import type { UserBasic } from "@/app/(protected)/attendance/types";
-import { assignShift } from "@/app/(protected)/attendance/actions";
+} from "@/app/[locale]/(protected)/attendance/types";
+import type { UserBasic } from "@/app/[locale]/(protected)/attendance/types";
+import { assignShift } from "@/app/[locale]/(protected)/attendance/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-const assignSchema = z.object({
-    userId: z.string().min(1, "Vui lòng chọn nhân viên"),
-    shiftId: z.string().min(1, "Vui lòng chọn ca"),
-    startDate: z.date().min(1, "Vui lòng chọn ngày bắt đầu"),
-    endDate: z.date().optional(),
-});
+function createAssignSchema(t: ReturnType<typeof useTranslations>) {
+    return z.object({
+        userId: z.string().min(1, t("attendanceShiftsValidationUserRequired")),
+        shiftId: z.string().min(1, t("attendanceShiftsValidationShiftRequired")),
+        startDate: z.date().min(1, t("attendanceShiftsValidationStartDateRequired")),
+        endDate: z.date().optional(),
+    });
+}
 
-type AssignFormValues = z.infer<typeof assignSchema>;
+ type AssignFormValues = z.infer<ReturnType<typeof createAssignSchema>>;
 
 interface AssignShiftDialogProps {
     open: boolean;
@@ -83,6 +86,8 @@ export function AssignShiftDialog({
     const id = useId();
     const [userOpen, setUserOpen] = useState(false);
     const queryClient = useQueryClient();
+    const t = useTranslations("ProtectedPages");
+    const assignSchema = createAssignSchema(t);
 
     const form = useForm<AssignFormValues>({
         resolver: zodResolver(assignSchema),
@@ -135,11 +140,11 @@ export function AssignShiftDialog({
             return {};
         },
         onSuccess: () => {
-            toast.success("Phân ca thành công");
+            toast.success(t("attendanceShiftsAssignToastSuccess"));
             onOpenChange(false);
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceShiftsToastError"));
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "shiftAssignments"],
             });
@@ -154,7 +159,7 @@ export function AssignShiftDialog({
         },
     });
 
-    const shiftId = form.watch("shiftId");
+    const shiftId = useWatch({ control: form.control, name: "shiftId" });
     const selectedShift = shifts.find((s) => s.id === shiftId);
 
     const activeShifts = shifts.filter((s) => s.isActive);
@@ -163,10 +168,9 @@ export function AssignShiftDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Phân ca cho nhân viên</DialogTitle>
+                    <DialogTitle>{t("attendanceShiftsAssignDialogTitle")}</DialogTitle>
                     <DialogDescription>
-                        Gán ca làm việc cho nhân viên theo khoảng thời
-                        gian
+                        {t("attendanceShiftsAssignDialogDescription")}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -182,10 +186,8 @@ export function AssignShiftDialog({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>
-                                        Nhân viên{" "}
-                                        <span className="text-destructive">
-                                            *
-                                        </span>
+                                        {t("attendanceShiftsAssignEmployee")}{" "}
+                                        <span className="text-destructive">*</span>
                                     </FormLabel>
                                     <FormControl>
                                         <Popover
@@ -215,7 +217,7 @@ export function AssignShiftDialog({
                                                                       u.id ===
                                                                       field.value,
                                                               )?.name
-                                                            : "Chọn nhân viên..."}
+                                                            : t("attendanceShiftsAssignEmployeePlaceholder")}
                                                     </span>
                                                     <ChevronDownIcon
                                                         aria-hidden="true"
@@ -229,12 +231,10 @@ export function AssignShiftDialog({
                                                 className="w-full min-w-(--radix-popper-anchor-width) border-input p-0"
                                             >
                                                 <Command>
-                                                    <CommandInput placeholder="Tìm nhân viên..." />
+                                                    <CommandInput placeholder={t("attendanceShiftsAssignSearchEmployeePlaceholder")} />
                                                     <CommandList>
                                                         <CommandEmpty>
-                                                            Không tìm
-                                                            thấy nhân
-                                                            viên.
+                                                            {t("attendanceShiftsAssignNoEmployeeFound")}
                                                         </CommandEmpty>
                                                         <CommandGroup>
                                                             {users.map(
@@ -294,10 +294,8 @@ export function AssignShiftDialog({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>
-                                        Ca làm việc{" "}
-                                        <span className="text-destructive">
-                                            *
-                                        </span>
+                                        {t("attendanceShiftsAssignShift")}{" "}
+                                        <span className="text-destructive">*</span>
                                     </FormLabel>
                                     <FormControl>
                                         <Select
@@ -307,7 +305,7 @@ export function AssignShiftDialog({
                                             }
                                         >
                                             <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Chọn ca..." />
+                                                <SelectValue placeholder={t("attendanceShiftsAssignShiftPlaceholder")} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {activeShifts.map(
@@ -322,7 +320,7 @@ export function AssignShiftDialog({
                                                             {
                                                                 s.startTime
                                                             }
-                                                            –
+                                                            -
                                                             {
                                                                 s.endTime
                                                             }
@@ -345,10 +343,11 @@ export function AssignShiftDialog({
                                     <strong>
                                         {selectedShift.name}
                                     </strong>{" "}
-                                    ({selectedShift.code}) ·{" "}
-                                    {selectedShift.startTime}–
-                                    {selectedShift.endTime} · nghỉ{" "}
-                                    {selectedShift.breakMinutes}p
+                                    ({selectedShift.code}) · {t("attendanceShiftsAssignShiftSummary", {
+                                        start: selectedShift.startTime,
+                                        end: selectedShift.endTime,
+                                        breakMinutes: selectedShift.breakMinutes,
+                                    })}
                                 </p>
                             </div>
                         )}
@@ -360,10 +359,8 @@ export function AssignShiftDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Từ ngày{" "}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
+                                            {t("attendanceShiftsAssignFromDate")}{" "}
+                                            <span className="text-destructive">*</span>
                                         </FormLabel>
                                         <FormControl>
                                             <DatePicker
@@ -382,9 +379,7 @@ export function AssignShiftDialog({
                                 name="endDate"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>
-                                            Đến ngày
-                                        </FormLabel>
+                                        <FormLabel>{t("attendanceShiftsAssignToDate")}</FormLabel>
                                         <FormControl>
                                             <DatePicker
                                                 date={field.value}
@@ -406,7 +401,7 @@ export function AssignShiftDialog({
                                 size="sm"
                                 onClick={() => onOpenChange(false)}
                             >
-                                Hủy
+                                {t("attendanceShiftsAssignCancel")}
                             </Button>
                             <Button
                                 type="submit"
@@ -416,7 +411,7 @@ export function AssignShiftDialog({
                                 {mutation.isPending && (
                                     <Loader2 className="size-3.5 animate-spin" />
                                 )}
-                                Phân ca
+                                {t("attendanceShiftsAssignSubmit")}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -425,3 +420,4 @@ export function AssignShiftDialog({
         </Dialog>
     );
 }
+

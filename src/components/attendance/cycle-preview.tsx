@@ -1,5 +1,5 @@
-import { WorkCycle } from "@/app/(protected)/attendance/types";
-import { WEEKDAY_SHORT } from "./settings/work-cycles-constants";
+﻿import { useTranslations } from "next-intl";
+import { WorkCycle } from "@/app/[locale]/(protected)/attendance/types";
 import { cn } from "@/lib/utils";
 
 interface CyclePreviewProps {
@@ -11,13 +11,27 @@ export function CyclePreview({
     cycle,
     compact = true,
 }: CyclePreviewProps) {
+    const t = useTranslations("ProtectedPages");
+
     if (!cycle) return null;
+
+    const weekdayShort = [
+        t("attendanceShiftsWeekdayMonShort"),
+        t("attendanceShiftsWeekdayTueShort"),
+        t("attendanceShiftsWeekdayWedShort"),
+        t("attendanceShiftsWeekdayThuShort"),
+        t("attendanceShiftsWeekdayFriShort"),
+        t("attendanceShiftsWeekdaySatShort"),
+        t("attendanceShiftsWeekdaySunShort"),
+    ];
 
     if (compact) {
         return (
             <div className="rounded-md border bg-muted/50 p-2 text-xs">
                 <p className="mb-1.5 font-medium">
-                    Mẫu chu kỳ ({cycle.totalDays} ngày):
+                    {t("attendanceShiftsCycleTemplate", {
+                        days: cycle.totalDays,
+                    })}
                 </p>
                 <div className="flex flex-wrap gap-1">
                     {cycle.entries.slice(0, 7).map((entry) => (
@@ -31,9 +45,9 @@ export function CyclePreview({
                             )}
                         >
                             {entry.isDayOff
-                                ? "Nghỉ"
+                                ? t("attendanceShiftsDayOff")
                                 : (entry.shift?.name?.slice(0, 3) ??
-                                  "N/A")}
+                                  t("attendanceShiftsNotAvailable"))}
                         </span>
                     ))}
                     {cycle.entries.length > 7 && (
@@ -49,7 +63,9 @@ export function CyclePreview({
     return (
         <div className="rounded-lg border bg-muted/50 p-3">
             <p className="mb-2 text-sm font-medium">
-                Mẫu chu kỳ ({cycle.totalDays} ngày):
+                {t("attendanceShiftsCycleTemplate", {
+                    days: cycle.totalDays,
+                })}
             </p>
             <div className="flex flex-wrap gap-1.5">
                 {cycle.entries.map((entry) => (
@@ -62,13 +78,15 @@ export function CyclePreview({
                                 : "bg-primary/10 text-primary",
                         )}
                     >
-                        {WEEKDAY_SHORT[entry.dayIndex % 7]} -{" "}
+                        {weekdayShort[entry.dayIndex % 7]} -{" "}
                         {entry.isDayOff
-                            ? "Nghỉ"
-                            : (entry.shift?.name ?? "N/A")}
+                            ? t("attendanceShiftsDayOff")
+                            : (entry.shift?.name ??
+                              t("attendanceShiftsNotAvailable"))}
                     </div>
                 ))}
             </div>
         </div>
     );
 }
+

@@ -11,69 +11,63 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { useTranslations } from "next-intl";
 
 export const NOTIFICATION_TRIGGERS = [
     {
         value: "ATTENDANCE",
-        label: "Chấm công",
-        description:
-            "Điểm danh vào/ra • Giải trình chấm công • Xin nghỉ bù • Cảnh báo quên chấm công",
+        labelKey: "customNotificationTriggerAttendanceLabel",
+        descriptionKey: "customNotificationTriggerAttendanceDescription",
     },
     {
         value: "LEAVE",
-        label: "Nghỉ phép",
-        description:
-            "Đơn xin nghỉ • Duyệt/từ chối đơn nghỉ • Nhắc nhở nộp đơn",
+        labelKey: "customNotificationTriggerLeaveLabel",
+        descriptionKey: "customNotificationTriggerLeaveDescription",
     },
     {
         value: "PAYROLL",
-        label: "Lương",
-        description:
-            "Phiếu lương mới • Thay đổi lương • Ngày phát lương",
+        labelKey: "customNotificationTriggerPayrollLabel",
+        descriptionKey: "customNotificationTriggerPayrollDescription",
     },
     {
         value: "OVERTIME",
-        label: "Tăng ca",
-        description: "Đăng ký tăng ca • Duyệt/từ chối tăng ca",
+        labelKey: "customNotificationTriggerOvertimeLabel",
+        descriptionKey: "customNotificationTriggerOvertimeDescription",
     },
     {
         value: "CONTRACT",
-        label: "Hợp đồng",
-        description:
-            "Hợp đồng sắp hết hạn • Gia hạn hợp đồng • Ký hợp đồng mới",
+        labelKey: "customNotificationTriggerContractLabel",
+        descriptionKey: "customNotificationTriggerContractDescription",
     },
     {
         value: "ASSET",
-        label: "Tài sản",
-        description:
-            "Cấp phát tài sản • Thu hồi tài sản • Bảo trì tài sản",
+        labelKey: "customNotificationTriggerAssetLabel",
+        descriptionKey: "customNotificationTriggerAssetDescription",
     },
     {
         value: "RECRUITMENT",
-        label: "Tuyển dụng",
-        description:
-            "Ứng viên mới • Lịch phỏng vấn • Kết quả tuyển dụng • Offer",
+        labelKey: "customNotificationTriggerRecruitmentLabel",
+        descriptionKey: "customNotificationTriggerRecruitmentDescription",
     },
     {
         value: "TRAINING",
-        label: "Đào tạo",
-        description: "Lịch đào tạo • Kết quả đào tạo • Tài liệu mới",
+        labelKey: "customNotificationTriggerTrainingLabel",
+        descriptionKey: "customNotificationTriggerTrainingDescription",
     },
     {
         value: "PERFORMANCE",
-        label: "Đánh giá",
-        description: "Kỳ đánh giá • Kết quả đánh giá • Mục tiêu mới",
+        labelKey: "customNotificationTriggerPerformanceLabel",
+        descriptionKey: "customNotificationTriggerPerformanceDescription",
     },
     {
         value: "SYSTEM",
-        label: "Hệ thống",
-        description:
-            "Thông báo hệ thống • Bảo trì • Cập nhật chính sách",
+        labelKey: "customNotificationTriggerSystemLabel",
+        descriptionKey: "customNotificationTriggerSystemDescription",
     },
     {
         value: "APPROVAL",
-        label: "Phê duyệt",
-        description: "Yêu cầu cần phê duyệt • Kết quả phê duyệt",
+        labelKey: "customNotificationTriggerApprovalLabel",
+        descriptionKey: "customNotificationTriggerApprovalDescription",
     },
 ] as const;
 
@@ -89,9 +83,9 @@ interface CustomNotificationDialogProps {
 }
 
 const CHANNEL_LABELS: Record<ChannelType, string> = {
-    inbox: "Hộp thư đến",
-    email: "Email",
-    browser: "Trình duyệt",
+    inbox: "customNotificationChannelInbox",
+    email: "customNotificationChannelEmail",
+    browser: "customNotificationChannelBrowser",
 };
 
 function CustomNotificationDialogContent({
@@ -107,6 +101,8 @@ function CustomNotificationDialogContent({
     isSaving?: boolean;
     onClose: () => void;
 }) {
+    const t = useTranslations("ProtectedPages");
+
     // Nếu selectedTypes rỗng → mặc định bật tất cả (all ON)
     // Nếu selectedTypes có giá trị → chỉ bật những loại đó
     const defaultTypes =
@@ -137,27 +133,30 @@ function CustomNotificationDialogContent({
         onClose();
     };
 
-    const channelLabel = CHANNEL_LABELS[channel];
+    const channelLabel = t(
+        CHANNEL_LABELS[channel] as
+            | "customNotificationChannelInbox"
+            | "customNotificationChannelEmail"
+            | "customNotificationChannelBrowser",
+    );
 
     return (
         <DialogContent className="sm:max-h-[80vh] sm:max-w-xl overflow-hidden flex flex-col">
             <DialogHeader>
-                <DialogTitle>Thông báo {channelLabel}</DialogTitle>
+                <DialogTitle>{t("customNotificationDialogTitle", { channel: channelLabel })}</DialogTitle>
                 <DialogDescription>
-                    Cấu hình loại thông báo nhận cho {channelLabel}.
-                    Bạn có thể bật/tắt từng nhóm theo nhu cầu.
+                    {t("customNotificationDialogDescription", { channel: channelLabel })}
                 </DialogDescription>
             </DialogHeader>
 
             <div className="flex-1 overflow-y-auto -mx-6 px-6">
                 <div className="space-y-1">
                     <p className="text-sm font-medium flex items-center gap-1">
-                        Loại thông báo
+                        {t("customNotificationDialogTypeLabel")}
                         <span className="text-destructive">*</span>
                     </p>
                     <p className="text-xs text-muted-foreground mb-3">
-                        Bật các nhóm thông báo bạn muốn nhận qua{" "}
-                        {channelLabel}.
+                        {t("customNotificationDialogTypeHint", { channel: channelLabel })}
                     </p>
                 </div>
 
@@ -184,10 +183,36 @@ function CustomNotificationDialogContent({
                                 />
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-sm">
-                                        {trigger.label}
+                                        {t(
+                                            trigger.labelKey as
+                                                | "customNotificationTriggerAttendanceLabel"
+                                                | "customNotificationTriggerLeaveLabel"
+                                                | "customNotificationTriggerPayrollLabel"
+                                                | "customNotificationTriggerOvertimeLabel"
+                                                | "customNotificationTriggerContractLabel"
+                                                | "customNotificationTriggerAssetLabel"
+                                                | "customNotificationTriggerRecruitmentLabel"
+                                                | "customNotificationTriggerTrainingLabel"
+                                                | "customNotificationTriggerPerformanceLabel"
+                                                | "customNotificationTriggerSystemLabel"
+                                                | "customNotificationTriggerApprovalLabel",
+                                        )}
                                     </p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        {trigger.description}
+                                        {t(
+                                            trigger.descriptionKey as
+                                                | "customNotificationTriggerAttendanceDescription"
+                                                | "customNotificationTriggerLeaveDescription"
+                                                | "customNotificationTriggerPayrollDescription"
+                                                | "customNotificationTriggerOvertimeDescription"
+                                                | "customNotificationTriggerContractDescription"
+                                                | "customNotificationTriggerAssetDescription"
+                                                | "customNotificationTriggerRecruitmentDescription"
+                                                | "customNotificationTriggerTrainingDescription"
+                                                | "customNotificationTriggerPerformanceDescription"
+                                                | "customNotificationTriggerSystemDescription"
+                                                | "customNotificationTriggerApprovalDescription",
+                                        )}
                                     </p>
                                 </div>
                             </div>
@@ -202,10 +227,12 @@ function CustomNotificationDialogContent({
                     onClick={onClose}
                     disabled={isSaving}
                 >
-                    Hủy
+                    {t("customNotificationDialogCancel")}
                 </Button>
                 <Button onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? "Đang lưu…" : "Lưu"}
+                    {isSaving
+                        ? t("customNotificationDialogSaving")
+                        : t("customNotificationDialogSave")}
                 </Button>
             </DialogFooter>
         </DialogContent>

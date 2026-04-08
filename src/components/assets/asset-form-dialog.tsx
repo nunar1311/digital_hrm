@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,34 +33,26 @@ import {
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-import { createAsset, updateAsset } from "@/app/(protected)/assets/actions";
-import { ASSET_CATEGORY_OPTIONS } from "@/app/(protected)/assets/constants";
-import type { AssetWithCurrentUser } from "@/app/(protected)/assets/types";
+import { useTranslations } from "next-intl";
+
+import { createAsset, updateAsset } from "@/app/[locale]/(protected)/assets/actions";
+import { ASSET_CATEGORY_OPTIONS } from "@/app/[locale]/(protected)/assets/constants";
+import type { AssetWithCurrentUser } from "@/app/[locale]/(protected)/assets/types";
 import { DatePicker } from "../ui/date-picker";
 
-const formSchema = z.object({
-  name: z.string().min(1, "Tên tài sản không được để trống"),
-  code: z.string().min(1, "Mã tài sản không được để trống"),
-  category: z.enum([
-    "LAPTOP",
-    "PHONE",
-    "MONITOR",
-    "DESK",
-    "CHAIR",
-    "CARD",
-    "OTHER",
-  ]),
-  brand: z.string().optional(),
-  model: z.string().optional(),
-  serialNumber: z.string().optional(),
-  purchaseDate: z.date().optional(),
-  purchasePrice: z.number().optional(),
-  warrantyEnd: z.date().optional(),
-  location: z.string().optional(),
-  description: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = {
+  name: string;
+  code: string;
+  category: "LAPTOP" | "PHONE" | "MONITOR" | "DESK" | "CHAIR" | "CARD" | "OTHER";
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  purchaseDate?: Date;
+  purchasePrice?: number;
+  warrantyEnd?: Date;
+  location?: string;
+  description?: string;
+};
 
 interface AssetFormDialogProps {
   open: boolean;
@@ -76,6 +68,33 @@ export function AssetFormDialog({
   asset,
 }: AssetFormDialogProps) {
   const queryClient = useQueryClient();
+  const t = useTranslations("ProtectedPages");
+
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        name: z.string().min(1, t("assetsFormValidationNameRequired")),
+        code: z.string().min(1, t("assetsFormValidationCodeRequired")),
+        category: z.enum([
+          "LAPTOP",
+          "PHONE",
+          "MONITOR",
+          "DESK",
+          "CHAIR",
+          "CARD",
+          "OTHER",
+        ]),
+        brand: z.string().optional(),
+        model: z.string().optional(),
+        serialNumber: z.string().optional(),
+        purchaseDate: z.date().optional(),
+        purchasePrice: z.number().optional(),
+        warrantyEnd: z.date().optional(),
+        location: z.string().optional(),
+        description: z.string().optional(),
+      }),
+    [t],
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -116,29 +135,22 @@ export function AssetFormDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const payload = {
-        ...values,
-        purchaseDate: values.purchaseDate
-          ? values.purchaseDate.toISOString()
-          : undefined,
-        warrantyEnd: values.warrantyEnd
-          ? values.warrantyEnd.toISOString()
-          : undefined,
-      };
       if (mode === "edit" && asset) {
-        return updateAsset(asset.id, payload as any);
+        return updateAsset(asset.id, values);
       }
-      return createAsset(payload as any);
+      return createAsset(values);
     },
     onSuccess: () => {
       toast.success(
-        mode === "create" ? "Đã thêm tài sản mới" : "Đã cập nhật tài sản",
+        mode === "create"
+          ? t("assetsFormToastCreateSuccess")
+          : t("assetsFormToastEditSuccess"),
       );
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       onOpenChange(false);
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Có lỗi xảy ra");
+      toast.error(err.message || t("assetsFormToastError"));
     },
   });
 
@@ -147,7 +159,9 @@ export function AssetFormDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" ? "Thêm tài sản mới" : "Chỉnh sửa tài sản"}
+            {mode === "create"
+              ? t("assetsFormDialogTitleCreate")
+              : t("assetsFormDialogTitleEdit")}
           </DialogTitle>
         </DialogHeader>
 
@@ -162,10 +176,10 @@ export function AssetFormDialog({
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mã tài sản *</FormLabel>
+                    <FormLabel>{t("assetsFormCodeLabel")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="VD: TS-001"
+                        placeholder={t("assetsFormCodePlaceholder")}
                         {...field}
                         disabled={mode === "edit"}
                       />
@@ -179,9 +193,12 @@ export function AssetFormDialog({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tên tài sản *</FormLabel>
+                    <FormLabel>{t("assetsFormNameLabel")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: Laptop Dell XPS 15" {...field} />
+                      <Input
+                        placeholder={t("assetsFormNamePlaceholder")}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -192,14 +209,16 @@ export function AssetFormDialog({
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Loại tài sản *</FormLabel>
+                    <FormLabel>{t("assetsFormCategoryLabel")}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Chọn loại" />
+                          <SelectValue
+                            placeholder={t("assetsFormCategoryPlaceholder")}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -219,10 +238,10 @@ export function AssetFormDialog({
                 name="brand"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Thương hiệu</FormLabel>
+                    <FormLabel>{t("assetsFormBrandLabel")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="VD: Dell, Apple, Samsung"
+                        placeholder={t("assetsFormBrandPlaceholder")}
                         {...field}
                       />
                     </FormControl>
@@ -235,9 +254,12 @@ export function AssetFormDialog({
                 name="model"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Model</FormLabel>
+                    <FormLabel>{t("assetsFormModelLabel")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: XPS 15 9530" {...field} />
+                      <Input
+                        placeholder={t("assetsFormModelPlaceholder")}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -248,9 +270,12 @@ export function AssetFormDialog({
                 name="serialNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Số serial</FormLabel>
+                    <FormLabel>{t("assetsFormSerialLabel")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Số serial sản phẩm" {...field} />
+                      <Input
+                        placeholder={t("assetsFormSerialPlaceholder")}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -261,7 +286,7 @@ export function AssetFormDialog({
                 name="purchaseDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ngày mua</FormLabel>
+                    <FormLabel>{t("assetsFormPurchaseDateLabel")}</FormLabel>
                     <FormControl>
                       <DatePicker date={field.value} setDate={field.onChange} />
                     </FormControl>
@@ -274,7 +299,7 @@ export function AssetFormDialog({
                 name="purchasePrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Giá mua (VNĐ)</FormLabel>
+                    <FormLabel>{t("assetsFormPurchasePriceLabel")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -296,7 +321,7 @@ export function AssetFormDialog({
                 name="warrantyEnd"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Bảo hành đến</FormLabel>
+                    <FormLabel>{t("assetsFormWarrantyEndLabel")}</FormLabel>
                     <FormControl>
                       <DatePicker date={field.value} setDate={field.onChange} />
                     </FormControl>
@@ -309,9 +334,12 @@ export function AssetFormDialog({
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vị trí</FormLabel>
+                    <FormLabel>{t("assetsFormLocationLabel")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: Tầng 3, VP Hà Nội" {...field} />
+                      <Input
+                        placeholder={t("assetsFormLocationPlaceholder")}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -323,10 +351,10 @@ export function AssetFormDialog({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mô tả</FormLabel>
+                  <FormLabel>{t("assetsFormDescriptionLabel")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Mô tả thêm về tài sản..."
+                      placeholder={t("assetsFormDescriptionPlaceholder")}
                       rows={3}
                       {...field}
                     />
@@ -342,13 +370,15 @@ export function AssetFormDialog({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Hủy
+                {t("assetsFormCancelButton")}
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
                 {mutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {mode === "create" ? "Thêm" : "Cập nhật"}
+                {mode === "create"
+                  ? t("assetsFormSubmitCreateButton")
+                  : t("assetsFormSubmitEditButton")}
               </Button>
             </DialogFooter>
           </form>
@@ -357,3 +387,4 @@ export function AssetFormDialog({
     </Dialog>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Bar,
@@ -15,22 +15,25 @@ import {
   ChartTooltipContent,
   ChartTooltip,
 } from "@/components/ui/chart";
-import type { TurnoverTrendItem } from "@/app/(protected)/dashboard/actions";
-
-const chartConfig = {
-  turnoverRate: {
-    label: "Tỷ lệ nghỉ việc (%)",
-    color: "var(--chart-1)",
-  },
-} satisfies ChartConfig;
+import type { TurnoverTrendItem } from "@/app/[locale]/(protected)/dashboard/actions";
+import { useTranslations } from "next-intl";
 
 interface CardChartTurnoverRateProps {
   trendData: TurnoverTrendItem[];
 }
 
 const CardChartTurnoverRate = ({ trendData }: CardChartTurnoverRateProps) => {
+  const t = useTranslations("Dashboard");
+
+  const chartConfig = {
+    turnoverRate: {
+      label: t("turnoverRatePercent"),
+      color: "var(--chart-1)",
+    },
+  } satisfies ChartConfig;
+
   return (
-    <CardToolbar title="Tỷ lệ biến động nhân sự (Nghỉ việc)">
+    <CardToolbar title={t("turnoverRate")}>
       <div className="h-full w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <BarChart
@@ -82,3 +85,4 @@ const CardChartTurnoverRate = ({ trendData }: CardChartTurnoverRateProps) => {
 };
 
 export default CardChartTurnoverRate;
+

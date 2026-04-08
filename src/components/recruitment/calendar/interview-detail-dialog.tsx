@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { parseISO } from "date-fns";
 import {
@@ -27,20 +27,21 @@ import {
 } from "@/components/ui/select";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { updateInterview } from "@/app/(protected)/recruitment/actions";
+import { updateInterview } from "@/app/[locale]/(protected)/recruitment/actions";
 import {
   INTERVIEW_STATUS,
   INTERVIEW_RESULT,
   INTERVIEW_TYPE,
-} from "@/app/(protected)/recruitment/constants";
+} from "@/app/[locale]/(protected)/recruitment/constants";
 import type {
   InterviewResponse,
   InterviewStatus,
   InterviewType,
   UpdateInterviewForm,
-} from "@/app/(protected)/recruitment/types";
+} from "@/app/[locale]/(protected)/recruitment/types";
 import { getInterviewTypeIcon } from "./calendar-utils";
 import { useTimezone } from "@/hooks/use-timezone";
+import { useTranslations } from "next-intl";
 
 interface InterviewDetailDialogProps {
   interview: InterviewResponse;
@@ -53,6 +54,7 @@ export function InterviewDetailDialog({
 }: InterviewDetailDialogProps) {
   const queryClient = useQueryClient();
   const { formatDate } = useTimezone();
+  const t = useTranslations("ProtectedPages");
 
   const updateMutation = useMutation({
     mutationFn: ({
@@ -63,13 +65,13 @@ export function InterviewDetailDialog({
       data: Omit<UpdateInterviewForm, "id">;
     }) => updateInterview(id, data),
     onSuccess: () => {
-      toast.success("Cập nhật phỏng vấn thành công");
+      toast.success(t("recruitmentInterviewUpdateSuccess"));
       queryClient.invalidateQueries({
         queryKey: ["recruitment", "interviews"],
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Có lỗi xảy ra");
+      toast.error(error.message || t("recruitmentInterviewUpdateError"));
     },
   });
 
@@ -80,7 +82,7 @@ export function InterviewDetailDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Chi tiết phỏng vấn
+            Chi tiáº¿t phá»ng váº¥n
             <Badge
               variant={
                 interview.status === "SCHEDULED"
@@ -98,13 +100,13 @@ export function InterviewDetailDialog({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">
-                Ứng viên
+                á»¨ng viÃªn
               </label>
               <p className="font-semibold text-lg">{interview.candidateName}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">
-                Vị trí
+                Vá»‹ trÃ­
               </label>
               <p className="font-medium">{interview.jobPostingTitle}</p>
             </div>
@@ -114,25 +116,25 @@ export function InterviewDetailDialog({
             <div>
               <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                 <CalendarIcon className="h-3 w-3" />
-                Ngày giờ
+                NgÃ y giá»
               </label>
               <p className="font-medium">
-                {formatDate(parseISO(interview.scheduledDate))} lúc{" "}
+                {formatDate(parseISO(interview.scheduledDate))} lÃºc{" "}
                 {interview.scheduledTime}
               </p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                Thời lượng
+                Thá»i lÆ°á»£ng
               </label>
-              <p className="font-medium">{interview.duration} phút</p>
+              <p className="font-medium">{interview.duration} phÃºt</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">
-                Hình thức
+                HÃ¬nh thá»©c
               </label>
               <div className="flex items-center gap-2 mt-1">
                 {getInterviewTypeIcon(interview.type)}
@@ -143,16 +145,16 @@ export function InterviewDetailDialog({
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">
-                Vòng
+                VÃ²ng
               </label>
-              <p className="font-medium">Vòng {interview.round}</p>
+              <p className="font-medium">VÃ²ng {interview.round}</p>
             </div>
           </div>
           {interview.location && (
             <div>
               <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
-                Địa điểm
+                Äá»‹a Ä‘iá»ƒm
               </label>
               <p className="font-medium">{interview.location}</p>
             </div>
@@ -161,7 +163,7 @@ export function InterviewDetailDialog({
             <div>
               <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                 <Video className="h-3 w-3" />
-                Link họp
+                Link há»p
               </label>
               <a
                 href={interview.meetingLink}
@@ -179,7 +181,7 @@ export function InterviewDetailDialog({
               <div>
                 <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  Người phỏng vấn
+                  NgÆ°á»i phá»ng váº¥n
                 </label>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {interview.interviewerNames.map((name, idx) => (
@@ -193,7 +195,7 @@ export function InterviewDetailDialog({
           <Separator />
           <div>
             <label className="text-sm font-medium text-muted-foreground">
-              Cập nhật trạng thái
+              Cáº­p nháº­t tráº¡ng thÃ¡i
             </label>
             <div className="mt-2">
               {/* <Select
@@ -209,11 +211,11 @@ export function InterviewDetailDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SCHEDULED">Đã lên lịch</SelectItem>
-                  <SelectItem value="IN_PROGRESS">Đang diễn ra</SelectItem>
-                  <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
-                  <SelectItem value="CANCELLED">Đã hủy</SelectItem>
-                  <SelectItem value="NO_SHOW">Không đến</SelectItem>
+                  <SelectItem value="SCHEDULED">ÄÃ£ lÃªn lá»‹ch</SelectItem>
+                  <SelectItem value="IN_PROGRESS">Äang diá»…n ra</SelectItem>
+                  <SelectItem value="COMPLETED">HoÃ n thÃ nh</SelectItem>
+                  <SelectItem value="CANCELLED">ÄÃ£ há»§y</SelectItem>
+                  <SelectItem value="NO_SHOW">KhÃ´ng Ä‘áº¿n</SelectItem>
                 </SelectContent>
               </Select> */}
             </div>
@@ -221,7 +223,7 @@ export function InterviewDetailDialog({
           {interview.result && (
             <div>
               <label className="text-sm font-medium text-muted-foreground">
-                Kết quả
+                Káº¿t quáº£
               </label>
               <div className="mt-1">
                 <Badge
@@ -240,7 +242,7 @@ export function InterviewDetailDialog({
           )}
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={onClose}>
-              Đóng
+              ÄÃ³ng
             </Button>
           </div>
         </div>
@@ -248,3 +250,4 @@ export function InterviewDetailDialog({
     </Dialog>
   );
 }
+

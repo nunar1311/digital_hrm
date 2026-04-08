@@ -5,6 +5,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Upload, FileSpreadsheet, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,10 +43,11 @@ export function FileDropzone({ onFileParsed, onClear, isLoading }: FileDropzoneP
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isParsing, setIsParsing] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const t = useTranslations('ProtectedPages');
 
     const processFile = useCallback(async (file: File) => {
         if (!isValidFile(file)) {
-            toast.error('Định dạng file không đúng. Vui lòng sử dụng file .xlsx, .xls hoặc .csv');
+            toast.error(t('employeesFileDropzoneInvalidFormat'));
             return;
         }
 
@@ -54,22 +56,22 @@ export function FileDropzone({ onFileParsed, onClear, isLoading }: FileDropzoneP
 
         try {
             const result = await parseExcelFile(file);
-            toast.success(`Đã đọc ${result.rows.length} bản ghi từ file`);
+            toast.success(t('employeesFileDropzoneReadSuccess', { count: result.rows.length }));
             onFileParsed(result);
         } catch (err) {
             const error = err as Error;
             if (error.message === 'EMPTY_FILE') {
-                toast.warning('File không chứa dữ liệu');
+                toast.warning(t('employeesFileDropzoneEmptyFile'));
             } else if (error.message === 'PARSE_ERROR') {
-                toast.error('Lỗi khi đọc file. Vui lòng kiểm tra định dạng file.');
+                toast.error(t('employeesFileDropzoneParseError'));
             } else {
-                toast.error('Không thể đọc file. Vui lòng kiểm tra lại.');
+                toast.error(t('employeesFileDropzoneReadFailed'));
             }
             setSelectedFile(null);
         } finally {
             setIsParsing(false);
         }
-    }, [onFileParsed]);
+    }, [onFileParsed, t]);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -120,7 +122,7 @@ export function FileDropzone({ onFileParsed, onClear, isLoading }: FileDropzoneP
             onClick={() => !selectedFile && inputRef.current?.click()}
         >
             <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
-                <label htmlFor="excel-file-input" className="sr-only">Tải lên file Excel</label>
+                <label htmlFor="excel-file-input" className="sr-only">{t('employeesFileDropzoneUploadLabel')}</label>
                 <input
                     ref={inputRef}
                     id="excel-file-input"
@@ -129,13 +131,13 @@ export function FileDropzone({ onFileParsed, onClear, isLoading }: FileDropzoneP
                     accept=".xlsx,.xls,.csv"
                     onChange={handleInputChange}
                     className="hidden"
-                    aria-label="Chọn file Excel để nhập"
+                    aria-label={t('employeesFileDropzoneInputAria')}
                 />
 
                 {(isParsing || isLoading) ? (
                     <>
                         <div className="animate-spin rounded-full h-8 w-8 border-3 border-primary border-t-transparent" />
-                        <p className="text-xs text-muted-foreground">Đang xử lý file...</p>
+                        <p className="text-xs text-muted-foreground">{t('employeesFileDropzoneProcessing')}</p>
                     </>
                 ) : selectedFile ? (
                     <>
@@ -153,7 +155,7 @@ export function FileDropzone({ onFileParsed, onClear, isLoading }: FileDropzoneP
                                     e.stopPropagation();
                                     handleClear();
                                 }}
-                                aria-label="Xóa file đã chọn"
+                                aria-label={t('employeesFileDropzoneRemoveSelected')}
                             >
                                 <X className="h-4 w-4" />
                             </Button>
@@ -171,11 +173,11 @@ export function FileDropzone({ onFileParsed, onClear, isLoading }: FileDropzoneP
                         </div>
                         <div className="text-center">
                             <p className="text-sm font-medium">
-                                Kéo thả file vào đây hoặc{' '}
-                                <span className="text-primary underline underline-offset-4">chọn file</span>
+                                {t('employeesFileDropzonePrompt')}{' '}
+                                <span className="text-primary underline underline-offset-4">{t('employeesFileDropzoneChooseFile')}</span>
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                Hỗ trợ: .xlsx, .xls, .csv
+                                {t('employeesFileDropzoneSupported')}
                             </p>
                         </div>
                     </>

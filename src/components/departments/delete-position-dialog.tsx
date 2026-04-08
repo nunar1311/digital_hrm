@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -16,7 +16,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { deletePosition } from "@/app/(protected)/positions/actions";
+import { deletePosition } from "@/app/[locale]/(protected)/positions/actions";
+import { useTranslations } from "next-intl";
 
 export interface DeletePositionDialogProps {
     positionId: string;
@@ -36,6 +37,7 @@ export function DeletePositionDialog({
     onOpenChange,
 }: DeletePositionDialogProps) {
     const queryClient = useQueryClient();
+    const t = useTranslations("ProtectedPages");
     const hasUsers = userCount > 0;
 
     const deleteMutation = useMutation({
@@ -48,7 +50,7 @@ export function DeletePositionDialog({
         },
         onSuccess: (result) => {
             if (result.success) {
-                toast.success("Xóa chức vụ thành công");
+                toast.success(t("departmentEmployeesToastDeletePositionSuccess"));
             } else {
                 toast.error(result.error);
                 queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
@@ -56,7 +58,7 @@ export function DeletePositionDialog({
             }
         },
         onError: () => {
-            toast.error("Đã xảy ra lỗi khi xóa chức vụ");
+            toast.error(t("departmentEmployeesToastDeletePositionError"));
             queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
             queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
         },
@@ -79,14 +81,14 @@ export function DeletePositionDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-destructive">
                         <Trash2 className="h-5 w-5" />
-                        Xóa chức vụ
+                        {t("departmentEmployeesDeletePositionConfirmTitle")}
                     </DialogTitle>
                     <DialogDescription>
-                        Bạn có chắc chắn muốn xóa chức vụ{" "}
+                        {t("departmentEmployeesDeletePositionConfirmPrefix")} {" "}
                         <span className="font-semibold text-foreground">
                             {positionName}
                         </span>{" "}
-                        không?
+                        {t("departmentEmployeesDeleteConfirmSuffix")}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -95,15 +97,14 @@ export function DeletePositionDialog({
                         <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                         <div className="text-sm">
                             <p className="font-medium text-destructive">
-                                Không thể xóa chức vụ này
+                                {t("positionsDeleteConfirmTitle")}
                             </p>
                             <p className="text-muted-foreground mt-1">
-                                Đang có{" "}
+                                {t("departmentEmployeesPositionInUsePrefix")} {" "}
                                 <span className="font-semibold">
-                                    {userCount} nhân viên
+                                    {userCount} {t("employee")}
                                 </span>{" "}
-                                giữ chức vụ này. Vui lòng chuyển nhân viên
-                                sang chức vụ khác trước khi xóa.
+                                {t("departmentEmployeesPositionInUseSuffix")}
                             </p>
                         </div>
                     </div>
@@ -116,7 +117,7 @@ export function DeletePositionDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={isLoading}
                     >
-                        Hủy
+                        {t("departmentEmployeesCancel")}
                     </Button>
                     <Button
                         type="button"
@@ -127,10 +128,11 @@ export function DeletePositionDialog({
                         {isLoading && (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         )}
-                        Xóa
+                        {t("departmentEmployeesDelete")}
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
+

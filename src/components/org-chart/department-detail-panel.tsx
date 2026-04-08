@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import type { DepartmentNode } from "@/types/org-chart";
 import {
     Sheet,
@@ -27,17 +28,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-    Building2,
     UserCircle,
     FolderTree,
-    Mail,
     Pencil,
     Trash2,
     MoreVertical,
     Search,
     Users,
 } from "lucide-react";
-import { deleteDepartment } from "@/app/(protected)/org-chart/actions";
+import { deleteDepartment } from "@/app/[locale]/(protected)/org-chart/actions";
 import { toast } from "sonner";
 import {
     DropdownMenu,
@@ -60,6 +59,7 @@ export function DepartmentDetailPanel({
     onEdit,
 }: DepartmentDetailPanelProps) {
     const queryClient = useQueryClient();
+    const t = useTranslations("ProtectedPages");
     const isOpen = department !== null;
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [employeeSearchQuery, setEmployeeSearchQuery] =
@@ -105,7 +105,7 @@ export function DepartmentDetailPanel({
             }
         },
         onError: () => {
-            toast.error("Lỗi khi xóa phòng ban");
+            toast.error(t("departmentsDeleteError"));
             queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
             queryClient.invalidateQueries({ queryKey: ["departments"] });
         },
@@ -128,7 +128,7 @@ export function DepartmentDetailPanel({
         >
             <SheetContent className="w-full sm:max-w-md overflow-y-auto p-4">
                 <SheetHeader>
-                    <SheetTitle>Chi tiết phòng ban</SheetTitle>
+                    <SheetTitle>{t("departmentsDetailTitle")}</SheetTitle>
                 </SheetHeader>
 
                 {department && (
@@ -143,8 +143,8 @@ export function DepartmentDetailPanel({
                                     <span className="text-xs font-medium text-muted-foreground">
                                         {department.status ===
                                         "ACTIVE"
-                                            ? "Đang hoạt động"
-                                            : "Ngừng hoạt động"}
+                                            ? t("departmentsStatusActive")
+                                            : t("departmentsStatusInactive")}
                                     </span>
                                 </div>
                                 <DropdownMenu>
@@ -166,7 +166,7 @@ export function DepartmentDetailPanel({
                                             }
                                         >
                                             <Pencil />
-                                            Chỉnh sửa
+                                            {t("departmentsActionEdit")}
                                         </DropdownMenuItem>
 
                                         <DropdownMenuItem
@@ -178,7 +178,7 @@ export function DepartmentDetailPanel({
                                             className="text-destructive font-medium focus:text-destructive focus:bg-destructive/10 cursor-pointer"
                                         >
                                             <Trash2 className="mr-2 h-4 w-4" />
-                                            Xóa phòng ban
+                                            {t("departmentsActionDelete")}
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -207,7 +207,7 @@ export function DepartmentDetailPanel({
                         <section>
                             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                                 <UserCircle className="h-4 w-4 text-primary" />{" "}
-                                Trưởng phòng
+                                {t("departmentsManagerLabel")}
                             </h3>
                             {department.manager ? (
                                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
@@ -237,7 +237,7 @@ export function DepartmentDetailPanel({
                                 </div>
                             ) : (
                                 <p className="text-sm text-muted-foreground italic p-3 rounded-lg bg-muted/50 border">
-                                    Chưa phân công quản lý
+                                    {t("departmentsManagerUnassigned")}
                                 </p>
                             )}
                         </section>
@@ -248,13 +248,14 @@ export function DepartmentDetailPanel({
                                 <section>
                                     <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                                         <Users className="h-4 w-4 text-primary" />
-                                        Nhân viên (
-                                        {department.employees.length})
+                                        {t("departmentsEmployeesLabel", {
+                                            count: department.employees.length,
+                                        })}
                                     </h3>
                                     <div className="relative mb-3">
                                         <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                                         <Input
-                                            placeholder="Tìm nhân viên..."
+                                            placeholder={t("departmentsEmployeesSearchPlaceholder")}
                                             value={
                                                 employeeSearchQuery
                                             }
@@ -280,8 +281,7 @@ export function DepartmentDetailPanel({
                                         {filteredEmployees.length ===
                                             0 && (
                                             <p className="text-sm text-muted-foreground text-center py-4">
-                                                Không tìm thấy nhân
-                                                viên
+                                                {t("departmentsEmployeesNotFound")}
                                             </p>
                                         )}
                                     </div>
@@ -293,8 +293,9 @@ export function DepartmentDetailPanel({
                             <section>
                                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                                     <FolderTree className="h-4 w-4 text-primary" />{" "}
-                                    Phòng ban trực thuộc (
-                                    {department.children.length})
+                                    {t("departmentsChildrenLabel", {
+                                        count: department.children.length,
+                                    })}
                                 </h3>
                                 <div className="space-y-2">
                                     {department.children.map(
@@ -329,21 +330,23 @@ export function DepartmentDetailPanel({
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
-                            Xóa phòng ban
+                            {t("departmentsDeleteDialogTitle")}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Bạn có chắc chắn muốn xóa phòng ban &quot;
-                            {department?.name}&quot;? Thao tác này
-                            không thể hoàn tác.
+                            Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n xÃ³a phÃ²ng ban &quot;
+                            {department?.name}&quot;? Thao tÃ¡c nÃ y
+                            khÃ´ng thá»ƒ hoÃ n tÃ¡c.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Hủy</AlertDialogCancel>
+                        <AlertDialogCancel>
+                            {t("departmentsDeleteCancel")}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            Xác nhận xóa
+                            {t("departmentsDeleteConfirmAction")}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -351,3 +354,4 @@ export function DepartmentDetailPanel({
         </Sheet>
     );
 }
+

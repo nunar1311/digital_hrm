@@ -2,33 +2,34 @@
 
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export type BrowserPresetValue = "default" | "focused" | "mentions_only" | "custom";
 
 export const BROWSER_PRESET_OPTIONS: {
     value: BrowserPresetValue;
-    label: string;
-    description: string;
+    labelKey: string;
+    descriptionKey: string;
 }[] = [
     {
         value: "default",
-        label: "Mặc định",
-        description: "Cài đặt được đề xuất",
+        labelKey: "browserNotificationPresetDefaultLabel",
+        descriptionKey: "browserNotificationPresetDefaultDescription",
     },
     {
         value: "focused",
-        label: "Tập trung",
-        description: "Theo dõi công việc mà không bị quá tải thông báo",
+        labelKey: "browserNotificationPresetFocusedLabel",
+        descriptionKey: "browserNotificationPresetFocusedDescriptionExtended",
     },
     {
         value: "mentions_only",
-        label: "Chỉ khi được nhắc",
-        description: "Chỉ nhận thông báo khi có nhắc đến bạn",
+        labelKey: "browserNotificationPresetMentionsOnlyLabel",
+        descriptionKey: "browserNotificationPresetMentionsOnlyDescription",
     },
     {
         value: "custom",
-        label: "Tùy chỉnh",
-        description: "Cấu hình theo nhu cầu của bạn",
+        labelKey: "browserNotificationPresetCustomLabel",
+        descriptionKey: "browserNotificationPresetCustomDescriptionExtended",
     },
 ];
 
@@ -43,6 +44,8 @@ export function NotificationPresetOptions({
     onChange,
     disabled,
 }: NotificationPresetOptionsProps) {
+    const t = useTranslations("ProtectedPages");
+
     return (
         <div className="space-y-0">
             {BROWSER_PRESET_OPTIONS.map((opt) => {
@@ -60,10 +63,10 @@ export function NotificationPresetOptions({
                     >
                         <div className="min-w-0 flex-1">
                             <p className="font-medium text-sm text-foreground">
-                                {opt.label}
+                                {t(opt.labelKey)}
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                {opt.description}
+                                {t(opt.descriptionKey)}
                             </p>
                         </div>
                         {isSelected && (

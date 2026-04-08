@@ -20,7 +20,7 @@ interface NotificationEmailProps {
 }
 
 export const NotificationEmail = ({
-  employeeName = "bạn",
+  employeeName = "you",
   title,
   content,
   link,

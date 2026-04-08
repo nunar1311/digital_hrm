@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import {
@@ -21,9 +21,10 @@ import {
     ShieldAlert,
     Camera,
 } from "lucide-react";
-import type { AttendanceRecord } from "@/app/(protected)/attendance/types";
+import type { AttendanceRecord } from "@/app/[locale]/(protected)/attendance/types";
 import { useTimezone } from "@/hooks/use-timezone";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 interface StatusInfo {
     label: string;
@@ -44,14 +45,15 @@ export function AttendanceStatusCard({
         label: string;
     } | null>(null);
     const { timezone } = useTimezone();
+    const t = useTranslations("ProtectedPages");
 
     return (
         <>
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Timer className="h-5 w-5" /> Trạng thái hôm
-                        nay
+                        <Timer className="h-5 w-5" />
+                        {t("attendanceStatusCardTitle")}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -59,7 +61,7 @@ export function AttendanceStatusCard({
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
                                 <span className="text-sm text-muted-foreground">
-                                    Trạng thái:
+                                    {t("attendanceStatusCardStatusLabel")}
                                 </span>
                                 {statusInfo && (
                                     <span
@@ -72,25 +74,29 @@ export function AttendanceStatusCard({
                             {att.lateMinutes > 0 && (
                                 <div className="flex items-center gap-2 text-sm text-yellow-600 dark:text-yellow-400">
                                     <AlertTriangle className="h-4 w-4" />{" "}
-                                    Đi muộn {att.lateMinutes} phút
+                                    {t("attendanceStatusCardLateMinutes", {
+                                        minutes: att.lateMinutes,
+                                    })}
                                 </div>
                             )}
                             {att.earlyMinutes > 0 && (
                                 <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400">
                                     <AlertTriangle className="h-4 w-4" />{" "}
-                                    Về sớm {att.earlyMinutes} phút
+                                    {t("attendanceStatusCardEarlyMinutes", {
+                                        minutes: att.earlyMinutes,
+                                    })}
                                 </div>
                             )}
                             <div className="flex items-center gap-2 text-sm">
                                 {att.checkInVerified ? (
                                     <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
                                         <ShieldCheck className="h-4 w-4" />{" "}
-                                        Check-in đã xác minh
+                                        {t("attendanceStatusCardCheckInVerified")}
                                     </span>
                                 ) : att.checkIn ? (
                                     <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
                                         <ShieldAlert className="h-4 w-4" />{" "}
-                                        Check-in chưa xác minh
+                                        {t("attendanceStatusCardCheckInUnverified")}
                                     </span>
                                 ) : null}
                             </div>
@@ -101,7 +107,7 @@ export function AttendanceStatusCard({
                                     <div className="space-y-2">
                                         <span className="flex items-center gap-1.5 text-sm font-medium">
                                             <Camera className="h-4 w-4" />{" "}
-                                            Ảnh chấm công
+                                            {t("attendanceStatusCardPhotosLabel")}
                                         </span>
                                         <div className="grid grid-cols-2 gap-3">
                                             {att.checkInPhoto && (
@@ -110,7 +116,18 @@ export function AttendanceStatusCard({
                                                     onClick={() =>
                                                         setPreviewPhoto({
                                                             src: att.checkInPhoto!,
-                                                            label: `Check-in – ${new Date(att.checkIn!).toLocaleTimeString("vi-VN", { timeZone: timezone, hour: "2-digit", minute: "2-digit" })}`,
+                                                            label: t("attendanceStatusCardCheckInAt", {
+                                                                time: new Date(
+                                                                    att.checkIn!,
+                                                                ).toLocaleTimeString(
+                                                                    "vi-VN",
+                                                                    {
+                                                                        timeZone: timezone,
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                    },
+                                                                ),
+                                                            }),
                                                         })
                                                     }
                                                 >
@@ -119,11 +136,11 @@ export function AttendanceStatusCard({
                                                         src={
                                                             att.checkInPhoto
                                                         }
-                                                        alt="Ảnh check-in"
+                                                        alt={t("attendanceStatusCardCheckInPhotoAlt")}
                                                         className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
                                                     />
                                                     <span className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
-                                                        Check-in{" "}
+                                                        {t("attendanceStatusCardCheckInLabel")}{" "}
                                                         {att.checkIn &&
                                                             new Date(
                                                                 att.checkIn,
@@ -144,7 +161,18 @@ export function AttendanceStatusCard({
                                                     onClick={() =>
                                                         setPreviewPhoto({
                                                             src: att.checkOutPhoto!,
-                                                            label: `Check-out – ${new Date(att.checkOut!).toLocaleTimeString("vi-VN", { timeZone: timezone, hour: "2-digit", minute: "2-digit" })}`,
+                                                            label: t("attendanceStatusCardCheckOutAt", {
+                                                                time: new Date(
+                                                                    att.checkOut!,
+                                                                ).toLocaleTimeString(
+                                                                    "vi-VN",
+                                                                    {
+                                                                        timeZone: timezone,
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                    },
+                                                                ),
+                                                            }),
                                                         })
                                                     }
                                                 >
@@ -153,11 +181,11 @@ export function AttendanceStatusCard({
                                                         src={
                                                             att.checkOutPhoto
                                                         }
-                                                        alt="Ảnh check-out"
+                                                        alt={t("attendanceStatusCardCheckOutPhotoAlt")}
                                                         className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
                                                     />
                                                     <span className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
-                                                        Check-out{" "}
+                                                        {t("attendanceStatusCardCheckOutLabel")}{" "}
                                                         {att.checkOut &&
                                                             new Date(
                                                                 att.checkOut,
@@ -179,7 +207,7 @@ export function AttendanceStatusCard({
                             {att?.explanation && (
                                 <div className="rounded-lg border p-3 text-sm">
                                     <p className="font-medium">
-                                        Giải trình:{" "}
+                                        {t("attendanceStatusCardExplanationLabel")} {" "}
                                         {att?.explanation?.reason}
                                     </p>
                                     <Badge
@@ -198,19 +226,19 @@ export function AttendanceStatusCard({
                                     >
                                         {att?.explanation?.status ===
                                             "APPROVED"
-                                            ? "Đã duyệt"
+                                            ? t("attendanceStatusCardApproved")
                                             : att?.explanation
                                                 ?.status ===
                                                 "REJECTED"
-                                                ? "Từ chối"
-                                                : "Chờ duyệt"}
+                                                ? t("attendanceStatusCardRejected")
+                                                : t("attendanceStatusCardPending")}
                                     </Badge>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <p className="text-sm text-muted-foreground">
-                            Chưa ghi nhận dữ liệu chấm công hôm nay.
+                            {t("attendanceStatusCardNoData")}
                         </p>
                     )}
                 </CardContent>
@@ -231,7 +259,6 @@ export function AttendanceStatusCard({
                         </DialogTitle>
                     </DialogHeader>
                     {previewPhoto && (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <Image
                             src={previewPhoto.src}
                             alt={previewPhoto.label}
@@ -244,3 +271,4 @@ export function AttendanceStatusCard({
         </>
     );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -19,9 +19,9 @@ import {
 } from "lucide-react";
 import { useTimezone } from "@/hooks/use-timezone";
 
-import { getMyAssets } from "@/app/(protected)/assets/actions";
-import { ASSET_CATEGORY_LABELS } from "@/app/(protected)/assets/constants";
-import type { AssetCategory } from "@/app/(protected)/assets/types";
+import { getMyAssets } from "@/app/[locale]/(protected)/assets/actions";
+import { ASSET_CATEGORY_LABELS } from "@/app/[locale]/(protected)/assets/constants";
+import type { AssetCategory } from "@/app/[locale]/(protected)/assets/types";
 import { useSocketEvents } from "@/hooks/use-socket-event";
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
@@ -75,10 +75,10 @@ export function MyAssets() {
             <div className="flex flex-col items-center justify-center py-16">
                 <Package className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium">
-                    Không có tài sản nào
+                    KhÃ´ng cÃ³ tÃ i sáº£n nÃ o
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                    Bạn chưa được cấp phát tài sản nào
+                    Báº¡n chÆ°a Ä‘Æ°á»£c cáº¥p phÃ¡t tÃ i sáº£n nÃ o
                 </p>
             </div>
         );
@@ -110,7 +110,7 @@ export function MyAssets() {
                         <CardContent className="space-y-2">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-muted-foreground">
-                                    Loại
+                                    Loáº¡i
                                 </span>
                                 <Badge variant="secondary">
                                     {ASSET_CATEGORY_LABELS[
@@ -121,7 +121,7 @@ export function MyAssets() {
                             {(asset.brand || asset.model) && (
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-muted-foreground">
-                                        Thiết bị
+                                        Thiáº¿t bá»‹
                                     </span>
                                     <span>
                                         {[asset.brand, asset.model]
@@ -142,7 +142,7 @@ export function MyAssets() {
                             )}
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-muted-foreground">
-                                    Ngày nhận
+                                    NgÃ y nháº­n
                                 </span>
                                 <span>
                                     {formatDate(
@@ -153,7 +153,7 @@ export function MyAssets() {
                             {asset.expectedReturn && (
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-muted-foreground">
-                                        Dự kiến trả
+                                        Dá»± kiáº¿n tráº£
                                     </span>
                                     <span>
                                         {formatDate(
@@ -176,3 +176,4 @@ export function MyAssets() {
         </div>
     );
 }
+

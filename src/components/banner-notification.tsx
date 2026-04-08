@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { BellIcon, XIcon, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -16,18 +17,20 @@ interface BannerState {
 
 async function fetchPreferences() {
   const { getNotificationSettings } =
-    await import("@/app/(protected)/notifications/actions");
+    await import("@/app/[locale]/(protected)/notifications/actions");
   return await getNotificationSettings();
 }
 
 async function updateBrowserPreference(enabled: boolean) {
   const { savePreferences } =
-    await import("@/app/(protected)/notifications/actions");
+    await import("@/app/[locale]/(protected)/notifications/actions");
   return await savePreferences({ browserEnabled: enabled });
 }
 
 export default function BannerNotification() {
   const queryClient = useQueryClient();
+  const t = useTranslations("ProtectedPages");
+
   const [isVisible, setIsVisible] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -67,7 +70,7 @@ export default function BannerNotification() {
 
   const handleEnable = async () => {
     if (!("Notification" in window)) {
-      alert("Trình duyệt của bạn không hỗ trợ thông báo.");
+      alert(t("bannerNotificationBrowserNotSupported"));
       return;
     }
 
@@ -76,7 +79,7 @@ export default function BannerNotification() {
 
       if (permission === "granted") {
         new Notification("Digital HRM", {
-          body: "Bạn sẽ nhận được thông báo từ hệ thống.",
+          body: t("bannerNotificationDesktopBody"),
           icon: "/icon.png",
         });
 
@@ -130,7 +133,7 @@ export default function BannerNotification() {
       <div className="grow flex items-center justify-between flex-wrap gap-2">
         <BellIcon className="size-4" />
         <p className="grow-500 basis-[min-content] text-sm font-medium">
-          <strong>Digital HRM</strong> cần quyền truy cập để gửi thông báo.
+          <strong>Digital HRM</strong> {t("bannerNotificationMessage")}
         </p>
         <Button
           size="xs"
@@ -139,7 +142,9 @@ export default function BannerNotification() {
           onClick={handleEnable}
           disabled={isGranted || isLoadingPrefs || isPending}
         >
-          {isGranted ? "Đã bật" : "Bật"}
+          {isGranted
+            ? t("bannerNotificationEnabledButton")
+            : t("bannerNotificationEnableButton")}
         </Button>
         <Button
           size="xs"
@@ -147,13 +152,13 @@ export default function BannerNotification() {
           className="bg-transparent hover:text-white hover:bg-white/20"
           onClick={handleRemindLater}
         >
-          Nhắc tôi sau
+          {t("bannerNotificationRemindLaterButton")}
         </Button>
       </div>
       <Button
         size="icon-xs"
         variant="ghost"
-        tooltip={"Đóng"}
+        tooltip={t("bannerNotificationCloseTooltip")}
         className="hover:text-white hover:bg-white/20"
         onClick={handleDismiss}
       >
@@ -162,3 +167,4 @@ export default function BannerNotification() {
     </section>
   );
 }
+

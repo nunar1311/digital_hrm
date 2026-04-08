@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
+import { Link, useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,8 @@ import {
 
 export function LoginForm() {
     const router = useRouter();
+    const t = useTranslations("Auth");
+    const locale = useLocale();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -36,16 +38,13 @@ export function LoginForm() {
             });
 
             if (result.error) {
-                setError(
-                    result.error.message ??
-                        "Email hoặc mật khẩu không đúng",
-                );
+                setError(result.error.message ?? t("invalidCredentials"));
             } else {
                 router.push("/");
                 router.refresh();
             }
         } catch {
-            setError("Đã xảy ra lỗi. Vui lòng thử lại.");
+            setError(t("unexpectedError"));
         } finally {
             setLoading(false);
         }
@@ -58,11 +57,9 @@ export function LoginForm() {
                     HR
                 </div>
                 <CardTitle className="text-2xl font-bold">
-                    Đăng nhập
+                    {t("loginTitle")}
                 </CardTitle>
-                <CardDescription>
-                    Đăng nhập vào hệ thống quản lý nhân sự
-                </CardDescription>
+                <CardDescription>{t("loginSubtitle")}</CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
@@ -86,12 +83,13 @@ export function LoginForm() {
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="password">Mật khẩu</Label>
+                            <Label htmlFor="password">{t("password")}</Label>
                             <Link
                                 href="/forgot-password"
+                                locale={locale}
                                 className="text-xs text-muted-foreground hover:text-primary"
                             >
-                                Quên mật khẩu?
+                                {t("forgotPassword")}
                             </Link>
                         </div>
                         <Input
@@ -117,15 +115,16 @@ export function LoginForm() {
                         {loading && (
                             <Loader2 className="mr-2 size-4 animate-spin" />
                         )}
-                        Đăng nhập
+                        {loading ? t("loggingIn") : t("login")}
                     </Button>
                     <p className="text-center text-sm text-muted-foreground">
-                        Chưa có tài khoản?{" "}
+                        {t("noAccount")} {" "}
                         <Link
                             href="/register"
+                            locale={locale}
                             className="font-medium text-primary hover:underline"
                         >
-                            Đăng ký
+                            {t("register")}
                         </Link>
                     </p>
                 </CardFooter>

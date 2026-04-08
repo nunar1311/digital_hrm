@@ -1,8 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,21 +21,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronDown, ChevronRight, Eye, FileDown, Search, Loader2 } from "lucide-react";
-import type { PayrollRecordDetail, PayrollDetailStatus } from "@/app/(protected)/payroll/types";
+import { ChevronDown, ChevronRight, Eye, FileDown, Search } from "lucide-react";
+import type { PayrollRecordDetail, PayrollDetailStatus } from "@/app/[locale]/(protected)/payroll/types";
 
-export function formatCurrency(amount: number | bigint | unknown): string {
+export function formatCurrency(amount: number | bigint | unknown, locale: string): string {
     const num = typeof amount === "bigint" ? Number(amount) : Number(amount) || 0;
-    return new Intl.NumberFormat("vi-VN", {
+    return new Intl.NumberFormat(locale, {
         style: "currency",
         currency: "VND",
         maximumFractionDigits: 0,
@@ -56,6 +46,8 @@ export function PayrollDetailTable({
     onViewPayslip,
     onExportPayslip,
 }: PayrollDetailTableProps) {
+    const t = useTranslations("ProtectedPages");
+    const locale = useLocale();
     const [search, setSearch] = useState("");
     const [filterDepartment, setFilterDepartment] = useState<string>("all");
     const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -94,11 +86,11 @@ export function PayrollDetailTable({
     const getStatusBadge = (status: PayrollDetailStatus) => {
         switch (status) {
             case "PENDING":
-                return <Badge variant="secondary">Chờ duyệt</Badge>;
+                return <Badge variant="secondary">{t("payrollDetailTableStatusPending")}</Badge>;
             case "CONFIRMED":
-                return <Badge variant="outline" className="bg-blue-50">Đã xác nhận</Badge>;
+                return <Badge variant="outline" className="bg-blue-50">{t("payrollDetailTableStatusConfirmed")}</Badge>;
             case "PAID":
-                return <Badge variant="default" className="bg-green-600">Đã trả</Badge>;
+                return <Badge variant="default" className="bg-green-600">{t("payrollDetailTableStatusPaid")}</Badge>;
             default:
                 return <Badge>{status}</Badge>;
         }
@@ -108,9 +100,9 @@ export function PayrollDetailTable({
         <Card>
             <CardHeader>
                 <div className="flex items-center justify-between">
-                    <CardTitle>Chi tiết bảng lương</CardTitle>
+                    <CardTitle>{t("payrollDetailTableTitle")}</CardTitle>
                     <span className="text-sm text-muted-foreground">
-                        {filteredDetails.length} nhân viên
+                        {t("payrollDetailTableEmployeeCount", { count: filteredDetails.length })}
                     </span>
                 </div>
 
@@ -118,7 +110,7 @@ export function PayrollDetailTable({
                     <div className="relative flex-1 max-w-sm">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Tìm theo mã NV, họ tên..."
+                            placeholder={t("payrollDetailTableSearchPlaceholder")}
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value);
@@ -130,10 +122,10 @@ export function PayrollDetailTable({
 
                     <Select value={filterDepartment} onValueChange={(v) => { setFilterDepartment(v); setPage(1); }}>
                         <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Phòng ban" />
+                            <SelectValue placeholder={t("payrollDetailTableDepartmentPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Tất cả phòng ban</SelectItem>
+                            <SelectItem value="all">{t("payrollDetailTableDepartmentAll")}</SelectItem>
                             {departments.map((dept) => (
                                 <SelectItem key={dept.id} value={dept.id}>
                                     {dept.name}
@@ -144,13 +136,13 @@ export function PayrollDetailTable({
 
                     <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
                         <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder="Trạng thái" />
+                            <SelectValue placeholder={t("payrollDetailTableStatusPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Tất cả</SelectItem>
-                            <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-                            <SelectItem value="CONFIRMED">Đã xác nhận</SelectItem>
-                            <SelectItem value="PAID">Đã trả</SelectItem>
+                            <SelectItem value="all">{t("payrollDetailTableStatusAll")}</SelectItem>
+                            <SelectItem value="PENDING">{t("payrollDetailTableStatusPending")}</SelectItem>
+                            <SelectItem value="CONFIRMED">{t("payrollDetailTableStatusConfirmed")}</SelectItem>
+                            <SelectItem value="PAID">{t("payrollDetailTableStatusPaid")}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -162,31 +154,31 @@ export function PayrollDetailTable({
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-10"></TableHead>
-                                <TableHead className="w-12">STT</TableHead>
-                                <TableHead className="w-24">Mã NV</TableHead>
-                                <TableHead>Họ tên</TableHead>
-                                <TableHead>Phòng ban</TableHead>
-                                <TableHead className="text-right">Lương CB</TableHead>
-                                <TableHead className="text-right">Phụ cấp</TableHead>
-                                <TableHead className="text-right">Thưởng</TableHead>
-                                <TableHead className="text-right">Tăng ca</TableHead>
-                                <TableHead className="text-right">Gross</TableHead>
-                                <TableHead className="text-right">BHXH</TableHead>
-                                <TableHead className="text-right">BHYT</TableHead>
-                                <TableHead className="text-right">BHTN</TableHead>
-                                <TableHead className="text-right">Thuế TNCN</TableHead>
-                                <TableHead className="text-right">Khấu trừ</TableHead>
-                                <TableHead className="text-right">Net</TableHead>
-                                <TableHead className="w-24">Trạng thái</TableHead>
-                                <TableHead className="w-20">Ngày công</TableHead>
-                                <TableHead className="w-28 text-right">Thao tác</TableHead>
+                                <TableHead className="w-12">{t("payrollDetailTableHeadIndex")}</TableHead>
+                                <TableHead className="w-24">{t("payrollDetailTableHeadEmployeeCode")}</TableHead>
+                                <TableHead>{t("payrollDetailTableHeadEmployeeName")}</TableHead>
+                                <TableHead>{t("payrollDetailTableHeadDepartment")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadBaseSalary")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadAllowance")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadBonus")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadOvertime")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadGross")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadSocialInsurance")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadHealthInsurance")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadUnemploymentInsurance")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadPit")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadDeduction")}</TableHead>
+                                <TableHead className="text-right">{t("payrollDetailTableHeadNet")}</TableHead>
+                                <TableHead className="w-24">{t("payrollDetailTableHeadStatus")}</TableHead>
+                                <TableHead className="w-20">{t("payrollDetailTableHeadWorkDays")}</TableHead>
+                                <TableHead className="w-28 text-right">{t("payrollDetailTableHeadActions")}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {paginatedDetails.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={19} className="text-center py-8 text-muted-foreground">
-                                        Không có dữ liệu
+                                        {t("payrollTableNoData")}
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -209,44 +201,44 @@ export function PayrollDetailTable({
                                             </TableCell>
                                             <TableCell>{(page - 1) * PAGE_SIZE + index + 1}</TableCell>
                                             <TableCell className="font-mono text-sm">
-                                                {detail.user?.employeeCode || "—"}
+                                                {detail.user?.employeeCode || t("payrollNotAvailable")}
                                             </TableCell>
                                             <TableCell className="font-medium">
-                                                {detail.user?.name || "—"}
+                                                {detail.user?.name || t("payrollNotAvailable")}
                                             </TableCell>
-                                            <TableCell>{detail.user?.department?.name || "—"}</TableCell>
+                                            <TableCell>{detail.user?.department?.name || t("payrollNotAvailable")}</TableCell>
                                             <TableCell className="text-right">
-                                                {formatCurrency(detail.baseSalary)}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {formatCurrency(detail.allowanceAmount)}
+                                                {formatCurrency(detail.baseSalary, locale)}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                {formatCurrency(detail.bonusAmount)}
+                                                {formatCurrency(detail.allowanceAmount, locale)}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                {formatCurrency(detail.overtimeAmount)}
+                                                {formatCurrency(detail.bonusAmount, locale)}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {formatCurrency(detail.overtimeAmount, locale)}
                                             </TableCell>
                                             <TableCell className="text-right font-medium">
-                                                {formatCurrency(detail.grossSalary)}
+                                                {formatCurrency(detail.grossSalary, locale)}
                                             </TableCell>
                                             <TableCell className="text-right text-red-600">
-                                                {formatCurrency(detail.socialInsurance)}
+                                                {formatCurrency(detail.socialInsurance, locale)}
                                             </TableCell>
                                             <TableCell className="text-right text-red-600">
-                                                {formatCurrency(detail.healthInsurance)}
+                                                {formatCurrency(detail.healthInsurance, locale)}
                                             </TableCell>
                                             <TableCell className="text-right text-red-600">
-                                                {formatCurrency(detail.unemploymentInsurance)}
+                                                {formatCurrency(detail.unemploymentInsurance, locale)}
                                             </TableCell>
                                             <TableCell className="text-right text-red-600">
-                                                {formatCurrency(detail.taxAmount)}
+                                                {formatCurrency(detail.taxAmount, locale)}
                                             </TableCell>
                                             <TableCell className="text-right text-red-600">
-                                                {formatCurrency(detail.deductionAmount)}
+                                                {formatCurrency(detail.deductionAmount, locale)}
                                             </TableCell>
                                             <TableCell className="text-right font-semibold text-green-600">
-                                                {formatCurrency(detail.netSalary)}
+                                                {formatCurrency(detail.netSalary, locale)}
                                             </TableCell>
                                             <TableCell>{getStatusBadge(detail.status)}</TableCell>
                                             <TableCell className="text-center">
@@ -278,68 +270,68 @@ export function PayrollDetailTable({
                                                 <TableCell colSpan={19} className="p-4">
                                                     <div className="grid grid-cols-4 gap-4 text-sm">
                                                         <div>
-                                                            <p className="text-muted-foreground">Lương cơ bản</p>
-                                                            <p className="font-medium">{formatCurrency(detail.baseSalary)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableBaseSalary")}</p>
+                                                            <p className="font-medium">{formatCurrency(detail.baseSalary, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Phụ cấp</p>
-                                                            <p className="font-medium">{formatCurrency(detail.allowanceAmount)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableAllowance")}</p>
+                                                            <p className="font-medium">{formatCurrency(detail.allowanceAmount, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Thưởng</p>
-                                                            <p className="font-medium">{formatCurrency(detail.bonusAmount)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableBonus")}</p>
+                                                            <p className="font-medium">{formatCurrency(detail.bonusAmount, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Tăng ca ({detail.overtimeHours}h)</p>
-                                                            <p className="font-medium">{formatCurrency(detail.overtimeAmount)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableOvertimeHours", { hours: detail.overtimeHours })}</p>
+                                                            <p className="font-medium">{formatCurrency(detail.overtimeAmount, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Tổng Gross</p>
-                                                            <p className="font-medium">{formatCurrency(detail.grossSalary)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableGrossTotal")}</p>
+                                                            <p className="font-medium">{formatCurrency(detail.grossSalary, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">BHXH (8%)</p>
-                                                            <p className="font-medium text-red-600">{formatCurrency(detail.socialInsurance)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableSocialInsuranceRate")}</p>
+                                                            <p className="font-medium text-red-600">{formatCurrency(detail.socialInsurance, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">BHYT (1.5%)</p>
-                                                            <p className="font-medium text-red-600">{formatCurrency(detail.healthInsurance)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableHealthInsuranceRate")}</p>
+                                                            <p className="font-medium text-red-600">{formatCurrency(detail.healthInsurance, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">BHTN (1%)</p>
-                                                            <p className="font-medium text-red-600">{formatCurrency(detail.unemploymentInsurance)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableUnemploymentInsuranceRate")}</p>
+                                                            <p className="font-medium text-red-600">{formatCurrency(detail.unemploymentInsurance, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Giảm trừ cá nhân</p>
-                                                            <p className="font-medium">{formatCurrency(detail.personalDeduction)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTablePersonalDeduction")}</p>
+                                                            <p className="font-medium">{formatCurrency(detail.personalDeduction, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Giảm trừ phụ thuộc</p>
-                                                            <p className="font-medium">{formatCurrency(detail.dependentDeduction)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableDependentDeduction")}</p>
+                                                            <p className="font-medium">{formatCurrency(detail.dependentDeduction, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Thuế TNCN</p>
-                                                            <p className="font-medium text-red-600">{formatCurrency(detail.taxAmount)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTablePit")}</p>
+                                                            <p className="font-medium text-red-600">{formatCurrency(detail.taxAmount, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Khấu trừ khác</p>
-                                                            <p className="font-medium text-red-600">{formatCurrency(detail.deductionAmount)}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableOtherDeduction")}</p>
+                                                            <p className="font-medium text-red-600">{formatCurrency(detail.deductionAmount, locale)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Ngày công</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableWorkDays")}</p>
                                                             <p className="font-medium">{detail.workDays}/{detail.standardDays}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Ngày muộn</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableLateDays")}</p>
                                                             <p className="font-medium">{detail.lateDays}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Số tài khoản</p>
-                                                            <p className="font-medium">{detail.bankAccount || "—"}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableBankAccount")}</p>
+                                                            <p className="font-medium">{detail.bankAccount || t("payrollNotAvailable")}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-muted-foreground">Ngân hàng</p>
-                                                            <p className="font-medium">{detail.bankName || "—"}</p>
+                                                            <p className="text-muted-foreground">{t("payrollDetailTableBankName")}</p>
+                                                            <p className="font-medium">{detail.bankName || t("payrollNotAvailable")}</p>
                                                         </div>
                                                     </div>
                                                 </TableCell>
@@ -355,7 +347,11 @@ export function PayrollDetailTable({
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between mt-4">
                         <p className="text-sm text-muted-foreground">
-                            Hiển thị {(page - 1) * PAGE_SIZE + 1} - {Math.min(page * PAGE_SIZE, filteredDetails.length)} trong {filteredDetails.length} bản ghi
+                            {t("payrollDetailTableShowing", {
+                                from: (page - 1) * PAGE_SIZE + 1,
+                                to: Math.min(page * PAGE_SIZE, filteredDetails.length),
+                                total: filteredDetails.length,
+                            })}
                         </p>
                         <div className="flex items-center gap-2">
                             <Button
@@ -364,10 +360,10 @@ export function PayrollDetailTable({
                                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                                 disabled={page === 1}
                             >
-                                Trước
+                                {t("payrollDetailTablePrevious")}
                             </Button>
                             <span className="text-sm">
-                                Trang {page}/{totalPages}
+                                {t("payrollDetailTablePage", { page, totalPages })}
                             </span>
                             <Button
                                 variant="outline"
@@ -375,7 +371,7 @@ export function PayrollDetailTable({
                                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
                             >
-                                Sau
+                                {t("payrollDetailTableNext")}
                             </Button>
                         </div>
                     </div>
@@ -384,3 +380,4 @@ export function PayrollDetailTable({
         </Card>
     );
 }
+

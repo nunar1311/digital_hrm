@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,17 +9,18 @@ import {
   DollarSign,
   Calendar,
   FileText,
-  Award,
   ShieldAlert,
 } from "lucide-react";
-import { getRewards } from "@/app/(protected)/employees/actions";
-import Loading from "@/app/(protected)/loading";
+import { getRewards } from "@/app/[locale]/(protected)/employees/actions";
+import Loading from "@/app/[locale]/(protected)/loading";
+import { useTranslations } from "next-intl";
 
 interface Props {
   employeeId: string;
 }
 
 export function RewardsTab({ employeeId }: Props) {
+  const t = useTranslations("ProtectedPages");
   const { data: rewards = [], isLoading } = useQuery({
     queryKey: ["rewards", employeeId],
     queryFn: () => getRewards(employeeId),
@@ -54,7 +55,9 @@ export function RewardsTab({ employeeId }: Props) {
               <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                 {rewardItems.length}
               </div>
-              <div className="text-xs text-muted-foreground">Khen thưởng</div>
+              <div className="text-xs text-muted-foreground">
+                {t("employeesRewardsSummaryRewardCount")}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -68,7 +71,9 @@ export function RewardsTab({ employeeId }: Props) {
               <div className="text-2xl font-bold text-red-700 dark:text-red-400">
                 {disciplineItems.length}
               </div>
-              <div className="text-xs text-muted-foreground">Kỷ luật</div>
+              <div className="text-xs text-muted-foreground">
+                {t("employeesRewardsSummaryDisciplineCount")}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -85,7 +90,7 @@ export function RewardsTab({ employeeId }: Props) {
                   : "0"}
               </div>
               <div className="text-xs text-muted-foreground">
-                Tổng thưởng (VNĐ)
+                {t("employeesRewardsSummaryTotalReward")}
               </div>
             </div>
           </CardContent>
@@ -103,7 +108,7 @@ export function RewardsTab({ employeeId }: Props) {
                   : "0"}
               </div>
               <div className="text-xs text-muted-foreground">
-                Tổng phạt (VNĐ)
+                {t("employeesRewardsSummaryTotalDiscipline")}
               </div>
             </div>
           </CardContent>
@@ -112,10 +117,10 @@ export function RewardsTab({ employeeId }: Props) {
 
       {/* Reward & Discipline Lists */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Khen thưởng */}
+        {/* Rewards */}
         <Card>
           <CardHeader>
-            <CardTitle>Khen thưởng</CardTitle>
+            <CardTitle>{t("employeesRewardsCardRewardsTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             {rewardItems.length > 0 ? (
@@ -140,10 +145,10 @@ export function RewardsTab({ employeeId }: Props) {
                         className="text-xs shrink-0 ml-2"
                       >
                         {reward.status === "APPROVED"
-                          ? "Đã duyệt"
+                          ? t("employeesRewardsStatusApproved")
                           : reward.status === "PENDING"
-                            ? "Chờ duyệt"
-                            : "Từ chối"}
+                            ? t("employeesRewardsStatusPending")
+                            : t("employeesRewardsStatusRejected")}
                       </Badge>
                     </div>
                     {reward.description && (
@@ -154,19 +159,17 @@ export function RewardsTab({ employeeId }: Props) {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {new Date(reward.decisionDate).toLocaleDateString(
-                          "vi-VN",
-                        )}
+                        {new Date(reward.decisionDate).toLocaleDateString()}
                       </span>
                       {reward.decisionNo && (
                         <span className="flex items-center gap-1">
                           <FileText className="h-3 w-3" />
-                          QĐ: {reward.decisionNo}
+                          {t("employeesRewardsDecisionNo")} {reward.decisionNo}
                         </span>
                       )}
                       {reward.amount && (
                         <span className="font-mono font-medium text-emerald-600">
-                          +{Number(reward.amount).toLocaleString("vi-VN")}đ
+                          +{Number(reward.amount).toLocaleString()} ₫
                         </span>
                       )}
                     </div>
@@ -176,16 +179,16 @@ export function RewardsTab({ employeeId }: Props) {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Trophy className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">Chưa có khen thưởng nào.</p>
+                <p className="text-sm">{t("employeesRewardsEmptyRewards")}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Kỷ luật */}
+        {/* Discipline */}
         <Card>
           <CardHeader>
-            <CardTitle>Kỷ luật</CardTitle>
+            <CardTitle>{t("employeesRewardsCardDisciplineTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             {disciplineItems.length > 0 ? (
@@ -208,10 +211,10 @@ export function RewardsTab({ employeeId }: Props) {
                         className="text-xs shrink-0 ml-2"
                       >
                         {item.status === "APPROVED"
-                          ? "Đã xử lý"
+                          ? t("employeesRewardsDisciplineStatusProcessed")
                           : item.status === "PENDING"
-                            ? "Chờ xử lý"
-                            : "Đã hủy"}
+                            ? t("employeesRewardsDisciplineStatusPending")
+                            : t("employeesRewardsDisciplineStatusCanceled")}
                       </Badge>
                     </div>
                     {item.description && (
@@ -222,19 +225,17 @@ export function RewardsTab({ employeeId }: Props) {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {new Date(item.decisionDate).toLocaleDateString(
-                          "vi-VN",
-                        )}
+                        {new Date(item.decisionDate).toLocaleDateString()}
                       </span>
                       {item.decisionNo && (
                         <span className="flex items-center gap-1">
                           <FileText className="h-3 w-3" />
-                          QĐ: {item.decisionNo}
+                          {t("employeesRewardsDecisionNo")} {item.decisionNo}
                         </span>
                       )}
                       {item.amount && (
                         <span className="font-mono font-medium text-red-600">
-                          -{Number(item.amount).toLocaleString("vi-VN")}đ
+                          -{Number(item.amount).toLocaleString()} ₫
                         </span>
                       )}
                     </div>
@@ -244,7 +245,7 @@ export function RewardsTab({ employeeId }: Props) {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">Không có kỷ luật nào.</p>
+                <p className="text-sm">{t("employeesRewardsEmptyDiscipline")}</p>
               </div>
             )}
           </CardContent>
@@ -253,3 +254,4 @@ export function RewardsTab({ employeeId }: Props) {
     </div>
   );
 }
+

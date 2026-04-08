@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo } from "react";
 import {
@@ -11,16 +11,19 @@ import {
 } from "@/components/ui/chart";
 import { Pie, PieChart } from "recharts";
 import CardToolbar from "./card-toolbar";
-import type { DepartmentDistributionItem } from "@/app/(protected)/dashboard/actions";
+import type { DepartmentDistributionItem } from "@/app/[locale]/(protected)/dashboard/actions";
+import { useTranslations } from "next-intl";
 
 interface CardChartPieProps {
     departmentData: DepartmentDistributionItem[];
 }
 
 const CardChartPie = ({ departmentData }: CardChartPieProps) => {
+    const t = useTranslations("Dashboard");
+
     const chartConfig = useMemo(() => {
         const config: ChartConfig = {
-            count: { label: "Nhân viên" },
+            count: { label: t("employee") },
         };
         departmentData.forEach((item) => {
             config[item.department] = {
@@ -29,10 +32,10 @@ const CardChartPie = ({ departmentData }: CardChartPieProps) => {
             };
         });
         return config;
-    }, [departmentData]);
+    }, [departmentData, t]);
 
     return (
-        <CardToolbar title="Phân bổ nhân viên theo phòng ban">
+        <CardToolbar title={t("departmentDistribution")}>
             <div className="h-full w-full">
                 <ChartContainer
                     config={chartConfig}
@@ -64,3 +67,4 @@ const CardChartPie = ({ departmentData }: CardChartPieProps) => {
 };
 
 export default CardChartPie;
+

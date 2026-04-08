@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getShifts, deleteShift } from "@/app/(protected)/attendance/actions";
-import type { Shift } from "@/app/(protected)/attendance/types";
+import { getShifts, deleteShift } from "@/app/[locale]/(protected)/attendance/actions";
+import type { Shift } from "@/app/[locale]/(protected)/attendance/types";
 import { toast } from "sonner";
 
 export interface UseSidebarShiftsReturn {
@@ -64,18 +64,18 @@ export function useSidebarShiftsData(): UseSidebarShiftsReturn {
     const handleDeleteShift = useCallback(async (shift: Shift) => {
         try {
             await deleteShift(shift.id);
-            toast.success("Xóa ca làm việc thành công");
+            toast.success("XÃ³a ca lÃ m viá»‡c thÃ nh cÃ´ng");
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "shifts-sidebar"],
             });
             queryClient.invalidateQueries({ queryKey: ["attendance", "shifts"] });
             queryClient.invalidateQueries({ queryKey: ["attendance", "shiftAssignments"] });
-            // Cập nhật query dữ liệu chu kỳ chứa ca
+            // Cáº­p nháº­t query dá»¯ liá»‡u chu ká»³ chá»©a ca
             queryClient.invalidateQueries({ queryKey: ["attendance", "work-cycles-sidebar"] });
             queryClient.invalidateQueries({ queryKey: ["attendance", "workCycles"] });
         } catch (err: unknown) {
             const error = err as Error;
-            toast.error(error.message || "Có lỗi xảy ra");
+            toast.error(error.message || "CÃ³ lá»—i xáº£y ra");
         }
     }, [queryClient]);
 
@@ -96,3 +96,4 @@ export function useSidebarShiftsData(): UseSidebarShiftsReturn {
         setEditDialogOpen,
     };
 }
+

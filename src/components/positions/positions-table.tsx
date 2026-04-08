@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useRef } from "react";
 import {
@@ -26,16 +26,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoreHorizontal, Pencil, Trash2, Eye } from "lucide-react";
-import type { PositionListItem } from "@/app/(protected)/positions/types";
+import type { PositionListItem } from "@/app/[locale]/(protected)/positions/types";
 
 const AUTHORITY_LABELS: Record<string, { label: string; class: string }> = {
-    EXECUTIVE: { label: "HĐQT", class: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
-    DIRECTOR: { label: "Giám đốc", class: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
-    MANAGER: { label: "Trưởng phòng", class: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
-    DEPUTY: { label: "Phó phòng", class: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
-    TEAM_LEAD: { label: "Tổ trưởng", class: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-    STAFF: { label: "Nhân viên", class: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-    INTERN: { label: "Thực tập sinh", class: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
+    EXECUTIVE: { label: "Executive", class: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
+    DIRECTOR: { label: "Director", class: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+    MANAGER: { label: "Manager", class: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
+    DEPUTY: { label: "Deputy", class: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
+    TEAM_LEAD: { label: "Team lead", class: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+    STAFF: { label: "Staff", class: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+    INTERN: { label: "Intern", class: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
 };
 
 interface PositionsTableProps {
@@ -65,7 +65,7 @@ export function PositionsTable({
         () => [
             {
                 accessorKey: "name",
-                header: "Tên chức vụ",
+                header: "Position name",
                 size: 260,
                 cell: ({ row }) => {
                     const pos = row.original;
@@ -88,7 +88,7 @@ export function PositionsTable({
             },
             {
                 accessorKey: "code",
-                header: "Mã",
+                header: "Code",
                 size: 140,
                 cell: ({ row }) => (
                     <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
@@ -98,7 +98,7 @@ export function PositionsTable({
             },
             {
                 accessorKey: "departmentName",
-                header: "Phòng ban",
+                header: "Department",
                 size: 180,
                 cell: ({ row }) => (
                     <span className="text-sm text-muted-foreground">
@@ -108,7 +108,7 @@ export function PositionsTable({
             },
             {
                 accessorKey: "level",
-                header: "Cấp",
+                header: "Level",
                 size: 60,
                 cell: ({ row }) => (
                     <div className="flex items-center justify-center">
@@ -120,7 +120,7 @@ export function PositionsTable({
             },
             {
                 accessorKey: "parentName",
-                header: "Chức vụ cha",
+                header: "Parent position",
                 size: 160,
                 cell: ({ row }) => (
                     <span className="text-sm text-muted-foreground">
@@ -130,7 +130,7 @@ export function PositionsTable({
             },
             {
                 accessorKey: "userCount",
-                header: "Nhân viên",
+                header: "Employees",
                 size: 100,
                 cell: ({ row }) => {
                     const count = row.original.userCount;
@@ -146,7 +146,7 @@ export function PositionsTable({
             },
             {
                 accessorKey: "status",
-                header: "Trạng thái",
+                header: "Status",
                 size: 110,
                 cell: ({ row }) => (
                     <Badge
@@ -157,7 +157,7 @@ export function PositionsTable({
                                 : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
                         }
                     >
-                        {row.original.status === "ACTIVE" ? "Hoạt động" : "Không hoạt động"}
+                        {row.original.status === "ACTIVE" ? "Active" : "Inactive"}
                     </Badge>
                 ),
             },
@@ -182,11 +182,11 @@ export function PositionsTable({
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => onViewDetail(pos)}>
                                     <Eye className="mr-2 h-4 w-4" />
-                                    Xem chi tiết
+                                    View details
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => onEdit(pos)}>
                                     <Pencil className="mr-2 h-4 w-4" />
-                                    Sửa
+                                    Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -195,12 +195,12 @@ export function PositionsTable({
                                     disabled={pos.userCount > 0}
                                     title={
                                         pos.userCount > 0
-                                            ? "Không thể xóa chức vụ đang có nhân viên"
+                                            ? "Cannot delete position with assigned employees"
                                             : undefined
                                     }
                                 >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Xóa
+                                    Delete
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -259,7 +259,7 @@ export function PositionsTable({
                                     colSpan={columns.length}
                                     className="h-32 text-center text-muted-foreground"
                                 >
-                                    Không có chức vụ nào
+                                    No positions available
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -297,11 +297,11 @@ export function PositionsTable({
                     {isFetchingNextPage ? (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                            Đang tải...
+                            Loading...
                         </div>
                     ) : (
                         <Button variant="ghost" size="sm">
-                            Tải thêm
+                            Load more
                         </Button>
                     )}
                 </div>
@@ -309,8 +309,9 @@ export function PositionsTable({
 
             {/* Summary */}
             <p className="text-xs text-muted-foreground px-1 py-2">
-                Hiển thị {data.length} / {totalPositions} chức vụ
+                Showing {data.length} / {totalPositions} positions
             </p>
         </div>
     );
 }
+

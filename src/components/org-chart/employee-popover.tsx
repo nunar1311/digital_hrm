@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import { EmployeeListItem } from "./employee-list-item";
+import { useTranslations } from "next-intl";
 
 interface Employee {
     id: string;
@@ -32,6 +33,7 @@ export function EmployeePopover({
     onViewProfile,
 }: EmployeePopoverProps) {
     const [open, setOpen] = useState(false);
+    const t = useTranslations("ProtectedPages");
     const [searchQuery, setSearchQuery] = useState("");
 
     const filteredEmployees = employees.filter((emp) => {
@@ -48,7 +50,7 @@ export function EmployeePopover({
         <div className="flex items-center gap-1 bg-muted/80 hover:bg-muted rounded-full pl-1 pr-2 py-0.5 text-[10px] cursor-pointer transition-colors">
             <UserPlus className="h-3 w-3 text-muted-foreground" />
             <span className="font-medium">
-                Xem tất cả ({employees.length})
+                {t("orgChartEmployeePopoverViewAll", { count: employees.length })}
             </span>
         </div>
     );
@@ -63,7 +65,7 @@ export function EmployeePopover({
                     <div className="relative">
                         <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                         <Input
-                            placeholder="Tìm nhân viên..."
+                            placeholder={t("orgChartEmployeePopoverSearch")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-7 h-8 text-sm"
@@ -82,7 +84,7 @@ export function EmployeePopover({
                             ))
                         ) : (
                             <p className="text-sm text-muted-foreground text-center py-4">
-                                Không tìm thấy nhân viên
+                                {t("orgChartEmployeePopoverNotFound")}
                             </p>
                         )}
                     </div>

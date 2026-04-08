@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +48,6 @@ import {
   Type,
   DollarSign,
   Variable,
-  Trash2,
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
@@ -56,20 +56,21 @@ import {
   FORMULA_OPERATORS,
   type FormulaType,
   type PayrollFormula,
-} from "@/app/(protected)/payroll/types";
+} from "@/app/[locale]/(protected)/payroll/types";
 
-const formulaSchema = z.object({
-  name: z.string().min(1, "Tên công thức không được trống"),
-  code: z
-    .string()
-    .min(1, "Mã công thức không được trống")
-    .regex(/^[A-Z0-9_]+$/, "Mã phải viết hoa, không dấu cách"),
-  description: z.string().optional(),
-  formulaType: z.enum(["EARNING", "DEDUCTION", "TAX", "INSURANCE", "NET"]),
-  expression: z.string().min(1, "Biểu thức không được trống"),
-});
+const formulaSchema = (t: ReturnType<typeof useTranslations>) =>
+  z.object({
+    name: z.string().min(1, t("payrollFormulaValidationNameRequired")),
+    code: z
+      .string()
+      .min(1, t("payrollFormulaValidationCodeRequired"))
+      .regex(/^[A-Z0-9_]+$/, t("payrollFormulaValidationCodeFormat")),
+    description: z.string().optional(),
+    formulaType: z.enum(["EARNING", "DEDUCTION", "TAX", "INSURANCE", "NET"]),
+    expression: z.string().min(1, t("payrollFormulaValidationExpressionRequired")),
+  });
 
-type FormulaForm = z.infer<typeof formulaSchema>;
+type FormulaForm = z.infer<ReturnType<typeof formulaSchema>>;
 
 interface FormulaEditorProps {
   editData?: PayrollFormula;
@@ -82,6 +83,8 @@ export function FormulaEditor({
   onSave,
   onCancel,
 }: FormulaEditorProps) {
+  const t = useTranslations("ProtectedPages");
+  const locale = useLocale();
   const [activeTab, setActiveTab] = useState<string>("edit");
   const [previewResult, setPreviewResult] = useState<{
     success: boolean;
@@ -113,7 +116,7 @@ export function FormulaEditor({
   };
 
   const form = useForm<FormulaForm>({
-    resolver: zodResolver(formulaSchema),
+    resolver: zodResolver(formulaSchema(t)),
     defaultValues: editData
       ? {
           name: editData.name,
@@ -142,15 +145,15 @@ export function FormulaEditor({
       }
 
       if (!/^[\d\s+\-*/().]+$/.test(processedExpr)) {
-        return "Công thức chứa ký tự không hợp lệ";
+        return t("payrollFormulaInvalidCharacters");
       }
 
       const result = Function(`"use strict"; return (${processedExpr})`)();
       return typeof result === "number" && isFinite(result)
         ? result
-        : "Kết quả không hợp lệ";
+        : t("payrollFormulaInvalidResult");
     } catch {
-      return "Công thức không hợp lệ";
+      return t("payrollFormulaInvalidExpression");
     }
   }, []);
 
@@ -179,11 +182,11 @@ export function FormulaEditor({
     try {
       await onSave(data);
       toast.success(
-        editData ? "Đã cập nhật công thức" : "Đã tạo công thức mới",
+        editData ? t("payrollFormulaUpdated") : t("payrollFormulaCreated"),
       );
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Lỗi khi lưu công thức",
+        error instanceof Error ? error.message : t("payrollFormulaSaveError"),
       );
     } finally {
       setIsSubmitting(false);
@@ -191,7 +194,7 @@ export function FormulaEditor({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: "VND",
       maximumFractionDigits: 0,
@@ -205,7 +208,7 @@ export function FormulaEditor({
           <div className="flex items-center gap-2">
             <Calculator className="h-5 w-5" />
             <CardTitle>
-              {editData ? "Chỉnh sửa công thức" : "Tạo công thức mới"}
+              {editData ? t("payrollFormulaEditTitle") : t("payrollFormulaCreateTitle")}
             </CardTitle>
           </div>
           <Badge
@@ -225,7 +228,7 @@ export function FormulaEditor({
           </Badge>
         </div>
         <CardDescription>
-          Xây dựng công thức tính lương với các biến có sẵn
+          {t("payrollFormulaDescription")}
         </CardDescription>
       </CardHeader>
 
@@ -234,15 +237,15 @@ export function FormulaEditor({
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="edit">
               <Code className="h-4 w-4 mr-2" />
-              Biên tập
+              {t("payrollFormulaTabEdit")}
             </TabsTrigger>
             <TabsTrigger value="variables">
               <Variable className="h-4 w-4 mr-2" />
-              Biến số
+              {t("payrollFormulaTabVariables")}
             </TabsTrigger>
             <TabsTrigger value="preview">
               <Eye className="h-4 w-4 mr-2" />
-              Xem trước
+              {t("payrollFormulaTabPreview")}
             </TabsTrigger>
           </TabsList>
 
@@ -255,9 +258,9 @@ export function FormulaEditor({
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tên công thức</FormLabel>
+                        <FormLabel>{t("payrollFormulaName")}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Tiền tăng ca" {...field} />
+                          <Input placeholder={t("payrollFormulaNamePlaceholder")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -268,7 +271,7 @@ export function FormulaEditor({
                     name="code"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Mã công thức</FormLabel>
+                        <FormLabel>{t("payrollFormulaCode")}</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="OVERTIME_AMOUNT"
@@ -290,10 +293,10 @@ export function FormulaEditor({
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mô tả</FormLabel>
+                      <FormLabel>{t("payrollFormulaDescriptionLabel")}</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Mô tả công thức..."
+                          placeholder={t("payrollFormulaDescriptionPlaceholder")}
                           className="resize-none"
                           rows={2}
                           {...field}
@@ -309,45 +312,45 @@ export function FormulaEditor({
                   name="formulaType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Loại công thức</FormLabel>
+                      <FormLabel>{t("payrollFormulaType")}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Chọn loại công thức" />
+                            <SelectValue placeholder={t("payrollFormulaTypePlaceholder")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="EARNING">
                             <div className="flex items-center gap-2">
                               <span className="h-2 w-2 rounded-full bg-green-500" />
-                              Thu nhập (EARNING)
+                              {t("payrollFormulaTypeEarning")}
                             </div>
                           </SelectItem>
                           <SelectItem value="DEDUCTION">
                             <div className="flex items-center gap-2">
                               <span className="h-2 w-2 rounded-full bg-red-500" />
-                              Khấu trừ (DEDUCTION)
+                              {t("payrollFormulaTypeDeduction")}
                             </div>
                           </SelectItem>
                           <SelectItem value="TAX">
                             <div className="flex items-center gap-2">
                               <span className="h-2 w-2 rounded-full bg-amber-500" />
-                              Thuế (TAX)
+                              {t("payrollFormulaTypeTax")}
                             </div>
                           </SelectItem>
                           <SelectItem value="INSURANCE">
                             <div className="flex items-center gap-2">
                               <span className="h-2 w-2 rounded-full bg-blue-500" />
-                              Bảo hiểm (INSURANCE)
+                              {t("payrollFormulaTypeInsurance")}
                             </div>
                           </SelectItem>
                           <SelectItem value="NET">
                             <div className="flex items-center gap-2">
                               <span className="h-2 w-2 rounded-full bg-purple-500" />
-                              Lương Net (NET)
+                              {t("payrollFormulaTypeNet")}
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -362,11 +365,11 @@ export function FormulaEditor({
                   name="expression"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Biểu thức công thức</FormLabel>
+                      <FormLabel>{t("payrollFormulaExpression")}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Textarea
-                            placeholder="(baseSalary / standardDays / 8) * overtimeHours * 1.5"
+                            placeholder={t("payrollFormulaExpressionPlaceholder")}
                             className="font-mono h-24 resize-none"
                             {...field}
                           />
@@ -395,7 +398,7 @@ export function FormulaEditor({
                         </div>
                       </FormControl>
                       <FormDescription>
-                        Sử dụng các biến từ tab &quot;Biến số&quot;
+                        Sá»­ dá»¥ng cÃ¡c biáº¿n tá»« tab &quot;Biáº¿n sá»‘&quot;
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -425,7 +428,7 @@ export function FormulaEditor({
                     size="sm"
                     onClick={() => handleInsertOperator(" * ")}
                   >
-                    ×
+                    *
                   </Button>
                   <Button
                     type="button"
@@ -433,7 +436,7 @@ export function FormulaEditor({
                     size="sm"
                     onClick={() => handleInsertOperator(" / ")}
                   >
-                    ÷
+                    /
                   </Button>
                   <Button
                     type="button"
@@ -472,10 +475,10 @@ export function FormulaEditor({
 
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={onCancel}>
-                    Hủy
+                    {t("payrollCancel")}
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Đang lưu..." : "Lưu công thức"}
+                    {isSubmitting ? t("payrollSaving") : t("payrollFormulaSave")}
                   </Button>
                 </div>
               </TabsContent>
@@ -545,7 +548,7 @@ export function FormulaEditor({
               <TabsContent value="preview" className="mt-4">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Kết quả xem trước</h4>
+                    <h4 className="font-medium">{t("payrollFormulaPreviewResult")}</h4>
                     <Button
                       type="button"
                       variant="outline"
@@ -553,7 +556,7 @@ export function FormulaEditor({
                       onClick={handlePreview}
                     >
                       <Calculator className="h-4 w-4 mr-2" />
-                      Tính toán
+                      {t("payrollFormulaCalculate")}
                     </Button>
                   </div>
 
@@ -561,10 +564,10 @@ export function FormulaEditor({
                     <CardContent className="p-4">
                       <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">
-                          Công thức:
+                          {t("payrollFormulaFormula")}:
                         </p>
                         <code className="block bg-background p-2 rounded border font-mono">
-                          {form.watch("expression") || "(chưa nhập công thức)"}
+                          {form.watch("expression") || t("payrollFormulaNotEntered")}
                         </code>
                       </div>
                     </CardContent>
@@ -585,7 +588,7 @@ export function FormulaEditor({
                               <CheckCircle2 className="h-5 w-5 text-green-600" />
                               <div>
                                 <p className="font-medium text-green-600">
-                                  Kết quả
+                                  {t("payrollFormulaResult")}
                                 </p>
                                 <p className="text-2xl font-bold">
                                   {previewResult.value !== undefined
@@ -598,7 +601,7 @@ export function FormulaEditor({
                             <>
                               <AlertCircle className="h-5 w-5 text-red-600" />
                               <div>
-                                <p className="font-medium text-red-600">Lỗi</p>
+                                <p className="font-medium text-red-600">{t("payrollFormulaError")}</p>
                                 <p className="text-sm">{previewResult.error}</p>
                               </div>
                             </>
@@ -610,7 +613,7 @@ export function FormulaEditor({
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">Dữ liệu mẫu</CardTitle>
+                      <CardTitle className="text-sm">{t("payrollFormulaSampleData")}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-3 gap-2 text-sm">
@@ -658,3 +661,4 @@ function Calendar(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+

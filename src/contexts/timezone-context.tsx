@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   createContext,
@@ -9,9 +9,9 @@ import {
 } from "react";
 import { useLocalStorage } from "@mantine/hooks";
 import { useSocketEvent } from "@/hooks/use-socket-event";
-import { getTimezoneFromDB } from "@/app/(protected)/settings/get-timezone";
+import { getTimezoneFromDB } from "@/app/[locale]/(protected)/settings/get-timezone";
 import { DEFAULT_TIMEZONE } from "@/hooks/use-timezone";
-import { TIMEZONE_OPTIONS } from "@/app/(protected)/settings/constants";
+import { TIMEZONE_OPTIONS } from "@/app/[locale]/(protected)/settings/constants";
 
 interface TimezoneContextValue {
   timezone: string;
@@ -103,7 +103,7 @@ export function TimezoneProvider({
     date: string | Date | null,
     options?: Intl.DateTimeFormatOptions,
   ): string => {
-    if (!date) return "—";
+    if (!date) return "â€”";
     const d = typeof date === "string" ? new Date(date) : date;
     return d.toLocaleDateString("vi-VN", {
       timeZone: timezone,
@@ -115,7 +115,7 @@ export function TimezoneProvider({
     date: string | Date | null,
     options?: Intl.DateTimeFormatOptions,
   ): string => {
-    if (!date) return "—";
+    if (!date) return "â€”";
     const d = typeof date === "string" ? new Date(date) : date;
     return d.toLocaleTimeString("vi-VN", {
       timeZone: timezone,
@@ -129,7 +129,7 @@ export function TimezoneProvider({
     date: string | Date | null,
     options?: Intl.DateTimeFormatOptions,
   ): string => {
-    if (!date) return "—";
+    if (!date) return "â€”";
     const d = typeof date === "string" ? new Date(date) : date;
     return d.toLocaleString("vi-VN", {
       timeZone: timezone,
@@ -228,3 +228,4 @@ export function useTimezone() {
   }
   return context;
 }
+

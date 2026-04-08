@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,6 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
     Receipt,
@@ -37,8 +37,8 @@ import {
     RotateCcw,
     Save,
 } from "lucide-react";
-import type { TaxBracket } from "@/app/(protected)/payroll/types";
-import { TAX_BRACKETS_2024 } from "@/app/(protected)/payroll/types";
+import type { TaxBracket } from "@/app/[locale]/(protected)/payroll/types";
+import { TAX_BRACKETS_2024 } from "@/app/[locale]/(protected)/payroll/types";
 
 interface TaxBracketItem extends Omit<TaxBracket, "max"> {
     id: string;
@@ -62,6 +62,9 @@ export function TaxBracketsEditor({
     initialBrackets,
     onSave,
 }: TaxBracketsEditorProps) {
+    const t = useTranslations("ProtectedPages");
+    const locale = useLocale();
+
     const [brackets, setBrackets] = useState<TaxBracketItem[]>(() => {
         if (initialBrackets && initialBrackets.length > 0) {
             return initialBrackets.map((b, i) => ({
@@ -106,11 +109,11 @@ export function TaxBracketsEditor({
 
     const handleDeleteBracket = (id: string) => {
         if (brackets.length <= 1) {
-            toast.error("Phải có ít nhất 1 bậc thuế");
+            toast.error(t("payrollTaxBracketsMinOne"));
             return;
         }
         setBrackets(brackets.filter((b) => b.id !== id));
-        toast.success("Đã xóa bậc thuế");
+        toast.success(t("payrollTaxBracketsDeleted"));
     };
 
     const handleSaveBracket = (bracket: TaxBracketItem) => {
@@ -129,7 +132,7 @@ export function TaxBracketsEditor({
         }
 
         setEditingBracket(null);
-        toast.success("Đã lưu bậc thuế");
+        toast.success(t("payrollTaxBracketsSavedSingle"));
     };
 
     const handleSaveAll = async () => {
@@ -141,9 +144,9 @@ export function TaxBracketsEditor({
                 deduction: b.deduction,
             }));
             await onSave(taxBrackets);
-            toast.success("Đã lưu biểu thuế");
+            toast.success(t("payrollTaxBracketsSavedAll"));
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Lỗi khi lưu biểu thuế");
+            toast.error(error instanceof Error ? error.message : t("payrollTaxBracketsSaveError"));
         } finally {
             setIsSubmitting(false);
         }
@@ -160,7 +163,7 @@ export function TaxBracketsEditor({
             { id: "7", min: 78000000, max: 100000000, rate: 0.35, deduction: 9850000 },
             { id: "8", min: 100000000, max: "∞", rate: 0.4, deduction: 18150000 },
         ]);
-        toast.success("Đã đặt lại biểu thuế 2024");
+        toast.success(t("payrollTaxBracketsResetSuccess"));
     };
 
     const calculateTax = (income: number): number => {
@@ -174,7 +177,7 @@ export function TaxBracketsEditor({
     };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat("vi-VN", {
+        return new Intl.NumberFormat(locale, {
             style: "currency",
             currency: "VND",
             maximumFractionDigits: 0,
@@ -191,14 +194,14 @@ export function TaxBracketsEditor({
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Receipt className="h-5 w-5 text-primary" />
-                        <CardTitle>Biểu thuế thu nhập cá nhân</CardTitle>
+                        <CardTitle>{t("payrollTaxBracketsTitle")}</CardTitle>
                     </div>
                     <Badge variant="outline" className="font-normal">
-                        Biểu thuế lũy tiến từng phần
+                        {t("payrollTaxBracketsBadge")}
                     </Badge>
                 </div>
                 <CardDescription>
-                    Cấu hình các bậc thuế TNCN theo quy định hiện hành
+                    {t("payrollTaxBracketsDescription")}
                 </CardDescription>
             </CardHeader>
 
@@ -207,11 +210,11 @@ export function TaxBracketsEditor({
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="brackets">
                             <Receipt className="h-4 w-4 mr-2" />
-                            Các bậc thuế
+                            {t("payrollTaxBracketsTabBrackets")}
                         </TabsTrigger>
                         <TabsTrigger value="preview">
                             <Calculator className="h-4 w-4 mr-2" />
-                            Xem trước tính thuế
+                            {t("payrollTaxBracketsTabPreview")}
                         </TabsTrigger>
                     </TabsList>
 
@@ -220,12 +223,12 @@ export function TaxBracketsEditor({
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-12">Bậc</TableHead>
-                                        <TableHead className="text-right">Thu nhập từ</TableHead>
-                                        <TableHead className="text-right">Thu nhập đến</TableHead>
-                                        <TableHead className="text-right">Thuế suất</TableHead>
-                                        <TableHead className="text-right">Số tiền giảm trừ</TableHead>
-                                        <TableHead className="w-24 text-right">Thao tác</TableHead>
+                                        <TableHead className="w-12">{t("payrollTaxBracketsHeadLevel")}</TableHead>
+                                        <TableHead className="text-right">{t("payrollTaxBracketsHeadFrom")}</TableHead>
+                                        <TableHead className="text-right">{t("payrollTaxBracketsHeadTo")}</TableHead>
+                                        <TableHead className="text-right">{t("payrollTaxBracketsHeadRate")}</TableHead>
+                                        <TableHead className="text-right">{t("payrollTaxBracketsHeadDeduction")}</TableHead>
+                                        <TableHead className="w-24 text-right">{t("payrollTaxBracketsHeadActions")}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -250,7 +253,7 @@ export function TaxBracketsEditor({
                                             <TableCell className="text-right text-muted-foreground">
                                                 {bracket.deduction > 0
                                                     ? formatCurrency(bracket.deduction)
-                                                    : "—"}
+                                                    : t("payrollNotAvailable")}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-1">
@@ -281,11 +284,11 @@ export function TaxBracketsEditor({
                         <div className="flex items-center justify-between">
                             <Button variant="outline" onClick={handleReset}>
                                 <RotateCcw className="mr-2 h-4 w-4" />
-                                Đặt lại (2024)
+                                {t("payrollTaxBracketsReset2024")}
                             </Button>
                             <Button onClick={handleAddBracket}>
                                 <Plus className="mr-2 h-4 w-4" />
-                                Thêm bậc thuế
+                                {t("payrollTaxBracketsAdd")}
                             </Button>
                         </div>
 
@@ -296,11 +299,11 @@ export function TaxBracketsEditor({
                                 variant="outline"
                                 onClick={handleReset}
                             >
-                                Hủy
+                                {t("payrollCancel")}
                             </Button>
                             <Button onClick={handleSaveAll} disabled={isSubmitting}>
                                 <Save className="mr-2 h-4 w-4" />
-                                {isSubmitting ? "Đang lưu..." : "Lưu biểu thuế"}
+                                {isSubmitting ? t("payrollSaving") : t("payrollTaxBracketsSave")}
                             </Button>
                         </div>
                     </TabsContent>
@@ -309,7 +312,7 @@ export function TaxBracketsEditor({
                         <div className="space-y-4">
                             <div className="flex items-center gap-4">
                                 <Label htmlFor="previewIncome" className="whitespace-nowrap">
-                                    Thu nhập chịu thuế mẫu:
+                                    {t("payrollTaxBracketsSampleTaxableIncome")}
                                 </Label>
                                 <Input
                                     id="previewIncome"
@@ -323,7 +326,7 @@ export function TaxBracketsEditor({
                             <Card className="bg-muted/50">
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-sm">
-                                        Kết quả tính thuế cho {formatCurrency(previewIncome)}
+                                        {t("payrollTaxBracketsPreviewResultFor", { income: formatCurrency(previewIncome) })}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
@@ -342,7 +345,10 @@ export function TaxBracketsEditor({
                                                         }`}
                                                     >
                                                         <span>
-                                                            Bậc {index + 1}: {formatCurrency(minValue)} -{" "}
+                                                            {t("payrollTaxBracketsLevelRange", {
+                                                                level: index + 1,
+                                                                min: formatCurrency(minValue),
+                                                            })} -{" "}
                                                             {typeof bracket.max === "string"
                                                                 ? bracket.max
                                                                 : formatCurrency(bracket.max)}
@@ -356,19 +362,19 @@ export function TaxBracketsEditor({
                                         </div>
                                         <div className="flex flex-col justify-center space-y-4">
                                             <div className="p-4 rounded-lg bg-background border">
-                                                <p className="text-sm text-muted-foreground">Thu nhập chịu thuế</p>
+                                                <p className="text-sm text-muted-foreground">{t("payrollTaxBracketsTaxableIncome")}</p>
                                                 <p className="text-2xl font-bold">
                                                     {formatCurrency(previewIncome)}
                                                 </p>
                                             </div>
                                             <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
-                                                <p className="text-sm text-muted-foreground">Thuế TNCN phải nộp</p>
+                                                <p className="text-sm text-muted-foreground">{t("payrollTaxBracketsPitPayable")}</p>
                                                 <p className="text-2xl font-bold text-red-600">
                                                     {formatCurrency(calculateTax(previewIncome))}
                                                 </p>
                                             </div>
                                             <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
-                                                <p className="text-sm text-muted-foreground">Thu nhập sau thuế</p>
+                                                <p className="text-sm text-muted-foreground">{t("payrollTaxBracketsIncomeAfterTax")}</p>
                                                 <p className="text-2xl font-bold text-green-600">
                                                     {formatCurrency(previewIncome - calculateTax(previewIncome))}
                                                 </p>
@@ -383,13 +389,13 @@ export function TaxBracketsEditor({
                                     <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
                                     <div className="space-y-1 text-sm">
                                         <p className="font-medium text-amber-800 dark:text-amber-200">
-                                            Lưu ý khi chỉnh sửa biểu thuế
+                                            {t("payrollTaxBracketsNoticeTitle")}
                                         </p>
                                         <ul className="list-disc list-inside text-amber-700 dark:text-amber-300 space-y-1">
-                                            <li>Cần đảm bảo các bậc thuế liên tục và không trùng lặp</li>
-                                            <li>Bậc cuối cùng nên có max = ∞ (không giới hạn)</li>
-                                            <li>Số tiền giảm trừ phải tuân theo quy định của pháp luật</li>
-                                            <li>Nên thử nghiệm với nhiều mức thu nhập khác nhau trước khi lưu</li>
+                                            <li>{t("payrollTaxBracketsNotice1")}</li>
+                                            <li>{t("payrollTaxBracketsNotice2")}</li>
+                                            <li>{t("payrollTaxBracketsNotice3")}</li>
+                                            <li>{t("payrollTaxBracketsNotice4")}</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -404,11 +410,11 @@ export function TaxBracketsEditor({
                     <DialogHeader>
                         <DialogTitle>
                             {brackets.find((b) => b.id === editingBracket?.id)
-                                ? "Chỉnh sửa bậc thuế"
-                                : "Thêm bậc thuế mới"}
+                                ? t("payrollTaxBracketsEdit")
+                                : t("payrollTaxBracketsAddNew")}
                         </DialogTitle>
                         <DialogDescription>
-                            Nhập thông tin cho bậc thuế mới
+                            {t("payrollTaxBracketsDialogDescription")}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -416,7 +422,7 @@ export function TaxBracketsEditor({
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="min">Thu nhập từ</Label>
+                                    <Label htmlFor="min">{t("payrollTaxBracketsHeadFrom")}</Label>
                                     <Input
                                         id="min"
                                         type="number"
@@ -430,11 +436,11 @@ export function TaxBracketsEditor({
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="max">Thu nhập đến</Label>
+                                    <Label htmlFor="max">{t("payrollTaxBracketsHeadTo")}</Label>
                                     <Input
                                         id="max"
                                         type="text"
-                                        placeholder="Để trống = ∞"
+                                        placeholder={t("payrollTaxBracketsInfinityPlaceholder")}
                                         value={editingBracket.max}
                                         onChange={(e) =>
                                             setEditingBracket({
@@ -447,7 +453,7 @@ export function TaxBracketsEditor({
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="rate">Thuế suất (%)</Label>
+                                    <Label htmlFor="rate">{t("payrollTaxBracketsHeadRate")}</Label>
                                     <Input
                                         id="rate"
                                         type="number"
@@ -464,7 +470,7 @@ export function TaxBracketsEditor({
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="deduction">Số tiền giảm trừ</Label>
+                                    <Label htmlFor="deduction">{t("payrollTaxBracketsHeadDeduction")}</Label>
                                     <Input
                                         id="deduction"
                                         type="number"
@@ -481,13 +487,18 @@ export function TaxBracketsEditor({
 
                             {typeof editingBracket.max === "number" && (
                                 <div className="p-3 rounded-lg bg-muted text-sm">
-                                    <p className="font-medium mb-1">Công thức tính:</p>
+                                    <p className="font-medium mb-1">{t("payrollTaxBracketsFormula")}</p>
                                     <p className="font-mono text-xs">
-                                        Thuế = Thu nhập × {formatRate(editingBracket.rate)} - {formatCurrency(editingBracket.deduction)}
+                                        {t("payrollTaxBracketsFormulaExpression", {
+                                            rate: formatRate(editingBracket.rate),
+                                            deduction: formatCurrency(editingBracket.deduction),
+                                        })}
                                     </p>
                                     <p className="text-muted-foreground mt-1">
-                                        Áp dụng cho thu nhập từ {formatCurrency(editingBracket.min)} đến{" "}
-                                        {formatCurrency(editingBracket.max)}
+                                        {t("payrollTaxBracketsApplyRange", {
+                                            min: formatCurrency(editingBracket.min),
+                                            max: formatCurrency(editingBracket.max),
+                                        })}
                                     </p>
                                 </div>
                             )}
@@ -497,11 +508,11 @@ export function TaxBracketsEditor({
                                     variant="outline"
                                     onClick={() => setEditingBracket(null)}
                                 >
-                                    Hủy
+                                    {t("payrollCancel")}
                                 </Button>
                                 <Button onClick={() => handleSaveBracket(editingBracket)}>
                                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Lưu
+                                    {t("payrollSave")}
                                 </Button>
                             </DialogFooter>
                         </div>
@@ -511,3 +522,4 @@ export function TaxBracketsEditor({
         </Card>
     );
 }
+

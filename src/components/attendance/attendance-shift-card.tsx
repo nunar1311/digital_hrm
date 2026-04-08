@@ -1,4 +1,4 @@
-import {
+﻿import {
     Card,
     CardContent,
     CardHeader,
@@ -6,7 +6,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarClock, AlertCircle } from "lucide-react";
-import type { ShiftBasic } from "@/app/(protected)/attendance/types";
+import { useTranslations } from "next-intl";
+import type { ShiftBasic } from "@/app/[locale]/(protected)/attendance/types";
 
 interface AttendanceShiftCardProps {
     shift?: ShiftBasic | null;
@@ -19,13 +20,15 @@ export function AttendanceShiftCard({
     todayShifts = [],
     hasShiftToday = true,
 }: AttendanceShiftCardProps) {
+    const t = useTranslations("ProtectedPages");
+
     if (!hasShiftToday) {
         return (
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <CalendarClock className="h-5 w-5" /> Thông
-                        tin ca làm việc
+                        <CalendarClock className="h-5 w-5" />
+                        {t("attendanceShiftsInfoCardTitle")}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -33,11 +36,10 @@ export function AttendanceShiftCard({
                         <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
                         <div>
                             <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                Chưa có ca làm việc
+                                {t("attendanceShiftsNoShiftAssignedTitle")}
                             </p>
                             <p className="text-xs text-amber-600 dark:text-amber-400">
-                                Bạn chưa được phân ca cho ngày hôm
-                                nay. Liên hệ quản lý để được hỗ trợ.
+                                {t("attendanceShiftsNoShiftAssignedDescription")}
                             </p>
                         </div>
                     </div>
@@ -50,14 +52,16 @@ export function AttendanceShiftCard({
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <CalendarClock className="h-5 w-5" /> Thông tin ca
-                    làm việc
+                    <CalendarClock className="h-5 w-5" />
+                    {t("attendanceShiftsInfoCardTitle")}
                     {todayShifts.length > 1 && (
                         <Badge
                             variant="secondary"
                             className="ml-auto text-xs"
                         >
-                            {todayShifts.length} ca hôm nay
+                            {t("attendanceShiftsTodayShiftCount", {
+                                count: todayShifts.length,
+                            })}
                         </Badge>
                     )}
                 </CardTitle>
@@ -68,7 +72,7 @@ export function AttendanceShiftCard({
                     <div className="space-y-2">
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">
-                                Ca hiện tại:
+                                {t("attendanceShiftsCurrentShiftLabel")}
                             </span>
                             <span className="font-semibold">
                                 {shift.name}
@@ -76,7 +80,7 @@ export function AttendanceShiftCard({
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">
-                                Thời gian:
+                                {t("attendanceShiftsTimeLabel")}
                             </span>
                             <span>
                                 {shift.startTime} - {shift.endTime}
@@ -84,21 +88,33 @@ export function AttendanceShiftCard({
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">
-                                Nghỉ trưa:
+                                {t("attendanceShiftsLunchBreakLabel")}
                             </span>
-                            <span>{shift.breakMinutes} phút</span>
+                            <span>
+                                {t("attendanceShiftsMinutesValue", {
+                                    minutes: shift.breakMinutes,
+                                })}
+                            </span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">
-                                Cho phép muộn:
+                                {t("attendanceShiftsLateAllowedLabel")}
                             </span>
-                            <span>{shift.lateThreshold} phút</span>
+                            <span>
+                                {t("attendanceShiftsMinutesValue", {
+                                    minutes: shift.lateThreshold,
+                                })}
+                            </span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">
-                                Cho phép sớm:
+                                {t("attendanceShiftsEarlyAllowedLabel")}
                             </span>
-                            <span>{shift.earlyThreshold} phút</span>
+                            <span>
+                                {t("attendanceShiftsMinutesValue", {
+                                    minutes: shift.earlyThreshold,
+                                })}
+                            </span>
                         </div>
                     </div>
                 )}
@@ -107,7 +123,7 @@ export function AttendanceShiftCard({
                 {todayShifts.length > 1 && (
                     <div className="space-y-2 border-t pt-3">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                            Tất cả ca hôm nay
+                            {t("attendanceShiftsAllTodayShifts")}
                         </p>
                         <div className="space-y-1.5">
                             {todayShifts.map((s) => (
@@ -132,3 +148,4 @@ export function AttendanceShiftCard({
         </Card>
     );
 }
+

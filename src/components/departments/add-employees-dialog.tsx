@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
     useState,
@@ -46,7 +46,7 @@ import { Badge } from "@/components/ui/badge";
 import {
     getAssignableEmployees,
     updateEmployeesDepartment,
-} from "@/app/(protected)/employees/actions";
+} from "@/app/[locale]/(protected)/employees/actions";
 
 type AssignableEmployee = Awaited<
     ReturnType<typeof getAssignableEmployees>
@@ -121,13 +121,13 @@ export function AddEmployeesToDepartmentDialog({
         },
         onSuccess: (count) => {
             toast.success(
-                `Đã gán ${count} nhân viên vào phòng ban "${departmentName}"`,
+                `Assigned ${count} employees to department "${departmentName}"`,
             );
             onAssigned?.();
             setSelectedIds(new Set());
         },
         onError: () => {
-            toast.error("Có lỗi xảy ra khi gán nhân viên");
+            toast.error("Error while assigning employees");
             queryClient.invalidateQueries({ queryKey: ["assignable-employees"] });
             queryClient.invalidateQueries({ queryKey: ["departmentEmployees"] });
             queryClient.invalidateQueries({ queryKey: ["departments"] });
@@ -188,9 +188,9 @@ export function AddEmployeesToDepartmentDialog({
     const getGenderLabel = (gender: string | null | undefined) => {
         if (!gender) return "---";
         const map: Record<string, string> = {
-            MALE: "Nam",
-            FEMALE: "Nữ",
-            OTHER: "Khác",
+            MALE: "Male",
+            FEMALE: "Female",
+            OTHER: "Other",
         };
         return map[gender] || gender;
     };
@@ -198,11 +198,11 @@ export function AddEmployeesToDepartmentDialog({
     const getStatusLabel = (status: string | null | undefined) => {
         if (!status) return "---";
         const map: Record<string, string> = {
-            ACTIVE: "Đang làm việc",
-            ON_LEAVE: "Nghỉ phép",
-            RESIGNED: "Đã nghỉ việc",
-            TERMINATED: "Sa thải",
-            PROBATION: "Thử việc",
+            ACTIVE: "Active",
+            ON_LEAVE: "On leave",
+            RESIGNED: "Resigned",
+            TERMINATED: "Terminated",
+            PROBATION: "Probation",
         };
         return map[status] || status;
     };
@@ -212,10 +212,10 @@ export function AddEmployeesToDepartmentDialog({
     ) => {
         if (!type) return "---";
         const map: Record<string, string> = {
-            FULL_TIME: "Toàn thời gian",
-            PART_TIME: "Bán thời gian",
-            CONTRACT: "Hợp đồng",
-            INTERN: "Thực tập",
+            FULL_TIME: "Full-time",
+            PART_TIME: "Part-time",
+            CONTRACT: "Contract",
+            INTERN: "Intern",
             FREELANCE: "Freelance",
         };
         return map[type] || type;
@@ -226,7 +226,7 @@ export function AddEmployeesToDepartmentDialog({
             <DialogContent className="sm:max-w-[900px] h-[80vh] flex flex-col p-0 gap-0">
                 <DialogHeader className="px-2 py-4 shrink-0 border-b">
                     <DialogTitle>
-                        Gán nhân viên vào {departmentName}
+                        Assign employees to {departmentName}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -244,7 +244,7 @@ export function AddEmployeesToDepartmentDialog({
                                             e.target.value,
                                         )
                                     }
-                                    placeholder="Tìm kiếm nhân viên..."
+                                    placeholder="Search employees..."
                                     className="pl-8 h-8 text-xs"
                                 />
                             </div>
@@ -264,10 +264,10 @@ export function AddEmployeesToDepartmentDialog({
                                               : false
                                     }
                                     onCheckedChange={toggleAll}
-                                    aria-label="Chọn tất cả"
+                                    aria-label="Select all"
                                 />
                                 <span className="text-xs font-medium">
-                                    Chọn tất cả
+                                    Select all
                                 </span>
                             </div>
                             <Badge
@@ -285,18 +285,18 @@ export function AddEmployeesToDepartmentDialog({
                                     <div className="flex flex-col items-center justify-center py-12 gap-2">
                                         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                                         <span className="text-xs text-muted-foreground">
-                                            Đang tải...
+                                            Loading...
                                         </span>
                                     </div>
                                 ) : employees.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-12 gap-2">
                                         <User className="h-8 w-8 text-muted-foreground/40" />
                                         <p className="text-xs text-muted-foreground">
-                                            Không có nhân viên nào
+                                            No employees found
                                         </p>
                                         {search && (
                                             <p className="text-xs text-muted-foreground/60">
-                                                Thử từ khóa khác
+                                                Try another keyword
                                             </p>
                                         )}
                                     </div>
@@ -330,7 +330,7 @@ export function AddEmployeesToDepartmentDialog({
                                                         )
                                                     }
                                                     className="mt-0.5"
-                                                    aria-label={`Chọn ${displayName}`}
+                                                    aria-label={`Select ${displayName}`}
                                                     onClick={(e) =>
                                                         e.stopPropagation()
                                                     }
@@ -357,10 +357,10 @@ export function AddEmployeesToDepartmentDialog({
                                                             {emp.employeeCode ||
                                                                 "---"}
                                                         </span>
-                                                        <span>·</span>
+                                                        <span>Â·</span>
                                                         <span className="truncate">
                                                             {(emp.position as { name?: string } | null)?.name ||
-                                                                "Chưa rõ"}
+                                                                "Unknown"}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -378,11 +378,10 @@ export function AddEmployeesToDepartmentDialog({
                             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground/60">
                                 <UserCircle className="h-12 w-12" />
                                 <p className="text-sm font-medium">
-                                    Chưa có nhân viên nào được chọn
+                                    No employee selected
                                 </p>
                                 <p className="text-xs">
-                                    Chọn nhân viên từ danh sách bên
-                                    trái
+                                    Select employees from the list on the left
                                 </p>
                             </div>
                         ) : selectedIds.size === 1 &&
@@ -414,7 +413,7 @@ export function AddEmployeesToDepartmentDialog({
                         onClick={() => handleClose(false)}
                         disabled={assignMutation.isPending}
                     >
-                        Hủy
+                        Cancel
                     </Button>
                     <Button
                         onClick={handleAssign}
@@ -426,10 +425,10 @@ export function AddEmployeesToDepartmentDialog({
                         {assignMutation.isPending ? (
                             <>
                                 <Loader2 className="animate-spin" />
-                                Đang gán...
+                                Assigning...
                             </>
                         ) : (
-                            `Gán ${selectedIds.size > 0 ? selectedIds.size : ""} nhân viên`
+                            `Assign ${selectedIds.size > 0 ? selectedIds.size : ""} employees`
                         )}
                     </Button>
                 </DialogFooter>
@@ -459,7 +458,7 @@ function EmployeeDetail({
         icon: React.ElementType;
     }[] = [
         {
-            label: "Mã nhân viên",
+            label: "Employee code",
             value: employee.employeeCode,
             icon: ShieldCheck,
         },
@@ -469,12 +468,12 @@ function EmployeeDetail({
             icon: Mail,
         },
         {
-            label: "Số điện thoại",
+            label: "Phone number",
             value: employee.phone,
             icon: Phone,
         },
         {
-            label: "Ngày sinh",
+            label: "Date of birth",
             value: employee.dateOfBirth
                 ? new Date(employee.dateOfBirth).toLocaleDateString(
                       "vi-VN",
@@ -483,27 +482,27 @@ function EmployeeDetail({
             icon: Calendar,
         },
         {
-            label: "Giới tính",
+            label: "Gender",
             value: getGenderLabel(employee.gender),
             icon: User,
         },
         {
-            label: "Số CCCD",
+            label: "National ID",
             value: employee.nationalId,
             icon: ShieldCheck,
         },
         {
-            label: "Địa chỉ",
+            label: "Address",
             value: employee.address,
             icon: MapPin,
         },
         {
-            label: "Trạng thái",
+            label: "Status",
             value: getStatusLabel(employee.employeeStatus),
             icon: CheckCircle2,
         },
         {
-            label: "Loại hợp đồng",
+            label: "Employment type",
             value: getEmploymentTypeLabel(employee.employmentType),
             icon: Building2,
         },
@@ -521,7 +520,7 @@ function EmployeeDetail({
                     </h3>
                     <p className="text-sm text-muted-foreground">
                         {(employee.position as { name?: string } | null)?.name ||
-                            "Chưa có chức vụ"}
+                            "No position"}
                     </p>
                 </div>
                 <Badge variant="outline" className="text-xs">
@@ -573,10 +572,10 @@ function MultipleEmployeesList({
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <div className="px-6 py-3 border-b shrink-0">
                 <h4 className="text-sm font-semibold">
-                    {selectedEmployees.length} nhân viên đã chọn
+                    {selectedEmployees.length} selected employees
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                    Sẽ được gán vào{" "}
+                    Will be assigned to{" "}
                     <strong className="text-foreground">
                         {departmentName}
                     </strong>
@@ -601,9 +600,9 @@ function MultipleEmployeesList({
                                         {displayName}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        {emp.employeeCode || "---"} ·{" "}
+                                        {emp.employeeCode || "---"} •{" "}
                                         {(emp.position as { name?: string } | null)?.name ||
-                                            "Chưa rõ"}
+                                            "Unknown"}
                                     </p>
                                 </div>
                                 <Button
@@ -622,3 +621,4 @@ function MultipleEmployeesList({
         </div>
     );
 }
+

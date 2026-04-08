@@ -10,16 +10,17 @@ import {
 import { CircleQuestionMark } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useSettings } from "@/contexts/settings-context";
+import { useTranslations } from "next-intl";
 
 const KEYBOARD_SHORTCUTS = [
-    { key: "Ctrl + K", description: "Mở tìm kiếm" },
-    { key: "Ctrl + N", description: "Tạo mới" },
-    { key: "Ctrl + S", description: "Lưu thay đổi" },
-    { key: "Escape", description: "Thoát/đóng dialog" },
-    { key: "Ctrl + /", description: "Hiển thị phím tắt" },
-    { key: "Ctrl + B", description: "Mở/đóng sidebar" },
-    { key: "Ctrl + .", description: "Chuyển đổi sáng/tối" },
-];
+    { key: "Ctrl + K", descriptionKey: "shortcutOpenSearch" },
+    { key: "Ctrl + N", descriptionKey: "shortcutCreateNew" },
+    { key: "Ctrl + S", descriptionKey: "shortcutSaveChanges" },
+    { key: "Escape", descriptionKey: "shortcutCloseDialog" },
+    { key: "Ctrl + /", descriptionKey: "shortcutShowShortcuts" },
+    { key: "Ctrl + B", descriptionKey: "shortcutToggleSidebar" },
+    { key: "Ctrl + .", descriptionKey: "shortcutToggleTheme" },
+] as const;
 
 interface SettingPreferencesProps {
     flyoutToastEnabled: boolean;
@@ -35,11 +36,13 @@ function SettingPreferences({
     onKeyboardShortcutsChange,
 }: SettingPreferencesProps) {
 
+    const t = useTranslations("ProtectedPages");
+
     return (
         <>
             <SettingsSection
-                title="Sở thích"
-                description="Quản lý tuỳ chọn trong ứng dụng của bạn."
+                title={t("settingsPreferenceTitle")}
+                description={t("settingsPreferenceDescription")}
             >
                 <div className="flex items-center gap-3">
                     <Switch
@@ -120,7 +123,7 @@ function SettingPreferences({
                                     className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors"
                                 >
                                     <span className="text-xs">
-                                        {shortcut.description}
+                                        {t(shortcut.descriptionKey)}
                                     </span>
                                     <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
                                         <span className="text-xs">⌘</span>

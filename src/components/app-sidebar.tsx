@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, SearchIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { ChevronRight } from "lucide-react";
 import {
     Sidebar,
     SidebarContent,
@@ -27,9 +28,66 @@ import {
 import { sidebarNav } from "@/config/sidebar-nav";
 import { useAuth } from "@/hooks/use-auth";
 
+const GROUP_LABEL_KEYS = [
+    "sidebarGroupOverview",
+    "sidebarGroupOrganization",
+    "sidebarGroupHumanResources",
+    "sidebarGroupWork",
+    "sidebarGroupProcess",
+    "sidebarGroupDevelopment",
+    "sidebarGroupOther",
+] as const;
+
+const NAV_LABEL_KEY_BY_URL: Record<string, string> = {
+    "/dashboard": "sidebarNavDashboard",
+    "/org-chart": "sidebarNavOrgChart",
+    "/departments": "sidebarNavDepartments",
+    "/positions": "sidebarNavPositions",
+    "/employees": "sidebarNavEmployees",
+    "/employees/new": "sidebarNavCreateNew",
+    "/employees/import-export": "sidebarNavImportExportExcel",
+    "/contracts": "sidebarNavContracts",
+    "/contracts/templates": "sidebarNavContractTemplates",
+    "/attendance/leave-summary": "sidebarNavLeaveBalanceSummary",
+    "/attendance/holidays": "sidebarNavHolidayCalendar",
+    "/attendance/leave-requests": "sidebarNavApproveLeaveRequests",
+    "/attendance": "sidebarNavToday",
+    "/attendance/monthly": "sidebarNavMonthlyTimesheet",
+    "/attendance/records": "sidebarNavAttendanceLogs",
+    "/attendance/shifts": "sidebarNavShifts",
+    "/attendance/overtime": "sidebarNavOvertime",
+    "/attendance/explanations": "sidebarNavExplanations",
+    "/attendance/admin-requests": "sidebarNavAdministrativeRequests",
+    "/attendance/settings": "sidebarNavSettings",
+    "/payroll": "sidebarNavPayrollTable",
+    "/payroll/formulas": "sidebarNavPayrollFormulas",
+    "/payroll/payslips": "sidebarNavPayslips",
+    "/payroll/tax-insurance": "sidebarNavTaxAndInsurance",
+    "/onboarding": "sidebarNavOnboarding",
+    "/offboarding": "sidebarNavOffboarding",
+    "/recruitment": "sidebarNavRecruitment",
+    "/training": "sidebarNavTraining",
+    "/performance": "sidebarNavPerformance",
+    "/rewards": "sidebarNavRewardsAndDiscipline",
+    "/assets": "sidebarNavAssets",
+    "/reports": "sidebarNavReports",
+    "/ess": "sidebarNavEmployeePortal",
+    "/ess/my-requests": "sidebarNavMyRequests",
+    "/ess/profile": "sidebarNavPersonalProfile",
+    "/settings": "sidebarNavGeneral",
+    "/settings/roles": "sidebarNavPermissions",
+    "/settings/audit-log": "sidebarNavAuditLog",
+};
+
 export function AppSidebar() {
+    const t = useTranslations("ProtectedPages");
     const pathname = usePathname();
     const { canAny } = useAuth();
+
+    const getSidebarLabelByUrl = (url: string, fallback: string) => {
+        const key = NAV_LABEL_KEY_BY_URL[url];
+        return key ? t(key) : fallback;
+    };
 
     const isSettings = pathname.includes("/settings");
     const isDashboard = pathname.includes("/dashboard");
@@ -46,7 +104,7 @@ export function AppSidebar() {
         >
             <SidebarHeader className="flex-row h-[44px] items-center justify-between">
                 <div className="group-data-[collapsible=icon]:hidden px-2 font-bold">
-                    Home
+                    {t("sidebarHome")}
                 </div>
                 <div className="flex items-center gap-0.5">
                     <div className="flex items-center transition-all duration-150 transform-gpu translate-x-2 group-hover:translate-x-0 gap-0.5 ease-linear opacity-0 group-hover:opacity-100">
@@ -56,7 +114,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                {sidebarNav.map((group) => {
+                {sidebarNav.map((group, groupIndex) => {
                     const visibleItems = group.items.filter((item) =>
                         canAny(item.permissions),
                     );
@@ -66,7 +124,10 @@ export function AppSidebar() {
                     return (
                         <SidebarGroup key={group.label}>
                             <SidebarGroupLabel>
-                                {group.label}
+                                {t(
+                                    GROUP_LABEL_KEYS[groupIndex] ??
+                                        "sidebarGroupOther",
+                                )}
                             </SidebarGroupLabel>
                             <SidebarGroupContent>
                                 <SidebarMenu>
@@ -105,7 +166,10 @@ export function AppSidebar() {
                                                         >
                                                             <SidebarMenuButton
                                                                 tooltip={
-                                                                    item.title
+                                                                    getSidebarLabelByUrl(
+                                                                        item.url,
+                                                                        item.title,
+                                                                    )
                                                                 }
                                                                 isActive={
                                                                     isActive
@@ -114,7 +178,10 @@ export function AppSidebar() {
                                                                 <item.icon />
                                                                 <span>
                                                                     {
-                                                                        item.title
+                                                                        getSidebarLabelByUrl(
+                                                                            item.url,
+                                                                            item.title,
+                                                                        )
                                                                     }
                                                                 </span>
                                                                 <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -145,7 +212,10 @@ export function AppSidebar() {
                                                                                 >
                                                                                     <span>
                                                                                         {
-                                                                                            child.title
+                                                                                            getSidebarLabelByUrl(
+                                                                                                child.url,
+                                                                                                child.title,
+                                                                                            )
                                                                                         }
                                                                                     </span>
                                                                                 </Link>
@@ -167,7 +237,10 @@ export function AppSidebar() {
                                                 <SidebarMenuButton
                                                     asChild
                                                     tooltip={
-                                                        item.title
+                                                        getSidebarLabelByUrl(
+                                                            item.url,
+                                                            item.title,
+                                                        )
                                                     }
                                                     isActive={
                                                         isActive
@@ -181,7 +254,10 @@ export function AppSidebar() {
                                                         <item.icon />
                                                         <span>
                                                             {
-                                                                item.title
+                                                                getSidebarLabelByUrl(
+                                                                    item.url,
+                                                                    item.title,
+                                                                )
                                                             }
                                                         </span>
                                                     </Link>

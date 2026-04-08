@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Camera, RotateCcw, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { RotateCcw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -31,6 +32,7 @@ export function CameraConfirmDialog({
     onConfirm,
     isPending,
 }: CameraConfirmDialogProps) {
+    const t = useTranslations("ProtectedPages");
     const webcamRef = useRef<Webcam>(null);
     const [captured, setCaptured] = useState<string | null>(null);
 
@@ -75,10 +77,9 @@ export function CameraConfirmDialog({
 
                 <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
                     {captured ? (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <Image
                             src={captured}
-                            alt="Ảnh chụp"
+                            alt={t("attendanceCameraDialogImageAlt")}
                             className="h-full w-full object-cover"
                             fill
                         />
@@ -102,14 +103,14 @@ export function CameraConfirmDialog({
                                 disabled={isPending}
                             >
                                 <RotateCcw className="mr-1.5 h-4 w-4" />
-                                Chụp lại
+                                {t("attendanceCameraDialogRetake")}
                             </Button>
                             <Button
                                 onClick={handleConfirm}
                                 disabled={isPending}
                             >
                                 <Check className="mr-1.5 h-4 w-4" />
-                                Xác nhận
+                                {t("attendanceCameraDialogConfirm")}
                             </Button>
                         </>
                     ) : (
@@ -120,10 +121,10 @@ export function CameraConfirmDialog({
                                     handleOpenChange(false)
                                 }
                             >
-                                Hủy
+                                {t("attendanceCameraDialogCancel")}
                             </Button>
                             <Button onClick={handleCapture}>
-                                Chụp ảnh
+                                {t("attendanceCameraDialogCapture")}
                             </Button>
                         </>
                     )}

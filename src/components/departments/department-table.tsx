@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useRef, useEffect } from "react";
 import {
@@ -35,10 +35,11 @@ import {
   Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DepartmentListItem } from "@/app/(protected)/departments/types";
+import type { DepartmentListItem } from "@/app/[locale]/(protected)/departments/types";
 import { STATUS_LABELS } from "@/components/org-chart/org-chart-constants";
 import { Checkbox } from "../ui/checkbox";
 import DynamicIcon from "../DynamicIcon";
+import { useTranslations } from "next-intl";
 
 interface DepartmentTableProps {
   data: DepartmentListItem[];
@@ -67,6 +68,8 @@ export function DepartmentTable({
   onColumnVisibilityChange,
   totalDepartments,
 }: DepartmentTableProps) {
+  const t = useTranslations("ProtectedPages");
+
   const columns = useMemo<ColumnDef<DepartmentListItem>[]>(
     () => [
       {
@@ -83,14 +86,14 @@ export function DepartmentTable({
             onCheckedChange={(value) =>
               table.toggleAllPageRowsSelected(!!value)
             }
-            aria-label="Chọn tất cả"
+            aria-label={t("departmentEmployeesSelectAllAria")}
           />
         ),
         cell: ({ row }) => (
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Chọn"
+            aria-label={t("departmentsColSelect")}
             onClick={(e) => e.stopPropagation()}
             className="opacity-0 group-hover/row:opacity-100 transition-opacity data-[state=checked]:opacity-100"
           />
@@ -101,7 +104,7 @@ export function DepartmentTable({
       {
         accessorKey: "name",
         id: "employee",
-        header: "Tên phòng ban",
+        header: t("departmentsColName"),
         size: 280,
         cell: ({ row }) => {
           const dept = row.original;
@@ -129,7 +132,7 @@ export function DepartmentTable({
       },
       {
         accessorKey: "code",
-        header: "Mã",
+        header: t("departmentsColCode"),
         size: 100,
         cell: ({ row }) => (
           <span className="font-mono text-xs text-muted-foreground">
@@ -139,7 +142,7 @@ export function DepartmentTable({
       },
       {
         accessorKey: "manager",
-        header: "Trưởng phòng",
+        header: t("departmentsColManager"),
         size: 180,
         cell: ({ row }) => {
           const manager = row.original.manager;
@@ -155,7 +158,7 @@ export function DepartmentTable({
                 <span className="font-medium truncate">
                   {manager?.name || (
                     <span className="text-muted-foreground italic">
-                      Chưa phân công
+                      {t("departmentEmployeesUnknown")}
                     </span>
                   )}
                 </span>
@@ -171,7 +174,7 @@ export function DepartmentTable({
       },
       {
         accessorKey: "employeeCount",
-        header: "Số NV",
+        header: t("departmentsColEmployeeCount"),
         size: 72,
         cell: ({ row }) => (
           <span className="text-muted-foreground">
@@ -181,17 +184,17 @@ export function DepartmentTable({
       },
       {
         accessorKey: "parent",
-        header: "Phòng ban cha",
+        header: t("departmentsColParent"),
         size: 180,
         cell: ({ row }) => (
           <span className="text-xs truncate block text-muted-foreground">
-            {row.original.parentName || "—"}
+            {row.original.parentName || t("positionsDash")}
           </span>
         ),
       },
       {
         accessorKey: "status",
-        header: "Trạng thái",
+        header: t("departmentsColStatus"),
         size: 120,
         cell: ({ row }) => {
           const status = row.getValue("status") as string;
@@ -226,11 +229,11 @@ export function DepartmentTable({
                 <DropdownMenuContent align="end" className="w-36">
                   <DropdownMenuItem onClick={() => onViewDetail(department)}>
                     <Eye className="mr-2 h-3.5 w-3.5" />
-                    Xem chi tiết
+                    {t("departmentsTreeViewDetails")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onEdit(department)}>
                     <Pencil className="mr-2 h-3.5 w-3.5" />
-                    Sửa
+                    {t("departmentsTreeEdit")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -238,7 +241,7 @@ export function DepartmentTable({
                     className="text-red-600"
                   >
                     <Trash2 className="mr-2 h-3.5 w-3.5" />
-                    Xóa
+                    {t("departmentsTreeDelete")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -248,10 +251,10 @@ export function DepartmentTable({
         enableSorting: false,
       },
     ],
-    [onEdit, onDelete, onViewDetail],
+    [onEdit, onDelete, onViewDetail, t],
   );
 
-  // TanStack Table's useReactTable() returns unstable functions — known limitation.
+  // TanStack Table's useReactTable() returns unstable functions â€” known limitation.
   // eslint-disable-next-line
   const table = useReactTable({
     data,
@@ -320,7 +323,7 @@ export function DepartmentTable({
                 <div className="flex flex-col items-center gap-1.5">
                   <Building2 className="h-6 w-6 text-muted-foreground" />
                   <p className="text-xs text-muted-foreground">
-                    Không có phòng ban nào
+                    {t("departmentsEmpty")}
                   </p>
                 </div>
               </TableCell>
@@ -360,11 +363,13 @@ export function DepartmentTable({
       {!isLoading && data.length > 0 && (
         <div className="absolute bottom-0 left-0 right-0 bg-background flex items-center justify-between px-2 py-2 border-t shrink-0">
           <p className="text-xs text-muted-foreground">
-            Hiển thị <strong>{data.length}</strong> /{" "}
-            <strong>{totalDepartments}</strong> phòng ban
+            {t("departmentsShowingSummary", {
+              shown: data.length,
+              total: totalDepartments,
+            })}
           </p>
           {!hasNextPage && data.length < totalDepartments && (
-            <span className="text-xs text-muted-foreground">Đã tải hết</span>
+            <span className="text-xs text-muted-foreground">{t("departmentsLoadedAll")}</span>
           )}
         </div>
       )}
@@ -372,7 +377,7 @@ export function DepartmentTable({
   );
 }
 
-// ─── LoadMoreSentinel ─────────────────────────────────────────────────────────
+// â”€â”€â”€ LoadMoreSentinel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface LoadMoreSentinelProps {
   hasNextPage: boolean;
@@ -385,6 +390,7 @@ function LoadMoreSentinel({
   isFetchingNextPage,
   onLoadMore,
 }: LoadMoreSentinelProps) {
+  const t = useTranslations("ProtectedPages");
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -409,10 +415,11 @@ function LoadMoreSentinel({
         <div className="flex items-center justify-center py-3 gap-2">
           <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
           <span className="text-[10px] text-muted-foreground">
-            Đang tải thêm...
+            {t("departmentEmployeesLoadingMore")}
           </span>
         </div>
       )}
     </div>
   );
 }
+

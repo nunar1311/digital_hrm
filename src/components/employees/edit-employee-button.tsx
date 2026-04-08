@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import {
@@ -14,12 +15,13 @@ interface EditEmployeeButtonProps {
 
 export function EditEmployeeButton({ employee }: EditEmployeeButtonProps) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("ProtectedPages");
 
   return (
     <>
       <Button size="xs" onClick={() => setOpen(true)}>
         <Pencil className="h-3.5 w-3.5" />
-        Chỉnh sửa
+        {t("employeesEdit")}
       </Button>
       <AddEmployeeDialog
         open={open}

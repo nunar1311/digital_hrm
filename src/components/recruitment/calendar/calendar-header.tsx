@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { format, isToday } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -35,11 +35,11 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useState } from "react";
-import { getJobPostings } from "@/app/(protected)/recruitment/actions";
+import { getJobPostings } from "@/app/[locale]/(protected)/recruitment/actions";
 import type {
   JobPostingBasic,
   CandidateBasic,
-} from "@/app/(protected)/recruitment/types";
+} from "@/app/[locale]/(protected)/recruitment/types";
 import { initialFormData, type InterviewFormData } from "./calendar-utils";
 import { cn } from "@/lib/utils";
 
@@ -77,7 +77,7 @@ export function CalendarHeader({
     queryKey: ["recruitment", "candidates"],
     queryFn: async () => {
       const { getCandidates } =
-        await import("@/app/(protected)/recruitment/actions");
+        await import("@/app/[locale]/(protected)/recruitment/actions");
       return getCandidates({}, { limit: 200 });
     },
   });
@@ -85,11 +85,23 @@ export function CalendarHeader({
   const createMutation = useMutation({
     mutationFn: async (data: InterviewFormData) => {
       const { createInterview } =
-        await import("@/app/(protected)/recruitment/actions");
-      return createInterview(data as any);
+        await import("@/app/[locale]/(protected)/recruitment/actions");
+      return createInterview({
+        candidateId: data.candidateId,
+        jobPostingId: data.jobPostingId,
+        round: data.round,
+        type: data.type as "ONSITE" | "ONLINE" | "PHONE",
+        method: data.method as "INDIVIDUAL" | "GROUP" | "PANEL",
+        scheduledDate: data.scheduledDate,
+        scheduledTime: data.scheduledTime,
+        duration: data.duration,
+        interviewerIds: [],
+        location: data.location,
+        meetingLink: data.meetingLink,
+      });
     },
     onSuccess: () => {
-      toast.success("Đã lên lịch phỏng vấn thành công");
+      toast.success("Interview scheduled successfully");
       queryClient.invalidateQueries({
         queryKey: ["recruitment", "interviews"],
       });
@@ -97,7 +109,7 @@ export function CalendarHeader({
       setFormData(initialFormData);
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Có lỗi xảy ra");
+      toast.error(error.message || "An error occurred");
     },
   });
 
@@ -138,7 +150,7 @@ export function CalendarHeader({
       return format(currentDate, "MMMM yyyy", { locale: vi });
     }
     if (viewMode === "week") {
-      return `Tuần ${format(weekDays[0], "d")} - ${format(weekDays[6], "d MMM", { locale: vi })}`;
+      return `Week ${format(weekDays[0], "d")} - ${format(weekDays[6], "d MMM", { locale: vi })}`;
     }
     return format(currentDate, "d MMMM yyyy", { locale: vi });
   };
@@ -154,7 +166,7 @@ export function CalendarHeader({
           size="sm"
           onClick={() => onDateChange(new Date())}
         >
-          Hôm nay
+          Today
         </Button>
         <Button variant="outline" size="icon-sm" onClick={handleNext}>
           <ChevronRight className="h-4 w-4" />
@@ -166,7 +178,7 @@ export function CalendarHeader({
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Tìm ứng viên..."
+            placeholder="Search candidates..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9 w-[200px] h-8"
@@ -188,13 +200,13 @@ export function CalendarHeader({
             {
               value: "month",
               icon: Grid3X3,
-              label: "Tháng",
+              label: "Month",
             },
-            { value: "week", icon: List, label: "Tuần" },
+            { value: "week", icon: List, label: "Week" },
             {
               value: "day",
               icon: CalendarDays,
-              label: "Ngày",
+              label: "Day",
             },
           ].map((item) => (
             <Button
@@ -217,19 +229,19 @@ export function CalendarHeader({
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="h-4 w-4" />
-              Lên lịch PV
+              Schedule interview
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Lên lịch phỏng vấn</DialogTitle>
+              <DialogTitle>Schedule interview</DialogTitle>
               <DialogDescription>
-                Tạo lịch phỏng vấn mới cho ứng viên
+                Create a new interview schedule for a candidate
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Ứng viên</Label>
+                <Label>Candidate</Label>
                 {/* <Select
                                     value={formData.candidateId}
                                     onValueChange={(value) =>
@@ -240,7 +252,7 @@ export function CalendarHeader({
                                     }
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Chọn ứng viên" />
+                                        <SelectValue placeholder="Select candidate" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {candidatesData?.items.map(
@@ -276,7 +288,7 @@ export function CalendarHeader({
               </div>
 
               <div className="space-y-2">
-                <Label>Vị trí</Label>
+                <Label>Position</Label>
                 <Select
                   value={formData.jobPostingId}
                   onValueChange={(value) =>
@@ -287,7 +299,7 @@ export function CalendarHeader({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn vị trí" />
+                    <SelectValue placeholder="Select position" />
                   </SelectTrigger>
                   <SelectContent>
                     {jobPostingsData?.items.map((posting) => (
@@ -301,7 +313,7 @@ export function CalendarHeader({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Vòng</Label>
+                  <Label>Round</Label>
                   <Input
                     type="number"
                     min={1}
@@ -315,7 +327,7 @@ export function CalendarHeader({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Hình thức</Label>
+                  <Label>Type</Label>
                   <Select
                     value={formData.type}
                     onValueChange={(value) =>
@@ -329,9 +341,9 @@ export function CalendarHeader({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ONSITE">Trực tiếp</SelectItem>
+                      <SelectItem value="ONSITE">Onsite</SelectItem>
                       <SelectItem value="ONLINE">Online</SelectItem>
-                      <SelectItem value="PHONE">Điện thoại</SelectItem>
+                      <SelectItem value="PHONE">Phone</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -339,7 +351,7 @@ export function CalendarHeader({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Ngày</Label>
+                  <Label>Date</Label>
                   <Input
                     type="date"
                     value={formData.scheduledDate}
@@ -352,7 +364,7 @@ export function CalendarHeader({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Giờ</Label>
+                  <Label>Time</Label>
                   <Input
                     type="time"
                     value={formData.scheduledTime}
@@ -368,7 +380,7 @@ export function CalendarHeader({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Thời lượng (phút)</Label>
+                  <Label>Duration (minutes)</Label>
                   <Input
                     type="number"
                     min={15}
@@ -383,7 +395,7 @@ export function CalendarHeader({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Phương pháp</Label>
+                  <Label>Method</Label>
                   <Select
                     value={formData.method}
                     onValueChange={(value) =>
@@ -397,18 +409,18 @@ export function CalendarHeader({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="INDIVIDUAL">Cá nhân</SelectItem>
-                      <SelectItem value="GROUP">Nhóm</SelectItem>
-                      <SelectItem value="PANEL">Hội đồng</SelectItem>
+                      <SelectItem value="INDIVIDUAL">Individual</SelectItem>
+                      <SelectItem value="GROUP">Group</SelectItem>
+                      <SelectItem value="PANEL">Panel</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Địa điểm</Label>
+                <Label>Location</Label>
                 <Input
-                  placeholder="Phòng họp 1, Tầng 3..."
+                  placeholder="Meeting room 1, Floor 3..."
                   value={formData.location}
                   onChange={(e) =>
                     setFormData({
@@ -420,7 +432,7 @@ export function CalendarHeader({
               </div>
 
               <div className="space-y-2">
-                <Label>Link họp online</Label>
+                <Label>Online meeting link</Label>
                 <Input
                   placeholder="https://..."
                   value={formData.meetingLink}
@@ -434,9 +446,9 @@ export function CalendarHeader({
               </div>
 
               <div className="space-y-2">
-                <Label>Ghi chú</Label>
+                <Label>Notes</Label>
                 <Textarea
-                  placeholder="Ghi chú thêm..."
+                  placeholder="Additional notes..."
                   value={formData.notes}
                   onChange={(e) =>
                     setFormData({
@@ -453,7 +465,7 @@ export function CalendarHeader({
                   variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
                 >
-                  Hủy
+                  Cancel
                 </Button>
                 <Button
                   type="submit"
@@ -466,7 +478,7 @@ export function CalendarHeader({
                   }
                   onClick={() => createMutation.mutate(formData)}
                 >
-                  {createMutation.isPending ? "Đang lưu..." : "Lên lịch"}
+                  {createMutation.isPending ? "Saving..." : "Schedule"}
                 </Button>
               </div>
             </div>
@@ -476,3 +488,4 @@ export function CalendarHeader({
     </div>
   );
 }
+

@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   getUpcomingShiftReminder,
   sendShiftReminderNotification,
-} from "@/app/(protected)/attendance/actions";
+} from "@/app/[locale]/(protected)/attendance/actions";
 
 const REMINDER_STORAGE_PREFIX = "shift-reminder-sent-";
 
@@ -30,7 +30,7 @@ export function useShiftReminder() {
   const { data } = useQuery({
     queryKey: ["attendance", "shift-reminder"],
     queryFn: () => getUpcomingShiftReminder(),
-    refetchInterval: 60_000, // Poll mỗi 60 giây
+    refetchInterval: 60_000, // Poll má»—i 60 giÃ¢y
     refetchOnWindowFocus: false,
     staleTime: 30_000,
   });
@@ -42,14 +42,14 @@ export function useShiftReminder() {
 
     isSending.current = true;
     try {
-      // Gửi notification vào DB + email (server-side)
+      // Gá»­i notification vÃ o DB + email (server-side)
       await sendShiftReminderNotification({
         shiftId: data.shift.id,
         shiftName: data.shift.name,
         shiftStartTime: data.shift.startTime,
       });
 
-      // Đánh dấu đã gửi
+      // ÄÃ¡nh dáº¥u Ä‘Ã£ gá»­i
       markReminderSent(data.shift.id);
     } catch (error) {
       console.error("[ShiftReminder] Failed to send reminder:", error);
@@ -70,3 +70,4 @@ export function useShiftReminder() {
     minutesUntil: data?.minutesUntil ?? 0,
   };
 }
+

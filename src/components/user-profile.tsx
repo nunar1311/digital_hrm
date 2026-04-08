@@ -23,14 +23,14 @@ import {
     XIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { signOut } from "@/lib/auth-client";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useClickOutside } from "@mantine/hooks";
 import { cn } from "@/lib/utils";
 import ModeSelection from "./themes/mode-selection";
 import Shepherd from "shepherd.js";
-import { useEffect } from "react";
 import { offset } from "@floating-ui/dom";
 
 import "shepherd.js/dist/css/shepherd.css";
@@ -41,14 +41,10 @@ const UserProfile = () => {
     const router = useRouter();
     const { user, isPending } = useAuth();
 
+    const t = useTranslations("ProtectedPages");
+
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isThemeOpen, setIsThemeOpen] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-         
-        setIsMounted(true);
-    }, []);
 
     const ref = useClickOutside(() => {
         setIsDropdownOpen(false);
@@ -82,8 +78,8 @@ const UserProfile = () => {
 
         tour.addStep({
             id: "theme-customization",
-            title: "Tùy chỉnh giao diện",
-            text: "Tại đây bạn có thể tuỳ chỉnh giao diện và màu sắc của ứng dụng theo sở thích của mình.",
+            title: t("userProfileTourThemeTitle"),
+            text: t("userProfileTourThemeText"),
             attachTo: {
                 element: "[data-tour='theme-customization']",
                 on: "bottom",
@@ -93,12 +89,12 @@ const UserProfile = () => {
             },
             buttons: [
                 {
-                    text: "Đóng",
+                    text: t("userProfileTourClose"),
                     action: tour.complete,
                     classes: "shepherd-button-secondary",
                 },
                 {
-                    text: "Bắt đầu tùy chỉnh",
+                    text: t("userProfileTourStart"),
                     action: () => {
                         setIsThemeOpen(true);
                         tour.complete();
@@ -124,7 +120,7 @@ const UserProfile = () => {
         return () => {
             tour.complete();
         };
-    }, [isThemeOpen]);
+    }, [isThemeOpen, t]);
     return (
         <DropdownMenu open={isDropdownOpen}>
             <DropdownMenuTrigger asChild>
@@ -139,7 +135,7 @@ const UserProfile = () => {
                             alt={user?.name ?? "User"}
                         />
                         <AvatarFallback className="rounded-lg bg-amber-300 text-xs">
-                            {isMounted ? (isPending ? "..." : initials) : <UserCircle2Icon className="size-4 text-muted-foreground" />}
+                            {isPending ? "..." : initials}
                         </AvatarFallback>
                     </Avatar>
 
@@ -165,12 +161,12 @@ const UserProfile = () => {
                                     alt={user?.name ?? "User"}
                                 />
                                 <AvatarFallback className="rounded-lg text-xs">
-                                    {isMounted ? initials : <UserCircle2Icon className="size-4 text-muted-foreground" />}
+                                    {initials}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="grid flex-1 text-left leading-tight">
                                 <span className="truncate text-sm font-semibold">
-                                    {user?.name ?? "Người dùng"}
+                                    {user?.name ?? t("userProfileDefaultUser")}
                                 </span>
                                 <span className="truncate text-xs text-muted-foreground">
                                     {user?.email ?? ""}
@@ -181,24 +177,24 @@ const UserProfile = () => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem>
                         <UserCircle2Icon />
-                        Hồ sơ của tôi
+                        {t("userProfileMyProfile")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         onClick={() => setIsThemeOpen(true)}
                         data-tour="theme-customization"
                     >
                         <PaintRollerIcon />
-                        Chủ đề
+                        {t("userProfileTheme")}
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                         <SettingsIcon />
-                        Cài đặt
+                        {t("userProfileSettings")}
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
                         <LogOutIcon className="mr-2 size-4" />
-                        Đăng xuất
+                        {t("userProfileSignOut")}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             )}
@@ -226,15 +222,14 @@ const UserProfile = () => {
                         <XIcon />
                     </Button>
                     <DropdownMenuLabel className="p-0 text-base">
-                        Chủ đề
+                        {t("userProfileTheme")}
                     </DropdownMenuLabel>
                     <p className="text-xs text-muted-foreground">
-                        Tuỳ chỉnh chủ đề của bạn bằng cách thay đổi
-                        giao diện và màu sắc.
+                        {t("userProfileThemeDescription")}
                     </p>
 
                     <DropdownMenuLabel className="p-0 mt-4 text-xs">
-                        Giao diện
+                        {t("userProfileAppearance")}
                     </DropdownMenuLabel>
                     {/* Appearance */}
                     <div className="my-2">
@@ -242,7 +237,7 @@ const UserProfile = () => {
                     </div>
 
                     <DropdownMenuLabel className="p-0 text-xs">
-                        Chủ đề
+                        {t("userProfileTheme")}
                     </DropdownMenuLabel>
                     {/* Color theme */}
                     <div className="mt-2">

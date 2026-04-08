@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
 import { Button } from "../ui/button";
 import {
@@ -37,8 +38,8 @@ import { cn } from "@/lib/utils";
 import type {
   DashboardStats, AttendanceTrendItem, DepartmentDistributionItem,
   TurnoverTrendItem, GenderDistributionItem, TodayAttendanceSummary,
-} from "@/app/(protected)/dashboard/actions";
-import type { GetEmployeesResult } from "@/app/(protected)/employees/actions";
+} from "@/app/[locale]/(protected)/dashboard/actions";
+import type { GetEmployeesResult } from "@/app/[locale]/(protected)/employees/actions";
 
 interface AddCardDialogProps {
   stats: DashboardStats;
@@ -63,234 +64,254 @@ const coverColors: Record<string, string> = {
   pink: "bg-pink-500",
 };
 
-const templates = [
+let widgetIdSeed = 0;
+
+const createWidgetId = () => {
+  widgetIdSeed += 1;
+  return `widget-${widgetIdSeed}`;
+};
+
+type TemplateItem = {
+  id: string;
+  nameKey: string;
+  descriptionKey: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  color: string;
+  w: number;
+  h: number;
+  minW: number;
+  minH: number;
+  category: string;
+  badge: string;
+};
+
+const templates: TemplateItem[] = [
   {
     id: "total-employees",
-    name: "Tổng nhân viên",
-    description: "Hiển thị tổng số nhân sự hiện có",
+    nameKey: "templateTotalEmployeesName",
+    descriptionKey: "templateTotalEmployeesDesc",
     icon: User,
     color: "purple",
     w: 3,
     h: 4,
     minW: 2,
     minH: 3,
-    category: "Thống kê",
+    category: "stats",
     badge: "Business",
   },
   {
     id: "total-employees-working",
-    name: "Đang làm việc",
-    description: "Tổng số nhân sự đang làm việc",
+    nameKey: "templateActiveEmployeesName",
+    descriptionKey: "templateActiveEmployeesDesc",
     icon: Users,
     color: "blue",
     w: 3,
     h: 4,
     minW: 2,
     minH: 3,
-    category: "Thống kê",
+    category: "stats",
     badge: "",
   },
   {
     id: "new-employees",
-    name: "Nhân viên mới",
-    description: "Tổng số nhân viên mới trong tháng",
+    nameKey: "templateNewEmployeesName",
+    descriptionKey: "templateNewEmployeesDesc",
     icon: UserPlus,
     color: "green",
     w: 3,
     h: 4,
     minW: 2,
     minH: 3,
-    category: "Thống kê",
+    category: "stats",
     badge: "",
   },
   {
     id: "resigned-employees",
-    name: "Nhân viên nghỉ",
-    description: "Tổng số nhân viên đã nghỉ việc",
+    nameKey: "templateResignedEmployeesName",
+    descriptionKey: "templateResignedEmployeesDesc",
     icon: UserMinus,
     color: "red",
     w: 3,
     h: 4,
     minW: 2,
     minH: 3,
-    category: "Thống kê",
+    category: "stats",
     badge: "",
   },
   {
     id: "area-chart",
-    name: "Xu hướng điểm danh",
-    description: "Biểu đồ xu hướng điểm danh theo thời gian",
+    nameKey: "templateAttendanceTrendName",
+    descriptionKey: "templateAttendanceTrendDesc",
     icon: Activity,
     color: "indigo",
     w: 6,
     h: 8,
     minW: 2,
     minH: 3,
-    category: "Biểu đồ",
+    category: "charts",
     badge: "Unlimited",
   },
   {
     id: "pie-chart",
-    name: "Phân bổ phòng ban",
-    description: "Hiển thị biểu đồ phân bổ nhân viên theo phòng",
+    nameKey: "templateDepartmentDistributionName",
+    descriptionKey: "templateDepartmentDistributionDesc",
     icon: PieChartIcon,
     color: "orange",
     w: 4,
     h: 8,
     minW: 2,
     minH: 3,
-    category: "Biểu đồ",
+    category: "charts",
     badge: "",
   },
   {
     id: "turnover-chart",
-    name: "Tỷ lệ nghỉ việc",
-    description: "Biểu đồ tỷ lệ biến động nhân sự",
+    nameKey: "templateTurnoverName",
+    descriptionKey: "templateTurnoverDesc",
     icon: LineChart,
     color: "pink",
     w: 4,
     h: 8,
     minW: 2,
     minH: 3,
-    category: "Biểu đồ",
+    category: "charts",
     badge: "",
   },
   {
     id: "gender-chart",
-    name: "Phân bổ giới tính",
-    description: "Thống kê giới tính nhân viên toàn công ty",
+    nameKey: "templateGenderDistributionName",
+    descriptionKey: "templateGenderDistributionDesc",
     icon: PieChartIcon,
     color: "teal",
     w: 4,
     h: 8,
     minW: 2,
     minH: 3,
-    category: "Biểu đồ",
+    category: "charts",
     badge: "",
   },
   {
     id: "list-employees",
-    name: "Danh sách chi tiết",
-    description: "Bảng danh sách chi tiết nhân viên",
+    nameKey: "templateEmployeeListName",
+    descriptionKey: "templateEmployeeListDesc",
     icon: List,
     color: "yellow",
     w: 8,
     h: 8,
     minW: 2,
     minH: 3,
-    category: "Danh sách",
+    category: "list",
     badge: "Pro",
   },
-
-  // NEW MOCKUP CARDS
   {
     id: "mock-ai-assistant",
-    name: "Trợ lý AI HR",
-    description: "Chatbot thông minh hỗ trợ giải đáp chính sách",
+    nameKey: "templateAiAssistantName",
+    descriptionKey: "templateAiAssistantDesc",
     icon: Sparkles,
     color: "purple",
     w: 4,
     h: 8,
     minW: 2,
     minH: 3,
-    category: "Trí tuệ nhân tạo (AI)",
+    category: "ai",
     badge: "New",
   },
   {
     id: "mock-company-news",
-    name: "Bản tin nội bộ",
-    description: "Cập nhật các tin tức và thông báo mới nhất",
+    nameKey: "templateCompanyNewsName",
+    descriptionKey: "templateCompanyNewsDesc",
     icon: Building2,
     color: "blue",
     w: 4,
     h: 8,
     minW: 2,
     minH: 3,
-    category: "Tiện ích",
+    category: "utilities",
     badge: "",
   },
   {
     id: "mock-upcoming-birthdays",
-    name: "Sinh nhật sắp tới",
-    description: "Danh sách nhân viên có sinh nhật trong tháng",
+    nameKey: "templateUpcomingBirthdaysName",
+    descriptionKey: "templateUpcomingBirthdaysDesc",
     icon: CalendarCheck,
     color: "pink",
     w: 3,
     h: 5,
     minW: 2,
     minH: 3,
-    category: "Danh sách",
+    category: "list",
     badge: "",
   },
   {
     id: "mock-leave-balance",
-    name: "Quỹ nghỉ phép",
-    description: "Theo dõi quỹ phép năm của toàn bộ công ty",
+    nameKey: "templateLeaveBalanceName",
+    descriptionKey: "templateLeaveBalanceDesc",
     icon: CalendarRange,
     color: "yellow",
     w: 4,
     h: 6,
     minW: 2,
     minH: 3,
-    category: "Thống kê",
-    badge: "Mới",
+    category: "stats",
+    badge: "New",
   },
   {
     id: "mock-timesheet-summary",
-    name: "Tổng hợp công",
-    description: "Tóm tắt dữ liệu chấm công hàng tuần",
+    nameKey: "templateTimesheetSummaryName",
+    descriptionKey: "templateTimesheetSummaryDesc",
     icon: Clock,
     color: "green",
     w: 6,
     h: 6,
     minW: 3,
     minH: 4,
-    category: "Chấm công",
+    category: "attendance",
     badge: "Premium",
   },
   {
     id: "mock-payroll-overview",
-    name: "Tổng quan quỹ lương",
-    description: "Biểu đồ biến động quỹ lương qua các tháng",
+    nameKey: "templatePayrollOverviewName",
+    descriptionKey: "templatePayrollOverviewDesc",
     icon: HandCoins,
     color: "indigo",
     w: 6,
     h: 8,
     minW: 4,
     minH: 4,
-    category: "Biểu đồ",
-    badge: "Doanh nghiệp",
+    category: "charts",
+    badge: "Business",
   },
   {
     id: "mock-training-progress",
-    name: "Tiến độ đào tạo",
-    description: "Theo dõi tiến độ hoàn thành các khoá học",
+    nameKey: "templateTrainingProgressName",
+    descriptionKey: "templateTrainingProgressDesc",
     icon: GraduationCap,
     color: "teal",
     w: 4,
     h: 6,
     minW: 2,
     minH: 3,
-    category: "Tiện ích",
+    category: "utilities",
     badge: "",
   },
 ];
 
 const categories = [
-  { id: "all", label: "Tất cả thẻ", icon: LayoutDashboard },
-  { id: "Featured", label: "Nổi bật", icon: Star },
-  { id: "Trí tuệ nhân tạo (AI)", label: "AI Cards", icon: Sparkles },
-  { id: "Thống kê", label: "Thống kê", icon: Calculator },
-  { id: "Biểu đồ", label: "Biểu đồ", icon: LineChart },
-  { id: "Danh sách", label: "Danh sách", icon: List },
-  { id: "Tiện ích", label: "Tiện ích", icon: Blocks },
-  { id: "Chấm công", label: "Chấm công", icon: Clock },
-  { id: "Tích hợp", label: "Ứng dụng tích hợp", icon: Puzzle },
+  { id: "all", labelKey: "allCards", icon: LayoutDashboard },
+  { id: "featured", labelKey: "featured", icon: Star },
+  { id: "ai", labelKey: "aiCards", icon: Sparkles },
+  { id: "stats", labelKey: "statistics", icon: Calculator },
+  { id: "charts", labelKey: "charts", icon: LineChart },
+  { id: "list", labelKey: "list", icon: List },
+  { id: "utilities", labelKey: "utilities", icon: Blocks },
+  { id: "attendance", labelKey: "attendance", icon: Clock },
+  { id: "integrations", labelKey: "integrations", icon: Puzzle },
 ];
 
 const AddCardDialog = ({
   stats, attendanceTrendData, departmentData, turnoverTrendData, genderData, initialEmployees, todayAttendanceData,
 }: AddCardDialogProps) => {
+  const t = useTranslations("Dashboard");
   const { addWidget } = useGridStackContext();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -298,10 +319,9 @@ const AddCardDialog = ({
 
   const filteredTemplates = useMemo(() => {
     let result = templates;
-    if (activeCategory !== "all" && activeCategory !== "Featured") {
-      result = result.filter((t) => t.category === activeCategory);
-    } else if (activeCategory === "Featured") {
-      // Pick a few cards to feature
+    if (activeCategory !== "all" && activeCategory !== "featured") {
+      result = result.filter((template) => template.category === activeCategory);
+    } else if (activeCategory === "featured") {
       result = result.filter((t) =>
         [
           "total-employees",
@@ -315,20 +335,23 @@ const AddCardDialog = ({
 
     if (searchQuery.trim()) {
       const lowerQuery = searchQuery.toLowerCase();
-      result = result.filter(
-        (t) =>
-          t.name.toLowerCase().includes(lowerQuery) ||
-          t.description.toLowerCase().includes(lowerQuery),
-      );
+      result = result.filter((template) => {
+        const localizedName = t(template.nameKey).toLowerCase();
+        const localizedDescription = t(template.descriptionKey).toLowerCase();
+        return (
+          localizedName.includes(lowerQuery) ||
+          localizedDescription.includes(lowerQuery)
+        );
+      });
     }
     return result;
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, t]);
 
   const activeCategoryObj = categories.find((c) => c.id === activeCategory);
   const CategoryIcon = activeCategoryObj?.icon || LayoutDashboard;
 
   const handleAddCard = (templateId: string) => {
-    const id = `widget-${Date.now()}`;
+    const id = createWidgetId();
     const template = templates.find((t) => t.id === templateId);
     if (!template) return;
 
@@ -339,9 +362,9 @@ const AddCardDialog = ({
         content = JSON.stringify({
           name: "totalEmployees",
           props: {
-            title: "Tổng nhân viên",
+            title: t("totalEmployees"),
             total: stats.totalEmployees,
-            label: "nhân viên",
+            label: t("employee"),
             percentage: stats.totalPercentage,
           },
         });
@@ -350,9 +373,9 @@ const AddCardDialog = ({
         content = JSON.stringify({
           name: "totalEmployeesWorking",
           props: {
-            title: "Tổng nhân viên đang làm việc",
+            title: t("activeEmployees"),
             total: stats.totalEmployeesWorking,
-            label: "nhân viên",
+            label: t("employee"),
             percentage: stats.workingPercentage,
           },
         });
@@ -361,9 +384,9 @@ const AddCardDialog = ({
         content = JSON.stringify({
           name: "newEmployees",
           props: {
-            title: "Tổng nhân viên mới",
+            title: t("newHires"),
             total: stats.newEmployees,
-            label: "nhân viên mới",
+            label: t("newHires"),
             percentage: stats.newPercentage,
           },
         });
@@ -372,9 +395,9 @@ const AddCardDialog = ({
         content = JSON.stringify({
           name: "resignedEmployees",
           props: {
-            title: "Tổng nhân viên nghỉ",
+            title: t("resignations"),
             total: stats.resignedEmployees,
-            label: "nhân viên nghỉ",
+            label: t("resignations"),
             percentage: stats.resignedPercentage,
           },
         });
@@ -404,8 +427,7 @@ const AddCardDialog = ({
       case "mock-timesheet-summary":
         content = JSON.stringify({ name: "cardTimesheetSummary", props: { summaryData: todayAttendanceData } }); break;
       default:
-        // Mock cards
-        content = JSON.stringify({ name: "cardComingSoon", props: { title: template.name } }); break;
+        content = JSON.stringify({ name: "cardComingSoon", props: { title: t(template.nameKey) } }); break;
     }
 
     addWidget({
@@ -423,17 +445,17 @@ const AddCardDialog = ({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="xs">
-          <Plus /> Thẻ
+          <Plus /> {t("addCard")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-6xl w-[90vw] h-[85vh] p-0 flex flex-row overflow-hidden border-0 shadow-2xl gap-0">
-        {/* ─── Sidebar ─── */}
+        {/* Sidebar */}
         <div className="w-[260px] bg-secondary/30 border-r flex flex-col h-full overflow-hidden shrink-0">
           <div className="p-4 flex items-center gap-2 border-b mb-2 bg-background/50 text-foreground">
             <div className="bg-primary/10 text-primary p-1 rounded-md">
               <LayoutDashboard className="w-5 h-5" />
             </div>
-            <span className="font-bold text-base">Thư viện thẻ</span>
+            <span className="font-bold text-base">{t("cardLibrary")}</span>
           </div>
 
           <div className="flex-1 overflow-y-auto w-full px-3 pb-4 space-y-0.5 custom-scrollbar">
@@ -463,7 +485,7 @@ const AddCardDialog = ({
                         : "text-muted-foreground",
                     )}
                   />
-                  {cat.label}
+                  {t(cat.labelKey)}
                 </Button>
               );
             })}
@@ -476,7 +498,7 @@ const AddCardDialog = ({
               className="w-full justify-start text-xs font-medium h-8"
             >
               <HelpCircle className="mr-2 w-3.5 h-3.5" />
-              Tài liệu hướng dẫn
+              {t("guideDocs")}
             </Button>
             <Button
               variant="ghost"
@@ -484,7 +506,7 @@ const AddCardDialog = ({
               className="w-full justify-start text-xs font-medium h-8"
             >
               <Video className="mr-2 w-3.5 h-3.5" />
-              Webinar bảng điều khiển
+              {t("dashboardWebinar")}
             </Button>
             <Button
               variant="ghost"
@@ -492,25 +514,25 @@ const AddCardDialog = ({
               className="w-full justify-start text-xs font-medium h-8"
             >
               <BookOpen className="mr-2 w-3.5 h-3.5" />
-              Wiki ứng dụng
+              {t("appWiki")}
             </Button>
           </div>
         </div>
 
-        {/* ─── Main Content ─── */}
+        {/* Main Content */}
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
           {/* Header */}
           <div className="h-16 border-b flex items-center justify-between px-6 shrink-0 bg-background/95 backdrop-blur z-10 sticky top-0">
             <div className="flex items-center gap-2 text-foreground font-semibold text-lg">
               <CategoryIcon className="w-5 h-5 opacity-70" />
-              {activeCategoryObj?.label || "Tất cả"}
+              {activeCategoryObj ? t(activeCategoryObj.labelKey) : t("allCards")}
             </div>
 
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Tìm kiếm danh mục thẻ..."
+                  placeholder={t("searchCardsPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-[280px] h-9 pl-9 bg-secondary/50 border-input text-sm placeholder:text-muted-foreground/70"
@@ -572,11 +594,11 @@ const AddCardDialog = ({
                       <div className="p-4 flex-1 flex flex-col relative bg-card">
                         <div className="flex items-start justify-between mb-1.5 gap-2">
                           <h4 className="font-semibold text-sm leading-tight text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                            {item.name}
+                            {t(item.nameKey)}
                           </h4>
                         </div>
                         <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">
-                          {item.description}
+                          {t(item.descriptionKey)}
                         </p>
                       </div>
                     </div>
@@ -587,17 +609,17 @@ const AddCardDialog = ({
               <div className="flex flex-col items-center justify-center h-full text-center py-20 opacity-60">
                 <Search className="w-12 h-12 mb-4 text-muted-foreground/50" />
                 <p className="text-lg font-medium text-foreground">
-                  Không tìm thấy thẻ nào
+                  {t("noCardFound")}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Hãy thử tìm với từ khoá khác hoặc xem danh mục khác.
+                  {t("tryDifferentKeyword")}
                 </p>
                 <Button
                   variant="outline"
                   className="mt-4"
                   onClick={() => setSearchQuery("")}
                 >
-                  Xoá tìm kiếm
+                  {t("clearSearch")}
                 </Button>
               </div>
             )}
@@ -609,3 +631,4 @@ const AddCardDialog = ({
 };
 
 export default AddCardDialog;
+

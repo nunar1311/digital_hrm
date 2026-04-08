@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useId, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { CheckIcon, ChevronDownIcon, Loader2 } from "lucide-react";
@@ -44,20 +45,26 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import type { WorkCycle } from "@/app/(protected)/attendance/types";
-import { assignWorkCycle } from "@/app/(protected)/attendance/actions";
+import type { WorkCycle } from "@/app/[locale]/(protected)/attendance/types";
+import { assignWorkCycle } from "@/app/[locale]/(protected)/attendance/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CyclePreview } from "./cycle-preview";
 
-const assignCycleSchema = z.object({
-    userId: z.string().min(1, "Vui lòng chọn nhân viên"),
-    workCycleId: z.string().min(1, "Vui lòng chọn chu kỳ"),
-    startDate: z.date().min(1, "Vui lòng chọn ngày bắt đầu"),
-    endDate: z.date().optional(),
-});
+function createAssignCycleSchema(t: ReturnType<typeof useTranslations>) {
+    return z.object({
+        userId: z.string().min(1, t("attendanceShiftsValidationUserRequired")),
+        workCycleId: z
+            .string()
+            .min(1, t("attendanceShiftsValidationWorkCycleRequired")),
+        startDate: z
+            .date()
+            .min(1, t("attendanceShiftsValidationStartDateRequired")),
+        endDate: z.date().optional(),
+    });
+}
 
-type AssignCycleFormValues = z.infer<typeof assignCycleSchema>;
+type AssignCycleFormValues = z.infer<ReturnType<typeof createAssignCycleSchema>>;
 
 interface AssignCycleUserDialogProps {
     open: boolean;
@@ -83,6 +90,8 @@ export function AssignCycleUserDialog({
     const id = useId();
     const [userOpen, setUserOpen] = useState(false);
     const queryClient = useQueryClient();
+    const t = useTranslations("ProtectedPages");
+    const assignCycleSchema = createAssignCycleSchema(t);
 
     const form = useForm<AssignCycleFormValues>({
         resolver: zodResolver(assignCycleSchema),
@@ -104,7 +113,7 @@ export function AssignCycleUserDialog({
             );
         },
         onSuccess: () => {
-            toast.success("Gán chu kỳ thành công");
+            toast.success(t("attendanceShiftsAssignCycleUserToastSuccess"));
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "shiftAssignments"],
             });
@@ -114,11 +123,11 @@ export function AssignCycleUserDialog({
             onOpenChange(false);
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceShiftsToastError"));
         },
     });
 
-    const workCycleId = form.watch("workCycleId");
+    const workCycleId = useWatch({ control: form.control, name: "workCycleId" });
     const selectedCycle = workCycles.find(
         (c) => c.id === workCycleId,
     );
@@ -129,10 +138,10 @@ export function AssignCycleUserDialog({
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        Gán chu kỳ cho nhân viên
+                        {t("attendanceShiftsAssignCycleUserDialogTitle")}
                     </DialogTitle>
                     <DialogDescription>
-                        Gán chu kỳ làm việc xoay vòng cho nhân viên
+                        {t("attendanceShiftsAssignCycleUserDialogDescription")}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -148,7 +157,7 @@ export function AssignCycleUserDialog({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-xs">
-                                        Nhân viên{" "}
+                                        {t("attendanceShiftsAssignEmployee")}{" "}
                                         <span className="text-destructive">
                                             *
                                         </span>
@@ -181,7 +190,7 @@ export function AssignCycleUserDialog({
                                                                       u.id ===
                                                                       field.value,
                                                               )?.name
-                                                            : "Chọn nhân viên..."}
+                                                            : t("attendanceShiftsAssignEmployeePlaceholder")}
                                                     </span>
                                                     <ChevronDownIcon
                                                         aria-hidden="true"
@@ -195,12 +204,10 @@ export function AssignCycleUserDialog({
                                                 className="w-full min-w-(--radix-popper-anchor-width) border-input p-0"
                                             >
                                                 <Command>
-                                                    <CommandInput placeholder="Tìm nhân viên..." />
+                                                    <CommandInput placeholder={t("attendanceShiftsAssignSearchEmployeePlaceholder")} />
                                                     <CommandList>
                                                         <CommandEmpty>
-                                                            Không tìm
-                                                            thấy nhân
-                                                            viên.
+                                                            {t("attendanceShiftsAssignNoEmployeeFound")}
                                                         </CommandEmpty>
                                                         <CommandGroup>
                                                             {users.map(
@@ -260,7 +267,7 @@ export function AssignCycleUserDialog({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-xs">
-                                        Chu kỳ làm việc{" "}
+                                        {t("attendanceShiftsAssignCycleDeptCycle")}{" "}
                                         <span className="text-destructive">
                                             *
                                         </span>
@@ -273,7 +280,11 @@ export function AssignCycleUserDialog({
                                             }
                                         >
                                             <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Chọn chu kỳ..." />
+                                                <SelectValue
+                                                    placeholder={t(
+                                                        "attendanceShiftsAssignCycleDeptCyclePlaceholder",
+                                                    )}
+                                                />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {activeCycles.map(
@@ -287,8 +298,10 @@ export function AssignCycleUserDialog({
                                                             {c.name} (
                                                             {
                                                                 c.totalDays
-                                                            }{" "}
-                                                            ngày)
+                                                            }
+                                                            {t("attendanceShiftsCycleDays", {
+                                                                days: c.totalDays,
+                                                            })})
                                                         </SelectItem>
                                                     ),
                                                 )}
@@ -313,7 +326,7 @@ export function AssignCycleUserDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-xs">
-                                            Từ ngày{" "}
+                                            {t("attendanceShiftsAssignFromDate")}{" "}
                                             <span className="text-destructive">
                                                 *
                                             </span>
@@ -342,7 +355,7 @@ export function AssignCycleUserDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-xs">
-                                            Đến ngày
+                                            {t("attendanceShiftsAssignToDate")}
                                         </FormLabel>
                                         <FormControl>
                                             <DatePicker
@@ -371,7 +384,7 @@ export function AssignCycleUserDialog({
                                 size="sm"
                                 onClick={() => onOpenChange(false)}
                             >
-                                Hủy
+                                {t("attendanceShiftsAssignCancel")}
                             </Button>
                             <Button
                                 type="submit"
@@ -381,7 +394,7 @@ export function AssignCycleUserDialog({
                                 {mutation.isPending && (
                                     <Loader2 className="size-3.5 animate-spin" />
                                 )}
-                                Gán chu kỳ
+                                {t("attendanceShiftsAssignCycle")}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -390,3 +403,4 @@ export function AssignCycleUserDialog({
         </Dialog>
     );
 }
+

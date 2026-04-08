@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 
 interface Props {
@@ -5,6 +6,8 @@ interface Props {
 }
 
 export function EmployeeStatusBadge({ status }: Props) {
+    const t = useTranslations("ProtectedPages");
+
     switch (status) {
         case "ACTIVE":
             return (
@@ -12,7 +15,7 @@ export function EmployeeStatusBadge({ status }: Props) {
                     variant="outline"
                     className="bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary border-primary"
                 >
-                    Đang làm việc
+                    {t("employeesStatusActive")}
                 </Badge>
             );
         case "ON_LEAVE":
@@ -21,7 +24,7 @@ export function EmployeeStatusBadge({ status }: Props) {
                     variant="outline"
                     className="bg-amber-50 text-amber-600 hover:bg-amber-50 hover:text-amber-600 border-amber-200"
                 >
-                    Nghỉ phép
+                    {t("employeesStatusOnLeave")}
                 </Badge>
             );
         case "RESIGNED":
@@ -30,12 +33,12 @@ export function EmployeeStatusBadge({ status }: Props) {
                     variant="outline"
                     className="bg-slate-50 text-slate-600 hover:bg-slate-50 hover:text-slate-600 border-slate-200"
                 >
-                    Đã nghỉ việc
+                    {t("employeesStatusResigned")}
                 </Badge>
             );
         case "TERMINATED":
-            return <Badge variant="destructive">Sa thải</Badge>;
+            return <Badge variant="destructive">{t("employeesStatusTerminated")}</Badge>;
         default:
-            return <Badge variant="secondary">Chưa rõ</Badge>;
+            return <Badge variant="secondary">{t("employeesStatusUnknown")}</Badge>;
     }
 }

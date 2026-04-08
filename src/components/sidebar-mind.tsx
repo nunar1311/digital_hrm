@@ -17,9 +17,10 @@ import { cn } from "@/lib/utils";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Permission } from "@/lib/rbac/permissions";
+import { useTranslations } from "next-intl";
 
 interface MenuItem {
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
   href: string;
   permissions: Permission[];
@@ -27,37 +28,37 @@ interface MenuItem {
 
 const MENU_ITEM: MenuItem[] = [
   {
-    label: "Trang chủ",
+    labelKey: "sidebarHome",
     icon: HomeIcon,
     href: "/",
     permissions: [Permission.ESS_VIEW],
   },
   {
-    label: "Bảng điều khiển",
+    labelKey: "sidebarNavDashboard",
     icon: LayoutDashboard,
     href: "/dashboard",
     permissions: [Permission.DASHBOARD_VIEW],
   },
   {
-    label: "Phòng ban",
+    labelKey: "sidebarNavDepartments",
     icon: Building2Icon,
     href: "/departments",
     permissions: [Permission.DEPT_VIEW],
   },
   {
-    label: "Quản lý nhân sự",
+    labelKey: "sidebarNavEmployees",
     icon: UsersIcon,
     href: "/employees",
     permissions: [Permission.EMPLOYEE_VIEW_ALL],
   },
   {
-    label: "Lịch chấm công",
+    labelKey: "sidebarNavAttendance",
     icon: CalendarCheck2,
     href: "/attendance",
     permissions: [Permission.ATTENDANCE_VIEW_ALL],
   },
   {
-    label: "Orbit",
+    labelKey: "sidebarNavOrgChart",
     icon: OrbitIcon,
     href: "/orbit",
     permissions: [Permission.ORG_CHART_VIEW],
@@ -70,6 +71,7 @@ const SidebarMind = () => {
   const router = useRouter();
   const { canAny } = useAuth();
 
+  const t = useTranslations("ProtectedPages");
   const isSettings = pathname.startsWith("/settings");
 
   // Lọc các menu items dựa trên permissions
@@ -92,7 +94,7 @@ const SidebarMind = () => {
               variant="ghost"
               size="icon-sm"
               className=" hover:bg-white/20!"
-              tooltip="Thu nhỏ"
+              tooltip={t("collapseSidebar")}
             >
               <ChevronsRightIcon className="text-white" />
             </Button>
@@ -109,10 +111,12 @@ const SidebarMind = () => {
                 const isActive =
                   pathname === item.href ||
                   (item.href !== "/" && pathname.startsWith(item.href + "/"));
+                const label = t(item.labelKey);
+
                 return (
                   <Button
                     key={item.href}
-                    tooltip={item.label}
+                    tooltip={label}
                     variant="ghost"
                     size="icon-sm"
                     isActive={isActive}
@@ -128,7 +132,7 @@ const SidebarMind = () => {
         </div>
         {canAny([Permission.SETTINGS_VIEW]) && (
           <Button
-            tooltip={"Cài đặt"}
+            tooltip={t("sidebarNavSettings")}
             variant="ghost"
             isActive={isSettings}
             size="icon-sm"

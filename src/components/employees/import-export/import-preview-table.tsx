@@ -5,6 +5,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { CheckCircle2, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
     Table,
@@ -31,6 +32,7 @@ const ROWS_PER_PAGE = 10;
 
 export function ImportPreviewTable({ headers, rows, validation }: ImportPreviewTableProps) {
     const [currentPage, setCurrentPage] = useState(1);
+    const t = useTranslations('ProtectedPages');
 
     const totalPages = Math.ceil(rows.length / ROWS_PER_PAGE);
     const paginatedRows = useMemo(() => {
@@ -61,11 +63,13 @@ export function ImportPreviewTable({ headers, rows, validation }: ImportPreviewT
 
     const handleSimulateImport = () => {
         if (validation.validRows.length === 0) {
-            toast.error('Không có bản ghi hợp lệ để nhập');
+            toast.error(t('employeesImportPreviewNoValidRecords'));
             return;
         }
         toast.success(
-            `Đã nhập ${validation.validRows.length} bản ghi thành công! (Demo — không lưu vào hệ thống)`,
+            t('employeesImportPreviewImportSuccessDemo', {
+                count: validation.validRows.length,
+            }),
         );
     };
 
@@ -78,22 +82,33 @@ export function ImportPreviewTable({ headers, rows, validation }: ImportPreviewT
             <CardHeader>
                 <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
-                        <CardTitle className="text-lg">Xem trước dữ liệu</CardTitle>
+                        <CardTitle className="text-lg">{t('employeesImportPreviewTitle')}</CardTitle>
                         <CardDescription className="mt-1">
-                            {rows.length} bản ghi · {displayHeaders.length} cột
-                            {hasMoreCols && ` (hiển thị ${displayHeaders.length}/${headers.length})`}
+                            {t('employeesImportPreviewStats', {
+                                rows: rows.length,
+                                cols: displayHeaders.length,
+                            })}
+                            {hasMoreCols &&
+                                t('employeesImportPreviewShowing', {
+                                    shown: displayHeaders.length,
+                                    total: headers.length,
+                                })}
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                             <Badge variant="default" className="gap-1">
                                 <CheckCircle2 className="h-3 w-3" />
-                                {validation.validRows.length} hợp lệ
+                                {t('employeesImportPreviewValidCount', {
+                                    count: validation.validRows.length,
+                                })}
                             </Badge>
                             {validation.errors.length > 0 && (
                                 <Badge variant="destructive" className="gap-1">
                                     <XCircle className="h-3 w-3" />
-                                    {validation.invalidRows.length} lỗi
+                                    {t('employeesImportPreviewErrorCount', {
+                                        count: validation.invalidRows.length,
+                                    })}
                                 </Badge>
                             )}
                         </div>
@@ -102,7 +117,7 @@ export function ImportPreviewTable({ headers, rows, validation }: ImportPreviewT
                             disabled={validation.validRows.length === 0}
                             size="sm"
                         >
-                            Nhập dữ liệu
+                            {t('employeesImportPreviewImportData')}
                         </Button>
                     </div>
                 </div>
@@ -114,7 +129,7 @@ export function ImportPreviewTable({ headers, rows, validation }: ImportPreviewT
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-12 text-center">#</TableHead>
-                                <TableHead className="w-16 text-center">Trạng thái</TableHead>
+                                <TableHead className="w-16 text-center">{t('employeesImportPreviewStatus')}</TableHead>
                                 {displayHeaders.map((header) => (
                                     <TableHead key={header} className="whitespace-nowrap">
                                         {header}
@@ -169,7 +184,7 @@ export function ImportPreviewTable({ headers, rows, validation }: ImportPreviewT
                             {paginatedRows.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={displayHeaders.length + 2} className="text-center py-8">
-                                        <p className="text-muted-foreground">Không có dữ liệu</p>
+                                        <p className="text-muted-foreground">{t('employeesImportPreviewNoData')}</p>
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -181,7 +196,10 @@ export function ImportPreviewTable({ headers, rows, validation }: ImportPreviewT
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between mt-4">
                         <p className="text-sm text-muted-foreground">
-                            Trang {currentPage} / {totalPages}
+                            {t('employeesImportPreviewPage', {
+                                current: currentPage,
+                                total: totalPages,
+                            })}
                         </p>
                         <div className="flex gap-2">
                             <Button
@@ -191,7 +209,7 @@ export function ImportPreviewTable({ headers, rows, validation }: ImportPreviewT
                                 disabled={currentPage === 1}
                             >
                                 <ChevronLeft className="h-4 w-4 mr-1" />
-                                Trước
+                                {t('employeesImportPreviewPrevious')}
                             </Button>
                             <Button
                                 variant="outline"
@@ -199,7 +217,7 @@ export function ImportPreviewTable({ headers, rows, validation }: ImportPreviewT
                                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                                 disabled={currentPage === totalPages}
                             >
-                                Sau
+                                {t('employeesImportPreviewNext')}
                                 <ChevronRight className="h-4 w-4 ml-1" />
                             </Button>
                         </div>

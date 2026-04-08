@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Clock,
   MoreHorizontal,
   Pen,
-  Settings,
   Star,
   Trash2,
 } from "lucide-react";
@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import type { Shift } from "@/app/(protected)/attendance/types";
+import type { Shift } from "@/app/[locale]/(protected)/attendance/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,12 +66,18 @@ export function ShiftItem({
   onDelete,
   shiftColor,
 }: ShiftItemProps) {
+  const t = useTranslations("ProtectedPages");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const workHours = computeWorkHours(
     shift.startTime,
     shift.endTime,
     shift.breakMinutes,
   );
+  const minuteSuffix = t("attendanceShiftItemMinuteSuffix");
+  const defaultLabel = t("attendanceShiftItemDefault");
+  const activeLabel = t("attendanceShiftItemActive");
+  const inactiveLabel = t("attendanceShiftItemInactive");
+  const statusText = shift.isActive ? activeLabel : inactiveLabel;
 
   return (
     <>
@@ -105,12 +111,14 @@ export function ShiftItem({
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <Clock className="size-2.5 shrink-0" />
                 <span>
-                  {shift.startTime}–{shift.endTime}
+                  {shift.startTime} - {shift.endTime}
                 </span>
                 {workHours && (
                   <span className="shrink-0">
                     · {workHours.hours}h
-                    {workHours.minutes > 0 ? ` ${workHours.minutes}p` : ""}
+                    {workHours.minutes > 0
+                      ? ` ${workHours.minutes}${minuteSuffix}`
+                      : ""}
                   </span>
                 )}
               </div>
@@ -124,7 +132,7 @@ export function ShiftItem({
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem onClick={onEdit}>
                   <Pen />
-                  Chỉnh sửa
+                  {t("attendanceShiftItemEdit")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -134,7 +142,7 @@ export function ShiftItem({
                   variant="destructive"
                 >
                   <Trash2 />
-                  Xóa
+                  {t("attendanceShiftItemDelete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -143,26 +151,35 @@ export function ShiftItem({
         <TooltipContent side="right" className="max-w-xs">
           <div className="space-y-1">
             <p className="font-medium">{shift.name}</p>
-            <p className="text-xs text-muted-foreground">Mã: {shift.code}</p>
             <p className="text-xs text-muted-foreground">
-              Giờ: {shift.startTime} – {shift.endTime}
+              {t("attendanceShiftItemCodeLabel", { code: shift.code })}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("attendanceShiftItemTimeLabel", {
+                start: shift.startTime,
+                end: shift.endTime,
+              })}
             </p>
             {workHours && (
               <p className="text-xs text-muted-foreground">
-                Thời gian làm: {workHours.hours}h{" "}
-                {workHours.minutes > 0 ? `${workHours.minutes}p` : ""}
+                {t("attendanceShiftItemWorkDurationLabel")} {workHours.hours}h
+                {workHours.minutes > 0 ? ` ${workHours.minutes}${minuteSuffix}` : ""}
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              Nghỉ: {shift.breakMinutes}p
+              {t("attendanceShiftItemBreakLabel")} {shift.breakMinutes}
+              {minuteSuffix}
             </p>
             <p className="text-xs text-muted-foreground">
-              Trễ cho phép: {shift.lateThreshold}p · Sớm cho phép:{" "}
-              {shift.earlyThreshold}p
+              {t("attendanceShiftItemAllowanceLabel", {
+                late: shift.lateThreshold,
+                early: shift.earlyThreshold,
+                minuteSuffix,
+              })}
             </p>
             <p className="text-xs text-muted-foreground">
-              {shift.isDefault ? "Ca mặc định" : ""}
-              {shift.isActive ? "Đang hoạt động" : "Đã vô hiệu hóa"}
+              {shift.isDefault ? `${defaultLabel} · ` : ""}
+              {statusText}
             </p>
           </div>
         </TooltipContent>
@@ -170,14 +187,17 @@ export function ShiftItem({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("attendanceShiftItemDeleteConfirmTitle")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa ca làm việc "{shift.name}"? Hành động
-              này không thể hoàn tác.
+              {t("attendanceShiftItemDeleteConfirmDescription", {
+                name: shift.name,
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogCancel>{t("attendanceShiftItemCancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={(e) => {
@@ -185,7 +205,7 @@ export function ShiftItem({
                 onDelete?.();
               }}
             >
-              Xóa
+              {t("attendanceShiftItemDelete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -193,3 +213,4 @@ export function ShiftItem({
     </>
   );
 }
+

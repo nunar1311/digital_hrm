@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
     Sheet,
     SheetContent,
@@ -20,7 +21,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTimezone } from "@/hooks/use-timezone";
 
-import { getAssetById } from "@/app/(protected)/assets/actions";
+import { getAssetById } from "@/app/[locale]/(protected)/assets/actions";
 import {
     ASSET_CATEGORY_LABELS,
     ASSET_STATUS_LABELS,
@@ -29,13 +30,13 @@ import {
     ASSIGNMENT_STATUS_COLORS,
     CONDITION_LABELS,
     formatCurrency,
-} from "@/app/(protected)/assets/constants";
+} from "@/app/[locale]/(protected)/assets/constants";
 import type {
     AssetCategory,
     AssetStatus,
     AssignmentStatus,
     AssetCondition,
-} from "@/app/(protected)/assets/types";
+} from "@/app/[locale]/(protected)/assets/types";
 
 interface AssetDetailSheetProps {
     open: boolean;
@@ -49,6 +50,7 @@ export function AssetDetailSheet({
     assetId,
 }: AssetDetailSheetProps) {
     const { formatDate } = useTimezone();
+    const t = useTranslations("ProtectedPages");
 
     const { data: asset, isLoading } = useQuery({
         queryKey: ["assets", "detail", assetId],
@@ -60,7 +62,7 @@ export function AssetDetailSheet({
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
                 <SheetHeader>
-                    <SheetTitle>Chi tiết tài sản</SheetTitle>
+                    <SheetTitle>{t("assetsDetailSheetTitle")}</SheetTitle>
                 </SheetHeader>
 
                 {isLoading ? (
@@ -72,7 +74,7 @@ export function AssetDetailSheet({
                     </div>
                 ) : !asset ? (
                     <p className="mt-6 text-muted-foreground">
-                        Không tìm thấy tài sản
+                        {t("assetsDetailNotFound")}
                     </p>
                 ) : (
                     <div className="space-y-6 px-6">
@@ -94,11 +96,11 @@ export function AssetDetailSheet({
 
                             <div className="grid grid-cols-2 gap-3 text-sm">
                                 <InfoRow
-                                    label="Mã tài sản"
+                                    label={t("assetsDetailCodeLabel")}
                                     value={asset.code}
                                 />
                                 <InfoRow
-                                    label="Loại"
+                                    label={t("assetsDetailCategoryLabel")}
                                     value={
                                         ASSET_CATEGORY_LABELS[
                                             asset.category as AssetCategory
@@ -106,23 +108,23 @@ export function AssetDetailSheet({
                                     }
                                 />
                                 <InfoRow
-                                    label="Thương hiệu"
+                                    label={t("assetsDetailBrandLabel")}
                                     value={asset.brand}
                                 />
                                 <InfoRow
-                                    label="Model"
+                                    label={t("assetsDetailModelLabel")}
                                     value={asset.model}
                                 />
                                 <InfoRow
-                                    label="Số serial"
+                                    label={t("assetsDetailSerialLabel")}
                                     value={asset.serialNumber}
                                 />
                                 <InfoRow
-                                    label="Vị trí"
+                                    label={t("assetsDetailLocationLabel")}
                                     value={asset.location}
                                 />
                                 <InfoRow
-                                    label="Ngày mua"
+                                    label={t("assetsDetailPurchaseDateLabel")}
                                     value={
                                         asset.purchaseDate
                                             ? formatDate(
@@ -134,13 +136,13 @@ export function AssetDetailSheet({
                                     }
                                 />
                                 <InfoRow
-                                    label="Giá mua"
+                                    label={t("assetsDetailPurchasePriceLabel")}
                                     value={formatCurrency(
                                         asset.purchasePrice,
                                     )}
                                 />
                                 <InfoRow
-                                    label="Bảo hành đến"
+                                    label={t("assetsDetailWarrantyEndLabel")}
                                     value={
                                         asset.warrantyEnd
                                             ? formatDate(
@@ -156,7 +158,7 @@ export function AssetDetailSheet({
                             {asset.description && (
                                 <div className="mt-3">
                                     <p className="text-sm font-medium text-muted-foreground">
-                                        Mô tả
+                                        {t("assetsDetailDescriptionLabel")}
                                     </p>
                                     <p className="text-sm mt-1">
                                         {asset.description}
@@ -170,11 +172,13 @@ export function AssetDetailSheet({
                         {/* Assignment History */}
                         <div>
                             <h4 className="text-sm font-semibold mb-3">
-                                Lịch sử cấp phát ({asset.assignments.length})
+                                {t("assetsDetailAssignmentHistoryTitle", {
+                                    count: asset.assignments.length,
+                                })}
                             </h4>
                             {asset.assignments.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
-                                    Chưa có lịch sử cấp phát
+                                    {t("assetsDetailNoAssignmentHistory")}
                                 </p>
                             ) : (
                                 <div className="rounded-md border">
@@ -182,19 +186,19 @@ export function AssetDetailSheet({
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>
-                                                    Nhân viên
+                                                    {t("assetsDetailEmployeeHeader")}
                                                 </TableHead>
                                                 <TableHead>
-                                                    Ngày cấp
+                                                    {t("assetsDetailAssignedDateHeader")}
                                                 </TableHead>
                                                 <TableHead>
-                                                    Ngày trả
+                                                    {t("assetsDetailReturnDateHeader")}
                                                 </TableHead>
                                                 <TableHead>
-                                                    Trạng thái
+                                                    {t("assetsDetailStatusHeader")}
                                                 </TableHead>
                                                 <TableHead>
-                                                    Tình trạng
+                                                    {t("assetsDetailConditionHeader")}
                                                 </TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -218,7 +222,7 @@ export function AssetDetailSheet({
                                                                       a.returnDate,
                                                                   ),
                                                               )
-                                                            : "—"}
+                                                            : t("assetsDetailFallbackValue")}
                                                     </TableCell>
                                                     <TableCell>
                                                         <Badge
@@ -236,7 +240,7 @@ export function AssetDetailSheet({
                                                                   a.condition as AssetCondition
                                                               ] ||
                                                               a.condition
-                                                            : "—"}
+                                                            : t("assetsDetailFallbackValue")}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -268,3 +272,4 @@ function InfoRow({
         </div>
     );
 }
+

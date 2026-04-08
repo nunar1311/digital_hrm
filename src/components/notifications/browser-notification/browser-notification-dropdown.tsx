@@ -9,6 +9,7 @@ import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
+import { useTranslations } from "next-intl";
 
 interface BrowserNotificationDropdownProps {
     profile: string;
@@ -33,21 +34,23 @@ export function BrowserNotificationDropdown({
     isSaving = false,
     children,
 }: BrowserNotificationDropdownProps) {
+    const t = useTranslations("ProtectedPages");
+
     const presetOptions = [
         {
             value: "default",
-            label: "Mặc định",
-            description: "Cài đặt được đề xuất",
+            label: t("browserNotificationPresetDefaultLabel"),
+            description: t("browserNotificationPresetDefaultDescription"),
         },
         {
             value: "focused",
-            label: "Tập trung",
-            description: "Chỉ thông báo quan trọng",
+            label: t("browserNotificationPresetFocusedLabel"),
+            description: t("browserNotificationPresetFocusedDescription"),
         },
         {
             value: "custom",
-            label: "Tùy chỉnh",
-            description: "Cấu hình theo nhu cầu",
+            label: t("browserNotificationPresetCustomLabel"),
+            description: t("browserNotificationPresetCustomDescription"),
         },
     ] as const;
 
@@ -63,7 +66,7 @@ export function BrowserNotificationDropdown({
             >
                 <div className="px-2 py-1.5">
                     <p className="text-xs font-medium text-muted-foreground px-1 mb-1.5">
-                        Chế độ thông báo
+                        {t("browserNotificationMode")}
                     </p>
                     <div className="space-y-0.5">
                         {presetOptions.map((opt) => {
@@ -111,7 +114,7 @@ export function BrowserNotificationDropdown({
                 <div className="flex items-center justify-between gap-2 px-2 py-2">
                     <div className="flex items-center gap-2">
                         <Volume2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">Phát âm thanh</span>
+                        <span className="text-sm">{t("browserNotificationPlaySound")}</span>
                     </div>
                     <Switch
                         checked={playSoundEnabled}
@@ -131,7 +134,7 @@ export function BrowserNotificationDropdown({
                     className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
                 >
                     <BellOff className="h-4 w-4" />
-                    <span className="text-sm">Tắt thông báo</span>
+                    <span className="text-sm">{t("browserNotificationDisable")}</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -31,10 +31,11 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { getDepartmentTree } from "@/app/(protected)/org-chart/actions";
-import { updateEmployeesDepartment } from "@/app/(protected)/employees/actions";
+import { getDepartmentTree } from "@/app/[locale]/(protected)/org-chart/actions";
+import { updateEmployeesDepartment } from "@/app/[locale]/(protected)/employees/actions";
 import { toast } from "sonner";
 import DynamicIcon from "../DynamicIcon";
+import { useTranslations } from "next-intl";
 
 interface MoveEmployeesDialogProps {
     open: boolean;
@@ -53,6 +54,7 @@ export function MoveEmployeesDialog({
     currentDepartmentName,
     onMoved,
 }: MoveEmployeesDialogProps) {
+    const t = useTranslations("ProtectedPages");
     const [targetDepartmentId, setTargetDepartmentId] =
         useState<string>("");
     const [popoverOpen, setPopoverOpen] = useState(false);
@@ -96,7 +98,7 @@ export function MoveEmployeesDialog({
     const handleMove = async () => {
         if (!targetDepartmentId) return;
         if (targetDepartmentId === currentDepartmentId) {
-            toast.error("Nhân viên đã ở trong phòng ban này");
+            toast.error(t("departmentEmployeesMoveSameDepartmentError"));
             return;
         }
 
@@ -107,13 +109,13 @@ export function MoveEmployeesDialog({
                 targetDepartmentId,
             );
             toast.success(
-                `Đã chuyển ${count} nhân viên sang phòng ban mới`,
+                t("departmentEmployeesMoveSuccess", { count }),
             );
             onMoved();
             onClose();
             setTargetDepartmentId("");
         } catch {
-            toast.error("Có lỗi xảy ra khi chuyển phòng ban");
+            toast.error(t("departmentEmployeesMoveError"));
         } finally {
             setIsSubmitting(false);
         }
@@ -131,11 +133,12 @@ export function MoveEmployeesDialog({
         <Dialog open={open} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                    <DialogTitle>Chuyển phòng ban</DialogTitle>
+                    <DialogTitle>{t("departmentEmployeesMoveTitle")}</DialogTitle>
                     <DialogDescription>
-                        Chuyển {selectedIds.length} nhân viên từ{" "}
-                        <strong>{currentDepartmentName}</strong> sang
-                        phòng ban khác.
+                        {t("departmentEmployeesMoveDescription", {
+                            count: selectedIds.length,
+                            from: currentDepartmentName,
+                        })}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -170,7 +173,7 @@ export function MoveEmployeesDialog({
                                                     }
                                                 </>
                                             ) : (
-                                                "Chọn phòng ban đích..."
+                                                t("departmentEmployeesMoveSelectTarget")
                                             )}
                                         </span>
                                         <ChevronDownIcon
@@ -189,11 +192,10 @@ export function MoveEmployeesDialog({
                                     className="w-full min-w-(--radix-popper-anchor-width) p-0"
                                 >
                                     <Command>
-                                        <CommandInput placeholder="Tìm kiếm phòng ban..." />
+                                        <CommandInput placeholder={t("departmentEmployeesMoveSearchDepartment")} />
                                         <CommandList>
                                             <CommandEmpty>
-                                                Không tìm thấy phòng
-                                                ban.
+                                                {t("departmentEmployeesMoveDepartmentNotFound")}
                                             </CommandEmpty>
                                             <CommandGroup>
                                                 {filteredDepartments.map(
@@ -249,7 +251,7 @@ export function MoveEmployeesDialog({
 
                             {targetDepartmentId && (
                                 <p className="text-xs text-muted-foreground">
-                                    Nhân viên sẽ được chuyển sang:{" "}
+                                    {t("departmentEmployeesMoveToLabel")}{" "}
                                     <strong className="text-foreground">
                                         {selectedDepartment?.name}
                                     </strong>
@@ -265,7 +267,7 @@ export function MoveEmployeesDialog({
                         onClick={handleClose}
                         disabled={isSubmitting}
                     >
-                        Hủy
+                        {t("departmentEmployeesCancel")}
                     </Button>
                     <Button
                         onClick={handleMove}
@@ -274,10 +276,10 @@ export function MoveEmployeesDialog({
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="animate-spin" />
-                                Đang chuyển...
+                                {t("departmentEmployeesMoveProcessing")}
                             </>
                         ) : (
-                            "Chuyển phòng ban"
+                            t("departmentEmployeesMoveDepartment")
                         )}
                     </Button>
                 </DialogFooter>
@@ -285,3 +287,4 @@ export function MoveEmployeesDialog({
         </Dialog>
     );
 }
+

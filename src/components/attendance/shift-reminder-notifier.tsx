@@ -4,52 +4,59 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Clock } from "lucide-react";
 import { createElement } from "react";
+import { useTranslations } from "next-intl";
 import { useShiftReminder } from "@/hooks/use-shift-reminder";
 import { useBrowserNotification } from "@/lib/browser-notification";
 
 /**
- * Component "invisible" — không render gì lên màn hình.
- * Chỉ mount hook useShiftReminder và handle hiển thị toast + browser notification.
+ * Invisible component: mounts shift reminder hook and dispatches
+ * toast + browser notifications.
  */
 export function ShiftReminderNotifier() {
   const { shouldRemind, shift, minutesUntil } = useShiftReminder();
   const browserNotification = useBrowserNotification();
+  const t = useTranslations("ProtectedPages");
   const toastShown = useRef<string | null>(null);
 
   useEffect(() => {
     if (!shouldRemind || !shift) return;
 
-    // Tránh hiện toast trùng lặp cho cùng ca
+    // Prevent duplicate notifications for the same shift/day
     const toastKey = `${shift.id}-${new Date().toISOString().split("T")[0]}`;
     if (toastShown.current === toastKey) return;
     toastShown.current = toastKey;
 
-    // Hiển thị toast trên trang
     const minuteText =
       minutesUntil === 0
-        ? "ngay bây giờ"
-        : `trong ${minutesUntil} phút nữa`;
+        ? t("attendanceShiftReminderNow")
+        : t("attendanceShiftReminderInMinutes", { minutes: minutesUntil });
 
-    toast.info(`Sắp đến giờ làm việc`, {
-      description: `Ca "${shift.name}" bắt đầu lúc ${shift.startTime} (${minuteText}). Hãy chuẩn bị chấm công!`,
+    const title = t("attendanceShiftReminderTitle");
+    const description = t("attendanceShiftReminderDescription", {
+      shiftName: shift.name,
+      startTime: shift.startTime,
+      minuteText,
+    });
+
+    toast.info(title, {
+      description,
       duration: 15000,
       icon: createElement(Clock, { className: "h-4 w-4" }),
       action: {
-        label: "Chấm công",
+        label: t("attendanceShiftReminderAction"),
         onClick: () => {
           window.location.href = "/attendance";
         },
       },
     });
 
-    // Hiển thị browser notification
     browserNotification.showNotification(
-      "Sắp đến giờ làm việc",
-      `Ca "${shift.name}" bắt đầu lúc ${shift.startTime} (${minuteText}). Hãy chuẩn bị chấm công!`,
+      title,
+      description,
       "HIGH",
       "/attendance"
     );
-  }, [shouldRemind, shift, minutesUntil, browserNotification]);
+  }, [shouldRemind, shift, minutesUntil, browserNotification, t]);
 
   return null;
 }

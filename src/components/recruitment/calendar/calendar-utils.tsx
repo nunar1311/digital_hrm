@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
     MapPin,
@@ -6,11 +6,11 @@ import {
     Phone,
     Calendar as CalendarIcon,
 } from "lucide-react";
-import type { InterviewType, InterviewStatus } from "@/app/(protected)/recruitment/types";
+import type { InterviewType, InterviewStatus } from "@/app/[locale]/(protected)/recruitment/types";
 import {
     INTERVIEW_TYPE,
     INTERVIEW_STATUS,
-} from "@/app/(protected)/recruitment/constants";
+} from "@/app/[locale]/(protected)/recruitment/constants";
 
 export const getInterviewTypeIcon = (type: string) => {
     switch (type) {
@@ -88,3 +88,4 @@ export const initialFormData: InterviewFormData = {
     meetingLink: "",
     notes: "",
 };
+

@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -33,22 +32,24 @@ import {
 import type {
     WorkCycle,
     DepartmentBasic,
-} from "@/app/(protected)/attendance/types";
-import { assignWorkCycleToDepartment } from "@/app/(protected)/attendance/actions";
+} from "@/app/[locale]/(protected)/attendance/types";
+import { assignWorkCycleToDepartment } from "@/app/[locale]/(protected)/attendance/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CyclePreview } from "@/components/attendance/cycle-preview";
+import { useTranslations } from "next-intl";
 
-const assignCycleDeptSchema = z.object({
-    departmentId: z.string().min(1, "Vui lòng chọn phòng ban"),
-    workCycleId: z.string().min(1, "Vui lòng chọn chu kỳ"),
-    startDate: z.date().min(1, "Vui lòng chọn ngày bắt đầu"),
-    endDate: z.date().optional(),
-});
+function createAssignCycleDeptSchema(t: ReturnType<typeof useTranslations>) {
+    return z.object({
+        departmentId: z.string().min(1, t("attendanceShiftsValidationDepartmentRequired")),
+        workCycleId: z.string().min(1, t("attendanceShiftsValidationWorkCycleRequired")),
+        startDate: z.date().min(1, t("attendanceShiftsValidationStartDateRequired")),
+        endDate: z.date().optional(),
+    });
+}
 
-type AssignCycleDeptFormValues = z.infer<
-    typeof assignCycleDeptSchema
->;
+type AssignCycleDeptFormSchema = ReturnType<typeof createAssignCycleDeptSchema>;
+type AssignCycleDeptFormValues = z.infer<AssignCycleDeptFormSchema>;
 
 interface AssignCycleDeptDialogProps {
     open: boolean;
@@ -64,6 +65,8 @@ export function AssignCycleDeptDialog({
     workCycles,
 }: AssignCycleDeptDialogProps) {
     const queryClient = useQueryClient();
+    const t = useTranslations("ProtectedPages");
+    const assignCycleDeptSchema = createAssignCycleDeptSchema(t);
 
     const form = useForm<AssignCycleDeptFormValues>({
         resolver: zodResolver(assignCycleDeptSchema),
@@ -85,9 +88,13 @@ export function AssignCycleDeptDialog({
             );
         },
         onSuccess: (result) => {
-            let msg = `Đã gán chu kỳ cho ${result.assigned} nhân viên`;
+            let msg = t("attendanceShiftsAssignCycleDeptToastAssigned", {
+                count: result.assigned,
+            });
             if (result.skipped > 0) {
-                msg += ` (bỏ qua ${result.skipped} NV đã có chu kỳ)`;
+                msg += ` ${t("attendanceShiftsAssignCycleDeptToastSkipped", {
+                    count: result.skipped,
+                })}`;
             }
             toast.success(msg);
             queryClient.invalidateQueries({
@@ -99,14 +106,26 @@ export function AssignCycleDeptDialog({
             onOpenChange(false);
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceShiftsToastError"));
         },
     });
 
-    const workCycleId = form.watch("workCycleId");
-    const departmentId = form.watch("departmentId");
-    const startDate = form.watch("startDate");
-    const endDate = form.watch("endDate");
+    const workCycleId = useWatch({
+        control: form.control,
+        name: "workCycleId",
+    });
+    const departmentId = useWatch({
+        control: form.control,
+        name: "departmentId",
+    });
+    const startDate = useWatch({
+        control: form.control,
+        name: "startDate",
+    });
+    const endDate = useWatch({
+        control: form.control,
+        name: "endDate",
+    });
 
     const selectedCycle = workCycles.find(
         (c) => c.id === workCycleId,
@@ -120,11 +139,10 @@ export function AssignCycleDeptDialog({
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>
-                        Gán chu kỳ theo phòng ban
+                        {t("attendanceShiftsAssignCycleDeptDialogTitle")}
                     </DialogTitle>
                     <DialogDescription>
-                        Gán chu kỳ làm việc xoay vòng cho toàn bộ nhân
-                        viên trong phòng ban
+                        {t("attendanceShiftsAssignCycleDeptDialogDescription")}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -140,7 +158,7 @@ export function AssignCycleDeptDialog({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>
-                                        Phòng ban{" "}
+                                        {t("attendanceShiftsAssignCycleDeptDepartment")}{" "}
                                         <span className="text-destructive">
                                             *
                                         </span>
@@ -151,7 +169,11 @@ export function AssignCycleDeptDialog({
                                     >
                                         <FormControl>
                                             <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Chọn phòng ban" />
+                                                <SelectValue
+                                                    placeholder={t(
+                                                        "attendanceShiftsAssignCycleDeptDepartmentPlaceholder",
+                                                    )}
+                                                />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -178,7 +200,7 @@ export function AssignCycleDeptDialog({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>
-                                        Chu kỳ làm việc{" "}
+                                        {t("attendanceShiftsAssignCycleDeptCycle")}{" "}
                                         <span className="text-destructive">
                                             *
                                         </span>
@@ -189,7 +211,11 @@ export function AssignCycleDeptDialog({
                                     >
                                         <FormControl>
                                             <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Chọn chu kỳ" />
+                                                <SelectValue
+                                                    placeholder={t(
+                                                        "attendanceShiftsAssignCycleDeptCyclePlaceholder",
+                                                    )}
+                                                />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -202,9 +228,10 @@ export function AssignCycleDeptDialog({
                                                         key={c.id}
                                                         value={c.id}
                                                     >
-                                                        {c.name} (
-                                                        {c.totalDays}{" "}
-                                                        ngày)
+                                                        {c.name}
+                                                        {t("attendanceShiftsCycleDays", {
+                                                            days: c.totalDays,
+                                                        })}
                                                     </SelectItem>
                                                 ))}
                                         </SelectContent>
@@ -225,7 +252,7 @@ export function AssignCycleDeptDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Từ ngày{" "}
+                                            {t("attendanceShiftsAssignFromDate")}{" "}
                                             <span className="text-destructive">
                                                 *
                                             </span>
@@ -248,7 +275,7 @@ export function AssignCycleDeptDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Đến ngày
+                                            {t("attendanceShiftsAssignToDate")}
                                         </FormLabel>
                                         <FormControl>
                                             <DatePicker
@@ -269,15 +296,15 @@ export function AssignCycleDeptDialog({
                             selectedDept &&
                             selectedCycle && (
                                 <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-                                    Gán chu kỳ{" "}
+                                    {t("attendanceShiftsAssignCycleDeptSummaryPrefix")}{" "}
                                     <strong className="text-foreground">
                                         {selectedCycle.name}
                                     </strong>{" "}
-                                    cho toàn bộ nhân viên phòng{" "}
+                                    {t("attendanceShiftsAssignCycleDeptSummaryForDept")}{" "}
                                     <strong className="text-foreground">
                                         {selectedDept.name}
                                     </strong>{" "}
-                                    từ{" "}
+                                    {t("attendanceShiftsAssignCycleDeptSummaryFrom")}{" "}
                                     <strong className="text-foreground">
                                         {format(
                                             startDate,
@@ -287,7 +314,7 @@ export function AssignCycleDeptDialog({
                                     {endDate ? (
                                         <>
                                             {" "}
-                                            đến{" "}
+                                            {t("attendanceShiftsAssignCycleDeptSummaryTo")}{" "}
                                             <strong className="text-foreground">
                                                 {format(
                                                     endDate,
@@ -296,7 +323,7 @@ export function AssignCycleDeptDialog({
                                             </strong>
                                         </>
                                     ) : (
-                                        " (không có ngày kết thúc)"
+                                        ` (${t("attendanceShiftsAssignCycleDeptNoEndDate")})`
                                     )}
                                 </div>
                             )}
@@ -307,15 +334,15 @@ export function AssignCycleDeptDialog({
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
                             >
-                                Hủy
+                                {t("attendanceShiftsAssignCancel")}
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={mutation.isPending}
                             >
                                 {mutation.isPending
-                                    ? "Đang xử lý..."
-                                    : "Gán chu kỳ"}
+                                    ? t("attendanceShiftsAssignSaving")
+                                    : t("attendanceShiftsAssignCycleDeptSubmit")}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -324,3 +351,4 @@ export function AssignCycleDeptDialog({
         </Dialog>
     );
 }
+

@@ -20,6 +20,7 @@ import { EmployeePopover } from "./employee-popover";
 import { NODE_CONFIG } from "./org-chart-constants";
 import type { ChartCardStyle } from "./org-chart-constants";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface OrgChartNodeProps {
     node: DepartmentNode;
@@ -64,6 +65,7 @@ export function OrgChartNode({
     isLocked,
     onMoveStart,
 }: OrgChartNodeProps) {
+    const t = useTranslations("ProtectedPages");
     const [isDragOver, setIsDragOver] = useState(false);
     const pointerStartRef = useRef<{ x: number; y: number } | null>(
         null,
@@ -222,7 +224,7 @@ export function OrgChartNode({
                         </p>
                         <p className="text-[10px] text-muted-foreground truncate">
                             {node.manager?.position ??
-                                "Chưa có quản lý"}
+                                t("orgChartNoManager")}
                         </p>
                     </div>
                 </div>
@@ -274,7 +276,9 @@ export function OrgChartNode({
                                         "move";
                                 }}
                                 className="flex items-center gap-1 bg-muted/80 hover:bg-muted rounded-full pl-1 pr-2 py-0.5 text-[10px] cursor-grab active:cursor-grabbing transition-colors group/emp hover:scale-105 hover:shadow-md"
-                                title={`Kéo để chuyển ${emp.name} sang phòng ban khác`}
+                                title={t("orgChartDragEmployeeToDept", {
+                                    name: emp.name,
+                                })}
                             >
                                 <GripVertical className="h-2.5 w-2.5 text-muted-foreground/50 group-hover/emp:text-muted-foreground" />
                                 <span className="font-medium truncate max-w-20">

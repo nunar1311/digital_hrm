@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 import {
   Tooltip,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCcwDot, Moon, MoreHorizontal, Pen } from "lucide-react";
-import type { WorkCycle } from "@/app/(protected)/attendance/types";
+import type { WorkCycle } from "@/app/[locale]/(protected)/attendance/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,9 +82,13 @@ export function WorkCycleItem({
   onEdit,
   onDelete,
 }: WorkCycleItemProps) {
+  const t = useTranslations("ProtectedPages");
   const { workDays, offDays, shiftNames } = getCycleSummary(workCycle);
   const color = getCycleColor(workCycle.id);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const daySuffix = t("attendanceWorkCycleItemDaySuffix");
+  const activeLabel = t("attendanceWorkCycleItemActive");
+  const inactiveLabel = t("attendanceWorkCycleItemInactive");
 
   return (
     <>
@@ -112,17 +117,25 @@ export function WorkCycleItem({
                 </span>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <span>{workCycle.totalDays} ngày</span>
+                <span>
+                  {workCycle.totalDays} {daySuffix}
+                </span>
                 <span>·</span>
                 <span className="text-green-600 dark:text-green-400">
-                  {workDays} ngày làm
+                  {t("attendanceWorkCycleItemWorkDays", {
+                    days: workDays,
+                    daySuffix,
+                  })}
                 </span>
                 {offDays > 0 && (
                   <>
                     <span>·</span>
                     <span className="flex items-center gap-0.5">
                       <Moon className="size-2.5" />
-                      {offDays} nghỉ
+                      {t("attendanceWorkCycleItemOffDays", {
+                        days: offDays,
+                        daySuffix,
+                      })}
                     </span>
                   </>
                 )}
@@ -137,7 +150,7 @@ export function WorkCycleItem({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem onClick={onEdit}>
-                  <Pen /> Chỉnh sửa
+                  <Pen /> {t("attendanceWorkCycleItemEdit")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   variant="destructive"
@@ -146,7 +159,7 @@ export function WorkCycleItem({
                     setShowDeleteDialog(true);
                   }}
                 >
-                  Xóa
+                  {t("attendanceWorkCycleItemDelete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -161,18 +174,27 @@ export function WorkCycleItem({
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              Chu kỳ: {workCycle.totalDays} ngày
+              {t("attendanceWorkCycleItemCycleLabel", {
+                days: workCycle.totalDays,
+                daySuffix,
+              })}
             </p>
             <p className="text-xs text-muted-foreground">
-              Ngày làm: {workDays} · Ngày nghỉ: {offDays}
+              {t("attendanceWorkCycleItemSummary", {
+                workDays,
+                offDays,
+                daySuffix,
+              })}
             </p>
             {shiftNames.length > 0 && (
               <p className="text-xs text-muted-foreground">
-                Ca: {shiftNames.join(", ")}
+                {t("attendanceWorkCycleItemShiftsLabel", {
+                  shifts: shiftNames.join(", "),
+                })}
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              {workCycle.isActive ? "Đang hoạt động" : "Đã vô hiệu hóa"}
+              {workCycle.isActive ? activeLabel : inactiveLabel}
             </p>
           </div>
         </TooltipContent>
@@ -181,14 +203,17 @@ export function WorkCycleItem({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("attendanceWorkCycleItemDeleteConfirmTitle")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa chu kỳ "{workCycle.name}"? Hành động này
-              không thể hoàn tác.
+              {t("attendanceWorkCycleItemDeleteConfirmDescription", {
+                name: workCycle.name,
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogCancel>{t("attendanceWorkCycleItemCancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={(e) => {
@@ -196,7 +221,7 @@ export function WorkCycleItem({
                 onDelete?.();
               }}
             >
-              Xóa
+              {t("attendanceWorkCycleItemDelete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -204,3 +229,4 @@ export function WorkCycleItem({
     </>
   );
 }
+

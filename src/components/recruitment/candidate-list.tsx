@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
@@ -65,7 +66,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import {
     dateToStr,
     strToDate,
-} from "@/app/(protected)/attendance/shifts/shift-dialogs";
+} from "@/app/[locale]/(protected)/attendance/shifts/shift-dialogs";
 
 import {
     getCandidates,
@@ -73,19 +74,19 @@ import {
     updateCandidate,
     deleteCandidate,
     getJobPostings,
-} from "@/app/(protected)/recruitment/actions";
+} from "@/app/[locale]/(protected)/recruitment/actions";
 import type {
     CandidateBasic,
     CandidateFilters,
     CreateCandidateForm,
     CandidateStage,
     CandidateSource,
-} from "@/app/(protected)/recruitment/types";
+} from "@/app/[locale]/(protected)/recruitment/types";
 
 const candidateSchema = z.object({
-    jobPostingId: z.string().min(1, "Vui lòng chọn vị trí"),
-    name: z.string().min(1, "Vui lòng nhập họ tên"),
-    email: z.string().email("Email không hợp lệ"),
+    jobPostingId: z.string().min(1, "Please select a position"),
+    name: z.string().min(1, "Please enter full name"),
+    email: z.string().email("Invalid email"),
     phone: z.string().optional(),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
     dateOfBirth: z.string().optional(),
@@ -105,35 +106,36 @@ const STAGE_LABELS: Record<
     { label: string; color: string }
 > = {
     APPLIED: {
-        label: "Ứng tuyển",
+        label: "Applied",
         color: "bg-gray-100 text-gray-700",
     },
     SCREENING: {
-        label: "Sàng lọc",
+        label: "Screening",
         color: "bg-blue-100 text-blue-700",
     },
     INTERVIEW: {
-        label: "Phỏng vấn",
+        label: "Interview",
         color: "bg-yellow-100 text-yellow-700",
     },
     OFFER: { label: "Offer", color: "bg-purple-100 text-purple-700" },
     HIRED: {
-        label: "Đã tuyển",
+        label: "Hired",
         color: "bg-green-100 text-green-700",
     },
-    REJECTED: { label: "Từ chối", color: "bg-red-100 text-red-700" },
+    REJECTED: { label: "Rejected", color: "bg-red-100 text-red-700" },
 };
 
 const SOURCE_LABELS: Record<string, string> = {
     WEBSITE: "Website",
     LINKEDIN: "LinkedIn",
     FACEBOOK: "Facebook",
-    REFERRAL: "Giới thiệu",
+    REFERRAL: "Referral",
     AGENCY: "Agency",
-    OTHER: "Khác",
+    OTHER: "Other",
 };
 
 export function CandidateList() {
+    const t = useTranslations("ProtectedPages");
     const queryClient = useQueryClient();
     const [filters, setFilters] = useState<CandidateFilters>({});
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -168,10 +170,10 @@ export function CandidateList() {
             return {};
         },
         onSuccess: () => {
-            toast.success("Thêm ứng viên thành công");
+            toast.success("Candidate created successfully");
         },
         onError: (error: Error) => {
-            toast.error(error.message || "Lỗi khi thêm ứng viên");
+            toast.error(error.message || "Failed to create candidate");
             queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] });
         },
         onSettled: () => {
@@ -193,10 +195,10 @@ export function CandidateList() {
             return {};
         },
         onSuccess: () => {
-            toast.success("Cập nhật ứng viên thành công");
+            toast.success("Candidate updated successfully");
         },
         onError: (error: Error) => {
-            toast.error(error.message || "Lỗi khi cập nhật ứng viên");
+            toast.error(error.message || "Failed to update candidate");
             queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] });
         },
         onSettled: () => {
@@ -211,10 +213,10 @@ export function CandidateList() {
             return {};
         },
         onSuccess: () => {
-            toast.success("Xóa ứng viên thành công");
+            toast.success("Candidate deleted successfully");
         },
         onError: (error: Error) => {
-            toast.error(error.message || "Lỗi khi xóa ứng viên");
+            toast.error(error.message || "Failed to delete candidate");
             queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] });
         },
         onSettled: () => {
@@ -307,12 +309,50 @@ export function CandidateList() {
         updateMutation.mutate({ id, data: { stage } });
     };
 
+    const getStageLabel = (stage: CandidateStage) => {
+        switch (stage) {
+            case "APPLIED":
+                return t("recruitmentStageApplied");
+            case "SCREENING":
+                return t("recruitmentStageScreening");
+            case "INTERVIEW":
+                return t("recruitmentStageInterview");
+            case "OFFER":
+                return t("recruitmentStageOffer");
+            case "HIRED":
+                return t("recruitmentStageHired");
+            case "REJECTED":
+                return t("recruitmentStageRejected");
+            default:
+                return stage;
+        }
+    };
+
+    const getSourceLabel = (source: string) => {
+        switch (source) {
+            case "WEBSITE":
+                return t("recruitmentSourceWebsite");
+            case "LINKEDIN":
+                return t("recruitmentSourceLinkedin");
+            case "FACEBOOK":
+                return t("recruitmentSourceFacebook");
+            case "REFERRAL":
+                return t("recruitmentSourceReferral");
+            case "AGENCY":
+                return t("recruitmentSourceAgency");
+            case "OTHER":
+                return t("recruitmentSourceOther");
+            default:
+                return source;
+        }
+    };
+
     return (
         <div className="space-y-4">
             {/* Filters */}
             <div className="flex flex-wrap gap-4">
                 <Input
-                    placeholder="Tìm kiếm ứng viên..."
+                    placeholder="Search candidates..."
                     className="max-w-xs"
                     value={filters.search || ""}
                     onChange={(e) =>
@@ -334,27 +374,27 @@ export function CandidateList() {
                     }
                 >
                     <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Trạng thái" />
+                        <SelectValue placeholder="Stage" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="__all__">
-                            Tất cả
+                            All
                         </SelectItem>
                         <SelectItem value="APPLIED">
-                            Ứng tuyển
+                            Applied
                         </SelectItem>
                         <SelectItem value="SCREENING">
-                            Sàng lọc
+                            Screening
                         </SelectItem>
                         <SelectItem value="INTERVIEW">
-                            Phỏng vấn
+                            Interview
                         </SelectItem>
                         <SelectItem value="OFFER">Offer</SelectItem>
                         <SelectItem value="HIRED">
-                            Đã tuyển
+                            Hired
                         </SelectItem>
                         <SelectItem value="REJECTED">
-                            Từ chối
+                            Rejected
                         </SelectItem>
                     </SelectContent>
                 </Select>
@@ -368,11 +408,11 @@ export function CandidateList() {
                     }
                 >
                     <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Vị trí ứng tuyển" />
+                        <SelectValue placeholder="Applied position" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="__all__">
-                            Tất cả
+                            All
                         </SelectItem>
                         {jobPostings.map((jp) => (
                             <SelectItem key={jp.id} value={jp.id}>
@@ -393,11 +433,11 @@ export function CandidateList() {
                     }
                 >
                     <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Nguồn" />
+                        <SelectValue placeholder="Source" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="__all__">
-                            Tất cả
+                            All
                         </SelectItem>
                         <SelectItem value="WEBSITE">
                             Website
@@ -409,10 +449,10 @@ export function CandidateList() {
                             Facebook
                         </SelectItem>
                         <SelectItem value="REFERRAL">
-                            Giới thiệu
+                            Referral
                         </SelectItem>
                         <SelectItem value="AGENCY">Agency</SelectItem>
-                        <SelectItem value="OTHER">Khác</SelectItem>
+                        <SelectItem value="OTHER">Other</SelectItem>
                     </SelectContent>
                 </Select>
                 <Dialog
@@ -423,15 +463,15 @@ export function CandidateList() {
                     }}
                 >
                     <DialogTrigger asChild>
-                        <Button>+ Thêm ứng viên</Button>
+                        <Button>+ Add candidate</Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>
-                                Thêm ứng viên mới
+                                Add new candidate
                             </DialogTitle>
                             <DialogDescription>
-                                Thêm thông tin ứng viên
+                                Add candidate information
                             </DialogDescription>
                         </DialogHeader>
                         <Form {...createForm}>
@@ -447,7 +487,7 @@ export function CandidateList() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Vị trí ứng tuyển *
+                                                Applied position *
                                             </FormLabel>
                                             <Select
                                                 onValueChange={
@@ -456,7 +496,7 @@ export function CandidateList() {
                                                 value={field.value}
                                             >
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Chọn vị trí" />
+                                                    <SelectValue placeholder="Select position" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {jobPostings.map(
@@ -488,11 +528,11 @@ export function CandidateList() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Họ tên *
+                                                    Full name *
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input
-                                                        placeholder="Nguyễn Văn A"
+                                                        placeholder="Nguyen Van A"
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -526,7 +566,7 @@ export function CandidateList() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Số điện thoại
+                                                    Phone number
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input
@@ -544,7 +584,7 @@ export function CandidateList() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Giới tính
+                                                    Gender
                                                 </FormLabel>
                                                 <Select
                                                     onValueChange={
@@ -556,17 +596,17 @@ export function CandidateList() {
                                                     }
                                                 >
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Chọn giới tính" />
+                                                        <SelectValue placeholder="Select gender" />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="MALE">
-                                                            Nam
+                                                            Male
                                                         </SelectItem>
                                                         <SelectItem value="FEMALE">
-                                                            Nữ
+                                                            Female
                                                         </SelectItem>
                                                         <SelectItem value="OTHER">
-                                                            Khác
+                                                            Other
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -582,7 +622,7 @@ export function CandidateList() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Ngày sinh
+                                                    Date of birth
                                                 </FormLabel>
                                                 <FormControl>
                                                     <DatePicker
@@ -606,7 +646,7 @@ export function CandidateList() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Nguồn
+                                                    Source
                                                 </FormLabel>
                                                 <Select
                                                     onValueChange={
@@ -630,13 +670,13 @@ export function CandidateList() {
                                                             Facebook
                                                         </SelectItem>
                                                         <SelectItem value="REFERRAL">
-                                                            Giới thiệu
+                                                            Referral
                                                         </SelectItem>
                                                         <SelectItem value="AGENCY">
                                                             Agency
                                                         </SelectItem>
                                                         <SelectItem value="OTHER">
-                                                            Khác
+                                                            Other
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -651,11 +691,11 @@ export function CandidateList() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Địa chỉ
+                                                Address
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="Địa chỉ"
+                                                    placeholder="Address"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -725,11 +765,11 @@ export function CandidateList() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Ghi chú
+                                                Notes
                                             </FormLabel>
                                             <FormControl>
                                                 <Textarea
-                                                    placeholder="Ghi chú thêm..."
+                                                    placeholder="Additional notes..."
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -745,7 +785,7 @@ export function CandidateList() {
                                             setIsCreateOpen(false)
                                         }
                                     >
-                                        Hủy
+                                        Cancel
                                     </Button>
                                     <Button
                                         type="submit"
@@ -754,8 +794,8 @@ export function CandidateList() {
                                         }
                                     >
                                         {createMutation.isPending
-                                            ? "Đang thêm..."
-                                            : "Thêm"}
+                                            ? "Adding..."
+                                            : "Add"}
                                     </Button>
                                 </div>
                             </form>
@@ -767,28 +807,30 @@ export function CandidateList() {
             {/* Table */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Danh sách ứng viên</CardTitle>
+                    <CardTitle>{t("recruitmentCandidateListTitle")}</CardTitle>
                     <CardDescription>
-                        {candidatesData?.total || 0} ứng viên
+                        {t("recruitmentCandidateListCount", {
+                            count: candidatesData?.total || 0,
+                        })}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <div className="text-center py-8">
-                            Đang tải...
+                            {t("recruitmentCandidateListLoading")}
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Họ tên</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Phone</TableHead>
-                                    <TableHead>Vị trí</TableHead>
-                                    <TableHead>Nguồn</TableHead>
-                                    <TableHead>Trạng thái</TableHead>
+                                    <TableHead>{t("recruitmentCandidateHeadName")}</TableHead>
+                                    <TableHead>{t("recruitmentCandidateHeadEmail")}</TableHead>
+                                    <TableHead>{t("recruitmentCandidateHeadPhone")}</TableHead>
+                                    <TableHead>{t("recruitmentCandidateHeadPosition")}</TableHead>
+                                    <TableHead>{t("recruitmentCandidateHeadSource")}</TableHead>
+                                    <TableHead>{t("recruitmentCandidateHeadStatus")}</TableHead>
                                     <TableHead>
-                                        Ngày ứng tuyển
+                                        {t("recruitmentCandidateHeadAppliedDate")}
                                     </TableHead>
                                     <TableHead></TableHead>
                                 </TableRow>
@@ -801,7 +843,7 @@ export function CandidateList() {
                                             colSpan={8}
                                             className="text-center py-8"
                                         >
-                                            Chưa có ứng viên nào
+                                            {t("recruitmentCandidateEmpty")}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -829,11 +871,7 @@ export function CandidateList() {
                                                         "-"}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {SOURCE_LABELS[
-                                                        candidate
-                                                            .source
-                                                    ] ||
-                                                        candidate.source}
+                                                    {getSourceLabel(candidate.source)}
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge
@@ -843,11 +881,9 @@ export function CandidateList() {
                                                             ]?.color
                                                         }
                                                     >
-                                                        {
-                                                            STAGE_LABELS[
-                                                                candidate.stage as CandidateStage
-                                                            ]?.label
-                                                        }
+                                                        {getStageLabel(
+                                                            candidate.stage as CandidateStage,
+                                                        )}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
@@ -881,8 +917,7 @@ export function CandidateList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Chỉnh
-                                                                sửa
+                                                                {t("recruitmentActionEdit")}
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() =>
@@ -892,10 +927,7 @@ export function CandidateList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Chuyển
-                                                                sang
-                                                                Sàng
-                                                                lọc
+                                                                {t("recruitmentActionMoveToScreening")}
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() =>
@@ -905,10 +937,7 @@ export function CandidateList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Chuyển
-                                                                sang
-                                                                Phỏng
-                                                                vấn
+                                                                {t("recruitmentActionMoveToInterview")}
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() =>
@@ -918,9 +947,7 @@ export function CandidateList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Chuyển
-                                                                sang
-                                                                Offer
+                                                                {t("recruitmentActionMoveToOffer")}
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() =>
@@ -930,8 +957,7 @@ export function CandidateList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Tuyển
-                                                                dụng
+                                                                {t("recruitmentActionMarkHired")}
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() =>
@@ -941,15 +967,14 @@ export function CandidateList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Từ
-                                                                chối
+                                                                {t("recruitmentActionReject")}
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 className="text-red-600"
                                                                 onClick={() => {
                                                                     if (
                                                                         confirm(
-                                                                            "Bạn có chắc chắn muốn xóa ứng viên này?",
+                                                                            t("recruitmentDeleteConfirm"),
                                                                         )
                                                                     ) {
                                                                         deleteMutation.mutate(
@@ -958,7 +983,7 @@ export function CandidateList() {
                                                                     }
                                                                 }}
                                                             >
-                                                                Xóa
+                                                                {t("recruitmentActionDelete")}
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -982,7 +1007,7 @@ export function CandidateList() {
             >
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Chỉnh sửa ứng viên</DialogTitle>
+                        <DialogTitle>Edit candidate</DialogTitle>
                     </DialogHeader>
                     {editingCandidate && (
                         <Form {...editForm}>
@@ -998,7 +1023,7 @@ export function CandidateList() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Vị trí ứng tuyển *
+                                                Applied position *
                                             </FormLabel>
                                             <Select
                                                 onValueChange={
@@ -1007,7 +1032,7 @@ export function CandidateList() {
                                                 value={field.value}
                                             >
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Chọn vị trí" />
+                                                    <SelectValue placeholder="Select position" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {jobPostings.map(
@@ -1039,11 +1064,11 @@ export function CandidateList() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Họ tên *
+                                                    Full name *
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input
-                                                        placeholder="Nguyễn Văn A"
+                                                        placeholder="Nguyen Van A"
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -1077,7 +1102,7 @@ export function CandidateList() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Số điện thoại
+                                                    Phone number
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input
@@ -1095,7 +1120,7 @@ export function CandidateList() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Giới tính
+                                                    Gender
                                                 </FormLabel>
                                                 <Select
                                                     onValueChange={
@@ -1107,17 +1132,17 @@ export function CandidateList() {
                                                     }
                                                 >
                                                     <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Chọn giới tính" />
+                                                        <SelectValue placeholder="Select gender" />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="MALE">
-                                                            Nam
+                                                            Male
                                                         </SelectItem>
                                                         <SelectItem value="FEMALE">
-                                                            Nữ
+                                                            Female
                                                         </SelectItem>
                                                         <SelectItem value="OTHER">
-                                                            Khác
+                                                            Other
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -1133,7 +1158,7 @@ export function CandidateList() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Ngày sinh
+                                                    Date of birth
                                                 </FormLabel>
                                                 <FormControl>
                                                     <DatePicker
@@ -1162,7 +1187,7 @@ export function CandidateList() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Nguồn
+                                                    Source
                                                 </FormLabel>
                                                 <Select
                                                     onValueChange={
@@ -1186,13 +1211,13 @@ export function CandidateList() {
                                                             Facebook
                                                         </SelectItem>
                                                         <SelectItem value="REFERRAL">
-                                                            Giới thiệu
+                                                            Referral
                                                         </SelectItem>
                                                         <SelectItem value="AGENCY">
                                                             Agency
                                                         </SelectItem>
                                                         <SelectItem value="OTHER">
-                                                            Khác
+                                                            Other
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -1207,11 +1232,11 @@ export function CandidateList() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Địa chỉ
+                                                Address
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="Địa chỉ"
+                                                    placeholder="Address"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -1281,11 +1306,11 @@ export function CandidateList() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Ghi chú
+                                                Notes
                                             </FormLabel>
                                             <FormControl>
                                                 <Textarea
-                                                    placeholder="Ghi chú thêm..."
+                                                    placeholder="Additional notes..."
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -1301,7 +1326,7 @@ export function CandidateList() {
                                             setEditingCandidate(null)
                                         }
                                     >
-                                        Hủy
+                                        Cancel
                                     </Button>
                                     <Button
                                         type="submit"
@@ -1310,8 +1335,8 @@ export function CandidateList() {
                                         }
                                     >
                                         {updateMutation.isPending
-                                            ? "Đang lưu..."
-                                            : "Lưu"}
+                                            ? "Äang lÆ°u..."
+                                            : "LÆ°u"}
                                     </Button>
                                 </div>
                             </form>
@@ -1322,3 +1347,4 @@ export function CandidateList() {
         </div>
     );
 }
+

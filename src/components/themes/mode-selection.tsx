@@ -4,28 +4,29 @@ import { useTheme } from "next-themes";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { useMounted } from "@mantine/hooks";
 import { Mode, useSettings } from "@/contexts/settings-context";
+import { useTranslations } from "next-intl";
 
 const tabsAppearance: {
-    label: string;
+    key: "modeLight" | "modeDark" | "modeSystem";
     value: Mode;
     icon: React.ReactNode;
 }[] = [
     {
-        label: "Sáng",
+        key: "modeLight",
         value: "light",
         icon: (
             <div className="w-20 h-12 rounded-lg border border-border bg-white" />
         ),
     },
     {
-        label: "Tối",
+        key: "modeDark",
         value: "dark",
         icon: (
             <div className="w-20 h-12 rounded-lg border border-border bg-black" />
         ),
     },
     {
-        label: "Hệ thống",
+        key: "modeSystem",
         value: "system",
         icon: (
             <div className="w-20 h-12 rounded-lg border border-border overflow-hidden relative">
@@ -39,6 +40,7 @@ const tabsAppearance: {
 
 const ModeSelection = () => {
     const { setTheme } = useTheme();
+    const t = useTranslations("Common");
     const { settings, updateSettings } = useSettings();
 
     const handleModeChange = (value: string) => {
@@ -65,7 +67,7 @@ const ModeSelection = () => {
     return (
         <Tabs value={settings.mode} onValueChange={handleModeChange}>
             <TabsList className="bg-transparent w-full group-data-[orientation=horizontal]/tabs:h-full gap-2 justify-between">
-                {tabsAppearance.map(({ icon, value, label }) => (
+                {tabsAppearance.map(({ icon, value, key }) => (
                     <div
                         key={value}
                         className="flex flex-col items-center gap-2"
@@ -78,7 +80,7 @@ const ModeSelection = () => {
                                 {icon}
                             </div>
                         </TabsTrigger>
-                        <p className="text-xs">{label}</p>
+                        <p className="text-xs">{t(key)}</p>
                     </div>
                 ))}
             </TabsList>

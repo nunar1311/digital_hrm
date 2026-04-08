@@ -12,8 +12,9 @@ import {
     WEEK_START_OPTIONS,
     DATE_FORMAT_OPTIONS,
     SYSTEM_FIELDS,
-} from "../../../app/(protected)/settings/constants";
+} from "@/app/[locale]/(protected)/settings/constants";
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
 interface SettingsDatetimeProps {
     settings: Record<string, string>;
@@ -29,15 +30,17 @@ export function SettingsDatetime({
     const weekStart = SYSTEM_FIELDS.weekStartDay;
     const dateFormat = SYSTEM_FIELDS.dateFormat;
 
+    const t = useTranslations("ProtectedPages");
+
     return (
         <SettingsSection
-            title="Định dạng thời gian & Ngày"
-            description="Ngày bắt đầu tuần và định dạng ngày tháng."
+            title={t("settingsDatetimeTitle")}
+            description={t("settingsDatetimeDescription")}
         >
             <div className="space-y-4 w-full min-w-[200px]">
                 <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">
-                        Bắt đầu tuần
+                        {t("settingsDatetimeWeekStart")}
                     </Label>
                     <Select
                         value={
@@ -66,7 +69,7 @@ export function SettingsDatetime({
                 </div>
                 <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">
-                        Định dạng ngày
+                        {t("settingsDatetimeDateFormat")}
                     </Label>
                     <Select
                         value={

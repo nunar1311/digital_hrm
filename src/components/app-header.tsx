@@ -1,6 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { routing } from "@/i18n/routing";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -12,47 +14,69 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import UserProfile from "./user-profile";
+import LanguageSwitcher from "./themes/language-switcher";
 
-const routeLabels: Record<string, string> = {
-    "": "Trang chủ",
-    "org-chart": "Sơ đồ tổ chức",
-    departments: "Phòng ban",
-    employees: "Nhân viên",
-    new: "Thêm mới",
-    edit: "Chỉnh sửa",
-    contracts: "Hợp đồng",
-    templates: "Mẫu hợp đồng",
-    leaves: "Nghỉ phép",
-    calendar: "Lịch Team",
-    policies: "Chính sách",
-    requests: "Yêu cầu",
-    attendance: "Chấm công",
-    monthly: "Bảng công tháng",
-    shifts: "Ca làm việc",
-    overtime: "Làm thêm giờ",
-    explanations: "Giải trình",
-    payroll: "Tính lương",
-    formulas: "Công thức",
-    payslips: "Phiếu lương",
-    "tax-insurance": "Thuế & BHXH",
-    onboarding: "Onboarding",
-    offboarding: "Offboarding",
-    recruitment: "Tuyển dụng",
-    training: "Đào tạo",
-    performance: "Đánh giá",
-    assets: "Tài sản",
-    rewards: "Khen thưởng & KL",
-    reports: "Báo cáo",
-    ess: "Cổng nhân viên",
-    profile: "Hồ sơ cá nhân",
-    settings: "Cài đặt",
-    roles: "Phân quyền",
-    "audit-log": "Nhật ký",
+const ROUTE_LABEL_KEY_MAP: Record<string, string> = {
+    "": "sidebarHome",
+    "org-chart": "sidebarNavOrgChart",
+    departments: "sidebarNavDepartments",
+    employees: "sidebarNavEmployees",
+    new: "appHeaderRouteNew",
+    edit: "appHeaderRouteEdit",
+    contracts: "sidebarNavContracts",
+    templates: "sidebarNavContractTemplates",
+    leaves: "sidebarNavLeave",
+    calendar: "appHeaderRouteCalendar",
+    policies: "appHeaderRoutePolicies",
+    requests: "appHeaderRouteRequests",
+    attendance: "sidebarNavAttendance",
+    monthly: "sidebarNavMonthlyTimesheet",
+    shifts: "sidebarNavShifts",
+    overtime: "sidebarNavOvertime",
+    explanations: "sidebarNavExplanations",
+    payroll: "sidebarNavPayroll",
+    formulas: "sidebarNavPayrollFormulas",
+    payslips: "sidebarNavPayslips",
+    "tax-insurance": "sidebarNavTaxAndInsurance",
+    onboarding: "sidebarNavOnboarding",
+    offboarding: "sidebarNavOffboarding",
+    recruitment: "sidebarNavRecruitment",
+    training: "sidebarNavTraining",
+    performance: "sidebarNavPerformance",
+    assets: "sidebarNavAssets",
+    rewards: "sidebarNavRewardsAndDiscipline",
+    reports: "sidebarNavReports",
+    ess: "sidebarNavEmployeePortal",
+    profile: "sidebarNavPersonalProfile",
+    settings: "sidebarNavAppSettings",
+    roles: "sidebarNavPermissions",
+    "audit-log": "sidebarNavAuditLog",
 };
 
 export function AppHeader() {
     const pathname = usePathname();
-    const segments = pathname.split("/").filter(Boolean);
+    const locale = useLocale();
+    const t = useTranslations("ProtectedPages");
+    const allSegments = pathname.split("/").filter(Boolean);
+    const firstSegment = allSegments[0];
+    const hasLocalePrefix = routing.locales.includes(
+        firstSegment as (typeof routing.locales)[number],
+    );
+    const currentLocale = routing.locales.includes(
+        locale as (typeof routing.locales)[number],
+    )
+        ? (locale as (typeof routing.locales)[number])
+        : routing.defaultLocale;
+    const segments = hasLocalePrefix ? allSegments.slice(1) : allSegments;
+
+    const getRouteLabel = (segment: string) => {
+        const key = ROUTE_LABEL_KEY_MAP[segment];
+        if (key && t.has(key)) {
+            return t(key);
+        }
+
+        return decodeURIComponent(segment);
+    };
 
     return (
         <header className="flex h-10 shrink-0 items-center justify-between gap-2 px-4 py-4">
@@ -65,19 +89,18 @@ export function AppHeader() {
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>
-                            <BreadcrumbLink href="/">
-                                Trang chủ
+                            <BreadcrumbLink href={`/${currentLocale}`}>
+                                {getRouteLabel("")}
                             </BreadcrumbLink>
                         </BreadcrumbItem>
                         {segments.map((segment, index) => {
                             const href =
                                 "/" +
-                                segments
-                                    .slice(0, index + 1)
-                                    .join("/");
-                            const label =
-                                routeLabels[segment] ||
-                                decodeURIComponent(segment);
+                                [
+                                    currentLocale,
+                                    ...segments.slice(0, index + 1),
+                                ].join("/");
+                            const label = getRouteLabel(segment);
                             const isLast =
                                 index === segments.length - 1;
 
@@ -104,7 +127,10 @@ export function AppHeader() {
                 </Breadcrumb>
             </div>
 
-            <UserProfile />
+            <div className="flex items-center gap-2">
+                <LanguageSwitcher />
+                <UserProfile />
+            </div>
         </header>
     );
 }

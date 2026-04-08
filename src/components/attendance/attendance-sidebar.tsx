@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Sidebar,
@@ -13,6 +13,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   CalendarClock,
@@ -57,7 +58,7 @@ import {
 import {
   createWorkCycle,
   updateWorkCycle,
-} from "@/app/(protected)/attendance/actions";
+} from "@/app/[locale]/(protected)/attendance/actions";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AssignCycleUserDialog } from "./assign-cycle-user-dialog";
@@ -67,7 +68,7 @@ import { Input } from "../ui/input";
 import { cn } from "@/lib/utils";
 import { useClickOutside, useMergedRef } from "@mantine/hooks";
 import Link from "next/link";
-import { WorkCycle } from "@/app/(protected)/attendance/types";
+import { WorkCycle } from "@/app/[locale]/(protected)/attendance/types";
 
 const SHIFT_COLORS = [
   "bg-green-500",
@@ -100,14 +101,15 @@ function getShiftColor(id: string): string {
   return SHIFT_COLORS[hash % SHIFT_COLORS.length];
 }
 
-// ─── Main Sidebar Component ─────────────────────────────────────────
+// Main Sidebar Component
 const AttendanceSidebar = () => {
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  const t = useTranslations("ProtectedPages");
 
   const isShifts = pathname.startsWith("/attendance/shifts");
 
-  // ── Shifts data ──
+  // Shifts data
   const {
     shifts,
     isLoading: shiftsLoading,
@@ -121,7 +123,7 @@ const AttendanceSidebar = () => {
     editingShift,
   } = useSidebarShiftsData();
 
-  // ── Work Cycles data ──
+  // Work cycles data
   const {
     workCycles,
     isLoading: cyclesLoading,
@@ -135,7 +137,7 @@ const AttendanceSidebar = () => {
     setCreateDialogOpen: setCreateCycleDialogOpen,
   } = useSidebarWorkCyclesData();
 
-  // ── Assignment data & dialogs ──
+  // Assignment data & dialogs
   const {
     users,
     departments,
@@ -149,7 +151,7 @@ const AttendanceSidebar = () => {
     defaultStartDate,
   } = useSidebarAssignData();
 
-  // ── Work cycle mutations ──
+  // Work cycle mutations
   const [isCycleSaving, setIsCycleSaving] = useState(false);
 
   const handleCycleFormSubmit = async (
@@ -205,14 +207,14 @@ const AttendanceSidebar = () => {
     try {
       if (editingWorkCycle) {
         await updateWorkCycle(editingWorkCycle.id, payload);
-        toast.success("Cập nhật chu kỳ thành công");
+        toast.success(t("attendanceSidebarCycleUpdateSuccess"));
       } else {
         await createWorkCycle(payload);
-        toast.success("Tạo chu kỳ mới thành công");
+        toast.success(t("attendanceSidebarCycleCreateSuccess"));
       }
     } catch (err: unknown) {
       const error = err as Error;
-      toast.error(error.message || "Có lỗi xảy ra");
+      toast.error(error.message || t("attendanceSidebarGenericError"));
       if (previousCyclesSidebar)
         queryClient.setQueryData(
           ["attendance", "work-cycles-sidebar"],
@@ -336,50 +338,50 @@ const AttendanceSidebar = () => {
 
   const sidebarWorkSchedule = [
     {
-      title: "Lịch làm việc",
+      title: t("attendanceSidebarWorkSchedule"),
       icon: Calendar,
       isActive: true,
       children: [
         {
-          title: "Thiết lập ngày lễ",
+          title: t("attendanceSidebarHolidaySetup"),
           url: "/attendance/holidays",
         },
         {
-          title: "Ca làm việc",
+          title: t("attendanceSidebarShiftMenu"),
           url: "/attendance/shifts",
         },
       ],
     },
     {
-      title: "Quản lý chấm công",
+      title: t("attendanceSidebarAttendanceManagement"),
       icon: CalendarCheck,
       isActive: true,
       children: [
         {
-          title: "Duyệt chấm công",
+          title: t("attendanceSidebarAttendanceApproval"),
           url: "/attendance/approval-dashboard",
         },
         {
-          title: "Quy trình duyệt",
+          title: t("attendanceSidebarApprovalFlow"),
           url: "/attendance/approval-process",
         },
         {
-          title: "Tổng hợp chấm công",
+          title: t("attendanceSidebarAttendanceSummary"),
           url: "/attendance/monthly",
         },
       ],
     },
     {
-      title: "Quản lý nghỉ phép",
+      title: t("attendanceSidebarLeaveManagement"),
       icon: CalendarOff,
       isActive: true,
       children: [
         {
-          title: "Duyệt đơn nghỉ phép",
+          title: t("attendanceSidebarLeaveRequestApproval"),
           url: "/attendance/leave-requests",
         },
         {
-          title: "Tổng hợp ngày nghỉ",
+          title: t("attendanceSidebarLeaveSummary"),
           url: "/attendance/leave-summary",
         },
       ],
@@ -394,7 +396,9 @@ const AttendanceSidebar = () => {
       >
         <SidebarHeader className="flex-row h-[44px] items-center justify-between">
           <h2 className="text-base font-bold">
-            {isShifts ? "Lịch làm việc" : "Chấm công và nghỉ phép"}
+            {isShifts
+              ? t("attendanceSidebarWorkSchedule")
+              : t("attendanceSidebarAttendanceAndLeave")}
           </h2>
 
           <div className="flex items-center gap-0.5">
@@ -415,7 +419,7 @@ const AttendanceSidebar = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-52">
                   <DropdownMenuGroup>
-                    <DropdownMenuLabel>Tạo mới</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t("attendanceSidebarCreateNew")}</DropdownMenuLabel>
 
                     <DropdownMenuItem
                       onClick={() => {
@@ -423,7 +427,7 @@ const AttendanceSidebar = () => {
                       }}
                     >
                       <CalendarClock />
-                      Ca làm việc
+                      {t("attendanceSidebarShiftMenu")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
@@ -431,19 +435,19 @@ const AttendanceSidebar = () => {
                       }}
                     >
                       <RefreshCcwDot />
-                      Chu kì làm việc
+                      {t("attendanceSidebarCycleMenu")}
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
-                    <DropdownMenuLabel>Gán ca làm việc</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t("attendanceSidebarAssignShift")}</DropdownMenuLabel>
                     <DropdownMenuItem
                       onClick={() => {
                         setAssignShiftOpen(true);
                       }}
                     >
                       <Users />
-                      Gán ca nhân viên
+                      {t("attendanceSidebarAssignShiftUser")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
@@ -451,7 +455,7 @@ const AttendanceSidebar = () => {
                       }}
                     >
                       <RefreshCcwDot />
-                      Gán chu kì nhân viên
+                      {t("attendanceSidebarAssignCycleUser")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
@@ -459,7 +463,7 @@ const AttendanceSidebar = () => {
                       }}
                     >
                       <RefreshCcwDot />
-                      Gán chu kì phòng ban
+                      {t("attendanceSidebarAssignCycleDepartment")}
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                 </DropdownMenuContent>
@@ -472,13 +476,13 @@ const AttendanceSidebar = () => {
           <SidebarGroup className="gap-3 px-2">
             {isShifts ? (
               <SidebarMenu>
-                {/* ── Ca làm việc ── */}
+                {/* Shift section */}
                 <Collapsible defaultOpen asChild>
                   <SidebarMenuItem className="relative">
                     <div className="flex items-center flex-1">
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton className="h-7 data-[state=open]:[&_svg]:rotate-90! mb-1 flex-1">
-                          <p className="text-xs font-medium">Ca làm việc</p>
+                          <p className="text-xs font-medium">{t("attendanceSidebarShiftMenu")}</p>
                           <ChevronRight className="size-3.5!" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
@@ -509,7 +513,7 @@ const AttendanceSidebar = () => {
                           }
                         }}
                         onChange={(e) => setSearchShifts(e.target.value)}
-                        placeholder="Tìm kiếm ca..."
+                        placeholder={t("attendanceSidebarSearchShiftPlaceholder")}
                         className="h-6 z-10 pr-4 pl-2 text-xs w-59 absolute right-0 -top-7.5 bg-background dark:bg-background"
                       />
                     </div>
@@ -537,8 +541,8 @@ const AttendanceSidebar = () => {
                           <div className="py-3 px-2">
                             <p className="text-xs text-muted-foreground text-center">
                               {searchShifts.trim()
-                                ? "Không tìm thấy ca phù hợp"
-                                : "Chưa có ca nào"}
+                                ? t("attendanceSidebarShiftNotFound")
+                                : t("attendanceSidebarNoShift")}
                             </p>
                             {!searchShifts.trim() && (
                               <Button
@@ -548,7 +552,7 @@ const AttendanceSidebar = () => {
                                 onClick={handleCreateShift}
                               >
                                 <Plus className="size-3!" />
-                                Tạo ca đầu tiên
+                                {t("attendanceSidebarCreateFirstShift")}
                               </Button>
                             )}
                           </div>
@@ -573,8 +577,10 @@ const AttendanceSidebar = () => {
                                 onClick={() => setShowInactiveShifts((v) => !v)}
                               >
                                 {showInactiveShifts
-                                  ? "Ẩn ca đã tắt"
-                                  : `Hiện ${inactiveShifts.length} ca đã tắt`}
+                                  ? t("attendanceSidebarHideInactiveShifts")
+                                  : t("attendanceSidebarShowInactiveShifts", {
+                                      count: inactiveShifts.length,
+                                    })}
                               </Button>
                             )}
                           </>
@@ -584,13 +590,13 @@ const AttendanceSidebar = () => {
                   </SidebarMenuItem>
                 </Collapsible>
 
-                {/* ── Chu kì làm việc ── */}
+                {/* Work cycle section */}
                 <Collapsible defaultOpen asChild>
                   <SidebarMenuItem className="relative">
                     <div className="flex items-center flex-1">
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton className="h-7 text-xs font-medium data-[state=open]:[&_svg]:rotate-90! mb-1 flex-1">
-                          <p className="text-xs font-medium">Chu kì làm việc</p>
+                          <p className="text-xs font-medium">{t("attendanceSidebarCycleMenu")}</p>
                           <ChevronRight className="size-3.5!" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
@@ -621,7 +627,7 @@ const AttendanceSidebar = () => {
                           }
                         }}
                         onChange={(e) => setSearchCycles(e.target.value)}
-                        placeholder="Tìm kiếm chu kỳ..."
+                        placeholder={t("attendanceSidebarSearchCyclePlaceholder")}
                         className="h-6 z-10 pr-4 pl-2 text-xs w-59 absolute right-0 -top-7.5 bg-background dark:bg-background"
                       />
                     </div>
@@ -649,8 +655,8 @@ const AttendanceSidebar = () => {
                           <div className="py-3 px-2">
                             <p className="text-xs text-muted-foreground text-center">
                               {searchCycles.trim()
-                                ? "Không tìm thấy chu kỳ phù hợp"
-                                : "Chưa có chu kỳ nào"}
+                                ? t("attendanceSidebarCycleNotFound")
+                                : t("attendanceSidebarNoCycle")}
                             </p>
                             {!searchCycles.trim() && (
                               <Button
@@ -660,7 +666,7 @@ const AttendanceSidebar = () => {
                                 onClick={handleCreateWorkCycle}
                               >
                                 <Plus className="size-3!" />
-                                Tạo chu kỳ đầu tiên
+                                {t("attendanceSidebarCreateFirstCycle")}
                               </Button>
                             )}
                           </div>
@@ -684,8 +690,10 @@ const AttendanceSidebar = () => {
                                 onClick={() => setShowInactiveCycles((v) => !v)}
                               >
                                 {showInactiveCycles
-                                  ? "Ẩn chu kỳ đã tắt"
-                                  : `Hiện ${inactiveCycles.length} chu kỳ đã tắt`}
+                                  ? t("attendanceSidebarHideInactiveCycles")
+                                  : t("attendanceSidebarShowInactiveCycles", {
+                                      count: inactiveCycles.length,
+                                    })}
                               </Button>
                             )}
                           </>
@@ -736,7 +744,7 @@ const AttendanceSidebar = () => {
         </SidebarContent>
       </Sidebar>
 
-      {/* ── Shift Form Dialog ── */}
+      {/* Shift form dialog */}
       <ShiftFormDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
@@ -748,7 +756,7 @@ const AttendanceSidebar = () => {
         editingShift={editingShift}
       />
 
-      {/* ── Work Cycle Form Dialog ── */}
+      {/* Work cycle form dialog */}
       <WorkCycleFormDialog
         open={cycleDialogOpen}
         onOpenChange={setCycleDialogOpen}
@@ -758,7 +766,7 @@ const AttendanceSidebar = () => {
         isSaving={isCycleSaving}
       />
 
-      {/* ── Assignment Dialogs ── */}
+      {/* Assignment dialogs */}
       <AssignShiftDialog
         open={assignShiftOpen}
         onOpenChange={setAssignShiftOpen}
@@ -786,3 +794,4 @@ const AttendanceSidebar = () => {
 };
 
 export default AttendanceSidebar;
+

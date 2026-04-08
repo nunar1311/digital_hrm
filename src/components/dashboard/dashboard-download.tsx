@@ -7,6 +7,7 @@ import {
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 import { ArrowDownToLine, Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface DashboardDownloadProps {
     onPrint?: () => void;
@@ -17,11 +18,13 @@ const DashboardDownload = ({
     onPrint,
     isExporting,
 }: DashboardDownloadProps) => {
+    const t = useTranslations("Dashboard");
+
     return (
         <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
                 <Button
-                    tooltip={"Xuất dữ liệu PDF"}
+                    tooltip={t("exportPdfTooltip")}
                     variant="ghost"
                     size="icon-sm"
                     disabled={isExporting}
@@ -35,11 +38,11 @@ const DashboardDownload = ({
                     disabled={isExporting}
                 >
                     <ArrowDownToLine />
-                    Tải PDF
+                    {t("downloadPdf")}
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={isExporting}>
                     <Mail />
-                    Xuất PDF sang Email
+                    {t("exportPdfToEmail")}
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

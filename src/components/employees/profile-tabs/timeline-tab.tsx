@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,29 +16,59 @@ import {
   Filter,
   LogOut,
 } from "lucide-react";
-import { getEmployeeTimeline } from "@/app/(protected)/employees/actions";
+import { getEmployeeTimeline } from "@/app/[locale]/(protected)/employees/actions";
 import { useState, useMemo } from "react";
-import Loading from "@/app/(protected)/loading";
+import Loading from "@/app/[locale]/(protected)/loading";
+import { useTranslations } from "next-intl";
 
 interface Props {
   employeeId: string;
 }
 
 const EVENT_TYPES = [
-  { value: "ALL", label: "Tất cả", icon: Clock },
-  { value: "HIRED", label: "Tuyển dụng", icon: Building2 },
-  { value: "PROMOTED", label: "Thăng chức", icon: ArrowUpCircle },
-  { value: "CONTRACT_RENEWED", label: "Gia hạn HĐ", icon: ScrollText },
-  { value: "SALARY_CHANGE", label: "Thay đổi lương", icon: DollarSign },
-  { value: "LEAVE", label: "Nghỉ phép", icon: Plane },
-  { value: "REWARD", label: "Khen thưởng", icon: Gift },
-  { value: "DISCIPLINE", label: "Kỷ luật", icon: AlertTriangle },
-  { value: "TRAINING", label: "Đào tạo", icon: GraduationCap },
-  { value: "DEPARTMENT_CHANGE", label: "Chuyển PB", icon: Building2 },
-  { value: "RESIGNED", label: "Nghỉ việc", icon: LogOut },
-];
+  { value: "ALL", labelKey: "employeesTimelineEventAll", icon: Clock },
+  { value: "HIRED", labelKey: "employeesTimelineEventHired", icon: Building2 },
+  {
+    value: "PROMOTED",
+    labelKey: "employeesTimelineEventPromoted",
+    icon: ArrowUpCircle,
+  },
+  {
+    value: "CONTRACT_RENEWED",
+    labelKey: "employeesTimelineEventContractRenewed",
+    icon: ScrollText,
+  },
+  {
+    value: "SALARY_CHANGE",
+    labelKey: "employeesTimelineEventSalaryChange",
+    icon: DollarSign,
+  },
+  { value: "LEAVE", labelKey: "employeesTimelineEventLeave", icon: Plane },
+  { value: "REWARD", labelKey: "employeesTimelineEventReward", icon: Gift },
+  {
+    value: "DISCIPLINE",
+    labelKey: "employeesTimelineEventDiscipline",
+    icon: AlertTriangle,
+  },
+  {
+    value: "TRAINING",
+    labelKey: "employeesTimelineEventTraining",
+    icon: GraduationCap,
+  },
+  {
+    value: "DEPARTMENT_CHANGE",
+    labelKey: "employeesTimelineEventDepartmentChange",
+    icon: Building2,
+  },
+  {
+    value: "RESIGNED",
+    labelKey: "employeesTimelineEventResigned",
+    icon: LogOut,
+  },
+] as const;
 
 export function TimelineTab({ employeeId }: Props) {
+  const t = useTranslations("ProtectedPages");
   const [filterType, setFilterType] = useState("ALL");
 
   const { data: events = [], isLoading } = useQuery({
@@ -118,7 +148,7 @@ export function TimelineTab({ employeeId }: Props) {
 
   const getEventTypeLabel = (type: string) => {
     const found = EVENT_TYPES.find((t) => t.value === type);
-    return found?.label || type;
+    return found ? t(found.labelKey) : type;
   };
 
   if (isLoading) {
@@ -130,9 +160,9 @@ export function TimelineTab({ employeeId }: Props) {
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            Lịch sử hoạt động
+            {t("employeesTimelineTitle")}
             <Badge variant="secondary" className="ml-1 text-xs">
-              {filteredEvents.length} sự kiện
+              {t("employeesTimelineCount", { count: filteredEvents.length })}
             </Badge>
           </CardTitle>
         </div>
@@ -150,7 +180,7 @@ export function TimelineTab({ employeeId }: Props) {
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {type.label}
+              {t(type.labelKey)}
             </button>
           ))}
         </div>
@@ -184,7 +214,7 @@ export function TimelineTab({ employeeId }: Props) {
                             {event.title}
                           </h3>
                           <time className="text-xs text-muted-foreground font-mono">
-                            {new Date(event.date).toLocaleDateString("vi-VN")}
+                            {new Date(event.date).toLocaleDateString()}
                           </time>
                         </div>
 
@@ -232,8 +262,8 @@ export function TimelineTab({ employeeId }: Props) {
             <Clock className="h-10 w-10 mx-auto mb-3 opacity-20" />
             <p className="text-sm">
               {filterType === "ALL"
-                ? "Không có sự kiện lịch sử nào được ghi nhận."
-                : "Không có sự kiện nào thuộc loại đã chọn."}
+                ? t("employeesTimelineEmptyAll")
+                : t("employeesTimelineEmptyFiltered")}
             </p>
           </div>
         )}
@@ -241,3 +271,4 @@ export function TimelineTab({ employeeId }: Props) {
     </Card>
   );
 }
+

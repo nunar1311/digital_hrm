@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 
+import { useTranslations } from "next-intl";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,8 +8,8 @@ import * as z from "zod";
 import { toast } from "sonner";
 import { Clock, Loader2 } from "lucide-react";
 
-import { updateAttendanceConfig } from "@/app/(protected)/attendance/actions";
-import type { AttendanceConfig } from "@/app/(protected)/attendance/types";
+import { updateAttendanceConfig } from "@/app/[locale]/(protected)/attendance/actions";
+import type { AttendanceConfig } from "@/app/[locale]/(protected)/attendance/types";
 
 import {
     Card,
@@ -28,30 +29,32 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 
-const generalSchema = z.object({
-    standardWorkHours: z
-        .number()
-        .min(1, "Tối thiểu 1 giờ")
-        .max(24, "Tối đa 24 giờ"),
-    standardWorkDays: z
-        .number()
-        .min(1, "Tối thiểu 1 ngày")
-        .max(31, "Tối đa 31 ngày"),
-    otWeekdayCoeff: z
-        .number()
-        .min(1, "Tối thiểu 1.0")
-        .max(10, "Tối đa 10.0"),
-    otWeekendCoeff: z
-        .number()
-        .min(1, "Tối thiểu 1.0")
-        .max(10, "Tối đa 10.0"),
-    otHolidayCoeff: z
-        .number()
-        .min(1, "Tối thiểu 1.0")
-        .max(10, "Tối đa 10.0"),
-});
+function createGeneralSchema(t: ReturnType<typeof useTranslations>) {
+    return z.object({
+        standardWorkHours: z
+            .number()
+            .min(1, t("attendanceGeneralSettingsTabValidationHoursMin"))
+            .max(24, t("attendanceGeneralSettingsTabValidationHoursMax")),
+        standardWorkDays: z
+            .number()
+            .min(1, t("attendanceGeneralSettingsTabValidationDaysMin"))
+            .max(31, t("attendanceGeneralSettingsTabValidationDaysMax")),
+        otWeekdayCoeff: z
+            .number()
+            .min(1, t("attendanceGeneralSettingsTabValidationCoeffMin"))
+            .max(10, t("attendanceGeneralSettingsTabValidationCoeffMax")),
+        otWeekendCoeff: z
+            .number()
+            .min(1, t("attendanceGeneralSettingsTabValidationCoeffMin"))
+            .max(10, t("attendanceGeneralSettingsTabValidationCoeffMax")),
+        otHolidayCoeff: z
+            .number()
+            .min(1, t("attendanceGeneralSettingsTabValidationCoeffMin"))
+            .max(10, t("attendanceGeneralSettingsTabValidationCoeffMax")),
+    });
+}
 
-type GeneralFormValues = z.infer<typeof generalSchema>;
+type GeneralFormValues = z.infer<ReturnType<typeof createGeneralSchema>>;
 
 interface Props {
     config: AttendanceConfig | null;
@@ -59,6 +62,9 @@ interface Props {
 }
 
 export function GeneralSettingsTab({ config, queryClient }: Props) {
+    const t = useTranslations("ProtectedPages");
+    const generalSchema = createGeneralSchema(t);
+
     const form = useForm<GeneralFormValues>({
         resolver: zodResolver(generalSchema),
         defaultValues: {
@@ -83,17 +89,20 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
             }),
         onMutate: async (values) => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
-            queryClient.setQueryData(["attendance", "config"], (old: any) => {
-                if (!old) return old;
-                return { ...old, ...values };
-            });
+            queryClient.setQueryData<AttendanceConfig>(
+                ["attendance", "config"],
+                (old) => {
+                    if (!old) return old;
+                    return { ...old, ...values };
+                },
+            );
             return {};
         },
         onSuccess: () => {
-            toast.success("Đã lưu cài đặt chung");
+            toast.success(t("attendanceGeneralSettingsTabToastSaveSuccess"));
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceGeneralSettingsTabToastGenericError"));
             queryClient.invalidateQueries({ queryKey: ["attendance", "config"] });
         },
         onSettled: () => {
@@ -115,11 +124,10 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Clock className="h-5 w-5" />
-                            Giờ làm việc tiêu chuẩn
+                            {t("attendanceGeneralSettingsTabStandardTitle")}
                         </CardTitle>
                         <CardDescription>
-                            Thiết lập thời gian làm việc chuẩn cho tổ
-                            chức
+                            {t("attendanceGeneralSettingsTabStandardDescription")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -130,7 +138,7 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Giờ/ngày
+                                            {t("attendanceGeneralSettingsTabHoursPerDayLabel")}
                                         </FormLabel>
                                         <FormControl>
                                             <Input
@@ -157,7 +165,7 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Ngày công/tháng
+                                            {t("attendanceGeneralSettingsTabWorkDaysPerMonthLabel")}
                                         </FormLabel>
                                         <FormControl>
                                             <Input
@@ -185,10 +193,10 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Clock className="h-5 w-5" />
-                            Hệ số tăng ca
+                            {t("attendanceGeneralSettingsTabOvertimeTitle")}
                         </CardTitle>
                         <CardDescription>
-                            Hệ số nhân lương cho các loại tăng ca
+                            {t("attendanceGeneralSettingsTabOvertimeDescription")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -199,7 +207,7 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Ngày thường
+                                            {t("attendanceGeneralSettingsTabWeekdayLabel")}
                                         </FormLabel>
                                         <FormControl>
                                             <Input
@@ -226,7 +234,7 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Cuối tuần
+                                            {t("attendanceGeneralSettingsTabWeekendLabel")}
                                         </FormLabel>
                                         <FormControl>
                                             <Input
@@ -252,7 +260,7 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
                                 name="otHolidayCoeff"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Ngày lễ</FormLabel>
+                                        <FormLabel>{t("attendanceGeneralSettingsTabHolidayLabel")}</FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="number"
@@ -284,10 +292,11 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
                         {mutation.isPending && (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         )}
-                        Lưu cài đặt chung
+                        {t("attendanceGeneralSettingsTabSave")}
                     </Button>
                 </div>
             </form>
         </Form>
     );
 }
+

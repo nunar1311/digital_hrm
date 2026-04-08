@@ -1,4 +1,5 @@
 import { TrendingUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 import CardToolbar from "./card-toolbar";
 import { cn } from "@/lib/utils";
 import { useFullscreenCardContext } from "@/contexts/fullscreen-card-context";
@@ -19,6 +20,7 @@ const CardWidgetCalculation = ({
     label,
     percentage,
 }: CardWidgetCalculationProps) => {
+    const t = useTranslations("Dashboard");
     const { openFullscreen } = useFullscreenCardContext();
     const { widget } = useGridStackWidgetContext() ?? {
         widget: null,
@@ -51,8 +53,8 @@ const CardWidgetCalculation = ({
                         )}
                     >
                         {/* Up or down */}
-                        {percentage > 0 ? "Tăng" : "Giảm"}{" "}
-                        {percentage.toFixed(1)}% so với tháng trước
+                        {percentage > 0 ? t("increase") : t("decrease")}{" "}
+                        {percentage.toFixed(1)}% {t("comparedToLastMonth")}
                     </div>
                 )}
             </div>

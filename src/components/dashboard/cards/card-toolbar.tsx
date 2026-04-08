@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { cardRegistry } from "@/contexts/fullscreen-card-registry";
 import { useFullscreenCardContext } from "@/contexts/fullscreen-card-context";
+import { useTranslations } from "next-intl";
 
 export interface CardToolbarRef {
     openSettings: () => void;
@@ -53,6 +54,7 @@ const CardToolbar = forwardRef<
     };
     const { openFullscreen } = useFullscreenCardContext();
 
+    const t = useTranslations("Dashboard");
     const [settingsOpen, setSettingsOpen] = useState(false);
 
     const settingsPanelRef = useClickOutside(() => {
@@ -138,9 +140,7 @@ const CardToolbar = forwardRef<
                                     <Button
                                         variant="ghost"
                                         size="icon-xs"
-                                        tooltip={
-                                            "Xem ở chế độ toàn màn hình"
-                                        }
+                                        tooltip={t("viewFullscreen")}
                                         onClick={handleOpenFullscreen}
                                         className="group-hover/card:opacity-100 opacity-0"
                                     >
@@ -172,13 +172,13 @@ const CardToolbar = forwardRef<
                                                             widget.id,
                                                         );
                                                         toast.success(
-                                                            `Đã xóa thẻ "${title}"`,
+                                                            t("cardDeleted", { title }),
                                                         );
                                                     }
                                                 }}
                                             >
                                                 <Trash2 className="size-3.5" />
-                                                Xóa
+                                                {t("delete")}
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -210,7 +210,7 @@ const CardToolbar = forwardRef<
                         {/* Panel header */}
                         <div className="flex items-center justify-between px-4 py-3 shrink-0">
                             <span className="text-sm font-semibold">
-                                Tùy chỉnh hiển thị
+                                {t("displaySettings")}
                             </span>
                             <Button
                                 size="icon-xs"

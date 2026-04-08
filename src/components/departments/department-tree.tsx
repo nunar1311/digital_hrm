@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   SidebarMenuButton,
   SidebarMenuItem,
@@ -140,6 +141,7 @@ const DepartmentTree = ({
   const router = useRouter();
   const pathname = usePathname();
   const hasChildren = item.children && item.children.length > 0;
+  const t = useTranslations("ProtectedPages");
 
   const { expandedState } = React.useContext(ExpandedStateContext);
 
@@ -248,7 +250,7 @@ const DepartmentTree = ({
                     }}
                   >
                     <Eye className="size-4 text-muted-foreground" />
-                    <span>Xem chi tiết</span>
+                    <span>{t("departmentsTreeViewDetails")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={(e) => {
@@ -257,7 +259,7 @@ const DepartmentTree = ({
                     }}
                   >
                     <PlusCircle className="size-4 text-muted-foreground" />
-                    <span>Thêm phòng ban con</span>
+                    <span>{t("departmentsTreeAddChild")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -267,7 +269,7 @@ const DepartmentTree = ({
                     }}
                   >
                     <Pencil className="size-4 text-muted-foreground" />
-                    <span>Chỉnh sửa</span>
+                    <span>{t("departmentsTreeEdit")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
@@ -277,7 +279,7 @@ const DepartmentTree = ({
                     }}
                   >
                     <Trash2 className="size-4" />
-                    <span>Xóa</span>
+                    <span>{t("departmentsTreeDelete")}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

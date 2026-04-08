@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
   Camera,
   MapPin,
-  Clock,
   Wifi,
   ShieldCheck,
   ShieldAlert,
@@ -43,7 +43,7 @@ import type {
   AttendanceConfig,
   AttendanceRecord,
   ShiftBasic,
-} from "@/app/(protected)/attendance/types";
+} from "@/app/[locale]/(protected)/attendance/types";
 import { CameraConfirmDialog } from "./camera-confirm-dialog";
 import { useTimezone } from "@/hooks/use-timezone";
 
@@ -78,6 +78,7 @@ export function AttendanceActionPanel({
   onCheckIn,
   onCheckOut,
 }: AttendanceActionPanelProps) {
+  const t = useTranslations("ProtectedPages");
   const [currentTime, setCurrentTime] = useState(new Date());
   const { timezone } = useTimezone();
   const [location, setLocation] = useState<{
@@ -107,10 +108,10 @@ export function AttendanceActionPanel({
     return () => clearInterval(timer);
   }, []);
 
-  // ─── Auto-detect GPS ───
+  // â”€â”€â”€ Auto-detect GPS â”€â”€â”€
   const detectGps = useCallback(() => {
     if (!("geolocation" in navigator)) {
-      setGpsError("Trình duyệt không hỗ trợ GPS");
+      setGpsError(t("attendanceActionPanelGpsUnsupported"));
       return;
     }
     setGpsChecking(true);
@@ -129,9 +130,9 @@ export function AttendanceActionPanel({
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
-  }, []);
+  }, [t]);
 
-  // ─── Auto-detect WiFi ───
+  // â”€â”€â”€ Auto-detect WiFi â”€â”€â”€
   const detectWifi = useCallback(async () => {
     setWifiChecking(true);
     try {
@@ -145,22 +146,27 @@ export function AttendanceActionPanel({
         setWifiIp(result.ip);
         setWifiWarning({ open: false, ip: "" });
         toast.success(
-          `Đã xác minh IP WiFi công ty: ${result.ip}${
-            result.ssid ? ` (${result.ssid})` : ""
-          }`,
+          result.ssid
+            ? t("attendanceActionPanelWifiVerifiedWithSsid", {
+                ip: result.ip,
+                ssid: result.ssid,
+              })
+            : t("attendanceActionPanelWifiVerified", {
+                ip: result.ip,
+              }),
         );
       } else {
         setWifiIp(null);
         setWifiWarning({ open: true, ip: result.ip });
       }
     } catch {
-      toast.error("Không thể kiểm tra WiFi. Vui lòng thử lại.");
+      toast.error(t("attendanceActionPanelWifiCheckError"));
     } finally {
       setWifiChecking(false);
     }
-  }, []);
+  }, [t]);
 
-  // ─── Initial Checks ───
+  // â”€â”€â”€ Initial Checks â”€â”€â”€
   useEffect(() => {
     if (config?.requireGps) {
       detectGps();
@@ -170,7 +176,7 @@ export function AttendanceActionPanel({
     }
   }, [config?.requireGps, config?.requireWifi, detectGps, detectWifi]);
 
-  // ─── Build Payload ───
+  // â”€â”€â”€ Build Payload â”€â”€â”€
   const buildPayload = (photo?: string) => {
     return {
       method: "GPS" as const,
@@ -195,11 +201,11 @@ export function AttendanceActionPanel({
     setCameraAction(null);
   };
 
-  // ─── Status ───
+  // â”€â”€â”€ Status â”€â”€â”€
   const hasCheckedIn = !!att?.checkIn;
   const hasCheckedOut = !!att?.checkOut;
 
-  // ─── Blockers ───
+  // â”€â”€â”€ Blockers â”€â”€â”€
   const wifiRequired = !!config?.requireWifi;
   const gpsRequired = !!config?.requireGps;
   const wifiBlocked = wifiRequired && !wifiIp;
@@ -209,18 +215,17 @@ export function AttendanceActionPanel({
 
   return (
     <div className="space-y-6">
-      {/* ─── No Shift Warning ─── */}
+      {/* â”€â”€â”€ No Shift Warning â”€â”€â”€ */}
       {noShiftBlocked && (
         <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
           <CardContent className="flex items-start gap-3">
             <CalendarOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
             <div>
               <h3 className="font-semibold text-amber-800 dark:text-amber-200">
-                Không có ca làm việc hôm nay
+                {t("attendanceActionPanelNoShiftTitle")}
               </h3>
               <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                Bạn chưa được phân ca cho ngày hôm nay. Vui lòng liên hệ quản lý
-                hoặc bộ phận nhân sự để được phân ca trước khi chấm công.
+                {t("attendanceActionPanelNoShiftDescription")}
               </p>
             </div>
           </CardContent>
@@ -228,13 +233,13 @@ export function AttendanceActionPanel({
       )}
       <Card>
         <CardHeader>
-          <CardTitle>Chấm công trực tuyến</CardTitle>
+          <CardTitle>{t("attendanceActionPanelTitle")}</CardTitle>
           <CardDescription>
-            Hệ thống ghi nhận thời gian với xác minh chống gian lận
+            {t("attendanceActionPanelDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Đồng hồ */}
+          {/* Äá»“ng há»“ */}
           <div className="flex flex-col items-center justify-center rounded-lg bg-muted p-6">
             <h2 className="text-4xl font-bold tracking-tighter tabular-nums">
               {currentTime.toLocaleTimeString("vi-VN", {
@@ -257,13 +262,13 @@ export function AttendanceActionPanel({
             <div className="rounded-lg border p-4 space-y-3">
               <span className="text-sm font-semibold flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-blue-500" />
-                Xác minh tự động
+                {t("attendanceActionPanelAutoVerification")}
               </span>
               <div className="grid grid-cols-1 gap-2">
                 {config.requireGps && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" /> GPS (bán kính{" "}
+                      <MapPin className="h-4 w-4" /> {t("attendanceActionPanelGpsRadius")}{" "}
                       {config.maxGpsDistanceMeters}
                       m)
                     </span>
@@ -272,7 +277,7 @@ export function AttendanceActionPanel({
                         variant="outline"
                         className="text-xs animate-pulse"
                       >
-                        Đang lấy vị trí...
+                        {t("attendanceActionPanelGpsLoading")}
                       </Badge>
                     ) : location ? (
                       <Badge variant="default" className="bg-green-600 text-xs">
@@ -286,7 +291,9 @@ export function AttendanceActionPanel({
                         onClick={detectGps}
                       >
                         <XCircle className="mr-1 h-3 w-3" />{" "}
-                        {gpsError ? "Lỗi GPS — Thử lại" : "Chưa xác minh"}
+                        {gpsError
+                          ? t("attendanceActionPanelGpsErrorRetry")
+                          : t("attendanceActionPanelUnverified")}
                       </Badge>
                     )}
                   </div>
@@ -294,14 +301,14 @@ export function AttendanceActionPanel({
                 {config.requireWifi && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
-                      <Wifi className="h-4 w-4" /> WiFi công ty
+                      <Wifi className="h-4 w-4" /> {t("attendanceActionPanelCompanyWifi")}
                     </span>
                     {wifiChecking ? (
                       <Badge
                         variant="outline"
                         className="text-xs animate-pulse"
                       >
-                        Đang kiểm tra...
+                        {t("attendanceActionPanelWifiChecking")}
                       </Badge>
                     ) : wifiIp ? (
                       <Badge variant="default" className="bg-green-600 text-xs">
@@ -314,7 +321,7 @@ export function AttendanceActionPanel({
                         onClick={detectWifi}
                       >
                         <XCircle className=" h-3 w-3" />
-                        Không khớp IP — Thử lại
+                        {t("attendanceActionPanelWifiIpMismatchRetry")}
                       </Badge>
                     )}
                   </div>
@@ -326,9 +333,9 @@ export function AttendanceActionPanel({
                 <div className="mt-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive flex items-center gap-2">
                   <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
                   <span>
-                    Chưa đủ điều kiện xác minh.
-                    {gpsBlocked && " Cần vị trí GPS."}
-                    {wifiBlocked && " Cần kết nối WiFi công ty."}
+                    {t("attendanceActionPanelVerificationBlocked")}
+                    {gpsBlocked && ` ${t("attendanceActionPanelNeedGps")}`}
+                    {wifiBlocked && ` ${t("attendanceActionPanelNeedCompanyWifi")}`}
                   </span>
                 </div>
               )}
@@ -339,22 +346,23 @@ export function AttendanceActionPanel({
           {config?.requireSelfie && (
             <div className="rounded-lg border p-3 flex items-center justify-between text-sm">
               <span className="flex items-center gap-2">
-                <Camera className="h-4 w-4" /> Chụp ảnh xác minh
+                <Camera className="h-4 w-4" /> {t("attendanceActionPanelSelfieVerification")}
               </span>
               <Badge variant="outline" className="text-xs">
-                Bắt buộc khi chấm công
+                {t("attendanceActionPanelSelfieRequired")}
               </Badge>
             </div>
           )}
 
-          {/* Shift Selector — only show when employee has shifts */}
+          {/* Shift Selector â€” only show when employee has shifts */}
           {hasShiftToday && (
             <div className="rounded-lg border p-4 space-y-3">
               <h3 className="text-sm font-semibold flex items-center gap-2">
-                <CalendarClock className="h-4 w-4 text-primary" /> Ca làm việc
-                hôm nay
+                <CalendarClock className="h-4 w-4 text-primary" /> {t("attendanceActionPanelTodayShift")}
                 <Badge variant="secondary" className="ml-auto text-xs">
-                  {todayShifts.length} ca
+                  {t("attendanceActionPanelShiftCount", {
+                    count: todayShifts.length,
+                  })}
                 </Badge>
               </h3>
 
@@ -364,7 +372,9 @@ export function AttendanceActionPanel({
                   onValueChange={onShiftChange}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn ca làm việc" />
+                    <SelectValue
+                      placeholder={t("attendanceActionPanelSelectShiftPlaceholder")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {todayShifts.map((s) => (
@@ -401,7 +411,7 @@ export function AttendanceActionPanel({
             >
               {hasCheckedIn ? (
                 <span className="flex flex-col items-center">
-                  <span>Đã Check-in</span>
+                  <span>{t("attendanceActionPanelCheckedIn")}</span>
                   <span className="text-xs font-normal">
                     {new Date(att!.checkIn!).toLocaleTimeString("vi-VN", {
                       timeZone: timezone,
@@ -411,7 +421,7 @@ export function AttendanceActionPanel({
                   </span>
                 </span>
               ) : (
-                "Check-in"
+                t("attendanceActionPanelCheckIn")
               )}
             </Button>
             <Button
@@ -428,7 +438,7 @@ export function AttendanceActionPanel({
             >
               {hasCheckedOut ? (
                 <span className="flex flex-col items-center">
-                  <span>Đã Check-out</span>
+                  <span>{t("attendanceActionPanelCheckedOut")}</span>
                   <span className="text-xs font-normal">
                     {new Date(att!.checkOut!).toLocaleTimeString("vi-VN", {
                       timeZone: timezone,
@@ -438,7 +448,7 @@ export function AttendanceActionPanel({
                   </span>
                 </span>
               ) : (
-                "Check-out"
+                t("attendanceActionPanelCheckOut")
               )}
             </Button>
           </div>
@@ -454,19 +464,16 @@ export function AttendanceActionPanel({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <ShieldAlert className="h-5 w-5" />
-              Không kết nối WiFi công ty
+              {t("attendanceActionPanelWifiDialogTitle")}
             </DialogTitle>
             <DialogDescription className="pt-2 space-y-3">
               <span className="block">
-                Hệ thống phát hiện địa chỉ IP hiện tại của bạn{" "}
-                <span className="font-mono font-semibold text-foreground">
-                  ({wifiWarning.ip})
-                </span>{" "}
-                không nằm trong danh sách mạng nội bộ công ty.
+                {t("attendanceActionPanelWifiDialogDetected", {
+                  ip: wifiWarning.ip,
+                })}
               </span>
               <span className="block">
-                Bạn cần kết nối vào mạng WiFi của công ty để có thể thực hiện
-                chấm công. Vui lòng kiểm tra lại.
+                {t("attendanceActionPanelWifiDialogDescription")}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -474,11 +481,11 @@ export function AttendanceActionPanel({
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-400" />
               <div className="text-sm text-yellow-800 dark:text-yellow-200">
-                <p className="font-medium">Lưu ý:</p>
+                <p className="font-medium">{t("attendanceActionPanelWifiDialogNote")}</p>
                 <ul className="mt-1 list-inside list-disc space-y-0.5">
-                  <li>Đảm bảo đã kết nối WiFi công ty (không dùng 4G/5G)</li>
-                  <li>Tắt VPN nếu đang sử dụng</li>
-                  <li>Liên hệ IT nếu vẫn gặp lỗi</li>
+                  <li>{t("attendanceActionPanelWifiDialogTip1")}</li>
+                  <li>{t("attendanceActionPanelWifiDialogTip2")}</li>
+                  <li>{t("attendanceActionPanelWifiDialogTip3")}</li>
                 </ul>
               </div>
             </div>
@@ -493,7 +500,7 @@ export function AttendanceActionPanel({
                 })
               }
             >
-              Đóng
+              {t("attendanceActionPanelClose")}
             </Button>
             <Button
               onClick={() => {
@@ -505,7 +512,7 @@ export function AttendanceActionPanel({
               }}
             >
               <Wifi className="mr-2 h-4 w-4" />
-              Kiểm tra lại
+              {t("attendanceActionPanelRetry")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -519,13 +526,14 @@ export function AttendanceActionPanel({
         }}
         title={
           cameraAction === "check-in"
-            ? "Xác nhận Check-in"
-            : "Xác nhận Check-out"
+            ? t("attendanceCheckDialogCameraTitle")
+            : t("attendanceActionPanelCameraCheckOutTitle")
         }
-        description="Chụp ảnh selfie để xác minh danh tính trước khi chấm công."
+        description={t("attendanceCheckDialogCameraDescription")}
         onConfirm={handleCameraConfirm}
         isPending={isLoading}
       />
     </div>
   );
 }
+

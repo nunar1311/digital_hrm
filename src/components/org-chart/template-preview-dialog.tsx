@@ -16,6 +16,7 @@ import {
 } from "@/lib/org-chart-templates";
 import { AlertCircle, ChevronRight, Building2 } from "lucide-react";
 import { DEPARTMENT_ICONS } from "./icon-picker";
+import { useTranslations } from "next-intl";
 
 interface TemplatePreviewDialogProps {
     open: boolean;
@@ -90,8 +91,9 @@ export function TemplatePreviewDialog({
     onApply,
     isApplying = false,
 }: TemplatePreviewDialogProps) {
+    const t = useTranslations("ProtectedPages");
     const template = COMPANY_STRUCTURE_TEMPLATES.find(
-        (t) => t.id === templateId,
+        (tpl) => tpl.id === templateId,
     );
 
     if (!template) return null;
@@ -157,8 +159,8 @@ export function TemplatePreviewDialog({
                         disabled={isApplying}
                     >
                         {isApplying
-                            ? "Đang áp dụng..."
-                            : "Đồng ý áp dụng mẫu này"}
+                            ? t("orgChartTemplateApplying")
+                            : t("orgChartTemplateApplyConfirm")}
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,7 +6,7 @@ import { Loader2, Sun, Moon } from "lucide-react";
 import type {
     Shift,
     WorkCycle,
-} from "@/app/(protected)/attendance/types";
+} from "@/app/[locale]/(protected)/attendance/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -41,6 +41,7 @@ import {
     WEEKDAY_FULL,
 } from "./work-cycles-constants";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Textarea } from "@/components/ui/textarea";
 
 interface WorkCycleFormDialogProps {
@@ -65,6 +66,7 @@ export function WorkCycleFormDialog({
 }: WorkCycleFormDialogProps) {
     const [entries, setEntries] = useState<CycleEntryDraft[]>([]);
     const activeShifts = shifts.filter((s) => s.isActive);
+    const t = useTranslations("ProtectedPages");
 
     const form = useForm<WorkCycleFormValues>({
         resolver: zodResolver(workCycleFormSchema),
@@ -157,8 +159,8 @@ export function WorkCycleFormDialog({
                 <DialogHeader>
                     <DialogTitle>
                         {editCycle
-                            ? "Chỉnh sửa chu kỳ"
-                            : "Tạo chu kỳ làm việc"}
+                            ? t("attendanceWorkCycleFormDialogTitleEdit")
+                            : t("attendanceWorkCycleFormDialogTitleCreate")}
                     </DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
@@ -171,10 +173,16 @@ export function WorkCycleFormDialog({
                             name="name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Tên chu kỳ</FormLabel>
+                                    <FormLabel>
+                                        {t(
+                                            "attendanceWorkCycleFormDialogNameLabel",
+                                        )}
+                                    </FormLabel>
                                     <FormControl>
                                         <Input
-                                            placeholder="Nhập tên chu kỳ"
+                                            placeholder={t(
+                                                "attendanceWorkCycleFormDialogNamePlaceholder",
+                                            )}
                                             {...field}
                                         />
                                     </FormControl>
@@ -188,11 +196,15 @@ export function WorkCycleFormDialog({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>
-                                        Mô tả (tuỳ chọn)
+                                        {t(
+                                            "attendanceWorkCycleFormDialogDescriptionLabel",
+                                        )}
                                     </FormLabel>
                                     <FormControl>
                                         <Textarea
-                                            placeholder="Nhập mô tả"
+                                            placeholder={t(
+                                                "attendanceWorkCycleFormDialogDescriptionPlaceholder",
+                                            )}
                                             {...field}
                                         />
                                     </FormControl>
@@ -206,7 +218,9 @@ export function WorkCycleFormDialog({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>
-                                        Số ngày trong chu kỳ
+                                        {t(
+                                            "attendanceWorkCycleFormDialogTotalDaysLabel",
+                                        )}
                                     </FormLabel>
                                     <FormControl>
                                         <Input
@@ -226,8 +240,12 @@ export function WorkCycleFormDialog({
                                         />
                                     </FormControl>
                                     <FormDescription>
-                                        Chu kỳ sẽ lặp lại sau{" "}
-                                        {field.value} ngày
+                                        {t(
+                                            "attendanceWorkCycleFormDialogTotalDaysDescription",
+                                            {
+                                                days: field.value,
+                                            },
+                                        )}
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
@@ -240,16 +258,28 @@ export function WorkCycleFormDialog({
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <FormLabel className="text-base">
-                                    Lịch từng ngày
+                                    {t(
+                                        "attendanceWorkCycleFormDialogDailyScheduleLabel",
+                                    )}
                                 </FormLabel>
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                     <span className="flex items-center gap-1">
                                         <Sun className="h-3 w-3" />
-                                        {workDaysCount} ngày làm
+                                        {t(
+                                            "attendanceWorkCycleFormDialogWorkDaysCount",
+                                            {
+                                                days: workDaysCount,
+                                            },
+                                        )}
                                     </span>
                                     <span className="flex items-center gap-1">
                                         <Moon className="h-3 w-3" />
-                                        {offDaysCount} ngày nghỉ
+                                        {t(
+                                            "attendanceWorkCycleFormDialogOffDaysCount",
+                                            {
+                                                days: offDaysCount,
+                                            },
+                                        )}
                                     </span>
                                 </div>
                             </div>
@@ -297,8 +327,12 @@ export function WorkCycleFormDialog({
                                             />
                                             <span className="text-xs text-muted-foreground w-12">
                                                 {entry.isDayOff
-                                                    ? "Nghỉ"
-                                                    : "Làm"}
+                                                    ? t(
+                                                          "attendanceWorkCycleFormDialogEntryOff",
+                                                      )
+                                                    : t(
+                                                          "attendanceWorkCycleFormDialogEntryWork",
+                                                      )}
                                             </span>
                                         </div>
 
@@ -319,7 +353,11 @@ export function WorkCycleFormDialog({
                                                 }
                                             >
                                                 <SelectTrigger className="flex-1">
-                                                    <SelectValue placeholder="Chọn ca" />
+                                                    <SelectValue
+                                                        placeholder={t(
+                                                            "attendanceWorkCycleFormDialogSelectShiftPlaceholder",
+                                                        )}
+                                                    />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {activeShifts.map(
@@ -339,7 +377,7 @@ export function WorkCycleFormDialog({
                                                                 {
                                                                     s.startTime
                                                                 }
-                                                                –
+                                                                —
                                                                 {
                                                                     s.endTime
                                                                 }
@@ -353,7 +391,9 @@ export function WorkCycleFormDialog({
 
                                         {entry.isDayOff && (
                                             <span className="text-sm text-muted-foreground italic flex-1">
-                                                Ngày nghỉ
+                                                {t(
+                                                    "attendanceWorkCycleFormDialogDayOffLabel",
+                                                )}
                                             </span>
                                         )}
                                     </div>
@@ -367,15 +407,19 @@ export function WorkCycleFormDialog({
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
                             >
-                                Huỷ
+                                {t("attendanceWorkCycleFormDialogCancel")}
                             </Button>
                             <Button type="submit" disabled={isSaving}>
                                 {isSaving && (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                 )}
                                 {editCycle
-                                    ? "Cập nhật"
-                                    : "Tạo chu kỳ"}
+                                    ? t(
+                                          "attendanceWorkCycleFormDialogSubmitUpdate",
+                                      )
+                                    : t(
+                                          "attendanceWorkCycleFormDialogSubmitCreate",
+                                      )}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -384,3 +428,4 @@ export function WorkCycleFormDialog({
         </Dialog>
     );
 }
+

@@ -1,5 +1,5 @@
-// ============================================================
-// Positions Section (inline, replaces tab) — TanStack Table
+﻿// ============================================================
+// Positions Section (inline, replaces tab) â€” TanStack Table
 // ============================================================
 
 "use client";
@@ -34,8 +34,8 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { PositionListItem } from "@/app/(protected)/positions/types";
-import { getPositions } from "@/app/(protected)/positions/actions";
+import type { PositionListItem } from "@/app/[locale]/(protected)/positions/types";
+import { getPositions } from "@/app/[locale]/(protected)/positions/actions";
 
 interface AuthorityColorConfig {
   bg: string;
@@ -48,37 +48,37 @@ const DEFAULT_AUTHORITY_COLORS: Record<string, AuthorityColorConfig> = {
   EXECUTIVE: {
     bg: "bg-purple-100 dark:bg-purple-900/30",
     text: "text-purple-700 dark:text-purple-400",
-    label: "HĐQT",
+    label: "Executive",
   },
   DIRECTOR: {
     bg: "bg-red-100 dark:bg-red-900/30",
     text: "text-red-700 dark:text-red-400",
-    label: "Giám đốc",
+    label: "Director",
   },
   MANAGER: {
     bg: "bg-blue-100 dark:bg-blue-900/30",
     text: "text-blue-700 dark:text-blue-400",
-    label: "Trưởng phòng",
+    label: "Manager",
   },
   DEPUTY: {
     bg: "bg-green-100 dark:bg-green-900/30",
     text: "text-green-700 dark:text-green-400",
-    label: "Phó phòng",
+    label: "Deputy",
   },
   TEAM_LEAD: {
     bg: "bg-purple-100 dark:bg-purple-900/30",
     text: "text-purple-700 dark:text-purple-400",
-    label: "Tổ trưởng",
+    label: "Team lead",
   },
   STAFF: {
     bg: "bg-green-100 dark:bg-green-900/30",
     text: "text-green-700 dark:text-green-400",
-    label: "Nhân viên",
+    label: "Staff",
   },
   INTERN: {
     bg: "bg-gray-100 dark:bg-gray-800",
     text: "text-gray-600 dark:text-gray-400",
-    label: "Thực tập sinh",
+    label: "Intern",
   },
 };
 
@@ -142,7 +142,7 @@ function PositionsSectionInline({
                 setSelectedIds(new Set());
               }
             }}
-            aria-label="Chọn tất cả"
+            aria-label="Select all"
           />
         ),
         cell: ({ row }) => (
@@ -160,7 +160,7 @@ function PositionsSectionInline({
                 return next;
               });
             }}
-            aria-label="Chọn"
+            aria-label="Select"
             onClick={(e) => e.stopPropagation()}
             className="opacity-0 group-hover/row:opacity-100 transition-opacity data-[state=checked]:opacity-100"
           />
@@ -170,7 +170,7 @@ function PositionsSectionInline({
       },
       {
         accessorKey: "name",
-        header: "Tên chức vụ",
+        header: "Position name",
         size: 200,
         cell: ({ row }) => (
           <span className="text-xs font-medium">{row.original.name}</span>
@@ -178,7 +178,7 @@ function PositionsSectionInline({
       },
       {
         accessorKey: "code",
-        header: "Mã",
+        header: "Code",
         size: 120,
         cell: ({ row }) => (
           <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
@@ -188,7 +188,7 @@ function PositionsSectionInline({
       },
       {
         accessorKey: "level",
-        header: "Cấp độ",
+        header: "Level",
         size: 80,
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
@@ -198,7 +198,7 @@ function PositionsSectionInline({
       },
       {
         accessorKey: "userCount",
-        header: "Số NV",
+        header: "Employees",
         size: 72,
         cell: ({ row }) => {
           const count = row.original.userCount;
@@ -211,7 +211,7 @@ function PositionsSectionInline({
                   : "text-muted-foreground",
               )}
             >
-              {count} nhân viên
+              {count} employees
             </span>
           );
         },
@@ -240,7 +240,7 @@ function PositionsSectionInline({
     [positions, selectedIds, onEdit],
   );
 
-  // TanStack Table's useReactTable() returns unstable functions — known limitation.
+  // TanStack Table's useReactTable() returns unstable functions â€” known limitation.
   // eslint-disable-next-line
   const table = useReactTable({
     data: positions,
@@ -257,7 +257,7 @@ function PositionsSectionInline({
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm kiếm chức vụ..."
+            placeholder="Search positions..."
             className="h-7 text-xs pl-7 w-48"
           />
           <Search className="absolute left-2 h-3 w-3 text-muted-foreground pointer-events-none" />
@@ -268,7 +268,7 @@ function PositionsSectionInline({
             onClick={() => onEdit(null as unknown as PositionListItem)}
           >
             <Plus className="h-3 w-3 mr-1" />
-            Thêm chức vụ
+            Add position
           </Button>
         </div>
       </div>
@@ -277,9 +277,8 @@ function PositionsSectionInline({
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-2 px-2 py-1.5 bg-primary/5 border-b border-primary/20">
           <span className="text-xs text-muted-foreground mr-1">
-            Đã chọn{" "}
-            <strong className="text-foreground">{selectedIds.size}</strong> chức
-            vụ
+            Selected{" "}
+            <strong className="text-foreground">{selectedIds.size}</strong> positions
           </span>
           <Button
             variant={"destructive"}
@@ -287,7 +286,7 @@ function PositionsSectionInline({
             onClick={handleBatchDelete}
           >
             <Trash2 className="h-3 w-3 mr-1" />
-            Xóa
+            Delete
           </Button>
           <Button
             variant="ghost"
@@ -353,7 +352,7 @@ function PositionsSectionInline({
                 >
                   <div className="flex flex-col items-center justify-center gap-2">
                     <BadgeCheck className="h-8 w-8 text-muted-foreground/50" />
-                    <p>Chưa có chức vụ nào.</p>
+                    <p>No positions yet.</p>
                     <Button
                       variant="link"
                       size="xs"
@@ -361,7 +360,7 @@ function PositionsSectionInline({
                         onEdit(null as unknown as PositionListItem)
                       }
                     >
-                      Thêm chức vụ đầu tiên
+                      Add first position
                     </Button>
                   </div>
                 </TableCell>
@@ -397,7 +396,7 @@ function PositionsSectionInline({
       {!isLoading && positions.length > 0 && (
         <div className="flex items-center justify-between px-2 py-2 border-t shrink-0">
           <p className="text-xs text-muted-foreground">
-            Hiển thị <strong>{positions.length}</strong> chức vụ
+            Showing <strong>{positions.length}</strong> positions
           </p>
         </div>
       )}
@@ -406,3 +405,4 @@ function PositionsSectionInline({
 }
 
 export { PositionsSectionInline };
+

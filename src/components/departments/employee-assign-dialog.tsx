@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,7 +18,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, Users, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { DepartmentListItem } from "@/app/(protected)/departments/types";
+import type { DepartmentListItem } from "@/app/[locale]/(protected)/departments/types";
+import { useTranslations } from "next-intl";
 
 interface Employee {
     id: string;
@@ -65,6 +66,7 @@ export function EmployeeAssignDialog({
     department,
     onAssigned,
 }: EmployeeAssignDialogProps) {
+    const t = useTranslations("ProtectedPages");
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -146,7 +148,7 @@ export function EmployeeAssignDialog({
             }
         },
         onError: () => {
-            toast.error("Có lỗi xảy ra khi phân công");
+            toast.error(t("departmentEmployeesToastError"));
             queryClient.invalidateQueries({ queryKey: ["departments"] });
             queryClient.invalidateQueries({ queryKey: ["departmentTree"] });
             queryClient.invalidateQueries({ queryKey: ["departmentEmployees"] });
@@ -181,9 +183,11 @@ export function EmployeeAssignDialog({
         <Dialog open={open} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-lg max-h-[90vh]">
                 <DialogHeader>
-                    <DialogTitle>Phân công nhân viên</DialogTitle>
+                    <DialogTitle>{t("departmentEmployeesAssignTitle")}</DialogTitle>
                     <DialogDescription>
-                        Chọn nhân viên để phân công vào phòng ban &quot;{department?.name}&quot;
+                        {t("departmentEmployeesAssignDescription", {
+                            name: department?.name ?? "",
+                        })}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -192,7 +196,7 @@ export function EmployeeAssignDialog({
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Tìm kiếm nhân viên..."
+                            placeholder={t("departmentEmployeesSearchPlaceholder")}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="pl-9"
@@ -211,11 +215,11 @@ export function EmployeeAssignDialog({
                                 htmlFor="selectAll"
                                 className="text-sm cursor-pointer"
                             >
-                                Chọn tất cả ({filteredEmployees.length})
+                                {t("departmentEmployeesAssignSelectAll")} ({filteredEmployees.length})
                             </label>
                         </div>
                         <Badge variant="secondary">
-                            {selectedIds.size} đã chọn
+                            {selectedIds.size} {t("departmentEmployeesAssignSelected")}
                         </Badge>
                     </div>
 
@@ -228,7 +232,7 @@ export function EmployeeAssignDialog({
                         ) : filteredEmployees.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                                 <Users className="h-10 w-10 mb-2 opacity-50" />
-                                <p className="text-sm">Không có nhân viên nào</p>
+                                <p className="text-sm">{t("departmentEmployeesEmpty")}</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -236,7 +240,7 @@ export function EmployeeAssignDialog({
                                 {groupedEmployees.noDept.length > 0 && (
                                     <div>
                                         <p className="text-xs font-medium text-muted-foreground mb-2">
-                                            Chưa có phòng ban ({groupedEmployees.noDept.length})
+                                            {t("departmentEmployeesAssignNoDepartment")} ({groupedEmployees.noDept.length})
                                         </p>
                                         <div className="space-y-1">
                                             {groupedEmployees.noDept.map((emp) => (
@@ -284,7 +288,7 @@ export function EmployeeAssignDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={assignMutation.isPending}
                     >
-                        Hủy
+                        {t("departmentEmployeesCancel")}
                     </Button>
                     <Button
                         onClick={() => assignMutation.mutate()}
@@ -293,12 +297,12 @@ export function EmployeeAssignDialog({
                         {assignMutation.isPending ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Đang xử lý...
+                                {t("departmentEmployeesAssignProcessing")}
                             </>
                         ) : (
                             <>
                                 <Check className="mr-2 h-4 w-4" />
-                                Phân công ({selectedIds.size})
+                                {t("departmentEmployeesAssignAction")} ({selectedIds.size})
                             </>
                         )}
                     </Button>
@@ -343,7 +347,7 @@ function EmployeeCheckboxItem({
                     )}
                     {employee.position && (
                         <>
-                            {employee.employeeCode && <span>•</span>}
+                            {employee.employeeCode && <span>â€¢</span>}
                             <span>{employee.position}</span>
                         </>
                     )}

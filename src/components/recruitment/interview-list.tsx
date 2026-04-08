@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -74,23 +74,23 @@ import {
     getJobPostings,
     getUsersForInterviewer,
     submitFeedback,
-} from "@/app/(protected)/recruitment/actions";
+} from "@/app/[locale]/(protected)/recruitment/actions";
 import type {
     InterviewBasic,
     InterviewFilters,
     CreateInterviewForm,
     InterviewStatus,
     InterviewResult,
-} from "@/app/(protected)/recruitment/types";
+} from "@/app/[locale]/(protected)/recruitment/types";
 
 const interviewFormSchema = z.object({
-    candidateId: z.string().min(1, "Ứng viên không được để trống"),
-    jobPostingId: z.string().min(1, "Vị trí không được để trống"),
+    candidateId: z.string().min(1, "Candidate is required"),
+    jobPostingId: z.string().min(1, "Position is required"),
     round: z.number().int().positive(),
     type: z.enum(["ONSITE", "ONLINE", "PHONE"]),
     method: z.enum(["INDIVIDUAL", "GROUP", "PANEL"]),
     scheduledDate: z.date(),
-    scheduledTime: z.string().min(1, "Giờ không được để trống"),
+    scheduledTime: z.string().min(1, "Start time is required"),
     duration: z.number().int().positive(),
     location: z.string().optional(),
     meetingLink: z.string().optional(),
@@ -114,40 +114,40 @@ const STATUS_LABELS: Record<
     { label: string; color: string }
 > = {
     SCHEDULED: {
-        label: "Đã lên lịch",
+        label: "Scheduled",
         color: "bg-blue-100 text-blue-700",
     },
     IN_PROGRESS: {
-        label: "Đang phỏng vấn",
+        label: "In progress",
         color: "bg-yellow-100 text-yellow-700",
     },
     COMPLETED: {
-        label: "Hoàn thành",
+        label: "Completed",
         color: "bg-green-100 text-green-700",
     },
     CANCELLED: {
-        label: "Đã hủy",
+        label: "Cancelled",
         color: "bg-gray-100 text-gray-700",
     },
-    NO_SHOW: { label: "Không đến", color: "bg-red-100 text-red-700" },
+    NO_SHOW: { label: "No show", color: "bg-red-100 text-red-700" },
 };
 
 const RESULT_LABELS: Record<
     InterviewResult,
     { label: string; color: string }
 > = {
-    PASS: { label: "Đạt", color: "bg-green-100 text-green-700" },
-    FAIL: { label: "Không đạt", color: "bg-red-100 text-red-700" },
+    PASS: { label: "Pass", color: "bg-green-100 text-green-700" },
+    FAIL: { label: "Fail", color: "bg-red-100 text-red-700" },
     PENDING: {
-        label: "Chờ kết quả",
+        label: "Pending",
         color: "bg-gray-100 text-gray-700",
     },
 };
 
 const INTERVIEW_TYPE_LABELS: Record<string, string> = {
-    ONSITE: "Trực tiếp",
+    ONSITE: "Onsite",
     ONLINE: "Online",
-    PHONE: "Điện thoại",
+    PHONE: "Phone",
 };
 
 export function InterviewList() {
@@ -208,11 +208,11 @@ export function InterviewList() {
             return {};
         },
         onSuccess: () => {
-            toast.success("Đặt lịch phỏng vấn thành công");
+            toast.success("Interview scheduled successfully");
         },
         onError: (error: Error) => {
             toast.error(
-                error.message || "Lỗi khi đặt lịch phỏng vấn",
+                error.message || "Failed to schedule interview",
             );
             queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
         },
@@ -241,11 +241,11 @@ export function InterviewList() {
             return {};
         },
         onSuccess: () => {
-            toast.success("Cập nhật phỏng vấn thành công");
+            toast.success("Interview updated successfully");
         },
         onError: (error: Error) => {
             toast.error(
-                error.message || "Lỗi khi cập nhật phỏng vấn",
+                error.message || "Failed to update interview",
             );
             queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
         },
@@ -261,11 +261,11 @@ export function InterviewList() {
             return {};
         },
         onSuccess: () => {
-            toast.success("Xóa lịch phỏng vấn thành công");
+            toast.success("Interview deleted successfully");
         },
         onError: (error: Error) => {
             toast.error(
-                error.message || "Lỗi khi xóa lịch phỏng vấn",
+                error.message || "Failed to delete interview",
             );
             queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
         },
@@ -289,10 +289,10 @@ export function InterviewList() {
             return {};
         },
         onSuccess: () => {
-            toast.success("Gửi feedback thành công");
+            toast.success("Feedback submitted successfully");
         },
         onError: (error: Error) => {
-            toast.error(error.message || "Lỗi khi gửi feedback");
+            toast.error(error.message || "Failed to submit feedback");
             queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
         },
         onSettled: () => {
@@ -316,26 +316,26 @@ export function InterviewList() {
                     }
                 >
                     <SelectTrigger className="w-60">
-                        <SelectValue placeholder="Trạng thái" />
+                        <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="__all__">
-                            Tất cả
+                            Táº¥t cáº£
                         </SelectItem>
                         <SelectItem value="SCHEDULED">
-                            Đã lên lịch
+                            Scheduled
                         </SelectItem>
                         <SelectItem value="IN_PROGRESS">
-                            Đang phỏng vấn
+                            In progress
                         </SelectItem>
                         <SelectItem value="COMPLETED">
-                            Hoàn thành
+                            Completed
                         </SelectItem>
                         <SelectItem value="CANCELLED">
-                            Đã hủy
+                            Cancelled
                         </SelectItem>
                         <SelectItem value="NO_SHOW">
-                            Không đến
+                            No show
                         </SelectItem>
                     </SelectContent>
                 </Select>
@@ -349,11 +349,11 @@ export function InterviewList() {
                     }
                 >
                     <SelectTrigger className="w-60">
-                        <SelectValue placeholder="Vị trí" />
+                        <SelectValue placeholder="Position" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="__all__">
-                            Tất cả
+                            Táº¥t cáº£
                         </SelectItem>
                         {jobPostings.map((jp) => (
                             <SelectItem key={jp.id} value={jp.id}>
@@ -399,15 +399,15 @@ export function InterviewList() {
                     onOpenChange={setIsCreateOpen}
                 >
                     <DialogTrigger asChild>
-                        <Button>+ Đặt lịch phỏng vấn</Button>
+                        <Button>+ Schedule interview</Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>
-                                Đặt lịch phỏng vấn
+                                Schedule interview
                             </DialogTitle>
                             <DialogDescription>
-                                Đặt lịch phỏng vấn ứng viên
+                                Schedule an interview for candidate
                             </DialogDescription>
                         </DialogHeader>
                         <InterviewForm
@@ -427,28 +427,28 @@ export function InterviewList() {
             {/* Table */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Lịch phỏng vấn</CardTitle>
+                    <CardTitle>Interview schedule</CardTitle>
                     <CardDescription>
-                        {interviewsData?.total || 0} lịch phỏng vấn
+                        {interviewsData?.total || 0} interviews
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <div className="text-center py-8">
-                            Đang tải...
+                            Loading...
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Ứng viên</TableHead>
-                                    <TableHead>Vị trí</TableHead>
-                                    <TableHead>Vòng</TableHead>
-                                    <TableHead>Ngày giờ</TableHead>
-                                    <TableHead>Hình thức</TableHead>
-                                    <TableHead>Người PV</TableHead>
-                                    <TableHead>Trạng thái</TableHead>
-                                    <TableHead>Kết quả</TableHead>
+                                    <TableHead>Candidate</TableHead>
+                                    <TableHead>Position</TableHead>
+                                    <TableHead>Round</TableHead>
+                                    <TableHead>Date & time</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Interviewers</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Result</TableHead>
                                     <TableHead></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -460,7 +460,7 @@ export function InterviewList() {
                                             colSpan={9}
                                             className="text-center py-8"
                                         >
-                                            Chưa có lịch phỏng vấn nào
+                                            No interview scheduled yet
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -482,7 +482,7 @@ export function InterviewList() {
                                                     }
                                                 </TableCell>
                                                 <TableCell>
-                                                    Vòng{" "}
+                                                    Round{" "}
                                                     {interview.round}
                                                 </TableCell>
                                                 <TableCell>
@@ -601,8 +601,7 @@ export function InterviewList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Chỉnh
-                                                                sửa
+                                                                Edit
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() =>
@@ -625,10 +624,7 @@ export function InterviewList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Đánh
-                                                                dấu
-                                                                hoàn
-                                                                thành
+                                                                Mark completed
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() =>
@@ -642,8 +638,7 @@ export function InterviewList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Không
-                                                                đến
+                                                                No show
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() =>
@@ -657,14 +652,14 @@ export function InterviewList() {
                                                                     )
                                                                 }
                                                             >
-                                                                Hủy
+                                                                Cancel
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 className="text-red-600"
                                                                 onClick={() => {
                                                                     if (
                                                                         confirm(
-                                                                            "Bạn có chắc chắn muốn xóa lịch phỏng vấn này?",
+                                                                            "Are you sure you want to delete this interview?",
                                                                         )
                                                                     ) {
                                                                         deleteMutation.mutate(
@@ -673,7 +668,7 @@ export function InterviewList() {
                                                                     }
                                                                 }}
                                                             >
-                                                                Xóa
+                                                                Delete
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -698,7 +693,7 @@ export function InterviewList() {
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>
-                            Chỉnh sửa lịch phỏng vấn
+                            Edit interview schedule
                         </DialogTitle>
                     </DialogHeader>
                     {editingInterview && (
@@ -771,7 +766,7 @@ export function InterviewList() {
             >
                 <DialogContent className="max-w-xl">
                     <DialogHeader>
-                        <DialogTitle>Feedback phỏng vấn</DialogTitle>
+                        <DialogTitle>Interview feedback</DialogTitle>
                         <DialogDescription>
                             {feedbackInterview?.candidateName} -{" "}
                             {feedbackInterview?.jobPostingTitle}
@@ -856,14 +851,14 @@ function InterviewForm({
                     name="candidateId"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Ứng viên *</FormLabel>
+                            <FormLabel>Candidate *</FormLabel>
                             <Select
                                 onValueChange={field.onChange}
                                 defaultValue={field.value}
                             >
                                 <FormControl>
                                     <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Chọn ứng viên" />
+                                        <SelectValue placeholder="Select candidate" />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -888,14 +883,14 @@ function InterviewForm({
                         name="jobPostingId"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Vị trí *</FormLabel>
+                                <FormLabel>Position *</FormLabel>
                                 <Select
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
                                 >
                                     <FormControl>
                                         <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Chọn vị trí" />
+                                            <SelectValue placeholder="Select position" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -918,7 +913,7 @@ function InterviewForm({
                         name="round"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Vòng phỏng vấn</FormLabel>
+                                <FormLabel>Interview round</FormLabel>
                                 <FormControl>
                                     <Input
                                         type="number"
@@ -944,7 +939,7 @@ function InterviewForm({
                         name="type"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Hình thức</FormLabel>
+                                <FormLabel>Type</FormLabel>
                                 <Select
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
@@ -956,13 +951,13 @@ function InterviewForm({
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="ONSITE">
-                                            Trực tiếp
+                                            Onsite
                                         </SelectItem>
                                         <SelectItem value="ONLINE">
                                             Online
                                         </SelectItem>
                                         <SelectItem value="PHONE">
-                                            Điện thoại
+                                            Phone
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -975,7 +970,7 @@ function InterviewForm({
                         name="method"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Phương pháp</FormLabel>
+                                <FormLabel>Method</FormLabel>
                                 <Select
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
@@ -987,10 +982,10 @@ function InterviewForm({
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="INDIVIDUAL">
-                                            Cá nhân
+                                            Individual
                                         </SelectItem>
                                         <SelectItem value="GROUP">
-                                            Nhóm
+                                            Group
                                         </SelectItem>
                                         <SelectItem value="PANEL">
                                             Panel
@@ -1007,7 +1002,7 @@ function InterviewForm({
                     name="scheduledDate"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Ngày *</FormLabel>
+                            <FormLabel>Date *</FormLabel>
                             <FormControl>
                                 <DatePicker
                                     date={field.value}
@@ -1024,7 +1019,7 @@ function InterviewForm({
                         name="scheduledTime"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Giờ bắt đầu *</FormLabel>
+                                <FormLabel>Start time *</FormLabel>
                                 <FormControl>
                                     <Input type="time" {...field} />
                                 </FormControl>
@@ -1038,7 +1033,7 @@ function InterviewForm({
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>
-                                    Thời lượng (phút)
+                                    Duration (minutes)
                                 </FormLabel>
                                 <FormControl>
                                     <Input
@@ -1064,7 +1059,7 @@ function InterviewForm({
                     name="interviewerIds"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Người phỏng vấn</FormLabel>
+                            <FormLabel>Interviewers</FormLabel>
                             <FormControl>
                                 <Combobox
                                     options={interviewers.map(
@@ -1075,7 +1070,7 @@ function InterviewForm({
                                     )}
                                     value={field.value || []}
                                     onChange={field.onChange}
-                                    placeholder="Chọn người phỏng vấn..."
+                                    placeholder="Select interviewers..."
                                     multiple
                                 />
                             </FormControl>
@@ -1090,11 +1085,11 @@ function InterviewForm({
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>
-                                    Địa điểm (ONSITE)
+                                    Location (ONSITE)
                                 </FormLabel>
                                 <FormControl>
                                     <Input
-                                        placeholder="Phòng họp 1"
+                                        placeholder="Meeting room 1"
                                         {...field}
                                     />
                                 </FormControl>
@@ -1128,7 +1123,7 @@ function InterviewForm({
                             name="status"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Trạng thái</FormLabel>
+                                    <FormLabel>Status</FormLabel>
                                     <Select
                                         onValueChange={field.onChange}
                                         defaultValue={field.value}
@@ -1140,19 +1135,19 @@ function InterviewForm({
                                         </FormControl>
                                         <SelectContent>
                                             <SelectItem value="SCHEDULED">
-                                                Đã lên lịch
+                                                Scheduled
                                             </SelectItem>
                                             <SelectItem value="IN_PROGRESS">
-                                                Đang phỏng vấn
+                                                In progress
                                             </SelectItem>
                                             <SelectItem value="COMPLETED">
-                                                Hoàn thành
+                                                Completed
                                             </SelectItem>
                                             <SelectItem value="CANCELLED">
-                                                Đã hủy
+                                                Cancelled
                                             </SelectItem>
                                             <SelectItem value="NO_SHOW">
-                                                Không đến
+                                                No show
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -1165,25 +1160,25 @@ function InterviewForm({
                             name="result"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Kết quả</FormLabel>
+                                    <FormLabel>Result</FormLabel>
                                     <Select
                                         onValueChange={field.onChange}
                                         defaultValue={field.value}
                                     >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Chọn kết quả" />
+                                                <SelectValue placeholder="Select result" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
                                             <SelectItem value="PASS">
-                                                Đạt
+                                                Pass
                                             </SelectItem>
                                             <SelectItem value="FAIL">
-                                                Không đạt
+                                                Fail
                                             </SelectItem>
                                             <SelectItem value="PENDING">
-                                                Chờ kết quả
+                                                Pending
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -1199,14 +1194,14 @@ function InterviewForm({
                         variant="outline"
                         onClick={onCancel}
                     >
-                        Hủy
+                        Cancel
                     </Button>
                     <Button type="submit" disabled={isLoading}>
                         {isLoading
-                            ? "Đang lưu..."
+                            ? "Saving..."
                             : isEdit
-                              ? "Lưu"
-                              : "Đặt lịch"}
+                              ? "Save"
+                              : "Schedule"}
                     </Button>
                 </div>
             </form>
@@ -1263,7 +1258,7 @@ function FeedbackForm({
                         name="score"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Điểm (1-10)</FormLabel>
+                                <FormLabel>Score (1-10)</FormLabel>
                                 <FormControl>
                                     <Input
                                         type="number"
@@ -1293,25 +1288,25 @@ function FeedbackForm({
                         name="result"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Kết quả</FormLabel>
+                                <FormLabel>Result</FormLabel>
                                 <Select
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
                                 >
                                     <FormControl>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Chọn kết quả" />
+                                            <SelectValue placeholder="Select result" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="PASS">
-                                            Đạt
+                                            Pass
                                         </SelectItem>
                                         <SelectItem value="FAIL">
-                                            Không đạt
+                                            Fail
                                         </SelectItem>
                                         <SelectItem value="PENDING">
-                                            Chờ kết quả
+                                            Pending
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -1325,11 +1320,11 @@ function FeedbackForm({
                     name="strengths"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Điểm mạnh</FormLabel>
+                            <FormLabel>Strengths</FormLabel>
                             <FormControl>
                                 <Textarea
                                     rows={2}
-                                    placeholder="Kỹ năng tốt, giao tiếp tốt..."
+                                    placeholder="Good skills, good communication..."
                                     {...field}
                                 />
                             </FormControl>
@@ -1342,11 +1337,11 @@ function FeedbackForm({
                     name="improvements"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Điểm cần cải thiện</FormLabel>
+                            <FormLabel>Areas for improvement</FormLabel>
                             <FormControl>
                                 <Textarea
                                     rows={2}
-                                    placeholder="Cần cải thiện..."
+                                    placeholder="Needs improvement..."
                                     {...field}
                                 />
                             </FormControl>
@@ -1359,11 +1354,11 @@ function FeedbackForm({
                     name="notes"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Ghi chú thêm</FormLabel>
+                            <FormLabel>Additional notes</FormLabel>
                             <FormControl>
                                 <Textarea
                                     rows={2}
-                                    placeholder="Ghi chú khác..."
+                                    placeholder="Other notes..."
                                     {...field}
                                 />
                             </FormControl>
@@ -1377,13 +1372,14 @@ function FeedbackForm({
                         variant="outline"
                         onClick={onCancel}
                     >
-                        Hủy
+                        Cancel
                     </Button>
                     <Button type="submit" disabled={isLoading}>
-                        {isLoading ? "Đang gửi..." : "Gửi feedback"}
+                        {isLoading ? "Submitting..." : "Submit feedback"}
                     </Button>
                 </div>
             </form>
         </Form>
     );
 }
+

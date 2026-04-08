@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +20,6 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -38,24 +37,23 @@ import {
 } from "@/components/ui/popover";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import {
     assignAsset,
     getUsersList,
-} from "@/app/(protected)/assets/actions";
-import type { UserOption } from "@/app/(protected)/assets/types";
+} from "@/app/[locale]/(protected)/assets/actions";
+import type { UserOption } from "@/app/[locale]/(protected)/assets/types";
 import { DatePicker } from "../ui/date-picker";
 
-const formSchema = z.object({
-    assetId: z.string().min(1),
-    userId: z.string().min(1, "Vui lòng chọn nhân viên"),
-    assignDate: z.date().optional(),
-    expectedReturn: z.date().optional(),
-    notes: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = {
+    assetId: string;
+    userId: string;
+    assignDate?: Date;
+    expectedReturn?: Date;
+    notes?: string;
+};
 
 interface AssetAssignDialogProps {
     open: boolean;
@@ -68,8 +66,23 @@ export function AssetAssignDialog({
     onOpenChange,
     assetId,
 }: AssetAssignDialogProps) {
+    const t = useTranslations("ProtectedPages");
     const queryClient = useQueryClient();
     const [popoverOpen, setPopoverOpen] = useState(false);
+
+    const formSchema = useMemo(
+        () =>
+            z.object({
+                assetId: z.string().min(1),
+                userId: z
+                    .string()
+                    .min(1, t("assetsAssignValidationUserRequired")),
+                assignDate: z.date().optional(),
+                expectedReturn: z.date().optional(),
+                notes: z.string().optional(),
+            }),
+        [t],
+    );
 
     const { data: users = [] } = useQuery<UserOption[]>({
         queryKey: ["assets", "users"],
@@ -96,13 +109,13 @@ export function AssetAssignDialog({
     const mutation = useMutation({
         mutationFn: assignAsset,
         onSuccess: () => {
-            toast.success("Đã cấp phát tài sản thành công");
+            toast.success(t("assetsAssignToastSuccess"));
             queryClient.invalidateQueries({ queryKey: ["assets"] });
             onOpenChange(false);
             form.reset();
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Không thể cấp phát tài sản");
+            toast.error(err.message || t("assetsAssignToastError"));
         },
     });
 
@@ -114,7 +127,7 @@ export function AssetAssignDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Cấp phát tài sản</DialogTitle>
+                    <DialogTitle>Cáº¥p phÃ¡t tÃ i sáº£n</DialogTitle>
                 </DialogHeader>
 
                 <Form {...form}>
@@ -129,7 +142,7 @@ export function AssetAssignDialog({
                             name="userId"
                             render={({ field }) => (
                                 <FormItem className="flex flex-col">
-                                    <FormLabel>Nhân viên *</FormLabel>
+                                    <FormLabel>NhÃ¢n viÃªn *</FormLabel>
                                     <Popover
                                         open={popoverOpen}
                                         onOpenChange={setPopoverOpen}
@@ -147,18 +160,18 @@ export function AssetAssignDialog({
                                                 >
                                                     {selectedUser
                                                         ? `${selectedUser.name}${selectedUser.employeeCode ? ` (${selectedUser.employeeCode})` : ""}`
-                                                        : "Chọn nhân viên..."}
+                                                        : t("assetsAssignSelectUserPlaceholder")}
                                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
                                             </FormControl>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-full p-0">
                                             <Command>
-                                                <CommandInput placeholder="Tìm nhân viên..." />
+                                                <CommandInput placeholder={t("assetsAssignSearchUserPlaceholder")} />
                                                 <CommandList>
                                                     <CommandEmpty>
-                                                        Không tìm thấy nhân
-                                                        viên
+                                                        KhÃ´ng tÃ¬m tháº¥y nhÃ¢n
+                                                        viÃªn
                                                     </CommandEmpty>
                                                     <CommandGroup>
                                                         {users.map(
@@ -218,7 +231,7 @@ export function AssetAssignDialog({
                             name="assignDate"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Ngày cấp phát</FormLabel>
+                                    <FormLabel>NgÃ y cáº¥p phÃ¡t</FormLabel>
                                     <FormControl>
                                        <DatePicker date={field.value} setDate={field.onChange} />
                                     </FormControl>
@@ -233,7 +246,7 @@ export function AssetAssignDialog({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>
-                                        Ngày dự kiến trả
+                                        NgÃ y dá»± kiáº¿n tráº£
                                     </FormLabel>
                                     <FormControl>
                                        <DatePicker date={field.value} setDate={field.onChange} />
@@ -248,10 +261,10 @@ export function AssetAssignDialog({
                             name="notes"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Ghi chú</FormLabel>
+                                    <FormLabel>Ghi chÃº</FormLabel>
                                     <FormControl>
                                         <Textarea
-                                            placeholder="Ghi chú thêm..."
+                                            placeholder={t("assetsAssignNotesPlaceholder")}
                                             rows={2}
                                             {...field}
                                         />
@@ -267,7 +280,7 @@ export function AssetAssignDialog({
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
                             >
-                                Hủy
+                                Há»§y
                             </Button>
                             <Button
                                 type="submit"
@@ -276,7 +289,7 @@ export function AssetAssignDialog({
                                 {mutation.isPending && (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}
-                                Cấp phát
+                                Cáº¥p phÃ¡t
                             </Button>
                         </DialogFooter>
                     </form>
@@ -285,3 +298,4 @@ export function AssetAssignDialog({
         </Dialog>
     );
 }
+

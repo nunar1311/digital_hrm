@@ -1,14 +1,15 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   createPosition,
   updatePosition,
-} from "@/app/(protected)/positions/actions";
-// import { getAuthorityTypes } from "@/app/(protected)/authority-types/actions";
+} from "@/app/[locale]/(protected)/positions/actions";
+// import { getAuthorityTypes } from "@/app/[locale]/(protected)/authority-types/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,17 +40,17 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import z from "zod";
-// import type { AuthorityTypeItem } from "@/app/(protected)/authority-types/types";
+// import type { AuthorityTypeItem } from "@/app/[locale]/(protected)/authority-types/types";
 
 const AUTHORITY_DUPLICATE_CHECK = ["MANAGER", "DEPUTY"];
 
 const positionFormSchema = z.object({
-  name: z.string().min(2, "Tên chức vụ phải có ít nhất 2 ký tự"),
+  name: z.string().min(2, "Position name must be at least 2 characters"),
   code: z
     .string()
-    .min(2, "Mã chức vụ phải có ít nhất 2 ký tự")
-    .max(20, "Mã chức vụ tối đa 20 ký tự")
-    .regex(/^[A-Z0-9_]+$/, "Mã chức vụ chỉ chứa chữ hoa, số và dấu gạch dưới"),
+    .min(2, "Position code must be at least 2 characters")
+    .max(20, "Position code must be at most 20 characters")
+    .regex(/^[A-Z0-9_]+$/, "Position code must contain only uppercase letters, numbers, and underscore"),
   authority: z.enum([
     "EXECUTIVE",
     "DIRECTOR",
@@ -102,6 +103,7 @@ export function DepartmentPositionFormDialog({
 }: DepartmentPositionFormDialogProps) {
   const queryClient = useQueryClient();
   const isEdit = !!editingPosition;
+  const t = useTranslations("ProtectedPages");
 
   // Fetch authority types from database
   // const { data: authorityTypes = [] } = useQuery({
@@ -159,7 +161,7 @@ export function DepartmentPositionFormDialog({
     queryKey: ["positions", "department", departmentId],
     queryFn: async () => {
       const { getAllPositions } =
-        await import("@/app/(protected)/positions/actions");
+        await import("@/app/[locale]/(protected)/positions/actions");
       return getAllPositions({ departmentId, status: "ACTIVE" });
     },
     enabled: open,
@@ -177,7 +179,7 @@ export function DepartmentPositionFormDialog({
     },
     onSuccess: (result) => {
       if (result.success) {
-        toast.success("Tạo chức vụ thành công");
+        toast.success(t("positionsCreateSuccess"));
       } else {
         toast.error(result.error);
         queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
@@ -185,7 +187,7 @@ export function DepartmentPositionFormDialog({
       }
     },
     onError: () => {
-      toast.error("Đã xảy ra lỗi khi tạo chức vụ");
+      toast.error(t("positionsCreateError"));
       queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
       queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
     },
@@ -211,7 +213,7 @@ export function DepartmentPositionFormDialog({
     },
     onSuccess: (result) => {
       if (result.success) {
-        toast.success("Cập nhật chức vụ thành công");
+        toast.success(t("positionsUpdateSuccess"));
       } else {
         toast.error(result.error);
         queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
@@ -219,7 +221,7 @@ export function DepartmentPositionFormDialog({
       }
     },
     onError: () => {
-      toast.error("Đã xảy ra lỗi khi cập nhật chức vụ");
+      toast.error(t("positionsUpdateError"));
       queryClient.invalidateQueries({ queryKey: ["positions", "department", departmentId] });
       queryClient.invalidateQueries({ queryKey: ["departments", departmentId] });
     },
@@ -244,7 +246,7 @@ export function DepartmentPositionFormDialog({
       // if (hasExisting) {
       //     const label = getAuthorityLabel(values.authority, authorityTypes);
       //     toast.error(
-      //         `Phòng ban đã có chức vụ "${label}". Mỗi phòng ban chỉ có một chức vụ "${label}".`,
+      //         `Department already has position "${label}". Only one "${label}" is allowed per department.`,
       //     );
       //     return;
       // }
@@ -277,12 +279,16 @@ export function DepartmentPositionFormDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Sửa chức vụ" : "Thêm chức vụ mới"}
+            {isEdit ? t("positionsDialogTitleEdit") : t("positionsDialogTitleCreate")}
           </DialogTitle>
           <DialogDescription>
             {isEdit
-              ? `Cập nhật thông tin chức vụ trong phòng ban "${departmentName}"`
-              : `Tạo chức vụ mới trong phòng ban "${departmentName}"`}
+              ? t("positionsDialogDescriptionEdit", {
+                  name: `${editingPosition?.name ?? ""} (${departmentName})`,
+                })
+              : t("positionsDialogDescriptionCreateInDepartment", {
+                  department: departmentName,
+                })}
           </DialogDescription>
         </DialogHeader>
 
@@ -294,10 +300,10 @@ export function DepartmentPositionFormDialog({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tên chức vụ *</FormLabel>
+                    <FormLabel>{t("positionsFieldName")} *</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="VD: Trưởng phòng Nhân sự"
+                        placeholder={t("positionsPlaceholderName")}
                         {...field}
                       />
                     </FormControl>
@@ -311,7 +317,7 @@ export function DepartmentPositionFormDialog({
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mã chức vụ *</FormLabel>
+                    <FormLabel>{t("positionsFieldCode")} *</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="VD: HR_MANAGER"
@@ -335,14 +341,14 @@ export function DepartmentPositionFormDialog({
                                 name="authority"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Quyền hạn *</FormLabel>
+                                        <FormLabel>Quyá»n háº¡n *</FormLabel>
                                         <Select
                                             onValueChange={field.onChange}
                                             value={field.value}
                                         >
                                             <FormControl>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Chọn quyền hạn" />
+                                                    <SelectValue placeholder="Select authority" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -363,7 +369,7 @@ export function DepartmentPositionFormDialog({
                                             field.value,
                                         ) && (
                                             <FormDescription className="text-amber-600">
-                                                Mỗi phòng ban chỉ có một{" "}
+                                                Only one{" "}
                                                 {getAuthorityLabel(field.value, authorityTypes).toLowerCase()}
                                             </FormDescription>
                                         )}
@@ -376,13 +382,13 @@ export function DepartmentPositionFormDialog({
                 name="level"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cấp bậc *</FormLabel>
+                    <FormLabel>{t("positionsFieldLevel")} *</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         min={1}
                         max={10}
-                        placeholder="1-10 (1=cao nhất)"
+                        placeholder={t("positionsPlaceholderLevel")}
                         value={field.value ?? ""}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -401,10 +407,10 @@ export function DepartmentPositionFormDialog({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mô tả</FormLabel>
+                  <FormLabel>{t("positionsFieldDescription")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Mô tả chi tiết về chức vụ này..."
+                      placeholder={t("positionsPlaceholderDescription")}
                       rows={3}
                       {...field}
                     />
@@ -421,11 +427,11 @@ export function DepartmentPositionFormDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={isLoading}
               >
-                Hủy
+                {t("positionsCancel")}
               </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEdit ? "Lưu thay đổi" : "Tạo mới"}
+                {isEdit ? t("positionsSaveChanges") : t("positionsCreateAction")}
               </Button>
             </DialogFooter>
           </form>
@@ -434,3 +440,4 @@ export function DepartmentPositionFormDialog({
     </Dialog>
   );
 }
+

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,25 +24,28 @@ export function DeleteWorkCycleDialog({
     onOpenChange,
     onConfirm,
 }: DeleteWorkCycleDialogProps) {
+    const t = useTranslations("ProtectedPages");
+
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>
-                        Xoá chu kỳ làm việc?
+                        {t("attendanceDeleteWorkCycleDialogTitle")}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                        Chu kỳ sẽ bị xoá khỏi hệ thống. Hành động này
-                        không thể hoàn tác.
+                        {t("attendanceDeleteWorkCycleDialogDescription")}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Huỷ</AlertDialogCancel>
+                    <AlertDialogCancel>
+                        {t("attendanceDeleteWorkCycleDialogCancel")}
+                    </AlertDialogCancel>
                     <AlertDialogAction
                         onClick={onConfirm}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                        Xoá
+                        {t("attendanceDeleteWorkCycleDialogConfirm")}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

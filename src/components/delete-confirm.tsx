@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -12,6 +12,7 @@ import {
 } from "./ui/alert-dialog";
 import { Trash2Icon } from "lucide-react";
 import { DropdownMenuItem } from "./ui/dropdown-menu";
+import { useTranslations } from "next-intl";
 
 interface DeleteConfirmProps {
     open?: boolean;
@@ -26,13 +27,19 @@ interface DeleteConfirmProps {
 const DeleteConfirm = ({
     open,
     onOpenChange,
-    title = "Xóa",
-    description = "Bạn có chắc chắn muốn xóa?",
-    confirmText = "Xác nhận",
+    title,
+    description,
+    confirmText,
     onConfirm,
     isDeleting = false,
 }: DeleteConfirmProps) => {
+    const t = useTranslations("Common");
     const [internalOpen, setInternalOpen] = useState(false);
+
+    const resolvedTitle = title ?? t("delete");
+    const resolvedDescription =
+        description ?? t("confirmDeleteDescription");
+    const resolvedConfirmText = confirmText ?? t("confirm");
     const isControlled = open !== undefined;
     const currentOpen = isControlled ? open : internalOpen;
 
@@ -51,25 +58,25 @@ const DeleteConfirm = ({
                         onSelect={(e) => e.preventDefault()}
                     >
                         <Trash2Icon className="text-destructive mr-2 h-4 w-4" />
-                        <span>Xóa</span>
+                        <span>{t("delete")}</span>
                     </DropdownMenuItem>
                 </AlertDialogTrigger>
             )}
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{title}</AlertDialogTitle>
+                    <AlertDialogTitle>{resolvedTitle}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        {description}
+                        {resolvedDescription}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Hủy</AlertDialogCancel>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={onConfirm}
                         disabled={isDeleting}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                        {isDeleting ? "Đang xóa..." : confirmText}
+                        {isDeleting ? t("deleting") : resolvedConfirmText}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

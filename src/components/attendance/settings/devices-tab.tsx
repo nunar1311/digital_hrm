@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,8 +13,8 @@ import {
     createTimekeeperDevice,
     updateTimekeeperDevice,
     deleteTimekeeperDevice,
-} from "@/app/(protected)/attendance/actions";
-import type { TimekeeperDevice } from "@/app/(protected)/attendance/types";
+} from "@/app/[locale]/(protected)/attendance/actions";
+import type { TimekeeperDevice } from "@/app/[locale]/(protected)/attendance/types";
 
 import {
     Card,
@@ -59,23 +60,42 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 
-const DEVICE_TYPE_LABELS: Record<string, string> = {
-    FINGERPRINT: "Vân tay",
-    FACE_ID: "Nhận diện khuôn mặt",
-    CARD: "Thẻ từ",
-    QR: "Mã QR",
-};
+const DEVICE_TYPES = ["FINGERPRINT", "FACE_ID", "CARD", "QR"] as const;
 
-const deviceSchema = z.object({
-    name: z.string().min(1, "Vui lòng nhập tên thiết bị"),
-    code: z.string().min(1, "Vui lòng nhập mã thiết bị"),
-    type: z.enum(["FINGERPRINT", "FACE_ID", "CARD", "QR"]),
-    location: z.string().optional(),
-    ipAddress: z.string().optional(),
-    apiKey: z.string().optional(),
-});
+function createDeviceSchema(t: ReturnType<typeof useTranslations>) {
+    return z.object({
+        name: z
+            .string()
+            .min(1, t("attendanceDevicesTabValidationNameRequired")),
+        code: z
+            .string()
+            .min(1, t("attendanceDevicesTabValidationCodeRequired")),
+        type: z.enum(DEVICE_TYPES),
+        location: z.string().optional(),
+        ipAddress: z.string().optional(),
+        apiKey: z.string().optional(),
+    });
+}
 
-type DeviceFormValues = z.infer<typeof deviceSchema>;
+type DeviceFormValues = z.infer<ReturnType<typeof createDeviceSchema>>;
+
+function getDeviceTypeLabel(
+    type: TimekeeperDevice["type"],
+    t: ReturnType<typeof useTranslations>,
+): string {
+    switch (type) {
+        case "FINGERPRINT":
+            return t("attendanceDevicesTabTypeFINGERPRINT");
+        case "FACE_ID":
+            return t("attendanceDevicesTabTypeFACE_ID");
+        case "CARD":
+            return t("attendanceDevicesTabTypeCARD");
+        case "QR":
+            return t("attendanceDevicesTabTypeQR");
+        default:
+            return type;
+    }
+}
 
 interface Props {
     devices: TimekeeperDevice[];
@@ -87,6 +107,9 @@ export function DevicesTab({ devices, queryClient }: Props) {
     const [editDevice, setEditDevice] =
         useState<TimekeeperDevice | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+
+    const t = useTranslations("ProtectedPages");
+    const deviceSchema = createDeviceSchema(t);
 
     const form = useForm<DeviceFormValues>({
         resolver: zodResolver(deviceSchema),
@@ -138,28 +161,33 @@ export function DevicesTab({ devices, queryClient }: Props) {
             }),
         onMutate: async (values) => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "devices"] });
-            const optimisticDevice = {
+            const optimisticDevice: TimekeeperDevice = {
                 id: `optimistic-${Date.now()}`,
-                ...values,
+                name: values.name,
+                code: values.code,
+                type: values.type,
                 location: values.location || null,
                 ipAddress: values.ipAddress || null,
                 apiKey: values.apiKey || null,
                 isActive: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
             };
-            queryClient.setQueryData(["attendance", "devices"], (old: any) => {
-                if (!old) return [optimisticDevice];
-                return [...old, optimisticDevice];
-            });
+            queryClient.setQueryData<TimekeeperDevice[]>(
+                ["attendance", "devices"],
+                (old) => {
+                    if (!old) return [optimisticDevice];
+                    return [...old, optimisticDevice];
+                },
+            );
             return {};
         },
         onSuccess: () => {
-            toast.success("Đã thêm thiết bị");
+            toast.success(t("attendanceDevicesTabToastCreateSuccess"));
             setShowDialog(false);
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceDevicesTabToastGenericError"));
             queryClient.invalidateQueries({ queryKey: ["attendance", "devices"] });
         },
         onSettled: () => {
@@ -183,19 +211,32 @@ export function DevicesTab({ devices, queryClient }: Props) {
         onMutate: async (values) => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "devices"] });
             if (!editDevice) return;
-            queryClient.setQueryData(["attendance", "devices"], (old: any) => {
-                if (!old) return old;
-                return old.map((d: any) => d.id === editDevice.id ? { ...d, ...values, location: values.location || null, ipAddress: values.ipAddress || null, apiKey: values.apiKey || null } : d);
-            });
+            queryClient.setQueryData<TimekeeperDevice[]>(
+                ["attendance", "devices"],
+                (old) => {
+                    if (!old) return old;
+                    return old.map((d) =>
+                        d.id === editDevice.id
+                            ? {
+                                  ...d,
+                                  ...values,
+                                  location: values.location || null,
+                                  ipAddress: values.ipAddress || null,
+                                  apiKey: values.apiKey || null,
+                              }
+                            : d,
+                    );
+                },
+            );
             return {};
         },
         onSuccess: () => {
-            toast.success("Đã cập nhật thiết bị");
+            toast.success(t("attendanceDevicesTabToastUpdateSuccess"));
             setShowDialog(false);
             setEditDevice(null);
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceDevicesTabToastGenericError"));
             queryClient.invalidateQueries({ queryKey: ["attendance", "devices"] });
         },
         onSettled: () => {
@@ -209,18 +250,21 @@ export function DevicesTab({ devices, queryClient }: Props) {
         mutationFn: (id: string) => deleteTimekeeperDevice(id),
         onMutate: async (id) => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "devices"] });
-            queryClient.setQueryData(["attendance", "devices"], (old: any) => {
-                if (!old) return old;
-                return old.filter((d: any) => d.id !== id);
-            });
+            queryClient.setQueryData<TimekeeperDevice[]>(
+                ["attendance", "devices"],
+                (old) => {
+                    if (!old) return old;
+                    return old.filter((d) => d.id !== id);
+                },
+            );
             return {};
         },
         onSuccess: () => {
-            toast.success("Đã xoá thiết bị");
+            toast.success(t("attendanceDevicesTabToastDeleteSuccess"));
             setDeleteId(null);
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceDevicesTabToastGenericError"));
             queryClient.invalidateQueries({ queryKey: ["attendance", "devices"] });
         },
         onSettled: () => {
@@ -240,14 +284,19 @@ export function DevicesTab({ devices, queryClient }: Props) {
         }) => updateTimekeeperDevice(id, { isActive }),
         onMutate: async ({ id, isActive }) => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "devices"] });
-            queryClient.setQueryData(["attendance", "devices"], (old: any) => {
-                if (!old) return old;
-                return old.map((d: any) => d.id === id ? { ...d, isActive } : d);
-            });
+            queryClient.setQueryData<TimekeeperDevice[]>(
+                ["attendance", "devices"],
+                (old) => {
+                    if (!old) return old;
+                    return old.map((d) =>
+                        d.id === id ? { ...d, isActive } : d,
+                    );
+                },
+            );
             return {};
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Có lỗi xảy ra");
+            toast.error(err.message || t("attendanceDevicesTabToastGenericError"));
             queryClient.invalidateQueries({ queryKey: ["attendance", "devices"] });
         },
         onSettled: () => {
@@ -274,22 +323,21 @@ export function DevicesTab({ devices, queryClient }: Props) {
                 <div>
                     <CardTitle className="flex items-center gap-2">
                         <Monitor className="h-5 w-5" />
-                        Thiết bị chấm công
+                        {t("attendanceDevicesTabTitle")}
                     </CardTitle>
                     <CardDescription>
-                        Quản lý máy chấm công vân tay, nhận diện khuôn
-                        mặt, thẻ từ
+                        {t("attendanceDevicesTabDescription")}
                     </CardDescription>
                 </div>
                 <Button onClick={openCreate} size="sm">
                     <Plus className="mr-1.5 h-4 w-4" />
-                    Thêm thiết bị
+                    {t("attendanceDevicesTabAdd")}
                 </Button>
             </CardHeader>
             <CardContent>
                 {devices.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">
-                        Chưa có thiết bị nào
+                        {t("attendanceDevicesTabEmpty")}
                     </p>
                 ) : (
                     <div className="space-y-2">
@@ -313,11 +361,8 @@ export function DevicesTab({ devices, queryClient }: Props) {
                                             </Badge>
                                         </div>
                                         <p className="text-xs text-muted-foreground">
-                                            {DEVICE_TYPE_LABELS[
-                                                d.type
-                                            ] ?? d.type}
-                                            {d.location &&
-                                                ` · ${d.location}`}
+                                            {getDeviceTypeLabel(d.type, t)}
+                                            {d.location && ` · ${d.location}`}
                                             {d.ipAddress &&
                                                 ` · ${d.ipAddress}`}
                                         </p>
@@ -369,8 +414,8 @@ export function DevicesTab({ devices, queryClient }: Props) {
                     <DialogHeader>
                         <DialogTitle>
                             {editDevice
-                                ? "Chỉnh sửa thiết bị"
-                                : "Thêm thiết bị"}
+                                ? t("attendanceDevicesTabDialogTitleEdit")
+                                : t("attendanceDevicesTabDialogTitleCreate")}
                         </DialogTitle>
                     </DialogHeader>
                     <Form {...form}>
@@ -385,11 +430,13 @@ export function DevicesTab({ devices, queryClient }: Props) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Tên thiết bị
+                                                {t("attendanceDevicesTabNameLabel")}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="VD: Máy vân tay tầng 1"
+                                                    placeholder={t(
+                                                        "attendanceDevicesTabNamePlaceholder",
+                                                    )}
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -403,11 +450,13 @@ export function DevicesTab({ devices, queryClient }: Props) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Mã thiết bị
+                                                {t("attendanceDevicesTabCodeLabel")}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="VD: FP-001"
+                                                    placeholder={t(
+                                                        "attendanceDevicesTabCodePlaceholder",
+                                                    )}
                                                     disabled={
                                                         !!editDevice
                                                     }
@@ -425,7 +474,7 @@ export function DevicesTab({ devices, queryClient }: Props) {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Loại thiết bị
+                                            {t("attendanceDevicesTabTypeLabel")}
                                         </FormLabel>
                                         <Select
                                             value={field.value}
@@ -440,17 +489,16 @@ export function DevicesTab({ devices, queryClient }: Props) {
                                             </FormControl>
                                             <SelectContent>
                                                 <SelectItem value="FINGERPRINT">
-                                                    Vân tay
+                                                    {t("attendanceDevicesTabTypeFINGERPRINT")}
                                                 </SelectItem>
                                                 <SelectItem value="FACE_ID">
-                                                    Nhận diện khuôn
-                                                    mặt
+                                                    {t("attendanceDevicesTabTypeFACE_ID")}
                                                 </SelectItem>
                                                 <SelectItem value="CARD">
-                                                    Thẻ từ
+                                                    {t("attendanceDevicesTabTypeCARD")}
                                                 </SelectItem>
                                                 <SelectItem value="QR">
-                                                    Mã QR
+                                                    {t("attendanceDevicesTabTypeQR")}
                                                 </SelectItem>
                                             </SelectContent>
                                         </Select>
@@ -464,11 +512,13 @@ export function DevicesTab({ devices, queryClient }: Props) {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Vị trí lắp đặt
+                                            {t("attendanceDevicesTabLocationLabel")}
                                         </FormLabel>
                                         <FormControl>
                                             <Input
-                                                placeholder="VD: Sảnh tầng 1"
+                                                placeholder={t(
+                                                    "attendanceDevicesTabLocationPlaceholder",
+                                                )}
                                                 {...field}
                                             />
                                         </FormControl>
@@ -483,7 +533,7 @@ export function DevicesTab({ devices, queryClient }: Props) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Địa chỉ IP
+                                                {t("attendanceDevicesTabIpLabel")}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
@@ -524,7 +574,7 @@ export function DevicesTab({ devices, queryClient }: Props) {
                                         setEditDevice(null);
                                     }}
                                 >
-                                    Huỷ
+                                    {t("attendanceDevicesTabCancel")}
                                 </Button>
                                 <Button
                                     type="submit"
@@ -533,7 +583,9 @@ export function DevicesTab({ devices, queryClient }: Props) {
                                     {isSaving && (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     )}
-                                    {editDevice ? "Cập nhật" : "Thêm"}
+                                    {editDevice
+                                        ? t("attendanceDevicesTabSubmitUpdate")
+                                        : t("attendanceDevicesTabSubmitCreate")}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -548,15 +600,16 @@ export function DevicesTab({ devices, queryClient }: Props) {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
-                            Xoá thiết bị?
+                            {t("attendanceDevicesTabDeleteTitle")}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Thiết bị sẽ bị xoá khỏi hệ thống. Dữ liệu
-                            chấm công liên quan sẽ không bị ảnh hưởng.
+                            {t("attendanceDevicesTabDeleteDescription")}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Huỷ</AlertDialogCancel>
+                        <AlertDialogCancel>
+                            {t("attendanceDevicesTabCancel")}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() =>
                                 deleteId &&
@@ -564,7 +617,7 @@ export function DevicesTab({ devices, queryClient }: Props) {
                             }
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            Xoá
+                            {t("attendanceDevicesTabDeleteConfirm")}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -572,3 +625,4 @@ export function DevicesTab({ devices, queryClient }: Props) {
         </Card>
     );
 }
+

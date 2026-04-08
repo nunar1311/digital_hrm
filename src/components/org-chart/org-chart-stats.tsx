@@ -7,6 +7,7 @@ import {
     Briefcase,
 } from "lucide-react";
 import type { DepartmentNode } from "@/types/org-chart";
+import { useTranslations } from "next-intl";
 
 interface OrgChartStatsProps {
     data: DepartmentNode[];
@@ -38,34 +39,35 @@ function countAll(nodes: DepartmentNode[]): {
 }
 
 export function OrgChartStats({ data }: OrgChartStatsProps) {
+    const t = useTranslations("ProtectedPages");
     const stats = countAll(data);
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard
                 icon={Building2}
-                label="Phòng ban"
+                label={t("orgChartStatsDepartments")}
                 value={stats.departments}
                 color="text-blue-600"
                 bgColor="bg-blue-50 dark:bg-blue-950"
             />
             <StatCard
                 icon={Users}
-                label="Nhân viên"
+                label={t("orgChartStatsEmployees")}
                 value={stats.employees}
                 color="text-emerald-600"
                 bgColor="bg-emerald-50 dark:bg-emerald-950"
             />
             <StatCard
                 icon={UserCircle}
-                label="Quản lý"
+                label={t("orgChartStatsManagers")}
                 value={stats.managers}
                 color="text-purple-600"
                 bgColor="bg-purple-50 dark:bg-purple-950"
             />
             <StatCard
                 icon={Briefcase}
-                label="Vị trí"
+                label={t("orgChartStatsPositions")}
                 value={stats.positions}
                 color="text-amber-600"
                 bgColor="bg-amber-50 dark:bg-amber-950"

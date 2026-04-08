@@ -40,6 +40,7 @@ import {
     type ChartCardStyle,
     type ChartLayoutMode,
 } from "./org-chart-constants";
+import { useTranslations } from "next-intl";
 
 export type ViewMode = "tree" | "list";
 export type StatusFilter = "all" | "ACTIVE" | "INACTIVE";
@@ -95,6 +96,8 @@ export function OrgChartToolbar({
     onShare,
     onExportImage,
 }: OrgChartToolbarProps) {
+    const t = useTranslations("ProtectedPages");
+
     const onSearchClear = () => {
         onSearchChange("");
     };
@@ -109,7 +112,7 @@ export function OrgChartToolbar({
             <div className="relative flex-1 min-w-50 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Tìm kiếm..."
+                    placeholder={t("orgChartSearchPlaceholder")}
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     className="pl-9 h-9 bg-accent"
@@ -125,7 +128,7 @@ export function OrgChartToolbar({
                         size="icon-xs"
                         className="absolute right-2 top-1/2 -translate-y-1/2"
                         onClick={onSearchClear}
-                        title="Xóa tìm kiếm"
+                        title={t("orgChartClearSearch")}
                     >
                         <X className="h-3.5 w-3.5" />
                     </Button>
@@ -197,7 +200,7 @@ export function OrgChartToolbar({
                         size="sm"
                         className="h-8 px-2 rounded-none"
                         onClick={() => onViewModeChange("tree")}
-                        title="Cây"
+                        title={t("orgChartViewTree")}
                     >
                         <GitBranch className="h-3.5 w-3.5" />
                     </Button>
@@ -206,7 +209,7 @@ export function OrgChartToolbar({
                         size="sm"
                         className="h-8 px-2 rounded-none"
                         onClick={() => onViewModeChange("list")}
-                        title="Danh sách"
+                        title={t("orgChartViewList")}
                     >
                         <List className="h-3.5 w-3.5" />
                     </Button>

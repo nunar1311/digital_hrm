@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useTranslations } from "next-intl";
 
 export interface ComboboxOption {
   value: string;
@@ -38,12 +39,14 @@ export function Combobox({
   options,
   value = [],
   onChange,
-  placeholder = "Chọn...",
+  placeholder,
   multiple = false,
   className,
   disabled = false,
 }: ComboboxProps) {
+  const t = useTranslations("Common");
   const [open, setOpen] = React.useState(false);
+  const resolvedPlaceholder = placeholder ?? t("selectPlaceholder");
 
   const selectedLabels = options
     .filter((opt) => value.includes(opt.value))
@@ -91,7 +94,7 @@ export function Combobox({
           >
             {selectedLabels.length > 0
               ? selectedLabels.join(", ")
-              : placeholder}
+              : resolvedPlaceholder}
           </span>
 
           <ChevronDown className="h-4 w-4 opacity-50" />
@@ -102,9 +105,9 @@ export function Combobox({
         align="start"
       >
         <Command>
-          <CommandInput placeholder="Tìm kiếm..." />
+          <CommandInput placeholder={t("searchPlaceholder")} />
           <CommandList>
-            <CommandEmpty>Không tìm thấy</CommandEmpty>
+            <CommandEmpty>{t("noResult")}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem

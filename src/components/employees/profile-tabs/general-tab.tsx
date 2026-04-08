@@ -13,6 +13,7 @@ import {
   BookOpen,
   Building2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface EmployeeData {
   id: string;
@@ -46,7 +47,10 @@ const InfoRow = ({
   label: string;
   value: React.ReactNode;
   icon?: React.ComponentType<{ className?: string }>;
-}) => (
+}) => {
+  const t = useTranslations("ProtectedPages");
+
+  return (
   <div className="grid grid-cols-1 sm:grid-cols-3 py-3 border-b last:border-0 border-border/50 gap-1 sm:gap-4 group hover:bg-muted/20 px-1 rounded-sm transition-colors">
     <div className="text-sm font-semibold flex items-center gap-2">
       {Icon && <Icon className="h-3.5 w-3.5" />}
@@ -54,13 +58,16 @@ const InfoRow = ({
     </div>
     <div className="sm:col-span-2 text-sm text-foreground">
       {value || (
-        <span className="text-muted-foreground italic">Chưa cập nhật</span>
+        <span className="text-muted-foreground italic">{t("employeesGeneralNotUpdated")}</span>
       )}
     </div>
   </div>
-);
+  );
+};
 
 export function GeneralTab({ employee }: Props) {
+  const t = useTranslations("ProtectedPages");
+
   // Calculate profile completeness
   const fields = [
     employee.dateOfBirth,
@@ -83,7 +90,7 @@ export function GeneralTab({ employee }: Props) {
       <Card className="border-primary/20 py-0">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Mức độ hoàn thiện hồ sơ</span>
+            <span className="text-sm font-medium">{t("employeesGeneralProfileCompleteness")}</span>
             <span className="text-sm font-bold text-primary">
               {completeness}%
             </span>
@@ -95,42 +102,45 @@ export function GeneralTab({ employee }: Props) {
             />
           </div>
           <p className="text-xs text-muted-foreground mt-1.5">
-            {filledFields}/{fields.length} thông tin đã được cập nhật
+            {t("employeesGeneralUpdatedInfoCount", {
+              filled: filledFields,
+              total: fields.length,
+            })}
           </p>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Thông tin cá nhân */}
+        {/* Personal information */}
         <Card>
           <CardHeader>
-            <CardTitle>Thông tin cá nhân</CardTitle>
+            <CardTitle>{t("employeesGeneralCardPersonalTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             <InfoRow
-              label="Ngày sinh"
+              label={t("employeesAddFieldDateOfBirth")}
               icon={Calendar}
               value={
                 employee.dateOfBirth
-                  ? new Date(employee.dateOfBirth).toLocaleDateString("vi-VN")
+                  ? new Date(employee.dateOfBirth).toLocaleDateString()
                   : null
               }
             />
             <InfoRow
-              label="Giới tính"
+              label={t("employeesAddFieldGender")}
               icon={User}
               value={
                 employee.gender === "MALE"
-                  ? "Nam"
+                  ? t("employeesExportGenderMale")
                   : employee.gender === "FEMALE"
-                    ? "Nữ"
+                    ? t("employeesExportGenderFemale")
                     : employee.gender === "OTHER"
-                      ? "Khác"
+                      ? t("employeesExportGenderOther")
                       : null
               }
             />
             <InfoRow
-              label="Số CCCD/CMND"
+              label={t("employeesExportFieldNationalId")}
               icon={CreditCard}
               value={
                 employee.nationalId && (
@@ -139,38 +149,46 @@ export function GeneralTab({ employee }: Props) {
               }
             />
             <InfoRow
-              label="Ngày cấp"
+              label={t("employeesExportFieldNationalIdDate")}
               icon={Calendar}
               value={
                 employee.nationalIdDate
                   ? new Date(employee.nationalIdDate).toLocaleDateString(
-                      "vi-VN",
+                      undefined,
                     )
                   : null
               }
             />
             <InfoRow
-              label="Nơi cấp"
+              label={t("employeesExportFieldNationalIdPlace")}
               icon={MapPin}
               value={employee.nationalIdPlace}
             />
             <InfoRow
-              label="Quốc tịch"
+              label={t("employeesExportFieldNationality")}
               icon={Globe}
               value={employee.nationality}
             />
-            <InfoRow label="Dân tộc" icon={User} value={employee.ethnicity} />
-            <InfoRow label="Tôn giáo" icon={Heart} value={employee.religion} />
             <InfoRow
-              label="Tình trạng hôn nhân"
+              label={t("employeesExportFieldEthnicity")}
+              icon={User}
+              value={employee.ethnicity}
+            />
+            <InfoRow
+              label={t("employeesExportFieldReligion")}
+              icon={Heart}
+              value={employee.religion}
+            />
+            <InfoRow
+              label={t("employeesExportFieldMaritalStatus")}
               icon={Heart}
               value={
                 employee.maritalStatus === "MARRIED"
-                  ? "Đã kết hôn"
+                  ? t("employeesExportMaritalMarried")
                   : employee.maritalStatus === "SINGLE"
-                    ? "Độc thân"
+                    ? t("employeesExportMaritalSingle")
                     : employee.maritalStatus === "DIVORCED"
-                      ? "Ly hôn"
+                      ? t("employeesExportMaritalDivorced")
                       : null
               }
             />
@@ -178,67 +196,67 @@ export function GeneralTab({ employee }: Props) {
         </Card>
 
         <div className="space-y-4">
-          {/* Thông tin liên hệ */}
+          {/* Contact information */}
           <Card>
             <CardHeader>
-              <CardTitle>Liên hệ & Địa chỉ</CardTitle>
+              <CardTitle>{t("employeesGeneralCardContactTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <InfoRow
-                label="Số điện thoại"
+                label={t("employeesExportFieldPhone")}
                 icon={Phone}
                 value={employee.phone}
               />
               <InfoRow
-                label="Email cá nhân"
+                label={t("employeesExportFieldPersonalEmail")}
                 icon={Mail}
                 value={employee.personalEmail}
               />
               <InfoRow
-                label="Nơi ở hiện nay"
+                label={t("employeesGeneralLabelCurrentAddress")}
                 icon={MapPin}
                 value={employee.address}
               />
               <InfoRow
-                label="Hộ khẩu thường trú"
+                label={t("employeesGeneralLabelPermanentAddress")}
                 icon={MapPin}
                 value={employee.permanentAddress}
               />
             </CardContent>
           </Card>
 
-          {/* Học vấn */}
+          {/* Education */}
           <Card>
             <CardHeader>
-              <CardTitle>Học vấn & Bằng cấp</CardTitle>
+              <CardTitle>{t("employeesGeneralCardEducationTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <InfoRow
-                label="Trình độ cao nhất"
+                label={t("employeesGeneralLabelHighestEducation")}
                 icon={GraduationCap}
                 value={
                   employee.educationLevel && (
                     <Badge>
                       {employee.educationLevel === "BACHELOR"
-                        ? "Cử nhân / Kỹ sư"
+                        ? t("employeesGeneralEducationBachelor")
                         : employee.educationLevel === "MASTER"
-                          ? "Thạc sĩ"
+                          ? t("employeesExportEducationMaster")
                           : employee.educationLevel === "PHD"
-                            ? "Tiến sĩ"
+                            ? t("employeesExportEducationPhd")
                             : employee.educationLevel === "COLLEGE"
-                              ? "Cao đẳng"
-                              : "Trung học"}
+                              ? t("employeesExportEducationCollege")
+                              : t("employeesExportEducationHighSchool")}
                     </Badge>
                   )
                 }
               />
               <InfoRow
-                label="Chuyên ngành"
+                label={t("employeesExportFieldMajor")}
                 icon={BookOpen}
                 value={employee.major}
               />
               <InfoRow
-                label="Nơi đào tạo"
+                label={t("employeesGeneralLabelEducationInstitution")}
                 icon={Building2}
                 value={employee.university}
               />

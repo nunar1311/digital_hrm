@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -17,7 +17,8 @@ import {
   ShieldCheck,
   History,
 } from "lucide-react";
-import { getWorkHistories } from "@/app/(protected)/employees/actions";
+import { getWorkHistories } from "@/app/[locale]/(protected)/employees/actions";
+import { useTranslations } from "next-intl";
 
 interface EmployeeData {
   id: string;
@@ -63,7 +64,10 @@ const InfoRow = ({
   label: string;
   value: React.ReactNode;
   icon?: React.ComponentType<{ className?: string }>;
-}) => (
+}) => {
+  const t = useTranslations("ProtectedPages");
+
+  return (
   <div className="grid grid-cols-1 sm:grid-cols-3 py-3 border-b last:border-0 border-border/50 gap-1 sm:gap-4 group">
     <div className="text-sm font-medium text-muted-foreground flex items-center gap-2">
       {Icon && <Icon className="h-3.5 w-3.5" />}
@@ -71,13 +75,16 @@ const InfoRow = ({
     </div>
     <div className="sm:col-span-2 text-sm text-foreground">
       {value || (
-        <span className="text-muted-foreground italic">Chưa cập nhật</span>
+        <span className="text-muted-foreground italic">{t("employeesGeneralNotUpdated")}</span>
       )}
     </div>
   </div>
-);
+  );
+};
 
 export function WorkTab({ employee }: Props) {
+  const t = useTranslations("ProtectedPages");
+
   const { data: workHistories = [], isLoading } = useQuery({
     queryKey: ["workHistories", employee.id],
     queryFn: () => getWorkHistories(employee.id),
@@ -85,14 +92,14 @@ export function WorkTab({ employee }: Props) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* Thông tin nội bộ */}
+      {/* Internal work information */}
       <Card>
         <CardHeader>
-          <CardTitle>Thông tin công việc nội bộ</CardTitle>
+          <CardTitle>{t("employeesWorkCardInternalTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <InfoRow
-            label="Phòng ban"
+            label={t("employeesExportFieldDepartment")}
             icon={Building2}
             value={
               employee.department?.name && (
@@ -103,7 +110,7 @@ export function WorkTab({ employee }: Props) {
             }
           />
           <InfoRow
-            label="Chức vụ"
+            label={t("employeesExportFieldPosition")}
             icon={Briefcase}
             value={
               employee.position?.name && (
@@ -112,7 +119,7 @@ export function WorkTab({ employee }: Props) {
             }
           />
           <InfoRow
-            label="Quản lý trực tiếp"
+            label={t("employeesWorkLabelManager")}
             icon={UserCheck}
             value={
               employee.manager ? (
@@ -134,58 +141,58 @@ export function WorkTab({ employee }: Props) {
                 </Link>
               ) : (
                 <span className="text-muted-foreground">
-                  Báo cáo trực tiếp lên Ban Giám đốc
+                  {t("employeesWorkManagerFallback")}
                 </span>
               )
             }
           />
           <InfoRow
-            label="Trạng thái"
+            label={t("employeesExportFieldEmployeeStatus")}
             icon={ShieldCheck}
             value={
               <EmployeeStatusBadge status={employee.employeeStatus ?? null} />
             }
           />
           <InfoRow
-            label="Loại hình"
+            label={t("employeesExportFieldEmploymentType")}
             icon={Users}
             value={
               <Badge variant="outline">
                 {employee.employmentType === "FULL_TIME"
-                  ? "Chính thức"
+                  ? t("employeesExportEmploymentTypeFullTime")
                   : employee.employmentType === "PART_TIME"
-                    ? "Bán thời gian"
+                    ? t("employeesExportEmploymentTypePartTime")
                     : employee.employmentType === "INTERN"
-                      ? "Thực tập sinh"
-                      : "Cộng tác viên"}
+                      ? t("employeesExportEmploymentTypeIntern")
+                      : t("employeesExportEmploymentTypeContract")}
               </Badge>
             }
           />
           <InfoRow
-            label="Ngày gia nhập"
+            label={t("employeesExportFieldHireDate")}
             icon={Calendar}
             value={
               employee.hireDate
-                ? new Date(employee.hireDate).toLocaleDateString("vi-VN")
+                ? new Date(employee.hireDate).toLocaleDateString()
                 : null
             }
           />
           <InfoRow
-            label="Hết hạn thử việc"
+            label={t("employeesAddFieldProbationEnd")}
             icon={Clock}
             value={
               employee.probationEnd
-                ? new Date(employee.probationEnd).toLocaleDateString("vi-VN")
+                ? new Date(employee.probationEnd).toLocaleDateString()
                 : null
             }
           />
           {employee.resignDate && (
             <InfoRow
-              label="Ngày nghỉ việc"
+              label={t("employeesWorkLabelResignDate")}
               icon={Calendar}
               value={
                 <span className="text-destructive font-medium">
-                  {new Date(employee.resignDate).toLocaleDateString("vi-VN")}
+                  {new Date(employee.resignDate).toLocaleDateString()}
                 </span>
               }
             />
@@ -194,19 +201,19 @@ export function WorkTab({ employee }: Props) {
       </Card>
 
       <div className="space-y-4">
-        {/* Ngân hàng */}
+        {/* Banking */}
         <Card>
           <CardHeader>
-            <CardTitle>Tài khoản Ngân hàng</CardTitle>
+            <CardTitle>{t("employeesWorkCardBankingTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             <InfoRow
-              label="Tên Ngân hàng"
+              label={t("employeesExportFieldBankName")}
               icon={Landmark}
               value={employee.bankName}
             />
             <InfoRow
-              label="Số tài khoản"
+              label={t("employeesExportFieldBankAccount")}
               icon={CreditCard}
               value={
                 employee.bankAccount && (
@@ -215,21 +222,21 @@ export function WorkTab({ employee }: Props) {
               }
             />
             <InfoRow
-              label="Chi nhánh"
+              label={t("employeesExportFieldBankBranch")}
               icon={Building2}
               value={employee.bankBranch}
             />
           </CardContent>
         </Card>
 
-        {/* Thuế & Bảo hiểm */}
+        {/* Tax & Insurance */}
         <Card>
           <CardHeader>
-            <CardTitle>Thuế & Bảo hiểm xã hội</CardTitle>
+            <CardTitle>{t("employeesWorkCardInsuranceTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             <InfoRow
-              label="Mã số thuế"
+              label={t("employeesExportFieldTaxCode")}
               icon={CreditCard}
               value={
                 employee.taxCode && (
@@ -238,7 +245,7 @@ export function WorkTab({ employee }: Props) {
               }
             />
             <InfoRow
-              label="Số sổ BHXH"
+              label={t("employeesExportFieldSocialInsuranceNo")}
               icon={ShieldCheck}
               value={
                 employee.socialInsuranceNo && (
@@ -249,7 +256,7 @@ export function WorkTab({ employee }: Props) {
               }
             />
             <InfoRow
-              label="Số thẻ BHYT"
+              label={t("employeesExportFieldHealthInsuranceNo")}
               icon={ShieldCheck}
               value={
                 employee.healthInsuranceNo && (
@@ -263,11 +270,11 @@ export function WorkTab({ employee }: Props) {
         </Card>
       </div>
 
-      {/* Kinh nghiệm làm việc */}
+      {/* Work history */}
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>
-            Kinh nghiệm làm việc trước đây
+            {t("employeesWorkCardHistoryTitle")}
             {workHistories.length > 0 && (
               <Badge variant="secondary" className="text-xs ml-1">
                 {workHistories.length}
@@ -294,17 +301,17 @@ export function WorkTab({ employee }: Props) {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1">
                       <h3 className="text-sm font-semibold">{wh.position}</h3>
                       <time className="text-xs text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded-md">
-                        {new Date(wh.startDate).toLocaleDateString("vi-VN", {
+                        {new Date(wh.startDate).toLocaleDateString(undefined, {
                           month: "2-digit",
                           year: "numeric",
                         })}{" "}
                         -{" "}
                         {wh.endDate
-                          ? new Date(wh.endDate).toLocaleDateString("vi-VN", {
+                          ? new Date(wh.endDate).toLocaleDateString(undefined, {
                               month: "2-digit",
                               year: "numeric",
                             })
-                          : "Hiện tại"}
+                          : t("employeesWorkCurrent")}
                       </time>
                     </div>
                     <div className="text-sm font-medium text-primary/80 mb-1">
@@ -323,7 +330,7 @@ export function WorkTab({ employee }: Props) {
             <div className="text-center py-8 text-muted-foreground">
               <History className="h-8 w-8 mx-auto mb-2 opacity-20" />
               <p className="text-sm">
-                Chưa có thông tin kinh nghiệm làm việc trước đây.
+                {t("employeesWorkHistoryEmpty")}
               </p>
             </div>
           )}
@@ -336,7 +343,7 @@ export function WorkTab({ employee }: Props) {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              Nhân viên cấp dưới
+              {t("employeesWorkDirectReportsTitle")}
               <Badge variant="secondary" className="text-xs ml-1">
                 {employee.directReports.length}
               </Badge>
@@ -370,3 +377,4 @@ export function WorkTab({ employee }: Props) {
     </div>
   );
 }
+

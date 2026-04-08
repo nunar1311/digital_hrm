@@ -1,12 +1,12 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   deleteWorkCycle,
   getWorkCycles,
-} from "@/app/(protected)/attendance/actions";
-import type { WorkCycle } from "@/app/(protected)/attendance/types";
+} from "@/app/[locale]/(protected)/attendance/actions";
+import type { WorkCycle } from "@/app/[locale]/(protected)/attendance/types";
 import { toast } from "sonner";
 
 export interface UseSidebarWorkCyclesReturn {
@@ -63,7 +63,7 @@ export function useSidebarWorkCyclesData(): UseSidebarWorkCyclesReturn {
   const handleDeleteWorkCycle = useCallback(async (workCycle: WorkCycle) => {
     try {
       await deleteWorkCycle(workCycle.id);
-      toast.success("Xóa chu kỳ thành công");
+      toast.success("XÃ³a chu ká»³ thÃ nh cÃ´ng");
       queryClient.invalidateQueries({
         queryKey: ["attendance", "work-cycles-sidebar"],
       });
@@ -71,7 +71,7 @@ export function useSidebarWorkCyclesData(): UseSidebarWorkCyclesReturn {
       queryClient.invalidateQueries({ queryKey: ["attendance", "shiftAssignments"] });
     } catch (err: unknown) {
       const error = err as Error;
-      toast.error(error.message || "Có lỗi xảy ra");
+      toast.error(error.message || "CÃ³ lá»—i xáº£y ra");
     }
   }, []);
 
@@ -91,3 +91,4 @@ export function useSidebarWorkCyclesData(): UseSidebarWorkCyclesReturn {
     setEditDialogOpen,
   };
 }
+

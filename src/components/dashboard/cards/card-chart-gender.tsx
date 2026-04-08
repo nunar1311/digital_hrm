@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
     Bar,
@@ -9,6 +9,7 @@ import {
     YAxis,
     Cell,
 } from "recharts";
+import { useTranslations } from "next-intl";
 import CardToolbar from "./card-toolbar";
 import {
     ChartConfig,
@@ -16,27 +17,27 @@ import {
     ChartTooltipContent,
     ChartTooltip,
 } from "@/components/ui/chart";
-import type { GenderDistributionItem } from "@/app/(protected)/dashboard/actions";
+import type { GenderDistributionItem } from "@/app/[locale]/(protected)/dashboard/actions";
 
 const chartConfig = {
     count: {
-        label: "Số lượng nhân sự",
+        label: "count",
         color: "var(--chart-1)",
     },
-    Nam: {
-        label: "Nam",
+    male: {
+        label: "male",
         color: "var(--chart-1)",
     },
-    Nữ: {
-        label: "Nữ",
+    female: {
+        label: "female",
         color: "var(--chart-2)",
     },
-    Khác: {
-        label: "Khác",
+    otherGender: {
+        label: "otherGender",
         color: "var(--chart-3)",
     },
-    "Chưa xác định": {
-        label: "Chưa xác định",
+    unspecifiedGender: {
+        label: "unspecifiedGender",
         color: "var(--chart-4)",
     },
 } satisfies ChartConfig;
@@ -48,11 +49,32 @@ interface CardChartGenderProps {
 const CardChartGender = ({
     genderData,
 }: CardChartGenderProps) => {
+    const t = useTranslations("Dashboard");
+    const maleLabel = t("male");
+    const femaleLabel = t("female");
+    const otherLabel = t("otherGender");
+    const unspecifiedLabel = t("unspecifiedGender");
+
+    const genderLabelMap: Record<string, string> = {
+        [maleLabel]: maleLabel,
+        [femaleLabel]: femaleLabel,
+        [otherLabel]: otherLabel,
+        [unspecifiedLabel]: unspecifiedLabel,
+    };
+
+    const chartConfigI18n: ChartConfig = {
+        ...chartConfig,
+        count: {
+            ...chartConfig.count,
+            label: t("employeeCount"),
+        },
+    };
+
     return (
-        <CardToolbar title="Thống kê nhân sự theo giới tính">
+        <CardToolbar title={t("genderDistribution")}>
             <div className="h-full w-full">
                 <ChartContainer
-                    config={chartConfig}
+                    config={chartConfigI18n}
                     className="h-full w-full"
                 >
                     <BarChart
@@ -70,6 +92,7 @@ const CardChartGender = ({
                             tickLine={false}
                             tickMargin={10}
                             axisLine={false}
+                            tickFormatter={(value) => genderLabelMap[String(value)] ?? String(value)}
                         />
                         <YAxis
                             tickLine={false}
@@ -105,3 +128,4 @@ const CardChartGender = ({
 };
 
 export default CardChartGender;
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,8 +19,8 @@ import { Button } from "@/components/ui/button";
 import {
   createDepartment,
   updateDepartment,
-} from "@/app/(protected)/org-chart/actions";
-import { getPotentialManagers } from "@/app/(protected)/departments/actions";
+} from "@/app/[locale]/(protected)/org-chart/actions";
+import { getPotentialManagers } from "@/app/[locale]/(protected)/departments/actions";
 import { toast } from "sonner";
 import { Textarea } from "../ui/textarea";
 import {
@@ -60,8 +60,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 const departmentFormSchema = z.object({
-  name: z.string().min(1, "Vui lòng nhập tên phòng ban"),
-  code: z.string().min(1, "Vui lòng nhập mã phòng ban"),
+  name: z.string().min(1, "Please enter department name"),
+  code: z.string().min(1, "Please enter department code"),
   description: z.string().optional(),
   logo: z.string().optional(),
   parentId: z.string().optional(),
@@ -202,7 +202,7 @@ export function DepartmentFormDialog({
       }
     },
     onError: () => {
-      toast.error("Có lỗi xảy ra");
+      toast.error("An error occurred");
     },
   });
 
@@ -239,12 +239,12 @@ export function DepartmentFormDialog({
       <DialogContent className="sm:max-w-[700px] p-0 flex flex-col overflow-hidden max-h-[90vh]">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="text-xl">
-            {isEdit ? "Chi tiết phòng ban" : "Tạo phòng ban mới"}
+            {isEdit ? "Department details" : "Create new department"}
           </DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "Cập nhật thông tin chi tiết và cơ cấu của phòng ban"
-              : "Thêm phòng ban mới vào sơ đồ tổ chức của công ty"}
+              ? "Update department details and structure"
+              : "Add a new department to the organization chart"}
           </DialogDescription>
         </DialogHeader>
 
@@ -261,11 +261,11 @@ export function DepartmentFormDialog({
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="general" className="gap-2">
                     <Info className="h-4 w-4" />
-                    Thông tin chung
+                    ThÃ´ng tin chung
                   </TabsTrigger>
                   <TabsTrigger value="structure" className="gap-2">
                     <Network className="h-4 w-4" />
-                    Cơ cấu tổ chức
+                    CÆ¡ cáº¥u tá»• chá»©c
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -281,7 +281,7 @@ export function DepartmentFormDialog({
                           render={({ field }) => (
                             <FormItem className="flex flex-col p-4 border border-dashed rounded-xl bg-muted/10 hover:bg-muted/30 transition-colors">
                               <FormLabel className="text-sm font-semibold cursor-pointer">
-                                Biểu tượng
+                                Biá»ƒu tÆ°á»£ng
                               </FormLabel>
                               <FormControl>
                                 <div className="w-full flex justify-center">
@@ -303,7 +303,7 @@ export function DepartmentFormDialog({
                           name="status"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Trạng thái</FormLabel>
+                              <FormLabel>Tráº¡ng thÃ¡i</FormLabel>
                               <Select
                                 onValueChange={field.onChange}
                                 defaultValue={field.value}
@@ -311,15 +311,15 @@ export function DepartmentFormDialog({
                               >
                                 <FormControl>
                                   <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Chọn trạng thái" />
+                                    <SelectValue placeholder="Select status" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
                                   <SelectItem value="ACTIVE">
-                                    Đang hoạt động
+                                    Äang hoáº¡t Ä‘á»™ng
                                   </SelectItem>
                                   <SelectItem value="INACTIVE">
-                                    Ngừng hoạt động
+                                    Ngá»«ng hoáº¡t Ä‘á»™ng
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
@@ -337,12 +337,12 @@ export function DepartmentFormDialog({
                             render={({ field }) => (
                               <FormItem className="col-span-2 sm:col-span-1">
                                 <FormLabel>
-                                  Tên phòng ban{" "}
+                                  TÃªn phÃ²ng ban{" "}
                                   <span className="text-destructive">*</span>
                                 </FormLabel>
                                 <FormControl>
                                   <Input
-                                    placeholder="Nhập tên phòng ban"
+                                    placeholder="Enter department name"
                                     {...field}
                                   />
                                 </FormControl>
@@ -356,7 +356,7 @@ export function DepartmentFormDialog({
                             render={({ field }) => (
                               <FormItem className="col-span-2 sm:col-span-1">
                                 <FormLabel>
-                                  Mã phòng ban{" "}
+                                  MÃ£ phÃ²ng ban{" "}
                                   <span className="text-destructive">*</span>
                                 </FormLabel>
                                 <FormControl>
@@ -379,7 +379,7 @@ export function DepartmentFormDialog({
                           name="managerId"
                           render={({ field }) => (
                             <FormItem className="flex flex-col">
-                              <FormLabel>Trưởng phòng</FormLabel>
+                              <FormLabel>TrÆ°á»Ÿng phÃ²ng</FormLabel>
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <FormControl>
@@ -419,7 +419,7 @@ export function DepartmentFormDialog({
                                           </span>
                                         </div>
                                       ) : (
-                                        "Không chọn trưởng phòng"
+                                        "No manager selected"
                                       )}
                                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
@@ -430,10 +430,10 @@ export function DepartmentFormDialog({
                                   align="start"
                                 >
                                   <Command>
-                                    <CommandInput placeholder="Tìm kiếm nhân viên..." />
+                                    <CommandInput placeholder="Search employees..." />
                                     <CommandList>
                                       <CommandEmpty>
-                                        Không tìm thấy nhân viên
+                                        KhÃ´ng tÃ¬m tháº¥y nhÃ¢n viÃªn
                                       </CommandEmpty>
                                       <CommandGroup>
                                         <CommandItem
@@ -450,7 +450,7 @@ export function DepartmentFormDialog({
                                                 : "opacity-0",
                                             )}
                                           />
-                                          -- Chưa phân công --
+                                          -- ChÆ°a phÃ¢n cÃ´ng --
                                         </CommandItem>
                                         {potentialManagers.map((manager) => (
                                           <CommandItem
@@ -501,10 +501,10 @@ export function DepartmentFormDialog({
                           name="description"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Mô tả chức năng</FormLabel>
+                              <FormLabel>MÃ´ táº£ chá»©c nÄƒng</FormLabel>
                               <FormControl>
                                 <Textarea
-                                  placeholder="Mô tả ngắn về chức năng, nhiệm vụ của phòng ban..."
+                                  placeholder="Short description of department functions and responsibilities..."
                                   className="min-h-[140px] resize-none"
                                   {...field}
                                 />
@@ -525,11 +525,11 @@ export function DepartmentFormDialog({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-base font-medium">
-                              Phòng ban cấp trên trực tiếp
+                              PhÃ²ng ban cáº¥p trÃªn trá»±c tiáº¿p
                             </FormLabel>
                             <p className="text-sm text-muted-foreground mb-3">
-                              Xác định vị trí chính của phòng ban này trong sơ
-                              đồ tổ chức.
+                              XÃ¡c Ä‘á»‹nh vá»‹ trÃ­ chÃ­nh cá»§a phÃ²ng ban nÃ y trong sÆ¡
+                              Ä‘á»“ tá»• chá»©c.
                             </p>
                             <Select
                               onValueChange={field.onChange}
@@ -538,12 +538,12 @@ export function DepartmentFormDialog({
                             >
                               <FormControl>
                                 <SelectTrigger className="w-full md:w-2/3 bg-background">
-                                  <SelectValue placeholder="Chọn phòng ban cấp trên" />
+                                  <SelectValue placeholder="Select parent department" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="none">
-                                  -- Không có (Phòng ban gốc) --
+                                  -- KhÃ´ng cÃ³ (PhÃ²ng ban gá»‘c) --
                                 </SelectItem>
                                 {allFlat
                                   .filter((d) => d.id !== department?.id)
@@ -567,12 +567,12 @@ export function DepartmentFormDialog({
                         render={() => (
                           <FormItem>
                             <FormLabel className="text-base font-medium">
-                              Phòng ban quản lý phụ (Ma trận tổ chức)
+                              PhÃ²ng ban quáº£n lÃ½ phá»¥ (Ma tráº­n tá»• chá»©c)
                             </FormLabel>
                             <p className="text-sm text-muted-foreground">
-                              Lựa chọn các phòng ban khác mà phòng ban này có
-                              trách nhiệm báo cáo phụ. Thường dùng cho sơ đồ tổ
-                              chức dạng ma trận.
+                              Lá»±a chá»n cÃ¡c phÃ²ng ban khÃ¡c mÃ  phÃ²ng ban nÃ y cÃ³
+                              trÃ¡ch nhiá»‡m bÃ¡o cÃ¡o phá»¥. ThÆ°á»ng dÃ¹ng cho sÆ¡ Ä‘á»“ tá»•
+                              chá»©c dáº¡ng ma tráº­n.
                             </p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-muted/10 p-4 rounded-lg min-h-[150px]">
@@ -583,7 +583,7 @@ export function DepartmentFormDialog({
                               ).length === 0 ? (
                                 <div className="col-span-full flex flex-col items-center justify-center text-muted-foreground text-sm py-8 space-y-2">
                                   <Network className="h-8 w-8 opacity-20" />
-                                  <span>Không có phòng ban khả dụng</span>
+                                  <span>KhÃ´ng cÃ³ phÃ²ng ban kháº£ dá»¥ng</span>
                                 </div>
                               ) : (
                                 allFlat
@@ -655,7 +655,7 @@ export function DepartmentFormDialog({
                     onClick={onClose}
                     className="w-24"
                   >
-                    Hủy
+                    Há»§y
                   </Button>
                   <Button
                     type="submit"
@@ -663,10 +663,10 @@ export function DepartmentFormDialog({
                     className="w-32"
                   >
                     {mutation.isPending
-                      ? "Đang xử lý..."
+                      ? "Processing..."
                       : isEdit
-                        ? "Lưu thay đổi"
-                        : "Tạo mới"}
+                        ? "Save changes"
+                        : "Create"}
                   </Button>
                 </DialogFooter>
               </div>
@@ -677,3 +677,4 @@ export function DepartmentFormDialog({
     </Dialog>
   );
 }
+

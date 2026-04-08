@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { format, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -30,8 +30,9 @@ import type {
     InterviewFilters,
     JobPostingResponse,
     InterviewStatus,
-} from "@/app/(protected)/recruitment/types";
+} from "@/app/[locale]/(protected)/recruitment/types";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface CalendarSidebarProps {
     currentDate: Date;
@@ -63,6 +64,8 @@ export function CalendarSidebar({
     hasActiveFilters,
     onClearFilters,
 }: CalendarSidebarProps) {
+    const t = useTranslations("ProtectedPages");
+
     const QuickFilterChip = ({
         label,
         value,
@@ -98,7 +101,7 @@ export function CalendarSidebar({
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
                         <CalendarIcon className="h-4 w-4" />
-                        Tổng quan
+                        Tá»•ng quan
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-3">
@@ -107,7 +110,7 @@ export function CalendarSidebar({
                             {stats.today}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                            Hôm nay
+                            HÃ´m nay
                         </div>
                     </div>
                     <div className="bg-muted/50 rounded-lg p-3 text-center">
@@ -115,7 +118,7 @@ export function CalendarSidebar({
                             {stats.upcoming}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                            Sắp tới
+                            Sáº¯p tá»›i
                         </div>
                     </div>
                     <div className="bg-muted/50 rounded-lg p-3 text-center">
@@ -123,7 +126,7 @@ export function CalendarSidebar({
                             {stats.completed}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                            Hoàn thành
+                            HoÃ n thÃ nh
                         </div>
                     </div>
                     <div className="bg-muted/50 rounded-lg p-3 text-center">
@@ -131,7 +134,7 @@ export function CalendarSidebar({
                             {stats.cancelled}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                            Đã hủy
+                            ÄÃ£ há»§y
                         </div>
                     </div>
                 </CardContent>
@@ -142,24 +145,24 @@ export function CalendarSidebar({
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
                         <Filter className="h-4 w-4" />
-                        Lọc nhanh
+                        Lá»c nhanh
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">
-                            Trạng thái
+                            Tráº¡ng thÃ¡i
                         </Label>
                         <div className="flex flex-wrap gap-1.5">
                             {[
-                                { value: "", label: "Tất cả" },
+                                { value: "", label: t("recruitmentCalendarFilterAll") },
                                 {
                                     value: "SCHEDULED",
-                                    label: "Đã lên lịch",
+                                    label: t("recruitmentCalendarFilterScheduled"),
                                 },
                                 {
                                     value: "COMPLETED",
-                                    label: "Hoàn thành",
+                                    label: t("recruitmentCalendarFilterCompleted"),
                                 },
                             ].map((item) => (
                                 <QuickFilterChip
@@ -187,7 +190,7 @@ export function CalendarSidebar({
                     </div>
                     <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">
-                            Vị trí
+                            Vá»‹ trÃ­
                         </Label>
                         <Select
                             value={filters.jobPostingId || "all"}
@@ -202,11 +205,11 @@ export function CalendarSidebar({
                             }
                         >
                             <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Chọn vị trí" />
+                                <SelectValue placeholder={t("recruitmentCalendarFilterSelectPosition")} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">
-                                    Tất cả vị trí
+                                    Táº¥t cáº£ vá»‹ trÃ­
                                 </SelectItem>
                                 {jobPostingsData?.map(
                                     (posting: JobPostingResponse) => (
@@ -229,7 +232,7 @@ export function CalendarSidebar({
                             onClick={onClearFilters}
                         >
                             <X className="h-3 w-3 mr-1" />
-                            Xóa bộ lọc
+                            XÃ³a bá»™ lá»c
                         </Button>
                     )}
                 </CardContent>
@@ -240,7 +243,7 @@ export function CalendarSidebar({
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        Sắp tới
+                        Sáº¯p tá»›i
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="max-h-64 overflow-y-auto space-y-2">
@@ -272,7 +275,7 @@ export function CalendarSidebar({
                         ))}
                     {scheduledInterviews.length === 0 && (
                         <div className="text-center text-muted-foreground py-4 text-sm">
-                            Không có phỏng vấn sắp tới
+                            KhÃ´ng cÃ³ phá»ng váº¥n sáº¯p tá»›i
                         </div>
                     )}
                 </CardContent>
@@ -280,3 +283,4 @@ export function CalendarSidebar({
         </div>
     );
 }
+

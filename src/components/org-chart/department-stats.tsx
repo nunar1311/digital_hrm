@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Users, Briefcase, FolderTree } from "lucide-react";
 
 interface DepartmentStatsProps {
@@ -13,21 +14,23 @@ export function DepartmentStats({
     positionCount,
     childrenCount,
 }: DepartmentStatsProps) {
+    const t = useTranslations("ProtectedPages");
+
     return (
         <div className="grid grid-cols-3 gap-3">
             <StatMini
                 icon={Users}
-                label="Nhân viên"
+                label={t("departmentsStatsEmployees")}
                 value={employeeCount}
             />
             <StatMini
                 icon={Briefcase}
-                label="Vị trí"
+                label={t("departmentsStatsPositions")}
                 value={positionCount}
             />
             <StatMini
                 icon={FolderTree}
-                label="Phòng con"
+                label={t("departmentsStatsChildren")}
                 value={childrenCount}
             />
         </div>

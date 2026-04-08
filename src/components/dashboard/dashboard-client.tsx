@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -25,7 +25,7 @@ import {
   getTurnoverRateTrend,
   getGenderDistribution,
   getTodayAttendanceSummary,
-} from "@/app/(protected)/dashboard/actions";
+} from "@/app/[locale]/(protected)/dashboard/actions";
 import type {
   DashboardStats,
   AttendanceTrendItem,
@@ -33,12 +33,13 @@ import type {
   TurnoverTrendItem,
   GenderDistributionItem,
   TodayAttendanceSummary,
-} from "@/app/(protected)/dashboard/actions";
-import type { GetEmployeesResult } from "@/app/(protected)/employees/actions";
+} from "@/app/[locale]/(protected)/dashboard/actions";
+import type { GetEmployeesResult } from "@/app/[locale]/(protected)/employees/actions";
 import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
 import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { enUS, vi } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 
 interface DashboardClientProps {
   initialStats: DashboardStats;
@@ -59,6 +60,10 @@ const DashboardClient = ({
   genderData: genderDataProp,
   todayAttendanceData: todayAttendanceDataProp,
 }: DashboardClientProps) => {
+  const t = useTranslations("Dashboard");
+  const locale = useLocale();
+  const distanceLocale = locale === "en" ? enUS : vi;
+
   const mainRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -156,25 +161,25 @@ const DashboardClient = ({
         await document.exitFullscreen();
       }
     } catch {
-      toast.error("Không thể chuyển sang chế độ toàn màn hình");
+      toast.error(t("errorFullscreen"));
     }
-  }, []);
+  }, [t]);
 
   const handleExportPdf = useCallback(async () => {
     const element = mainRef.current;
     if (!element) {
-      toast.error("Không tìm thấy nội dung để xuất");
+      toast.error(t("errorContentNotFound"));
       return;
     }
 
     if (!element.innerHTML.trim()) {
-      toast.error("Nội dung trống, không thể xuất PDF");
+      toast.error(t("errorContentEmpty"));
       return;
     }
 
     // Export PDF
     const exportPdf = async () => {
-      setExportProgress("Đang chuẩn bị dữ liệu...");
+      setExportProgress(t("pdfPreparing"));
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Temporarily expand the element to show all content
@@ -189,7 +194,7 @@ const DashboardClient = ({
       // Force layout recalculation
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      setExportProgress("Đang chuyển đổi sang hình ảnh...");
+      setExportProgress(t("pdfRendering"));
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const canvas = await html2canvas(element, {
         scale: 2,
@@ -218,7 +223,7 @@ const DashboardClient = ({
         },
       });
 
-      setExportProgress("Đang tạo file PDF...");
+      setExportProgress(t("pdfCreating"));
       setTimeout(() => {
         // Restore original styles
         element.style.overflow = originalOverflow;
@@ -272,7 +277,7 @@ const DashboardClient = ({
 
         pdf.setTextColor(100, 100, 100);
         pdf.setFontSize(10);
-        pdf.text("Digital HRM - Hệ thống quản lý nhân sự", 20, pageHeight - 25);
+        pdf.text(t("systemLabel"), 20, pageHeight - 25);
 
         pdf.save(`dashboard-${new Date().toISOString().split("T")[0]}.pdf`);
 
@@ -285,13 +290,13 @@ const DashboardClient = ({
       await exportPdf();
     } catch (error) {
       toast.error(
-        `Lỗi: ${error instanceof Error ? error.message : "Không thể xuất PDF"}`,
+        `Error: ${error instanceof Error ? error.message : t("errorExport")}`,
       );
     } finally {
       setIsExporting(false);
       setExportProgress("");
     }
-  }, []);
+  }, [t]);
 
   const handleRefresh = useCallback(async () => {
     try {
@@ -314,9 +319,9 @@ const DashboardClient = ({
       ]);
       setLastUpdated(new Date());
     } catch {
-      toast.error("Không thể làm mới dữ liệu");
+      toast.error(t("errorRefresh"));
     }
-  }, [queryClient]);
+  }, [queryClient, t]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -353,9 +358,9 @@ const DashboardClient = ({
           content: JSON.stringify({
             name: "totalEmployees",
             props: {
-              title: "Tổng nhân viên",
+              title: t("totalEmployees"),
               total: stats.totalEmployees,
-              label: "nhân viên",
+              label: t("employee"),
               percentage: stats.totalPercentage,
             },
           }),
@@ -369,9 +374,9 @@ const DashboardClient = ({
           content: JSON.stringify({
             name: "totalEmployeesWorking",
             props: {
-              title: "Tổng nhân viên đang làm việc",
+              title: t("activeEmployees"),
               total: stats.totalEmployeesWorking,
-              label: "nhân viên",
+              label: t("employee"),
               percentage: stats.workingPercentage,
             },
           }),
@@ -385,9 +390,9 @@ const DashboardClient = ({
           content: JSON.stringify({
             name: "newEmployees",
             props: {
-              title: "Tổng nhân viên mới",
+              title: t("newHires"),
               total: stats.newEmployees,
-              label: "nhân viên mới",
+              label: t("newHires"),
               percentage: stats.newPercentage,
             },
           }),
@@ -401,9 +406,9 @@ const DashboardClient = ({
           content: JSON.stringify({
             name: "resignedEmployees",
             props: {
-              title: "Tổng nhân viên nghỉ",
+              title: t("resignations"),
               total: stats.resignedEmployees,
-              label: "nhân viên nghỉ",
+              label: t("resignations"),
               percentage: stats.resignedPercentage,
             },
           }),
@@ -484,6 +489,7 @@ const DashboardClient = ({
       stats.totalEmployeesWorking,
       stats.totalPercentage,
       stats.workingPercentage,
+      t,
     ],
   );
 
@@ -534,7 +540,7 @@ const DashboardClient = ({
         >
           <section className="flex flex-col overflow-hidden min-h-0">
             <header className="border-b h-12 flex items-center justify-between px-2">
-              <h2 className="font-semibold">Bảng điều khiển</h2>
+              <h2 className="font-semibold">{t("title")}</h2>
 
               <div className="shrink-0 flex items-center gap-x-2">
                 <DashboardOption
@@ -549,8 +555,8 @@ const DashboardClient = ({
                   onClick={toggleFullscreen}
                   tooltip={
                     isFullscreen
-                      ? "Thoát toàn màn hình"
-                      : "Mở bảng điều khiển trên toàn màn hình"
+                      ? t("fullscreenExit")
+                      : t("fullscreenEnter")
                   }
                   size={"icon-sm"}
                   variant={"ghost"}
@@ -567,7 +573,7 @@ const DashboardClient = ({
                   onCheckedChange={setEditMode}
                   className="h-4 w-6"
                 />
-                <Label htmlFor="edit-mode">Chế độ chỉnh sửa</Label>
+                <Label htmlFor="edit-mode">{t("editMode")}</Label>
               </div>
               <div className="flex items-center gap-x-2">
                 <Button
@@ -579,14 +585,14 @@ const DashboardClient = ({
                   <RefreshCw className={cn(isRefetching && "animate-spin")} />
 
                   {isRefetching
-                    ? "Đang tải..."
-                    : `Làm mới ${
+                    ? t("refreshLoading")
+                    : `${t("refreshPrefix")} ${
                         lastUpdated
                           ? formatDistanceToNow(lastUpdated, {
                               addSuffix: true,
-                              locale: vi,
+                              locale: distanceLocale,
                             })
-                          : "vừa xong"
+                          : t("refreshJustNow")
                       }`}
                 </Button>
 
@@ -601,7 +607,7 @@ const DashboardClient = ({
                   suppressHydrationWarning
                 >
                   <Clock7 />
-                  Tự động làm mới: {autoRefresh ? "Bật" : "Tắt"}
+                  {t("autoRefresh")}: {autoRefresh ? t("on") : t("off")}
                 </Button>
 
                 <Separator orientation="vertical" className="h-4!" />
@@ -639,3 +645,4 @@ const DashboardClient = ({
 };
 
 export default DashboardClient;
+

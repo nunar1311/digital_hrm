@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
     useState,
@@ -31,7 +31,7 @@ import {
     moveEmployeeToDepartment,
     updateDepartment,
     applyCompanyStructureTemplate,
-} from "@/app/(protected)/org-chart/actions";
+} from "@/app/[locale]/(protected)/org-chart/actions";
 import { toast } from "sonner";
 import { TemplatePreviewDialog } from "./template-preview-dialog";
 import { useSocketEvents } from "@/hooks/use-socket-event";
@@ -137,7 +137,7 @@ export function OrgChartView({
     const [statusFilter, setStatusFilter] =
         useState<StatusFilter>("all");
 
-    // Cá nhân hóa & layout (persist in localStorage)
+    // CÃ¡ nhÃ¢n hÃ³a & layout (persist in localStorage)
     const [chartTheme, setChartTheme] = useState<ChartThemeId>(() => {
         if (typeof window === "undefined") return "default";
         return (
@@ -178,14 +178,14 @@ export function OrgChartView({
         const url =
             typeof window !== "undefined" ? window.location.href : "";
         navigator.clipboard?.writeText(url).then(
-            () => toast.success("Đã sao chép liên kết vào clipboard"),
-            () => toast.error("Không thể sao chép liên kết"),
+            () => toast.success("Link copied to clipboard"),
+            () => toast.error("Unable to copy link"),
         );
     }, []);
 
     const handleExportImage = useCallback(() => {
         toast.info(
-            'Xuất ảnh: dùng chức năng In (Ctrl+P) và chọn "Lưu dưới dạng PDF" để xuất.',
+            'Export image: use Print (Ctrl+P) and choose "Save as PDF".',
         );
     }, []);
 
@@ -382,7 +382,7 @@ export function OrgChartView({
                     context.previousData,
                 );
             }
-            toast.error("Lỗi khi chuyển nhân viên");
+            toast.error("Error while moving employee");
         },
         onSuccess: (result, variables) => {
             if (result.success) {
@@ -426,7 +426,7 @@ export function OrgChartView({
             }
         },
         onError: () => {
-            toast.error("Lỗi khi di chuyển phòng ban");
+            toast.error("Error while moving department");
         },
     });
 
@@ -446,7 +446,7 @@ export function OrgChartView({
             }
         },
         onError: () => {
-            toast.error("Lỗi khi áp dụng mẫu cơ cấu");
+            toast.error("Error while applying template");
             setTemplateToApply(null);
         },
     });
@@ -469,7 +469,7 @@ export function OrgChartView({
                 );
                 if (isDescendant) {
                     toast.error(
-                        "Không thể di chuyển phòng ban vào phòng ban con của nó",
+                        "Cannot move a department into its child department",
                     );
                     return;
                 }
@@ -523,10 +523,10 @@ export function OrgChartView({
                     <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
                         <Building2 className="h-16 w-16 mb-4 opacity-30" />
                         <p className="text-lg font-semibold">
-                            Không tìm thấy phòng ban
+                            No departments found
                         </p>
                         <p className="text-sm mt-1">
-                            Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
+                            Try changing filters or search keywords
                         </p>
                     </div>
                 ) : (
@@ -557,14 +557,13 @@ export function OrgChartView({
                                         className="text-xs"
                                     >
                                         {dept.status === "ACTIVE"
-                                            ? "Hoạt động"
-                                            : "Ngừng"}
+                                            ? "Active"
+                                            : "Inactive"}
                                     </Badge>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                     {dept.code} •{" "}
-                                    {dept.employeeCount || 0} nhân
-                                    viên
+                                    {dept.employeeCount || 0} employees
                                 </p>
                             </div>
                             {dept.manager && (
@@ -696,3 +695,4 @@ export function OrgChartView({
         </div>
     );
 }
+

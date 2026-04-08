@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
     MapPin,
     Clock,
@@ -33,37 +34,51 @@ import { Separator } from "@/components/ui/separator";
 import type {
     AttendanceRecordWithUser,
     CheckInMethod,
-} from "@/app/(protected)/attendance/types";
+} from "@/app/[locale]/(protected)/attendance/types";
 import { useTimezone } from "@/hooks/use-timezone";
 
 const STATUS_MAP: Record<
     string,
     {
-        label: string;
+        labelKey: string;
         variant: "default" | "secondary" | "destructive" | "outline";
     }
 > = {
-    PRESENT: { label: "Đúng giờ", variant: "default" },
-    LATE: { label: "Đi muộn", variant: "secondary" },
-    EARLY_LEAVE: { label: "Về sớm", variant: "secondary" },
-    LATE_AND_EARLY: { label: "Muộn & Sớm", variant: "destructive" },
-    ABSENT: { label: "Vắng mặt", variant: "destructive" },
-    HALF_DAY: { label: "Nửa ngày", variant: "outline" },
-    ON_LEAVE: { label: "Nghỉ phép", variant: "outline" },
-    HOLIDAY: { label: "Ngày lễ", variant: "outline" },
+    PRESENT: { labelKey: "attendanceStatusBadgePresent", variant: "default" },
+    LATE: { labelKey: "attendanceStatusBadgeLate", variant: "secondary" },
+    EARLY_LEAVE: {
+        labelKey: "attendanceStatusBadgeEarlyLeave",
+        variant: "secondary",
+    },
+    LATE_AND_EARLY: {
+        labelKey: "attendanceStatusBadgeLateAndEarly",
+        variant: "destructive",
+    },
+    ABSENT: { labelKey: "attendanceStatusBadgeAbsent", variant: "destructive" },
+    HALF_DAY: { labelKey: "attendanceStatusBadgeHalfDay", variant: "outline" },
+    ON_LEAVE: { labelKey: "attendanceStatusBadgeOnLeave", variant: "outline" },
+    HOLIDAY: { labelKey: "attendanceStatusBadgeHoliday", variant: "outline" },
 };
 
 const METHOD_MAP: Record<
     CheckInMethod,
-    { label: string; icon: typeof MapPin }
+    { labelKey: string; icon: typeof MapPin }
 > = {
-    GPS: { label: "GPS", icon: MapPin },
-    WIFI: { label: "WiFi", icon: Wifi },
-    FACE_ID: { label: "Nhận diện khuôn mặt", icon: Camera },
-    MANUAL: { label: "Thủ công", icon: Clock },
-    QR: { label: "Mã QR", icon: Smartphone },
-    VANTAY: { label: "Vân tay", icon: Smartphone },
+    GPS: { labelKey: "attendanceRecordDetailMethodGps", icon: MapPin },
+    WIFI: { labelKey: "attendanceRecordDetailMethodWifi", icon: Wifi },
+    FACE_ID: {
+        labelKey: "attendanceRecordDetailMethodFaceId",
+        icon: Camera,
+    },
+    MANUAL: { labelKey: "attendanceRecordDetailMethodManual", icon: Clock },
+    QR: { labelKey: "attendanceRecordDetailMethodQr", icon: Smartphone },
+    VANTAY: {
+        labelKey: "attendanceRecordDetailMethodFingerprint",
+        icon: Smartphone,
+    },
 };
+
+type TranslateFn = ReturnType<typeof useTranslations>;
 
 function formatTime(dateStr: string | null, timezone: string) {
     if (!dateStr) return "—";
@@ -85,11 +100,17 @@ function formatDate(dateStr: string, timezone: string) {
     });
 }
 
-function LocationDisplay({ location }: { location: string | null }) {
+function LocationDisplay({
+    location,
+    t,
+}: {
+    location: string | null;
+    t: TranslateFn;
+}) {
     if (!location)
         return (
             <span className="text-muted-foreground text-sm">
-                Không có dữ liệu
+                {t("attendanceRecordDetailNoData")}
             </span>
         );
 
@@ -113,38 +134,50 @@ function LocationDisplay({ location }: { location: string | null }) {
                 rel="noopener noreferrer"
                 className="text-xs text-primary underline-offset-4 hover:underline"
             >
-                Xem trên Google Maps &rarr;
+                {t("attendanceRecordDetailViewOnGoogleMaps")}
             </a>
         </div>
     );
 }
 
-function MethodBadge({ method }: { method: CheckInMethod | null }) {
-    if (!method) return <Badge variant="outline">Không rõ</Badge>;
+function MethodBadge({
+    method,
+    t,
+}: {
+    method: CheckInMethod | null;
+    t: TranslateFn;
+}) {
+    if (!method) return <Badge variant="outline">{t("attendanceRecordDetailUnknown")}</Badge>;
     const info = METHOD_MAP[method];
     if (!info) return <Badge variant="outline">{method}</Badge>;
     const Icon = info.icon;
     return (
         <Badge variant="outline" className="gap-1">
             <Icon className="h-3 w-3" />
-            {info.label}
+            {t(info.labelKey)}
         </Badge>
     );
 }
 
-function VerifiedBadge({ verified }: { verified: boolean }) {
+function VerifiedBadge({
+    verified,
+    t,
+}: {
+    verified: boolean;
+    t: TranslateFn;
+}) {
     return verified ? (
         <Badge
             variant="default"
             className="gap-1 bg-green-600 hover:bg-green-700"
         >
             <ShieldCheck className="h-3 w-3" />
-            Đã xác minh
+            {t("attendanceRecordDetailVerified")}
         </Badge>
     ) : (
         <Badge variant="destructive" className="gap-1">
             <ShieldAlert className="h-3 w-3" />
-            Chưa xác minh
+            {t("attendanceRecordDetailUnverified")}
         </Badge>
     );
 }
@@ -165,11 +198,12 @@ export function RecordDetailSheet({
         label: string;
     } | null>(null);
     const { timezone } = useTimezone();
+    const t = useTranslations("ProtectedPages");
 
     if (!record) return null;
 
     const status = STATUS_MAP[record.status] ?? {
-        label: record.status,
+        labelKey: "",
         variant: "outline" as const,
     };
 
@@ -178,7 +212,9 @@ export function RecordDetailSheet({
             <Sheet open={open} onOpenChange={onOpenChange}>
                 <SheetContent className="w-full sm:max-w-lg overflow-y-auto gap-0">
                     <SheetHeader>
-                        <SheetTitle>Chi tiết chấm công</SheetTitle>
+                        <SheetTitle>
+                            {t("attendanceRecordDetailTitle")}
+                        </SheetTitle>
                     </SheetHeader>
 
                     <div className="p-4 space-y-6">
@@ -206,7 +242,9 @@ export function RecordDetailSheet({
                             </div>
                             <div className="ml-auto">
                                 <Badge variant={status.variant}>
-                                    {status.label}
+                                    {status.labelKey
+                                        ? t(status.labelKey)
+                                        : record.status}
                                 </Badge>
                             </div>
                         </div>
@@ -215,7 +253,7 @@ export function RecordDetailSheet({
                         <div className="rounded-lg border p-3 space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">
-                                    Ngày
+                                    {t("attendanceRecordDetailDateLabel")}
                                 </span>
                                 <span className="font-medium">
                                     {formatDate(record.date, timezone)}
@@ -223,7 +261,7 @@ export function RecordDetailSheet({
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">
-                                    Ca làm việc
+                                    {t("attendanceRecordDetailShiftLabel")}
                                 </span>
                                 <span className="font-medium">
                                     {record.shift
@@ -233,7 +271,7 @@ export function RecordDetailSheet({
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">
-                                    Nguồn
+                                    {t("attendanceRecordDetailSourceLabel")}
                                 </span>
                                 <Badge
                                     variant="outline"
@@ -250,12 +288,12 @@ export function RecordDetailSheet({
                         <div className="space-y-3">
                             <h4 className="font-semibold text-sm flex items-center gap-2">
                                 <div className="h-2 w-2 rounded-full bg-green-500" />
-                                Check-in
+                                {t("attendanceRecordDetailCheckInTitle")}
                             </h4>
                             <div className="rounded-lg border p-3 space-y-3">
                                 <div className="flex justify-between items-center">
                                     <span className="text-sm text-muted-foreground">
-                                        Thời gian
+                                        {t("attendanceRecordDetailTimeLabel")}
                                     </span>
                                     <span className="font-mono text-sm font-medium">
                                         {formatTime(record.checkIn, timezone)}
@@ -264,35 +302,39 @@ export function RecordDetailSheet({
                                 {record.lateMinutes > 0 && (
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-muted-foreground">
-                                            Muộn
+                                            {t("attendanceRecordDetailLateLabel")}
                                         </span>
                                         <Badge variant="secondary">
-                                            {record.lateMinutes} phút
+                                            {t("attendanceRecordDetailMinutesValue", {
+                                                minutes: record.lateMinutes,
+                                            })}
                                         </Badge>
                                     </div>
                                 )}
                                 <div className="flex justify-between items-center">
                                     <span className="text-sm text-muted-foreground">
-                                        Phương thức
+                                        {t("attendanceRecordDetailMethodLabel")}
                                     </span>
                                     <MethodBadge
                                         method={record.checkInMethod}
+                                        t={t}
                                     />
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-sm text-muted-foreground">
-                                        Xác minh
+                                        {t("attendanceRecordDetailVerifyLabel")}
                                     </span>
                                     <VerifiedBadge
                                         verified={
                                             record.checkInVerified
                                         }
+                                        t={t}
                                     />
                                 </div>
                                 {record.checkInDeviceId && (
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-muted-foreground">
-                                            Thiết bị
+                                            {t("attendanceRecordDetailDeviceLabel")}
                                         </span>
                                         <Badge
                                             variant="outline"
@@ -305,28 +347,29 @@ export function RecordDetailSheet({
                                 )}
                                 <div>
                                     <span className="text-sm text-muted-foreground block mb-1">
-                                        Vị trí GPS
+                                        {t("attendanceRecordDetailGpsLabel")}
                                     </span>
                                     <LocationDisplay
                                         location={
                                             record.checkInLocation
                                         }
+                                        t={t}
                                     />
                                 </div>
                                 {record.checkInPhoto && (
                                     <div>
                                         <span className="text-sm text-muted-foreground block mb-1.5">
-                                            Ảnh xác minh
+                                            {t("attendanceRecordDetailPhotoLabel")}
                                         </span>
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={record.checkInPhoto}
-                                            alt="Ảnh check-in"
+                                            alt={t("attendanceRecordDetailCheckInPhotoAlt")}
                                             className="h-24 w-24 rounded-lg object-cover cursor-pointer border hover:opacity-80 transition"
                                             onClick={() =>
                                                 setPreviewPhoto({
                                                     src: record.checkInPhoto!,
-                                                    label: "Ảnh check-in",
+                                                    label: t("attendanceRecordDetailCheckInPhotoAlt"),
                                                 })
                                             }
                                         />
@@ -341,12 +384,12 @@ export function RecordDetailSheet({
                         <div className="space-y-3">
                             <h4 className="font-semibold text-sm flex items-center gap-2">
                                 <div className="h-2 w-2 rounded-full bg-red-500" />
-                                Check-out
+                                {t("attendanceRecordDetailCheckOutTitle")}
                             </h4>
                             <div className="rounded-lg border p-3 space-y-3">
                                 <div className="flex justify-between items-center">
                                     <span className="text-sm text-muted-foreground">
-                                        Thời gian
+                                        {t("attendanceRecordDetailTimeLabel")}
                                     </span>
                                     <span className="font-mono text-sm font-medium">
                                         {formatTime(record.checkOut, timezone)}
@@ -355,10 +398,12 @@ export function RecordDetailSheet({
                                 {record.earlyMinutes > 0 && (
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-muted-foreground">
-                                            Về sớm
+                                            {t("attendanceRecordDetailEarlyLeaveLabel")}
                                         </span>
                                         <Badge variant="secondary">
-                                            {record.earlyMinutes} phút
+                                            {t("attendanceRecordDetailMinutesValue", {
+                                                minutes: record.earlyMinutes,
+                                            })}
                                         </Badge>
                                     </div>
                                 )}
@@ -366,28 +411,30 @@ export function RecordDetailSheet({
                                     <>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-muted-foreground">
-                                                Phương thức
+                                                {t("attendanceRecordDetailMethodLabel")}
                                             </span>
                                             <MethodBadge
                                                 method={
                                                     record.checkOutMethod
                                                 }
+                                                t={t}
                                             />
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-muted-foreground">
-                                                Xác minh
+                                                {t("attendanceRecordDetailVerifyLabel")}
                                             </span>
                                             <VerifiedBadge
                                                 verified={
                                                     record.checkOutVerified
                                                 }
+                                                t={t}
                                             />
                                         </div>
                                         {record.checkOutDeviceId && (
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-muted-foreground">
-                                                    Thiết bị
+                                                    {t("attendanceRecordDetailDeviceLabel")}
                                                 </span>
                                                 <Badge
                                                     variant="outline"
@@ -402,31 +449,32 @@ export function RecordDetailSheet({
                                         )}
                                         <div>
                                             <span className="text-sm text-muted-foreground block mb-1">
-                                                Vị trí GPS
+                                                {t("attendanceRecordDetailGpsLabel")}
                                             </span>
                                             <LocationDisplay
                                                 location={
                                                     record.checkOutLocation
                                                 }
+                                                t={t}
                                             />
                                         </div>
                                         {record.checkOutPhoto && (
                                             <div>
                                                 <span className="text-sm text-muted-foreground block mb-1.5">
-                                                    Ảnh xác minh
+                                                    {t("attendanceRecordDetailPhotoLabel")}
                                                 </span>
                                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                                 <img
                                                     src={
                                                         record.checkOutPhoto
                                                     }
-                                                    alt="Ảnh check-out"
+                                                    alt={t("attendanceRecordDetailCheckOutPhotoAlt")}
                                                     className="h-24 w-24 rounded-lg object-cover cursor-pointer border hover:opacity-80 transition"
                                                     onClick={() =>
                                                         setPreviewPhoto(
                                                             {
                                                                 src: record.checkOutPhoto!,
-                                                                label: "Ảnh check-out",
+                                                                label: t("attendanceRecordDetailCheckOutPhotoAlt"),
                                                             },
                                                         )
                                                     }
@@ -437,7 +485,7 @@ export function RecordDetailSheet({
                                 )}
                                 {!record.checkOut && (
                                     <p className="text-sm text-muted-foreground italic">
-                                        Chưa check-out
+                                        {t("attendanceRecordDetailNotCheckedOut")}
                                     </p>
                                 )}
                             </div>
@@ -448,26 +496,26 @@ export function RecordDetailSheet({
                         {/* Work Metrics */}
                         <div className="space-y-3">
                             <h4 className="font-semibold text-sm">
-                                Thống kê
+                                {t("attendanceRecordDetailStatsTitle")}
                             </h4>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="rounded-lg border p-3 text-center">
                                     <p className="text-xs text-muted-foreground">
-                                        Giờ làm
+                                        {t("attendanceRecordDetailWorkHoursLabel")}
                                     </p>
                                     <p className="text-lg font-bold">
                                         {record.workHours != null
-                                            ? `${record.workHours}h`
+                                            ? `${record.workHours}${t("attendanceRecordDetailHourSuffix")}`
                                             : "—"}
                                     </p>
                                 </div>
                                 <div className="rounded-lg border p-3 text-center">
                                     <p className="text-xs text-muted-foreground">
-                                        Tăng ca
+                                        {t("attendanceRecordDetailOvertimeLabel")}
                                     </p>
                                     <p className="text-lg font-bold">
                                         {record.overtimeHours != null
-                                            ? `${record.overtimeHours}h`
+                                            ? `${record.overtimeHours}${t("attendanceRecordDetailHourSuffix")}`
                                             : "—"}
                                     </p>
                                 </div>
@@ -480,12 +528,12 @@ export function RecordDetailSheet({
                                 <Separator />
                                 <div className="space-y-2">
                                     <h4 className="font-semibold text-sm">
-                                        Giải trình
+                                        {t("attendanceRecordDetailExplanationTitle")}
                                     </h4>
                                     <div className="rounded-lg border p-3 space-y-2">
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-muted-foreground">
-                                                Loại
+                                                {t("attendanceRecordDetailTypeLabel")}
                                             </span>
                                             <Badge variant="outline">
                                                 {
@@ -496,7 +544,7 @@ export function RecordDetailSheet({
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-muted-foreground">
-                                                Trạng thái
+                                                {t("attendanceRecordDetailStatusLabel")}
                                             </span>
                                             <Badge
                                                 variant={
@@ -515,13 +563,13 @@ export function RecordDetailSheet({
                                                 {record.explanation
                                                     .status ===
                                                 "APPROVED"
-                                                    ? "Đã duyệt"
+                                                    ? t("attendanceRecordDetailApproved")
                                                     : record
                                                             .explanation
                                                             .status ===
                                                         "REJECTED"
-                                                      ? "Từ chối"
-                                                      : "Chờ duyệt"}
+                                                      ? t("attendanceRecordDetailRejected")
+                                                      : t("attendanceRecordDetailPending")}
                                             </Badge>
                                         </div>
                                         <p className="text-sm">
@@ -541,7 +589,7 @@ export function RecordDetailSheet({
                                 <Separator />
                                 <div className="space-y-2">
                                     <h4 className="font-semibold text-sm">
-                                        Ghi chú
+                                        {t("attendanceRecordDetailNoteTitle")}
                                     </h4>
                                     <p className="text-sm text-muted-foreground">
                                         {record.note}
@@ -580,3 +628,4 @@ export function RecordDetailSheet({
         </>
     );
 }
+

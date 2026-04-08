@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { Pencil, Trash2 } from "lucide-react";
-import type { WorkCycle } from "@/app/(protected)/attendance/types";
+import { useTranslations } from "next-intl";
+import type { WorkCycle } from "@/app/[locale]/(protected)/attendance/types";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,8 @@ export function WorkCycleCard({
     onDelete,
     onToggleActive,
 }: WorkCycleCardProps) {
+    const t = useTranslations("ProtectedPages");
+
     return (
         <div className="rounded-lg border p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -29,7 +32,9 @@ export function WorkCycleCard({
                             {cycle.name}
                         </p>
                         <Badge variant="outline" className="text-xs">
-                            {cycle.totalDays} ngày
+                            {t("attendanceWorkCycleCardTotalDays", {
+                                days: cycle.totalDays,
+                            })}
                         </Badge>
                         <Badge
                             variant={
@@ -40,8 +45,8 @@ export function WorkCycleCard({
                             className="text-xs"
                         >
                             {cycle.isActive
-                                ? "Đang hoạt động"
-                                : "Tạm dừng"}
+                                ? t("attendanceWorkCycleCardActive")
+                                : t("attendanceWorkCycleCardPaused")}
                         </Badge>
                     </div>
                     {cycle.description && (
@@ -85,7 +90,7 @@ export function WorkCycleCard({
                         }`}
                         title={
                             entry.isDayOff
-                                ? `${WEEKDAY_FULL[entry.dayIndex % 7]}: Nghỉ`
+                                ? `${WEEKDAY_FULL[entry.dayIndex % 7]}: ${t("attendanceWorkCycleCardOffDay")}`
                                 : `${WEEKDAY_FULL[entry.dayIndex % 7]}: ${entry.shift?.name ?? "?"}`
                         }
                     >
@@ -94,7 +99,7 @@ export function WorkCycleCard({
                         </span>
                         <span className="truncate max-w-15">
                             {entry.isDayOff
-                                ? "Nghỉ"
+                                ? t("attendanceWorkCycleCardOffDay")
                                 : (entry.shift?.code ?? "—")}
                         </span>
                     </div>
@@ -103,3 +108,4 @@ export function WorkCycleCard({
         </div>
     );
 }
+

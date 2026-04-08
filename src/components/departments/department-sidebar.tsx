@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, {
     useState,
@@ -7,6 +7,7 @@ import React, {
     createContext,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
     Sidebar,
     SidebarContent,
@@ -38,13 +39,13 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useMutation } from "@tanstack/react-query";
-import { deleteDepartment } from "@/app/(protected)/org-chart/actions";
+import { deleteDepartment } from "@/app/[locale]/(protected)/org-chart/actions";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { useSettings } from "@/contexts/settings-context";
 import DepartmentTree from "./department-tree";
 
-// ─── Context để chia sẻ trạng thái expand/collapse ─────────────────
+// â”€â”€â”€ Context Ä‘á»ƒ chia sáº» tráº¡ng thÃ¡i expand/collapse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type ExpandedState = "all" | "none" | null;
 
 interface ExpandedStateContextValue {
@@ -58,7 +59,7 @@ export const ExpandedStateContext =
         setExpandedState: () => {},
     });
 
-// ─── Main Sidebar Component ─────────────────────────────────────────
+// â”€â”€â”€ Main Sidebar Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface DepartmentSidebarProps {
     departmentTree: DepartmentNode[];
 }
@@ -69,6 +70,7 @@ const DepartmentSidebar = ({
     const pathname = usePathname();
     const router = useRouter();
     const { settings } = useSettings();
+    const t = useTranslations("ProtectedPages");
     const [searchQuery, setSearchQuery] = useState("");
     const [expandedState, setExpandedState] =
         useState<ExpandedState>("all");
@@ -106,7 +108,7 @@ const DepartmentSidebar = ({
             }
         },
         onError: () => {
-            toast.error("Có lỗi xảy ra");
+            toast.error(t("departmentsGenericError"));
         },
     });
 
@@ -130,7 +132,7 @@ const DepartmentSidebar = ({
             >
                 <SidebarHeader className="flex-row h-[44px] items-center justify-between">
                     <div className="group-data-[collapsible=icon]:hidden px-2 font-bold">
-                        Phòng ban
+                        {t("departmentsSidebarTitle")}
                     </div>
                     <div className="flex items-center gap-0.5">
                         <div className="flex items-center transition-all duration-150 transform-gpu translate-x-2 group-hover:translate-x-0 gap-0.5 ease-linear opacity-0 group-hover:opacity-100">
@@ -139,8 +141,8 @@ const DepartmentSidebar = ({
                                 size="icon-xs"
                                 tooltip={
                                     expandedState === "all"
-                                        ? "Thu gọn tất cả"
-                                        : "Mở rộng tất cả"
+                                        ? t("departmentsSidebarCollapseAll")
+                                        : t("departmentsSidebarExpandAll")
                                 }
                                 onClick={() =>
                                     setExpandedState(
@@ -166,7 +168,7 @@ const DepartmentSidebar = ({
                             <Input
                                 ref={searchInputRef}
                                 className="pl-8 pr-8 h-7 text-xs"
-                                placeholder="Tìm kiếm phòng ban..."
+                                placeholder={t("departmentsSidebarSearchPlaceholder")}
                                 value={searchQuery}
                                 onChange={(e) =>
                                     setSearchQuery(e.target.value)
@@ -185,13 +187,13 @@ const DepartmentSidebar = ({
                                     </Button>
                                 ) : settings.keyboardShortcutsEnabled ? (
                                     <kbd className="inline-flex h-4 items-center rounded border px-1 font-medium text-[10px] text-muted-foreground/70">
-                                        ⌘K
+                                        âŒ˜K
                                     </kbd>
                                 ) : null}
                             </div>
                         </div>
 
-                        {/* Nav: Tất cả phòng ban */}
+                        {/* Nav: Táº¥t cáº£ phÃ²ng ban */}
                         <SidebarMenu>
                             <SidebarMenuItem>
                                 <SidebarMenuButton
@@ -205,7 +207,7 @@ const DepartmentSidebar = ({
                                 >
                                     <Snowflake className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                     <span className="truncate">
-                                        Tất cả phòng ban
+                                        {t("departmentsSidebarAll")}
                                     </span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -244,7 +246,7 @@ const DepartmentSidebar = ({
                                 }}
                             >
                                 <Plus />
-                                Thêm phòng ban
+                                {t("departmentsSidebarAdd")}
                             </SidebarMenuButton>
                         </SidebarMenu>
                     </SidebarGroup>
@@ -267,16 +269,18 @@ const DepartmentSidebar = ({
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
-                            Xác nhận xóa
+                            {t("departmentsDeleteConfirmTitle")}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Bạn có chắc chắn muốn xóa phòng ban{" "}
-                            <strong>{deleteTarget?.name}</strong>{" "}
-                            không?
+                            {t("departmentsDeleteConfirmDescription", {
+                                name: deleteTarget?.name ?? "",
+                            })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Hủy</AlertDialogCancel>
+                        <AlertDialogCancel>
+                            {t("departmentsDeleteCancel")}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
                                 if (deleteTarget) {
@@ -289,8 +293,8 @@ const DepartmentSidebar = ({
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
                             {deleteMutation.isPending
-                                ? "Đang xóa..."
-                                : "Xóa"}
+                                ? t("departmentsDeletePending")
+                                : t("departmentsDeleteAction")}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -300,3 +304,4 @@ const DepartmentSidebar = ({
 };
 
 export default DepartmentSidebar;
+

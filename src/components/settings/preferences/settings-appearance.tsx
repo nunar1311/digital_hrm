@@ -7,8 +7,11 @@ import { useLocalStorage } from "@mantine/hooks";
 import { useEffect } from "react";
 import ThemePreset from "@/components/themes/theme-preset";
 import ModeSelection from "@/components/themes/mode-selection";
+import { useTranslations } from "next-intl";
 
 export function SettingsAppearance() {
+    const t = useTranslations("ProtectedPages");
+
     const [highContrast, setHighContrast] = useLocalStorage({
         key: "settings-high-contrast",
         defaultValue: false,
@@ -24,8 +27,8 @@ export function SettingsAppearance() {
     return (
         <>
             <SettingsSection
-                title="Màu giao diện"
-                description="Chọn màu chủ đạo cho ứng dụng."
+                title={t("settingsAppearanceColorTitle")}
+                description={t("settingsAppearanceColorDescription")}
             >
                 <div className="flex flex-wrap gap-2">
                     <ThemePreset className="grid-cols-7" />
@@ -33,8 +36,8 @@ export function SettingsAppearance() {
             </SettingsSection>
 
             <SettingsSection
-                title="Giao diện"
-                description="Chọn chế độ sáng, tối hoặc theo hệ thống."
+                title={t("settingsAppearanceModeTitle")}
+                description={t("settingsAppearanceModeDescription")}
             >
                 <div className="flex gap-3">
                     <ModeSelection />
@@ -42,8 +45,8 @@ export function SettingsAppearance() {
             </SettingsSection>
 
             <SettingsSection
-                title="Độ tương phản"
-                description="Bật/tắt độ tương phản cao cho chữ và viền."
+                title={t("settingsAppearanceContrastTitle")}
+                description={t("settingsAppearanceContrastDescription")}
             >
                 <div className="flex items-center gap-3">
                     <Switch
@@ -55,7 +58,7 @@ export function SettingsAppearance() {
                         htmlFor="high-contrast"
                         className="text-sm cursor-pointer"
                     >
-                        Độ tương phản cao (hỗ trợ truy cập)
+                        {t("settingsAppearanceHighContrastLabel")}
                     </Label>
                 </div>
             </SettingsSection>
