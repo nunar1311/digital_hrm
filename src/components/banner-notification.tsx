@@ -126,10 +126,10 @@ export default function BannerNotification() {
   }
 
   return (
-    <section className="flex items-center justify-between flex-nowrap gap-4 bg-primary min-h-11 text-accent leading-5 py-2.5 px-4">
-      <div className="grow flex items-center justify-between flex-wrap gap-2">
+    <section className="flex items-center justify-between flex-nowrap gap-1 sm:gap-4 bg-primary min-h-11 text-accent leading-5 py-2.5 px-2 sm:px-4">
+      <div className="grow flex items-center justify-between flex-wrap gap-1 sm:gap-2">
         <BellIcon className="size-4" />
-        <p className="grow-500 basis-[min-content] text-sm font-medium">
+        <p className="grow-500 basis-[min-content] text-xs sm:text-sm font-medium">
           <strong>Digital HRM</strong> cần quyền truy cập để gửi thông báo.
         </p>
         <Button

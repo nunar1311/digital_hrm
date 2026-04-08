@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   getPayrollRecord,
   getPayslips,
@@ -28,7 +28,7 @@ export default async function PayrollDetailPage({
   ]);
 
   if (!record) {
-    notFound();
+    redirect("/payroll");
   }
 
   return (

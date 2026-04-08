@@ -3,9 +3,9 @@
 // ============================================================
 
 export interface ESSProfile {
+    username: string;
     fullName?: string;
     name?: string;
-    employeeCode: string;
     department?: { name: string };
     position?: { name: string };
     avatar?: string;

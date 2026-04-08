@@ -7,7 +7,6 @@ import {
   Users,
   UserPlus,
   CheckCircle2,
-  XCircle,
   Clock,
   FileText,
   Search,
@@ -28,8 +27,6 @@ import {
   getOnboardings,
   deleteOnboarding,
   updateOnboarding,
-  getOnboardingDetail,
-  updateChecklistItem,
 } from "./actions";
 import {
   type OnboardingItem,
@@ -87,30 +84,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CreateOnboardingDialog } from "@/components/onboarding/create-onboarding-dialog";
 import { HireCandidateDialog } from "@/components/onboarding/hire-candidate-dialog";
-import {
-  CATEGORY_LABELS,
-  ASSIGNEE_ROLE_LABELS,
-  type OnboardingCategory,
-  type OnboardingChecklistDB,
-} from "@/types/onboarding";
+import { useRightSidebar } from "@/contexts/sidebar-context";
 
 // ============================================================
 // TYPES
@@ -313,317 +293,6 @@ function FilterPopover({
 }
 
 // ============================================================
-// DETAIL SHEET
-// ============================================================
-
-interface OnboardingDetailData {
-  id: string;
-  status: string;
-  startDate: Date | string;
-  completedDate?: Date | string | null;
-  progress: number;
-  completedCount: number;
-  totalCount: number;
-  notes?: string | null;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    image?: string | null;
-    employeeCode?: string;
-    department?: { id: string; name: string } | null;
-    position?: { id: string; name: string } | null;
-    manager?: { id: string; name: string } | null;
-  };
-  template?: { id: string; name: string } | null;
-  checklistByCategory: Record<string, OnboardingChecklistDB[]>;
-}
-
-function DetailSheet({
-  detailData,
-  detailLoading,
-  open,
-  onClose,
-  onCheckItem,
-  isUpdating,
-}: {
-  detailData: OnboardingDetailData | null;
-  detailLoading: boolean;
-  open: boolean;
-  onClose: () => void;
-  onCheckItem: (id: string, isCompleted: boolean) => void;
-  isUpdating: boolean;
-}) {
-  const getDaysUntilDue = (dueDate: Date | string | null) => {
-    if (!dueDate) return null;
-    const due = new Date(dueDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    due.setHours(0, 0, 0, 0);
-    return Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  };
-
-  const categories = detailData
-    ? Object.keys(detailData.checklistByCategory)
-    : [];
-
-  return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-[560px] sm:max-w-[560px] overflow-y-auto">
-        <SheetHeader className="pb-4 border-b">
-          <SheetTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5 text-blue-600" />
-            Chi tiết tiếp nhận
-          </SheetTitle>
-        </SheetHeader>
-
-        {detailLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : detailData ? (
-          <div className="space-y-6 py-4">
-            {/* Employee Header */}
-            <div className="flex items-start gap-4">
-              <Avatar className="h-14 w-14 shrink-0">
-                <AvatarImage src={detailData.user?.image || undefined} />
-                <AvatarFallback className="text-lg">
-                  {detailData.user?.name?.charAt(0)?.toUpperCase() || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-lg text-foreground">
-                  {detailData.user?.name || "—"}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {detailData.user?.employeeCode || "—"} •{" "}
-                  {detailData.user?.department?.name || "—"} •{" "}
-                  {detailData.user?.position?.name || "—"}
-                </p>
-                {detailData.user?.manager && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Quản lý: {detailData.user.manager.name}
-                  </p>
-                )}
-              </div>
-              <Badge
-                className={cn(
-                  "text-xs font-semibold",
-                  detailData.status === "COMPLETED"
-                    ? "bg-green-100 text-green-800"
-                    : detailData.status === "IN_PROGRESS"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-yellow-100 text-yellow-800",
-                )}
-              >
-                {ONBOARDING_STATUS_LABELS[
-                  detailData.status as OnboardingStatus
-                ] || detailData.status}
-              </Badge>
-            </div>
-
-            {/* Progress */}
-            <div className="bg-slate-50 rounded-lg p-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Tiến độ hoàn thành</span>
-                <span className="text-sm font-bold text-blue-600">
-                  {detailData.completedCount}/{detailData.totalCount} (
-                  {detailData.progress}%)
-                </span>
-              </div>
-              <Progress value={detailData.progress} className="h-3" />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Ngày bắt đầu: {formatDate(detailData.startDate)}</span>
-                {detailData.completedDate && (
-                  <span>
-                    Hoàn thành: {formatDate(detailData.completedDate)}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Notes */}
-            {detailData.notes && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-sm text-yellow-800">
-                  <span className="font-medium">Ghi chú:</span>{" "}
-                  {detailData.notes}
-                </p>
-              </div>
-            )}
-
-            <Separator />
-
-            {/* Checklist */}
-            <Accordion type="multiple" className="space-y-2">
-              {categories.map((category) => {
-                const categoryTasks = detailData.checklistByCategory[category];
-                const completedInCategory = categoryTasks.filter(
-                  (t) => t.isCompleted,
-                ).length;
-                const totalInCategory = categoryTasks.length;
-                const categoryPercent =
-                  totalInCategory > 0
-                    ? Math.round((completedInCategory / totalInCategory) * 100)
-                    : 0;
-
-                return (
-                  <AccordionItem
-                    key={category}
-                    value={category}
-                    className="border rounded-lg px-4 bg-white"
-                  >
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex items-center gap-3 w-full pr-4">
-                        <div className="p-2 rounded-lg border bg-slate-100">
-                          <Users className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="font-medium text-sm">
-                            {CATEGORY_LABELS[category as OnboardingCategory] ||
-                              category}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {completedInCategory}/{totalInCategory} hoàn thành
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Progress
-                            value={categoryPercent}
-                            className="h-2 w-16"
-                          />
-                          <span className="text-xs font-medium min-w-[32px]">
-                            {categoryPercent}%
-                          </span>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-2 pb-2">
-                        {categoryTasks.map((task) => {
-                          const daysUntil = getDaysUntilDue(task.dueDate);
-                          const isOverdue =
-                            daysUntil !== null &&
-                            daysUntil < 0 &&
-                            !task.isCompleted;
-                          const isDueSoon =
-                            daysUntil !== null &&
-                            daysUntil >= 0 &&
-                            daysUntil <= 2 &&
-                            !task.isCompleted;
-
-                          return (
-                            <div
-                              key={task.id}
-                              className={cn(
-                                "flex items-start gap-3 p-3 rounded-lg border transition-colors",
-                                task.isCompleted
-                                  ? "bg-green-50/50 border-green-100"
-                                  : "bg-white border-slate-100 hover:border-blue-200",
-                              )}
-                            >
-                              <Checkbox
-                                checked={task.isCompleted}
-                                onCheckedChange={(checked) =>
-                                  onCheckItem(task.id, !!checked)
-                                }
-                                disabled={
-                                  isUpdating ||
-                                  detailData.status === "COMPLETED"
-                                }
-                                className="mt-0.5"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p
-                                  className={cn(
-                                    "text-sm font-medium",
-                                    task.isCompleted &&
-                                      "line-through text-muted-foreground",
-                                  )}
-                                >
-                                  {task.taskTitle}
-                                </p>
-                                {task.taskDescription && (
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {task.taskDescription}
-                                  </p>
-                                )}
-                                <div className="flex items-center gap-2 mt-2">
-                                  {task.assigneeRole && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs"
-                                    >
-                                      <User className="h-3 w-3 mr-1" />
-                                      {ASSIGNEE_ROLE_LABELS[
-                                        task.assigneeRole as keyof typeof ASSIGNEE_ROLE_LABELS
-                                      ] || task.assigneeRole}
-                                    </Badge>
-                                  )}
-                                  {task.assignee && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs bg-blue-50"
-                                    >
-                                      {task.assignee.name}
-                                    </Badge>
-                                  )}
-                                  {task.dueDate && (
-                                    <span
-                                      className={cn(
-                                        "flex items-center gap-1 text-xs",
-                                        isOverdue
-                                          ? "text-red-600"
-                                          : isDueSoon
-                                            ? "text-orange-600"
-                                            : "text-muted-foreground",
-                                      )}
-                                    >
-                                      <Clock className="h-3 w-3" />
-                                      {isOverdue
-                                        ? `Quá hạn ${Math.abs(daysUntil!)} ngày`
-                                        : isDueSoon
-                                          ? `Còn ${daysUntil} ngày`
-                                          : formatDate(task.dueDate)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {isOverdue && !task.isCompleted && (
-                                <XCircle className="h-4 w-4 text-red-500 shrink-0 mt-1" />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
-
-            {/* All Completed */}
-            {detailData.completedCount === detailData.totalCount &&
-              detailData.totalCount > 0 && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                  <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                  <p className="font-medium text-green-800">
-                    Tất cả công việc đã hoàn thành!
-                  </p>
-                </div>
-              )}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">Không tìm thấy thông tin</p>
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-// ============================================================
 // MAIN COMPONENT
 // ============================================================
 
@@ -662,8 +331,10 @@ export function OnboardingClient({
   // ─── Dialogs ───
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showHireDialog, setShowHireDialog] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // ─── Right sidebar ───
+  const { openRightSidebar } = useRightSidebar();
 
   // ─── Click outside to close search ───
   const clickOutsideRef = useClickOutside(() => {
@@ -702,13 +373,6 @@ export function OnboardingClient({
     staleTime: 0,
   });
 
-  // Detail query
-  const { data: detailData, isLoading: detailLoading } = useQuery({
-    queryKey: ["onboarding-detail", detailId],
-    queryFn: () => getOnboardingDetail(detailId!),
-    enabled: !!detailId,
-  });
-
   // ─── Mutations ───
   const deleteMutation = useMutation({
     mutationFn: deleteOnboarding,
@@ -736,18 +400,6 @@ export function OnboardingClient({
       queryClient.invalidateQueries({ queryKey: ["onboardings"] });
       queryClient.invalidateQueries({ queryKey: ["onboarding-detail"] });
       queryClient.invalidateQueries({ queryKey: ["onboarding-stats"] });
-    },
-    onError: () => {
-      toast.error("Cập nhật thất bại");
-    },
-  });
-
-  const checklistMutation = useMutation({
-    mutationFn: ({ id, isCompleted }: { id: string; isCompleted: boolean }) =>
-      updateChecklistItem(id, { isCompleted }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["onboardings"] });
-      queryClient.invalidateQueries({ queryKey: ["onboarding-detail"] });
     },
     onError: () => {
       toast.error("Cập nhật thất bại");
@@ -948,7 +600,7 @@ export function OnboardingClient({
                   className="h-7 w-7"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setDetailId(row.original.id);
+                    openRightSidebar("onboarding", { id: row.original.id });
                   }}
                 >
                   <Eye className="h-3.5 w-3.5" />
@@ -1023,12 +675,8 @@ export function OnboardingClient({
         ),
       },
     ],
-    [tabData, selectedIds, updateMutation],
+    [tabData, selectedIds, updateMutation, openRightSidebar],
   );
-
-  const handleViewDetail = (item: OnboardingItem) => {
-    setDetailId(item.id);
-  };
 
   const resetFilters = useCallback(() => {
     setStatusFilter("ALL");
@@ -1199,17 +847,6 @@ export function OnboardingClient({
             />
           </Button>
 
-          <Separator orientation="vertical" className="h-4!" />
-
-          <Button
-            variant="outline"
-            size="icon-xs"
-            className="h-7 w-7"
-            onClick={() => setSettingsOpen(true)}
-          >
-            <Settings className="h-3.5 w-3.5" />
-          </Button>
-
           {/* Search */}
           <div className="relative flex items-center" ref={mergedSearchRef}>
             <Input
@@ -1219,7 +856,7 @@ export function OnboardingClient({
               onKeyDown={handleSearchKeyDown}
               placeholder="Tìm nhân viên..."
               className={cn(
-                "h-7 text-xs transition-all duration-300 ease-in-out pr-6",
+                "h-6 text-xs transition-all duration-300 ease-in-out pr-6",
                 searchExpanded ? "w-48 opacity-100 pl-3" : "w-0 opacity-0 pl-0",
               )}
             />
@@ -1235,6 +872,16 @@ export function OnboardingClient({
               <Search className="h-3.5 w-3.5" />
             </Button>
           </div>
+
+          <Separator orientation="vertical" className="h-4!" />
+
+          <Button
+            variant="outline"
+            size="icon-xs"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </Button>
         </div>
 
         {/* ─── Table Settings ─── */}
@@ -1373,7 +1020,7 @@ export function OnboardingClient({
                 <TableRow
                   key={row.id}
                   className="group/row cursor-pointer"
-                  onClick={() => handleViewDetail(row.original)}
+                  onClick={() => openRightSidebar("onboarding", { id: row.original.id })}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -1424,18 +1071,6 @@ export function OnboardingClient({
           )}
         </div>
       )}
-
-      {/* ─── Detail Sheet ─── */}
-      <DetailSheet
-        detailData={detailData as OnboardingDetailData | null}
-        detailLoading={detailLoading}
-        open={!!detailId}
-        onClose={() => setDetailId(null)}
-        onCheckItem={(id, isCompleted) =>
-          checklistMutation.mutate({ id, isCompleted })
-        }
-        isUpdating={checklistMutation.isPending}
-      />
 
       {/* ─── Create Dialog ─── */}
       <CreateOnboardingDialog

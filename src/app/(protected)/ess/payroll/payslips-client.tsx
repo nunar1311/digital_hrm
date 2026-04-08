@@ -80,6 +80,10 @@ function getStatusConfig(status: string) {
             return { label: "Chờ thanh toán", variant: "secondary" as const, className: "bg-amber-100 text-amber-800" };
         case "PROCESSING":
             return { label: "Đang xử lý", variant: "secondary" as const };
+        case "GENERATED":
+            return { label: "Đã phát hành", variant: "default" as const, className: "bg-blue-100 text-blue-800" };
+        case "VIEWED":
+            return { label: "Đã xem", variant: "secondary" as const, className: "bg-purple-100 text-purple-800" };
         default:
             return { label: status, variant: "outline" as const };
     }
@@ -296,9 +300,9 @@ export function ESSPayslipsClient({ initialPayslips }: ESSPayslipsClientProps) {
     // Stats
     const stats = {
         totalPayslips: initialPayslips.length,
-        paidPayslips: initialPayslips.filter(p => p.status === "PAID").length,
+        paidPayslips: initialPayslips.filter(p => ["GENERATED", "VIEWED", "PAID"].includes(p.status)).length,
         totalIncome: initialPayslips
-            .filter(p => p.status === "PAID")
+            .filter(p => ["GENERATED", "VIEWED", "PAID"].includes(p.status))
             .reduce((sum, p) => sum + (p.netSalary || 0), 0),
     };
 
@@ -402,6 +406,8 @@ export function ESSPayslipsClient({ initialPayslips }: ESSPayslipsClientProps) {
                             onChange={(e) => setSelectedStatus(e.target.value)}
                         >
                             <option value="ALL">Tất cả trạng thái</option>
+                            <option value="GENERATED">Đã phát hành</option>
+                            <option value="VIEWED">Đã xem</option>
                             <option value="PAID">Đã thanh toán</option>
                             <option value="PENDING">Chờ thanh toán</option>
                             <option value="PROCESSING">Đang xử lý</option>

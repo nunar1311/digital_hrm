@@ -10,7 +10,6 @@ import { NOTIFICATION_TYPES } from "@/lib/types/notification";
 import { auth } from "@/lib/auth";
 import type {
   OnboardingListParams,
-  OnboardingWithProgress,
   HireCandidateData,
   CreateOnboardingData,
   UpdateOnboardingData,
@@ -18,8 +17,9 @@ import type {
   CreateTemplateData,
   CreateTaskData,
   UpdateTemplateData,
-} from "@/types/onboarding";
+} from "@/types/onboarding";  
 import type { OnboardingPage } from "./types";
+import { Prisma } from "../../../../generated/prisma/client";
 
 // ─── Utility ────────────────────────────────────────────────────────────────
 
@@ -55,7 +55,7 @@ export async function getOnboardings(
     sortOrder = "desc",
   } = params;
 
-  const where: Prisma.OnboardingWhereInput = {};
+  const where = {} as Prisma.OnboardingWhereInput;
 
   if (search) {
     where.user = {
@@ -74,7 +74,7 @@ export async function getOnboardings(
     where.status = status;
   }
 
-  const orderBy: Prisma.OnboardingOrderByWithRelationInput = {};
+  const orderBy = {} as Prisma.OnboardingOrderByWithRelationInput;
   if (sortBy === "employeeName") {
     orderBy.user = { name: sortOrder };
   } else if (sortBy === "department") {
@@ -114,7 +114,7 @@ export async function getOnboardings(
     prisma.onboarding.count({ where }),
   ]);
 
-  const data: OnboardingWithProgress[] = onboardings.map((o) => {
+  const data = onboardings.map((o) => {
     const totalCount = o.checklist.length;
     const completedCount = o.checklist.filter((c) => c.isCompleted).length;
     const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -123,16 +123,16 @@ export async function getOnboardings(
       progress,
       completedCount,
       totalCount,
-    } as OnboardingWithProgress;
+    };
   });
 
   const items = data.map((o) => ({
     id: o.id,
     userId: o.userId,
-    user: o.user,
+    user: o.user!,
     startDate: o.startDate instanceof Date ? o.startDate.toISOString() : o.startDate,
     completedDate: o.completedDate instanceof Date ? o.completedDate.toISOString() : o.completedDate,
-    status: o.status,
+    status: o.status as "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED",
     notes: o.notes,
     progress: o.progress,
     completedCount: o.completedCount,
@@ -341,8 +341,8 @@ export async function updateChecklistItem(id: string, data: UpdateChecklistData)
       updateData.completedBy = session.user.id;
       updateData.completedAt = new Date();
     } else {
-      updateData.completedBy = Prisma.DbNull;
-      updateData.completedAt = Prisma.DbNull;
+      updateData.completedBy = null;
+      updateData.completedAt = null;
     }
   }
   if (data.assigneeId !== undefined) {
@@ -453,7 +453,7 @@ export async function hireCandidate(data: HireCandidateData) {
     data: {
       stage: "HIRED",
       hiredDate: data.hireDate,
-      hiredSalary: data.salary ? new Prisma.Decimal(data.salary) : Prisma.DbNull,
+      hiredSalary: data.salary ? new Prisma.Decimal(data.salary) : null,
     },
   });
 
@@ -630,7 +630,6 @@ export async function createOnboardingTemplate(data: CreateTemplateData) {
     include: { tasks: true },
   });
 
-  revalidatePath("/onboarding/settings");
   return template;
 }
 
@@ -646,7 +645,6 @@ export async function updateOnboardingTemplate(id: string, data: UpdateTemplateD
     },
   });
 
-  revalidatePath("/onboarding/settings");
   return template;
 }
 
@@ -669,7 +667,6 @@ export async function deleteOnboardingTemplate(id: string) {
     await prisma.onboardingTemplate.delete({ where: { id } });
   }
 
-  revalidatePath("/onboarding/settings");
   return { success: true };
 }
 
@@ -695,7 +692,6 @@ export async function addTaskToTemplate(templateId: string, task: CreateTaskData
     },
   });
 
-  revalidatePath("/onboarding/settings");
   return newTask;
 }
 
@@ -716,7 +712,6 @@ export async function updateTemplateTask(taskId: string, data: Partial<CreateTas
     data: updateData,
   });
 
-  revalidatePath("/onboarding/settings");
   return task;
 }
 
@@ -725,7 +720,6 @@ export async function deleteTemplateTask(taskId: string) {
 
   await prisma.onboardingTask.delete({ where: { id: taskId } });
 
-  revalidatePath("/onboarding/settings");
   return { success: true };
 }
 
@@ -741,8 +735,111 @@ export async function reorderTemplateTasks(taskOrders: { id: string; sortOrder: 
     )
   );
 
-  revalidatePath("/onboarding/settings");
   return { success: true };
+}
+
+export async function duplicateOnboardingTemplate(templateId: string) {
+  await requirePermission(Permission.ONBOARDING_MANAGE);
+
+  const original = await prisma.onboardingTemplate.findUnique({
+    where: { id: templateId },
+    include: { tasks: { orderBy: { sortOrder: "asc" } } },
+  });
+
+  if (!original) {
+    throw new Error("Không tìm thấy template");
+  }
+
+  const duplicate = await prisma.onboardingTemplate.create({
+    data: {
+      name: `${original.name} (Copy)`,
+      description: original.description,
+      isActive: true,
+      tasks: {
+        create: original.tasks.map((t, idx) => ({
+          title: t.title,
+          description: t.description,
+          category: t.category,
+          assigneeRole: t.assigneeRole,
+          dueDays: t.dueDays,
+          sortOrder: idx,
+          isRequired: t.isRequired,
+        })),
+      },
+    },
+    include: { tasks: true },
+  });
+
+  return duplicate;
+}
+
+export async function exportTemplateAsJson(templateId: string) {
+  await requirePermission(Permission.ONBOARDING_MANAGE);
+
+  const template = await prisma.onboardingTemplate.findUnique({
+    where: { id: templateId },
+    include: { tasks: { orderBy: { sortOrder: "asc" } } },
+  });
+
+  if (!template) {
+    throw new Error("Không tìm thấy template");
+  }
+
+  return {
+    name: template.name,
+    description: template.description || "",
+    tasks: template.tasks.map((t) => ({
+      title: t.title,
+      description: t.description || "",
+      category: t.category,
+      assigneeRole: t.assigneeRole || "",
+      dueDays: t.dueDays,
+      isRequired: t.isRequired,
+    })),
+  };
+}
+
+export async function importTemplateFromJson(jsonData: {
+  name: string;
+  description?: string;
+  tasks?: Array<{
+    title: string;
+    description?: string;
+    category?: string;
+    assigneeRole?: string;
+    dueDays?: number;
+    isRequired?: boolean;
+  }>;
+}) {
+  await requirePermission(Permission.ONBOARDING_MANAGE);
+
+  if (!jsonData.name || !jsonData.name.trim()) {
+    throw new Error("Tên template không được trống");
+  }
+
+  const template = await prisma.onboardingTemplate.create({
+    data: {
+      name: jsonData.name.trim(),
+      description: jsonData.description || "",
+      isActive: true,
+      tasks: jsonData.tasks
+        ? {
+            create: jsonData.tasks.map((t, idx) => ({
+              title: t.title,
+              description: t.description || "",
+              category: t.category || "GENERAL",
+              assigneeRole: t.assigneeRole || null,
+              dueDays: t.dueDays || 3,
+              sortOrder: idx,
+              isRequired: t.isRequired ?? true,
+            })),
+          }
+        : undefined,
+    },
+    include: { tasks: true },
+  });
+
+  return template;
 }
 
 // ─── Welcome Portal Data ────────────────────────────────────────────────────

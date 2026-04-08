@@ -9,6 +9,8 @@ import {
   LucideIcon,
   OrbitIcon,
   Settings,
+  UserMinus,
+  UserPlus,
   UsersIcon,
 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -57,16 +59,22 @@ const MENU_ITEM: MenuItem[] = [
     permissions: [Permission.ATTENDANCE_VIEW_ALL],
   },
   {
-    label: "Orbit",
+    label: "Bảng lương",
     icon: OrbitIcon,
     href: "/payroll",
     permissions: [Permission.ORG_CHART_VIEW],
   },
   {
     label: "Tiếp nhận",
-    icon: UsersIcon,
+    icon: UserPlus,
     href: "/onboarding",
     permissions: [Permission.ONBOARDING_VIEW],
+  },
+  {
+    label: "Chấm dứt hợp đồng",
+    icon: UserMinus,
+    href: "/offboarding",
+    permissions: [Permission.OFFBOARDING_VIEW],
   },
 ];
 
@@ -82,7 +90,7 @@ const SidebarMind = () => {
   const visibleMenuItems = MENU_ITEM.filter((item) => canAny(item.permissions));
 
   return (
-    <div className="me-1.5 ms-1.5 rounded-lg grid grid-cols-[1fr_auto] bg-primary dark:bg-primary-dark shadow-xl relative">
+    <div className="ms-1.5 rounded-lg grid grid-cols-[1fr_auto] bg-primary dark:bg-primary-dark shadow-xl relative">
       <div className="flex flex-col min-h-0 min-w-0 items-center w-12 justify-between py-2">
         <div className="flex flex-col items-center shrink-0 relative">
           <div

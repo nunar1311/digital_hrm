@@ -62,7 +62,7 @@ export async function createSalaryComponentType(
         where: { code: parsed.code },
     });
     if (existing) {
-        throw new Error("Mã loại khoản lương đã tồn tại");
+        return { success: false, message: "Mã loại khoản lương đã tồn tại" };
     }
 
     const result = await prisma.salaryComponentType.create({
@@ -85,7 +85,7 @@ export async function updateSalaryComponentType(
         where: { code: parsed.code, id: { not: id } },
     });
     if (existing) {
-        throw new Error("Mã loại khoản lương đã tồn tại");
+        return { success: false, message: "Mã loại khoản lương đã tồn tại" };
     }
 
     const result = await prisma.salaryComponentType.update({
@@ -105,13 +105,12 @@ export async function deleteSalaryComponentType(id: string) {
         where: { componentTypeId: id },
     });
     if (inUse > 0) {
-        throw new Error(
-            "Không thể xóa. Loại khoản lương đang được sử dụng cho nhân viên.",
-        );
+        return { success: false, message: "Không thể xóa. Loại khoản lương đang được sử dụng cho nhân viên." };
     }
 
     await prisma.salaryComponentType.delete({ where: { id } });
     revalidatePath("/payroll/formulas");
+    return { success: true, message: "Xóa thành công" };
 }
 
 // ─── EMPLOYEE SALARY COMPONENTS ───
@@ -127,7 +126,7 @@ export async function getEmployeeSalaryComponents(userId: string) {
     const isOwner = session.user.id === userId;
 
     if (!canViewAll && !isOwner) {
-        throw new Error("Bạn không có quyền xem thông tin lương này");
+        return { success: false, message: "Bạn không có quyền xem thông tin lương này" };
     }
 
     return prisma.employeeSalaryComponent.findMany({
@@ -207,7 +206,7 @@ export async function setEmployeeSalaryComponent(
         where: { id: parsed.userId },
     });
     if (!user) {
-        throw new Error("Không tìm thấy nhân viên");
+        return { success: false, message: "Không tìm thấy nhân viên" };
     }
 
     // Kiểm tra component type tồn tại
@@ -215,7 +214,7 @@ export async function setEmployeeSalaryComponent(
         where: { id: parsed.componentTypeId },
     });
     if (!componentType) {
-        throw new Error("Không tìm thấy loại khoản lương");
+        return { success: false, message: "Không tìm thấy loại khoản lương" };
     }
 
     // Deactivate old components of the same type
@@ -246,7 +245,7 @@ export async function setEmployeeSalaryComponent(
     // emitToUser(parsed.userId, "salary:updated", {...});
 
     revalidatePath("/payroll/formulas");
-    return result;
+    return { success: true, message: "Cập nhật thành công", data: result };
 }
 
 export async function removeEmployeeSalaryComponent(id: string) {
@@ -258,7 +257,7 @@ export async function removeEmployeeSalaryComponent(id: string) {
     });
 
     if (!component) {
-        throw new Error("Không tìm thấy khoản lương");
+        return { success: false, message: "Không tìm thấy khoản lương" };
     }
 
     await prisma.employeeSalaryComponent.update({
@@ -270,9 +269,62 @@ export async function removeEmployeeSalaryComponent(id: string) {
     // emitToUser(component.userId, "salary:removed", {...});
 
     revalidatePath("/payroll/formulas");
+    return { success: true, message: "Xóa thành công" };
 }
 
 // ─── SALARY (BASE SALARY) ───
+
+/**
+ * Lấy baseSalary hiệu quả của nhân viên
+ * Ưu tiên: Salary cá nhân > PositionSalary của chức vụ > null
+ */
+export async function getEmployeeEffectiveSalary(userId: string): Promise<{
+    source: "personal" | "position" | "none";
+    baseSalary: number | null;
+    positionSalaryId?: string;
+    positionSalaryGrade?: string;
+}> {
+    await requireAuth();
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+            salaries: true,
+            position: {
+                include: {
+                    positionSalaries: {
+                        where: { isActive: true },
+                        orderBy: { effectiveDate: "desc" },
+                        take: 1,
+                    },
+                },
+            },
+        },
+    });
+
+    if (!user) {
+        return { source: "none", baseSalary: null };
+    }
+
+    if (user.salaries) {
+        return { source: "personal", baseSalary: Number(user.salaries.baseSalary) };
+    }
+
+    if (
+        user.position?.positionSalaries &&
+        user.position.positionSalaries.length > 0
+    ) {
+        const posSalary = user.position.positionSalaries[0];
+        return {
+            source: "position",
+            baseSalary: Number(posSalary.baseSalary),
+            positionSalaryId: posSalary.id,
+            positionSalaryGrade: posSalary.salaryGrade,
+        };
+    }
+
+    return { source: "none", baseSalary: null };
+}
 
 export async function getEmployeeSalary(userId: string) {
     const session = await requireAuth();
@@ -284,7 +336,7 @@ export async function getEmployeeSalary(userId: string) {
     const isOwner = session.user.id === userId;
 
     if (!canViewAll && !isOwner) {
-        throw new Error("Bạn không có quyền xem thông tin này");
+        return { success: false, message: "Bạn không có quyền xem thông tin này" };
     }
 
     return prisma.salary.findUnique({
@@ -351,7 +403,7 @@ export async function setEmployeeSalary(data: z.infer<typeof salarySchema>) {
         where: { id: parsed.userId },
     });
     if (!user) {
-        throw new Error("Không tìm thấy nhân viên");
+        return { success: false, message: "Không tìm thấy nhân viên" };
     }
 
     const result = await prisma.salary.upsert({
@@ -371,7 +423,7 @@ export async function setEmployeeSalary(data: z.infer<typeof salarySchema>) {
     // emitToUser(parsed.userId, "salary:base_updated", {...});
 
     revalidatePath("/payroll/formulas");
-    return result;
+    return { success: true, message: "Cập nhật lương thành công", data: result };
 }
 
 // ─── PAYROLL CONFIG (TAX & INSURANCE RATES) ───
@@ -521,6 +573,15 @@ export async function calculateMonthlyPayroll(params: {
         include: {
             department: { select: { id: true, name: true } },
             salaries: true,
+            position: {
+                include: {
+                    positionSalaries: {
+                        where: { isActive: true },
+                        orderBy: { effectiveDate: "desc" },
+                        take: 1,
+                    },
+                },
+            },
             dependents: { select: { id: true } },
             employeeSalaryComponents: {
                 where: {
@@ -572,9 +633,32 @@ export async function calculateMonthlyPayroll(params: {
     const payrollDetails = [];
 
     for (const user of users) {
-        const baseSalary = user.salaries ? Number(user.salaries.baseSalary) : 0;
+        // Lấy baseSalary: ưu tiên Salary cá nhân > PositionSalary của chức vụ > 0
+        let baseSalaryNum = 0;
+        if (user.salaries) {
+            baseSalaryNum = Number(user.salaries.baseSalary);
+        } else if (
+            user.position?.positionSalaries &&
+            user.position.positionSalaries.length > 0
+        ) {
+            // Dùng lương chức vụ làm base
+            const posSalary = user.position.positionSalaries[0];
+            baseSalaryNum = Number(posSalary.baseSalary);
+        }
+
         const summary = summaryMap.get(user.id);
         const userOvertimes = overtimeByUser.get(user.id) || [];
+
+        // Tính ngày công
+        const workDays = summary?.totalWorkDays || 0;
+        const standardDays = summary?.standardDays || 22;
+
+        // Lương cơ bản đã điều chỉnh theo ngày công (pro-rata)
+        // Nếu làm đủ ngày công → lấy full baseSalary
+        // Nếu không đủ ngày công → baseSalary / standardDays * workDays
+        const proratedSalary = standardDays > 0
+            ? Math.round(baseSalaryNum / standardDays * workDays)
+            : baseSalaryNum;
 
         // Tính các khoản
         let allowanceAmount = 0;
@@ -588,13 +672,10 @@ export async function calculateMonthlyPayroll(params: {
             overtimeHours += ot.actualHours || ot.hours;
         }
 
-        // Chuyển baseSalary sang number để tính toán
-        const baseSalaryNum = Number(baseSalary);
-
-        // OT amount (với hệ số)
+        // OT amount (dùng proratedSalary để tính)
         const otRate = getConfigValue("OVERTIME_RATE", 1.5);
         overtimeAmount = Math.round(
-            (baseSalaryNum / (summary?.standardDays || 22) / 8) *
+            (proratedSalary / (standardDays || 22) / 8) *
                 overtimeHours *
                 otRate,
         );
@@ -620,9 +701,10 @@ export async function calculateMonthlyPayroll(params: {
             }
         }
 
-        // Gross salary
-        const grossSalaryNum =
-            baseSalaryNum + allowanceAmount + bonusAmount + overtimeAmount;
+        // Gross salary - Nếu 0 ngày công thì tất cả = 0 (không lương, không phụ cấp, không thưởng)
+        const grossSalaryNum = workDays > 0
+            ? proratedSalary + allowanceAmount + bonusAmount + overtimeAmount
+            : 0;
 
         // Bảo hiểm
         const insurance = calculateInsurance(grossSalaryNum, insuranceRates);
@@ -644,15 +726,17 @@ export async function calculateMonthlyPayroll(params: {
         const taxableIncome = grossSalaryNum - totalInsurance - personalDeduction;
 
         // Tính thuế TNCN
-        const taxAmount = calculateIncomeTax(taxableIncome);
+        const taxAmount = workDays > 0 ? calculateIncomeTax(taxableIncome) : 0;
 
-        // Net salary
-        const netSalary =
-            grossSalaryNum - totalInsurance - taxAmount - deductionAmount;
+        // Net salary - Nếu 0 ngày công thì lương thực nhận = 0
+        const netSalary = workDays > 0
+            ? grossSalaryNum - totalInsurance - taxAmount - deductionAmount
+            : 0;
 
         payrollDetails.push({
             userId: user.id,
-            baseSalary,
+            baseSalary: baseSalaryNum,
+            proratedSalary,
             grossSalary: grossSalaryNum,
             taxableIncome,
             netSalary,
@@ -660,8 +744,8 @@ export async function calculateMonthlyPayroll(params: {
             allowanceAmount,
             bonusAmount,
             deductionAmount,
-            workDays: summary?.totalWorkDays || 0,
-            standardDays: summary?.standardDays || 22,
+            workDays,
+            standardDays,
             lateDays: summary?.lateDays || 0,
             overtimeHours,
             ...insurance,
@@ -702,6 +786,7 @@ export async function getPayrollRecords(params?: {
     return prisma.payrollRecord.findMany({
         where,
         include: {
+            department: { select: { id: true, name: true } },
             departments: { select: { id: true, name: true } },
         },
         orderBy: [{ year: "desc" }, { month: "desc" }],
@@ -722,6 +807,7 @@ export async function getPayrollRecord(id: string) {
     const record = await prisma.payrollRecord.findUnique({
         where: { id },
         include: {
+            department: { select: { id: true, name: true } },
             departments: { select: { id: true, name: true } },
             details: {
                 include: {
@@ -729,15 +815,25 @@ export async function getPayrollRecord(id: string) {
                         select: {
                             id: true,
                             name: true,
-                            employeeCode: true,
+                            username: true,
                             bankAccount: true,
                             bankName: true,
-                            department: { select: { name: true } },
+                            department: { select: { id: true, name: true } },
+                            position: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    code: true,
+                                    authority: true,
+                                },
+                            },
                         },
                     },
                 },
                 orderBy: { user: { name: "asc" } },
             },
+            processedByUser: { select: { id: true, name: true } },
+            approvedByUser: { select: { id: true, name: true } },
         },
     });
 
@@ -751,9 +847,12 @@ export async function getPayrollRecord(id: string) {
         totalTax: Number(record.totalTax),
         totalInsurance: Number(record.totalInsurance),
         totalDeductions: Number(record.totalDeductions),
+        processedByName: record.processedByUser?.name || null,
+        approvedByName: record.approvedByUser?.name || null,
         details: record.details.map(d => ({
             ...d,
             baseSalary: Number(d.baseSalary),
+            proratedSalary: Number(d.proratedSalary),
             grossSalary: Number(d.grossSalary),
             taxableIncome: Number(d.taxableIncome),
             netSalary: Number(d.netSalary),
@@ -767,6 +866,8 @@ export async function getPayrollRecord(id: string) {
             unemploymentInsurance: Number(d.unemploymentInsurance),
             personalDeduction: Number(d.personalDeduction),
             dependentDeduction: Number(d.dependentDeduction),
+            positionName: d.user.position?.name ?? null,
+            positionAuthority: d.user.position?.authority ?? null,
         })),
     };
 }
@@ -786,11 +887,7 @@ export async function createPayrollRecord(params: {
     });
 
     if (existing) {
-        throw new Error(
-            `Bảng lương tháng ${month}/${year} ${
-                departmentId ? "phòng ban" : "công ty"
-            } đã tồn tại`,
-        );
+        return { success: false, message: `Bảng lương tháng ${month}/${year} ${departmentId ? "phòng ban" : "công ty"} đã tồn tại` };
     }
 
     // Tính lương
@@ -827,10 +924,18 @@ export async function createPayrollRecord(params: {
             totalDeductions,
             processedBy: session.user.id,
             processedAt: new Date(),
+            ...(departmentId
+                ? {
+                      departments: {
+                          connect: { id: departmentId },
+                      },
+                  }
+                : {}),
             details: {
                 create: details.map((d) => ({
                     userId: d.userId,
                     baseSalary: d.baseSalary,
+                    proratedSalary: d.proratedSalary,
                     grossSalary: d.grossSalary,
                     taxableIncome: d.taxableIncome,
                     netSalary: d.netSalary,
@@ -858,7 +963,33 @@ export async function createPayrollRecord(params: {
     // emitToAll("payroll:created", {...});
 
     revalidatePath("/payroll");
-    return record;
+    return {
+        ...record,
+        totalEmployees: Number(record.totalEmployees),
+        totalGross: Number(record.totalGross),
+        totalNet: Number(record.totalNet),
+        totalTax: Number(record.totalTax),
+        totalInsurance: Number(record.totalInsurance),
+        totalDeductions: Number(record.totalDeductions),
+        details: record.details.map(d => ({
+            ...d,
+            baseSalary: Number(d.baseSalary),
+            proratedSalary: Number(d.proratedSalary),
+            grossSalary: Number(d.grossSalary),
+            taxableIncome: Number(d.taxableIncome),
+            netSalary: Number(d.netSalary),
+            overtimeAmount: Number(d.overtimeAmount),
+            allowanceAmount: Number(d.allowanceAmount),
+            bonusAmount: Number(d.bonusAmount),
+            deductionAmount: Number(d.deductionAmount),
+            taxAmount: Number(d.taxAmount),
+            socialInsurance: Number(d.socialInsurance),
+            healthInsurance: Number(d.healthInsurance),
+            unemploymentInsurance: Number(d.unemploymentInsurance),
+            personalDeduction: Number(d.personalDeduction),
+            dependentDeduction: Number(d.dependentDeduction),
+        })),
+    };
 }
 
 export async function updatePayrollRecordStatus(
@@ -874,7 +1005,7 @@ export async function updatePayrollRecordStatus(
 
     const record = await prisma.payrollRecord.findUnique({ where: { id } });
     if (!record) {
-        throw new Error("Không tìm thấy bảng lương");
+        return { success: false, message: "Không tìm thấy bảng lương" };
     }
 
     const data: Record<string, unknown> = { status };
@@ -894,13 +1025,297 @@ export async function updatePayrollRecordStatus(
     // Tạo payslips
     if (status === "COMPLETED") {
         await generatePayslips(updated.id);
+        
+        // Cập nhật trạng thái chi tiết lương thành CONFIRMED
+        await prisma.payrollRecordDetail.updateMany({
+            where: { payrollRecordId: id },
+            data: { status: "CONFIRMED" },
+        });
     }
 
     // Không emit socket events
     // emitToAll("payroll:status_updated", {...});
 
     revalidatePath("/payroll");
-    return updated;
+    return {
+        ...updated,
+        totalEmployees: Number(updated.totalEmployees),
+        totalGross: Number(updated.totalGross),
+        totalNet: Number(updated.totalNet),
+        totalTax: Number(updated.totalTax),
+        totalInsurance: Number(updated.totalInsurance),
+        totalDeductions: Number(updated.totalDeductions),
+        details: updated.details.map(d => ({
+            ...d,
+            baseSalary: Number(d.baseSalary),
+            grossSalary: Number(d.grossSalary),
+            taxableIncome: Number(d.taxableIncome),
+            netSalary: Number(d.netSalary),
+            overtimeAmount: Number(d.overtimeAmount),
+            allowanceAmount: Number(d.allowanceAmount),
+            bonusAmount: Number(d.bonusAmount),
+            deductionAmount: Number(d.deductionAmount),
+            taxAmount: Number(d.taxAmount),
+            socialInsurance: Number(d.socialInsurance),
+            healthInsurance: Number(d.healthInsurance),
+            unemploymentInsurance: Number(d.unemploymentInsurance),
+            personalDeduction: Number(d.personalDeduction),
+            dependentDeduction: Number(d.dependentDeduction),
+        })),
+    };
+}
+
+// ─── RECALCULATE PAYROLL RECORD ───
+
+export async function recalculatePayrollRecord(recordId: string) {
+    await requirePermission(Permission.PAYROLL_CALCULATE);
+    const session = await requireAuth();
+
+    const record = await prisma.payrollRecord.findUnique({
+        where: { id: recordId },
+        include: {
+            details: {
+                include: {
+                    user: {
+                        include: {
+                            salaries: true,
+                            position: {
+                                include: {
+                                    positionSalaries: {
+                                        where: { isActive: true },
+                                        orderBy: { effectiveDate: "desc" },
+                                        take: 1,
+                                    },
+                                },
+                            },
+                            dependents: { select: { id: true } },
+                            employeeSalaryComponents: {
+                                where: { isActive: true },
+                                include: { componentType: true },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    if (!record) {
+        return { success: false, message: "Không tìm thấy bảng lương" };
+    }
+
+    // Lấy cấu hình BH
+    const configs = await prisma.payrollConfig.findMany({
+        where: { isActive: true },
+    });
+
+    const getConfigValue = (key: string, defaultValue: number) => {
+        const config = configs.find((c) => c.key === key);
+        return config ? Number(config.value) : defaultValue;
+    };
+
+    const insuranceRates = {
+        socialRate: getConfigValue("SOCIAL_INSURANCE_RATE", 0.08),
+        healthRate: getConfigValue("HEALTH_INSURANCE_RATE", 0.015),
+        unemploymentRate: getConfigValue("UNEMPLOYMENT_INSURANCE_RATE", 0.01),
+    };
+
+    // Lấy attendance summary
+    const monthStart = new Date(Date.UTC(record.year, record.month - 1, 1));
+    const monthEnd = new Date(Date.UTC(record.year, record.month, 0, 23, 59, 59, 999));
+
+    const attendanceSummaries = await prisma.attendanceSummary.findMany({
+        where: {
+            month: record.month,
+            year: record.year,
+            userId: { in: record.details.map(d => d.userId) },
+        },
+    });
+
+    const summaryMap = new Map(
+        attendanceSummaries.map((s) => [s.userId, s]),
+    );
+
+    // Lấy overtime
+    const overtimes = await prisma.overtimeRequest.findMany({
+        where: {
+            date: { gte: monthStart, lte: monthEnd },
+            status: { in: ["HR_APPROVED", "COMPLETED"] },
+            userId: { in: record.details.map(d => d.userId) },
+        },
+    });
+
+    const overtimeByUser = new Map<string, typeof overtimes>();
+    for (const ot of overtimes) {
+        if (!overtimeByUser.has(ot.userId)) {
+            overtimeByUser.set(ot.userId, []);
+        }
+        overtimeByUser.get(ot.userId)!.push(ot);
+    }
+
+    // Tính lại từng detail
+    const updatedDetails = [];
+    let totalGross = 0;
+    let totalNet = 0;
+    let totalTax = 0;
+    let totalInsurance = 0;
+    let totalDeductions = 0;
+
+    for (const detail of record.details) {
+        const user = detail.user;
+        // Lấy baseSalary: ưu tiên Salary cá nhân > PositionSalary > lương đã lưu trong record
+        let baseSalaryNum = Number(detail.baseSalary);
+        if (user.salaries) {
+            baseSalaryNum = Number(user.salaries.baseSalary);
+        } else if (
+            user.position?.positionSalaries &&
+            user.position.positionSalaries.length > 0
+        ) {
+            const posSalary = user.position.positionSalaries[0];
+            baseSalaryNum = Number(posSalary.baseSalary);
+        }
+
+        const summary = summaryMap.get(user.id);
+        const userOvertimes = overtimeByUser.get(user.id) || [];
+
+        const workDays = summary?.totalWorkDays || 0;
+        const standardDays = summary?.standardDays || 22;
+
+        // Pro-rata salary
+        const proratedSalary = standardDays > 0
+            ? Math.round(baseSalaryNum / standardDays * workDays)
+            : 0;
+
+        let allowanceAmount = 0;
+        let bonusAmount = 0;
+        let overtimeAmount = 0;
+        let deductionAmount = 0;
+
+        // OT hours
+        let overtimeHours = 0;
+        for (const ot of userOvertimes) {
+            overtimeHours += ot.actualHours || ot.hours;
+        }
+
+        const otRate = getConfigValue("OVERTIME_RATE", 1.5);
+        overtimeAmount = Math.round(
+            (proratedSalary / (standardDays || 22) / 8) *
+                overtimeHours *
+                otRate,
+        );
+
+        for (const comp of user.employeeSalaryComponents) {
+            const amount = Number(comp.amount);
+            switch (comp.componentType.category) {
+                case "ALLOWANCE":
+                    allowanceAmount += amount;
+                    break;
+                case "BONUS":
+                    bonusAmount += amount;
+                    break;
+                case "DEDUCTION":
+                case "DISCIPLINE":
+                    deductionAmount += amount;
+                    break;
+                case "OVERTIME":
+                    overtimeAmount += amount;
+                    break;
+            }
+        }
+
+        const grossSalaryNum = workDays > 0
+            ? proratedSalary + allowanceAmount + bonusAmount + overtimeAmount
+            : 0;
+
+        const insurance = calculateInsurance(grossSalaryNum, insuranceRates);
+        const insuranceTotal =
+            insurance.socialInsurance +
+            insurance.healthInsurance +
+            insurance.unemploymentInsurance;
+
+        const personalDeduction = getConfigValue("PERSONAL_DEDUCTION", 11000000);
+        const dependentPerPerson = getConfigValue("DEPENDENT_DEDUCTION", 4400000);
+        const dependentCount = user.dependents?.length || 0;
+        const dependentDeduction = dependentPerPerson * dependentCount;
+
+        const taxableIncome = grossSalaryNum - insuranceTotal - personalDeduction;
+        const taxAmount = workDays > 0 ? calculateIncomeTax(taxableIncome) : 0;
+        const netSalary = workDays > 0
+            ? grossSalaryNum - insuranceTotal - taxAmount - deductionAmount
+            : 0;
+
+        // Update database
+        await prisma.payrollRecordDetail.update({
+            where: { id: detail.id },
+            data: {
+                baseSalary: baseSalaryNum,
+                proratedSalary,
+                grossSalary: grossSalaryNum,
+                taxableIncome,
+                netSalary,
+                overtimeAmount,
+                allowanceAmount,
+                bonusAmount,
+                deductionAmount,
+                workDays,
+                standardDays,
+                lateDays: summary?.lateDays || 0,
+                overtimeHours,
+                ...insurance,
+                personalDeduction,
+                dependentDeduction,
+                taxAmount,
+            },
+        });
+
+        updatedDetails.push({
+            ...detail,
+            baseSalary: baseSalaryNum,
+            proratedSalary,
+            grossSalary: grossSalaryNum,
+            netSalary,
+            taxAmount,
+            workDays,
+        });
+
+        totalGross += grossSalaryNum;
+        totalNet += netSalary;
+        totalTax += taxAmount;
+        totalInsurance += insuranceTotal;
+        totalDeductions += deductionAmount;
+    }
+
+    // Update record totals
+    await prisma.payrollRecord.update({
+        where: { id: recordId },
+        data: {
+            totalGross,
+            totalNet,
+            totalTax,
+            totalInsurance,
+            totalDeductions,
+            processedBy: session.user.id,
+            processedAt: new Date(),
+        },
+    });
+
+    // Xóa payslips cũ để tạo lại
+    await prisma.payslip.deleteMany({ where: { payrollRecordId: recordId } });
+
+    revalidatePath("/payroll");
+    return {
+        success: true,
+        message: "Đã tính lại bảng lương thành công",
+        recordId,
+        summary: {
+            totalEmployees: updatedDetails.length,
+            totalGross,
+            totalNet,
+            totalTax,
+            totalInsurance,
+            totalDeductions,
+        },
+    };
 }
 
 export async function deletePayrollRecord(id: string) {
@@ -908,11 +1323,11 @@ export async function deletePayrollRecord(id: string) {
 
     const record = await prisma.payrollRecord.findUnique({ where: { id } });
     if (!record) {
-        throw new Error("Không tìm thấy bảng lương");
+        return { success: false, message: "Không tìm thấy bảng lương" };
     }
 
     if (record.status === "COMPLETED") {
-        throw new Error("Không thể xóa bảng lương đã hoàn thành");
+        return { success: false, message: "Không thể xóa bảng lương đã hoàn thành" };
     }
 
     // Delete related payslips first
@@ -923,6 +1338,33 @@ export async function deletePayrollRecord(id: string) {
     await prisma.payrollRecord.delete({ where: { id } });
 
     revalidatePath("/payroll");
+    return { success: true, message: "Xóa thành công" };
+}
+
+export async function deleteManyPayrollRecords(ids: string[]) {
+    await requirePermission(Permission.PAYROLL_CALCULATE);
+
+    const records = await prisma.payrollRecord.findMany({
+        where: { id: { in: ids } },
+    });
+
+    const deletable = records.filter(r => r.status !== "COMPLETED");
+    const locked = records.filter(r => r.status === "COMPLETED");
+
+    if (locked.length > 0) {
+        return { success: false, message: `${locked.length} bảng lương đã hoàn thành không thể xóa` };
+    }
+
+    for (const record of deletable) {
+        await prisma.payslip.deleteMany({ where: { payrollRecordId: record.id } });
+    }
+
+    await prisma.payrollRecord.deleteMany({
+        where: { id: { in: deletable.map(r => r.id) } },
+    });
+
+    revalidatePath("/payroll");
+    return { deleted: deletable.length };
 }
 
 // ─── PAYSLIPS ───
@@ -934,7 +1376,7 @@ async function generatePayslips(payrollRecordId: string) {
             details: {
                 include: {
                     user: {
-                        include: { department: true },
+                        include: { department: true, position: true },
                     },
                 },
             },
@@ -958,15 +1400,15 @@ async function generatePayslips(payrollRecordId: string) {
             payrollRecordId,
             month: record.month,
             year: record.year,
-            employeeCode: user.employeeCode,
             employeeName: user.name,
             departmentName: user.department?.name,
-            position: user.positionId,
+            position: user.position?.name ?? null,
             baseSalary: detail.baseSalary,
             grossSalary: detail.grossSalary,
             netSalary: detail.netSalary,
             earnings: JSON.stringify([
                 { name: "Lương cơ bản", amount: detail.baseSalary },
+                { name: "Lương theo ngày công", amount: detail.proratedSalary, formula: `Lương CB / ${detail.standardDays} × ${detail.workDays}` },
                 { name: "Phụ cấp", amount: detail.allowanceAmount },
                 { name: "Thưởng", amount: detail.bonusAmount },
                 { name: "Tăng ca", amount: detail.overtimeAmount },
@@ -1023,8 +1465,9 @@ export async function getPayslips(params: {
                 select: {
                     id: true,
                     name: true,
-                    employeeCode: true,
+                    username: true,
                     department: { select: { name: true } },
+                    position: { select: { name: true } },
                 },
             },
         },
@@ -1032,6 +1475,43 @@ export async function getPayslips(params: {
     });
 
     return JSON.parse(JSON.stringify(payslips));
+}
+
+export async function getPayslipStats(): Promise<{
+  total: number;
+  viewed: number;
+  pending: number;
+}> {
+  const session = await requireAuth();
+  const role = extractRole(session);
+
+  const canViewAll = hasAnyPermission(role, [
+    Permission.PAYROLL_VIEW_ALL,
+  ]);
+
+  const where: Record<string, unknown> = {};
+
+  if (!canViewAll) {
+    where.userId = session.user.id;
+  }
+
+  const [total, viewed, pending] = await Promise.all([
+    prisma.payslip.count({ where }),
+    prisma.payslip.count({
+      where: {
+        ...where,
+        status: { not: "GENERATED" },
+      },
+    }),
+    prisma.payslip.count({
+      where: {
+        ...where,
+        status: "GENERATED",
+      },
+    }),
+  ]);
+
+  return { total, viewed, pending };
 }
 
 export async function getPayslip(id: string) {
@@ -1053,11 +1533,11 @@ export async function getPayslip(id: string) {
     });
 
     if (!payslip) {
-        throw new Error("Không tìm thấy phiếu lương");
+        return { success: false, message: "Không tìm thấy phiếu lương" };
     }
 
     if (!canViewAll && payslip.userId !== session.user.id) {
-        throw new Error("Bạn không có quyền xem phiếu lương này");
+        return { success: false, message: "Bạn không có quyền xem phiếu lương này" };
     }
 
     // Update viewed status
@@ -1108,7 +1588,7 @@ export async function exportPayrollRecord(recordId: string) {
     });
 
     if (!record) {
-        throw new Error("Không tìm thấy bảng lương");
+        return { success: false, message: "Không tìm thấy bảng lương" };
     }
 
     // Generate CSV content
@@ -1167,6 +1647,94 @@ export async function exportPayrollRecord(recordId: string) {
     };
 }
 
+export async function exportManyPayrollRecords(recordIds: string[]) {
+    await requirePermission(Permission.PAYROLL_VIEW_ALL);
+
+    const records = await prisma.payrollRecord.findMany({
+        where: { id: { in: recordIds } },
+        include: {
+            details: {
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            employeeCode: true,
+                            bankAccount: true,
+                            bankName: true,
+                        },
+                    },
+                },
+                orderBy: { user: { name: "asc" } },
+            },
+        },
+        orderBy: [{ year: "asc" }, { month: "asc" }],
+    });
+
+    if (records.length === 0) {
+        return { success: false, message: "Không tìm thấy bảng lương nào" };
+    }
+
+    const headers = [
+        "Kỳ lương",
+        "Mã NV",
+        "Họ tên",
+        "Lương CB",
+        "Phụ cấp",
+        "Thưởng",
+        "Tăng ca",
+        "Gross",
+        "BHXH",
+        "BHYT",
+        "BHTN",
+        "Thuế TNCN",
+        "Khấu trừ",
+        "Net",
+        "Ngày công",
+        "Số TK",
+        "Ngân hàng",
+    ];
+
+    const allRows: string[][] = [];
+
+    for (const record of records) {
+        for (const detail of record.details) {
+            allRows.push([
+                `Tháng ${record.month}/${record.year}`,
+                detail.user.employeeCode || "",
+                detail.user.name,
+                String(detail.baseSalary),
+                String(detail.allowanceAmount),
+                String(detail.bonusAmount),
+                String(detail.overtimeAmount),
+                String(detail.grossSalary),
+                String(detail.socialInsurance),
+                String(detail.healthInsurance),
+                String(detail.unemploymentInsurance),
+                String(detail.taxAmount),
+                String(detail.deductionAmount),
+                String(detail.netSalary),
+                String(detail.workDays),
+                detail.user.bankAccount || "",
+                detail.user.bankName || "",
+            ]);
+        }
+    }
+
+    const csvContent = [
+        `DANH SÁCH BẢNG LƯƠNG - Xuất ngày ${new Date().toLocaleDateString("vi-VN")}`,
+        "",
+        headers.join(","),
+        ...allRows.map((row) =>
+            row.map((cell) => `"${cell}"`).join(","),
+        ),
+    ].join("\n");
+
+    return {
+        csvContent,
+        fileName: `danh_sach_luong_${records.length}_ky.csv`,
+    };
+}
+
 // ─── DEPARTMENTS (for filters) ───
 
 export async function getDepartmentsForPayroll() {
@@ -1201,7 +1769,7 @@ export async function sendPayslipEmails(payrollRecordId: string) {
     });
 
     if (!record) {
-        throw new Error("Không tìm thấy bảng lương");
+        return { success: false, message: "Không tìm thấy bảng lương" };
     }
 
     let sent = 0;
@@ -1257,7 +1825,7 @@ export async function verifyPayslipPassword(payslipId: string, password: string)
     });
 
     if (!payslip) {
-        throw new Error("Không tìm thấy phiếu lương");
+        return { success: false, message: "Không tìm thấy phiếu lương" };
     }
 
     // Check if user owns this payslip or has admin access
@@ -1267,7 +1835,7 @@ export async function verifyPayslipPassword(payslipId: string, password: string)
     );
 
     if (!canViewAll && payslip.userId !== session.user.id) {
-        throw new Error("Bạn không có quyền xem phiếu lương này");
+        return { success: false, message: "Bạn không có quyền xem phiếu lương này" };
     }
 
     // If payslip doesn't require password, allow access
@@ -1342,9 +1910,9 @@ export async function getPayrollFormula(id: string) {
         where: { id },
     });
     if (!formula) {
-        throw new Error("Không tìm thấy công thức");
+        return { success: false, message: "Không tìm thấy công thức" };
     }
-    return formula;
+    return { success: true, data: formula };
 }
 
 const payrollFormulaSchema = z.object({
@@ -1376,7 +1944,7 @@ export async function createPayrollFormula(data: z.infer<typeof payrollFormulaSc
         where: { code: parsed.code },
     });
     if (existing) {
-        throw new Error("Mã công thức đã tồn tại");
+        return { success: false, message: "Mã công thức đã tồn tại" };
     }
 
     const result = await prisma.payrollFormula.create({
@@ -1388,7 +1956,7 @@ export async function createPayrollFormula(data: z.infer<typeof payrollFormulaSc
     });
 
     revalidatePath("/payroll/formulas");
-    return result;
+    return { success: true, message: "Tạo công thức thành công", data: result };
 }
 
 export async function updatePayrollFormula(id: string, data: z.infer<typeof payrollFormulaSchema>) {
@@ -1399,7 +1967,7 @@ export async function updatePayrollFormula(id: string, data: z.infer<typeof payr
         where: { code: parsed.code, id: { not: id } },
     });
     if (existing) {
-        throw new Error("Mã công thức đã tồn tại");
+        return { success: false, message: "Mã công thức đã tồn tại" };
     }
 
     const result = await prisma.payrollFormula.update({
@@ -1412,7 +1980,7 @@ export async function updatePayrollFormula(id: string, data: z.infer<typeof payr
     });
 
     revalidatePath("/payroll/formulas");
-    return result;
+    return { success: true, message: "Cập nhật công thức thành công", data: result };
 }
 
 export async function deletePayrollFormula(id: string) {
@@ -1422,15 +1990,16 @@ export async function deletePayrollFormula(id: string) {
         where: { id },
     });
     if (!formula) {
-        throw new Error("Không tìm thấy công thức");
+        return { success: false, message: "Không tìm thấy công thức" };
     }
 
     if (formula.isSystem) {
-        throw new Error("Không thể xóa công thức hệ thống");
+        return { success: false, message: "Không thể xóa công thức hệ thống" };
     }
 
     await prisma.payrollFormula.delete({ where: { id } });
     revalidatePath("/payroll/formulas");
+    return { success: true, message: "Xóa thành công" };
 }
 
 export async function togglePayrollFormula(id: string) {
@@ -1440,11 +2009,11 @@ export async function togglePayrollFormula(id: string) {
         where: { id },
     });
     if (!formula) {
-        throw new Error("Không tìm thấy công thức");
+        return { success: false, message: "Không tìm thấy công thức" };
     }
 
     if (formula.isSystem) {
-        throw new Error("Không thể tắt công thức hệ thống");
+        return { success: false, message: "Không thể tắt công thức hệ thống" };
     }
 
     const result = await prisma.payrollFormula.update({
@@ -1458,21 +2027,33 @@ export async function togglePayrollFormula(id: string) {
 
 // ─── FORMULA PREVIEW ───
 
-export async function previewFormula(formulaId: string, sampleData: Record<string, number>) {
-    await requirePermission(Permission.PAYROLL_VIEW_ALL);
+export async function previewFormula(input: {
+    formulaId?: string;
+    expression?: string;
+    sampleData: Record<string, number>;
+}) {
+    await requirePermission(Permission.PAYROLL_FORMULA_MANAGE);
 
-    const formula = await prisma.payrollFormula.findUnique({
-        where: { id: formulaId },
-    });
+    let expression = input.expression?.trim() || "";
 
-    if (!formula) {
-        throw new Error("Không tìm thấy công thức");
+    if (input.formulaId) {
+        const formula = await prisma.payrollFormula.findUnique({
+            where: { id: input.formulaId },
+        });
+
+        if (!formula) {
+            return { success: false, message: "Không tìm thấy công thức" };
+        }
+
+        expression = formula.expression;
+    }
+
+    if (!expression) {
+        return { success: false, message: "Biểu thức không được trống" };
     }
 
     try {
-        // Simple formula evaluation
-        // In production, use a safe expression evaluator
-        const result = evaluateFormula(formula.expression, sampleData);
+        const result = evaluateFormula(expression, input.sampleData);
         return { success: true, result };
     } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : "Lỗi khi tính công thức" };
@@ -1512,10 +2093,15 @@ export async function getInsuranceCaps(year?: number) {
     if (year) {
         where.year = year;
     }
-    return prisma.insuranceCap.findMany({
+    const caps = await prisma.insuranceCap.findMany({
         where,
         orderBy: [{ year: "desc" }, { insuranceType: "asc" }],
     });
+    return caps.map(cap => ({
+        ...cap,
+        minSalary: Number(cap.minSalary),
+        maxSalary: Number(cap.maxSalary),
+    }));
 }
 
 export async function setInsuranceCap(data: {
@@ -1549,7 +2135,11 @@ export async function setInsuranceCap(data: {
     });
 
     revalidatePath("/payroll/tax-insurance");
-    return result;
+    return {
+        ...result,
+        minSalary: Number(result.minSalary),
+        maxSalary: Number(result.maxSalary),
+    };
 }
 
 // ─── STANDARD WORK DAYS ───
@@ -1618,6 +2208,15 @@ export async function previewPayroll(params: {
         where: userFilter,
         include: {
             salaries: true,
+            position: {
+                include: {
+                    positionSalaries: {
+                        where: { isActive: true },
+                        orderBy: { effectiveDate: "desc" },
+                        take: 1,
+                    },
+                },
+            },
         },
     });
 
@@ -1625,7 +2224,15 @@ export async function previewPayroll(params: {
     let totalNet = 0;
 
     for (const user of users) {
-        const baseSalary = user.salaries ? Number(user.salaries.baseSalary) : 0;
+        let baseSalary = 0;
+        if (user.salaries) {
+            baseSalary = Number(user.salaries.baseSalary);
+        } else if (
+            user.position?.positionSalaries &&
+            user.position.positionSalaries.length > 0
+        ) {
+            baseSalary = Number(user.position.positionSalaries[0].baseSalary);
+        }
         const baseSalaryNum = Number(baseSalary);
 
         // Estimate gross (simplified calculation)
@@ -1674,7 +2281,7 @@ export async function getPayslipDetail(payslipId: string) {
         where: { id: payslipId },
         include: {
             user: {
-                include: { department: true },
+                include: { department: true, position: true },
             },
             payrollRecord: {
                 include: { department: true },
@@ -1683,7 +2290,7 @@ export async function getPayslipDetail(payslipId: string) {
     });
 
     if (!payslip) {
-        throw new Error("Không tìm thấy phiếu lương");
+        return { success: false, message: "Không tìm thấy phiếu lương" };
     }
 
     const canViewAll = hasAnyPermission(
@@ -1692,7 +2299,7 @@ export async function getPayslipDetail(payslipId: string) {
     );
 
     if (!canViewAll && payslip.userId !== session.user.id) {
-        throw new Error("Bạn không có quyền xem phiếu lương này");
+        return { success: false, message: "Bạn không có quyền xem phiếu lương này" };
     }
 
     return payslip;

@@ -7,6 +7,12 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import DepartmentSidebar from "@/components/departments/department-sidebar";
 import AttendanceSidebar from "@/components/attendance/attendance-sidebar";
 import ESSSidebar from "@/components/ess/ess-sidebar";
+import OnboardingSidebar from "@/components/onboarding/onboarding-sidebar";
+import PayrollSidebar from "@/components/payroll/payroll-sidebar";
+
+// ============================================================
+// Department tree context
+// ============================================================
 
 interface SidebarContextValue {
   departmentTree: DepartmentNode[];
@@ -23,6 +29,43 @@ export function useAppSidebar() {
   return ctx;
 }
 
+// ============================================================
+// Right sidebar context
+// ============================================================
+
+export type RightSidebarType =
+  | "onboarding"
+  | "employee"
+  | "payroll_employee"
+  | "payslip_employee"
+  | null;
+
+export interface RightSidebarContextValue {
+  rightOpen: boolean;
+  rightType: RightSidebarType;
+  rightData: unknown;
+  openRightSidebar: (type: RightSidebarType, data: unknown) => void;
+  closeRightSidebar: () => void;
+}
+
+const RightSidebarContext = createContext<RightSidebarContextValue | null>(
+  null,
+);
+
+export function useRightSidebar() {
+  const ctx = useContext(RightSidebarContext);
+  if (!ctx) {
+    throw new Error(
+      "useRightSidebar must be used within SidebarContextProvider",
+    );
+  }
+  return ctx;
+}
+
+// ============================================================
+// Providers
+// ============================================================
+
 interface SidebarContextProviderProps {
   children: React.ReactNode;
 }
@@ -32,13 +75,48 @@ export function SidebarContextProvider({
 }: SidebarContextProviderProps) {
   const [departmentTree, setDepartmentTree] = useState<DepartmentNode[]>([]);
 
-  const value = useMemo<SidebarContextValue>(
+  // Right sidebar state
+  const [rightOpen, setRightOpen] = useState(false);
+  const [rightType, setRightType] = useState<RightSidebarType>(null);
+  const [rightData, setRightData] = useState<unknown>(null);
+
+  const openRightSidebar = (type: RightSidebarType, data: unknown) => {
+    setRightType(type);
+    setRightData(data);
+    setRightOpen(true);
+  };
+
+  const closeRightSidebar = () => {
+    setRightOpen(false);
+    // Keep type/data briefly for exit animation if needed
+    setTimeout(() => {
+      setRightType(null);
+      setRightData(null);
+    }, 300);
+  };
+
+  const sidebarContextValue = useMemo<SidebarContextValue>(
     () => ({ departmentTree, setDepartmentTree }),
     [departmentTree],
   );
 
+  const rightSidebarContextValue = useMemo<RightSidebarContextValue>(
+    () => ({
+      rightOpen,
+      rightType,
+      rightData,
+      openRightSidebar,
+      closeRightSidebar,
+    }),
+    [rightOpen, rightType, rightData],
+  );
+
   return (
-    <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>
+    <SidebarContext.Provider value={sidebarContextValue}>
+      <RightSidebarContext.Provider value={rightSidebarContextValue}>
+        {children}
+      </RightSidebarContext.Provider>
+    </SidebarContext.Provider>
   );
 }
 
@@ -60,6 +138,14 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
       return "attendance";
     }
 
+    if (pathname === "/onboarding" || pathname.startsWith("/onboarding/")) {
+      return "onboarding";
+    }
+
+    if (pathname === "/payroll" || pathname.startsWith("/payroll/")) {
+      return "payroll";
+    }
+
     if (
       pathname === "/ess" ||
       pathname.startsWith("/ess/") ||
@@ -78,6 +164,12 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
     }
     if (sidebarType === "attendance") {
       return <AttendanceSidebar />;
+    }
+    if (sidebarType === "onboarding") {
+      return <OnboardingSidebar />;
+    }
+    if (sidebarType === "payroll") {
+      return <PayrollSidebar />;
     }
     if (sidebarType === "ess") {
       return <ESSSidebar />;

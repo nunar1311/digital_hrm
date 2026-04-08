@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -47,14 +46,12 @@ import {
   Type,
   DollarSign,
   Variable,
-  Trash2,
   AlertCircle,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import {
   FORMULA_VARIABLE_SOURCES,
-  FORMULA_OPERATORS,
-  type FormulaType,
   type PayrollFormula,
 } from "@/app/(protected)/payroll/types";
 
@@ -75,12 +72,23 @@ interface FormulaEditorProps {
   editData?: PayrollFormula;
   onSave: (data: FormulaForm) => Promise<void>;
   onCancel: () => void;
+  onPreview?: (payload: {
+    formulaId?: string;
+    expression: string;
+    sampleData: Record<string, number>;
+  }) => Promise<{
+    success: boolean;
+    result?: number;
+    error?: string;
+    message?: string;
+  }>;
 }
 
 export function FormulaEditor({
   editData,
   onSave,
   onCancel,
+  onPreview,
 }: FormulaEditorProps) {
   const [activeTab, setActiveTab] = useState<string>("edit");
   const [previewResult, setPreviewResult] = useState<{
@@ -89,6 +97,7 @@ export function FormulaEditor({
     error?: string;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
   const sampleData: Record<string, number> = {
     baseSalary: 15000000,
@@ -131,7 +140,7 @@ export function FormulaEditor({
         },
   });
 
-  const evaluateExpression = useCallback((expr: string): number | string => {
+  const evaluateExpression = (expr: string): number | string => {
     try {
       const variables: Record<string, number> = { ...sampleData };
       let processedExpr = expr;
@@ -152,10 +161,33 @@ export function FormulaEditor({
     } catch {
       return "Công thức không hợp lệ";
     }
-  }, []);
+  };
 
-  const handlePreview = () => {
+  const handlePreview = async () => {
     const expression = form.getValues("expression");
+
+    if (onPreview) {
+      setIsPreviewing(true);
+      try {
+        const result = await onPreview({
+          formulaId: editData?.id,
+          expression,
+          sampleData,
+        });
+
+        setPreviewResult({
+          success: result.success,
+          value: result.success ? result.result : undefined,
+          error: result.success
+            ? undefined
+            : (result.error ?? result.message ?? "Lỗi khi tính công thức"),
+        });
+      } finally {
+        setIsPreviewing(false);
+      }
+      return;
+    }
+
     const result = evaluateExpression(expression);
     setPreviewResult({
       success: typeof result === "number",
@@ -203,7 +235,6 @@ export function FormulaEditor({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
             <CardTitle>
               {editData ? "Chỉnh sửa công thức" : "Tạo công thức mới"}
             </CardTitle>
@@ -481,7 +512,7 @@ export function FormulaEditor({
               </TabsContent>
 
               <TabsContent value="variables" className="mt-4">
-                <ScrollArea className="h-[400px] pr-4">
+                <ScrollArea className="h-100 pr-4">
                   <div className="space-y-4">
                     {Object.entries(FORMULA_VARIABLE_SOURCES).map(
                       ([source, variables]) => (
@@ -551,9 +582,14 @@ export function FormulaEditor({
                       variant="outline"
                       size="sm"
                       onClick={handlePreview}
+                      disabled={isPreviewing}
                     >
-                      <Calculator className="h-4 w-4 mr-2" />
-                      Tính toán
+                      {isPreviewing ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Calculator className="h-4 w-4 mr-2" />
+                      )}
+                      {isPreviewing ? "Đang tính..." : "Tính toán"}
                     </Button>
                   </div>
 

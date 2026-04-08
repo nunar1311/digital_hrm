@@ -262,6 +262,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.ATTENDANCE_ADJUSTMENT_EDIT,
         Permission.PAYROLL_VIEW_ALL,
         Permission.PAYROLL_CALCULATE,
+        Permission.PAYROLL_APPROVE,
         Permission.PAYROLL_FORMULA_MANAGE,
         Permission.PAYROLL_SEND_PAYSLIP,
         Permission.PAYROLL_TAX_MANAGE,

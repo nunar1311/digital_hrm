@@ -88,6 +88,11 @@ model User {
   leaveBalances                LeaveBalance[]
   leaveRequests                LeaveRequest[]                @relation("LeaveRequestsByUser")
   contracts                    Contract[]
+  createdContractAddendums     ContractAddendum[]            @relation("ContractAddendumsCreatedBy")
+  createdContractTemplates     ContractTemplate[]            @relation("ContractTemplatesCreatedBy")
+  receivedContractExpiryAlerts ContractExpiryDispatch[]      @relation("ContractExpiryDispatchRecipient")
+  processedPayrollRecords      PayrollRecord[]               @relation("ProcessedByUser")
+  approvedPayrollRecords       PayrollRecord[]               @relation("ApprovedByUser")
 
   role                 String?
   banned               Boolean?              @default(false)
@@ -294,46 +299,52 @@ model Department {
 }
 
 model Position {
-  id           String               @id @default(cuid())
-  name         String
-  code         String               @unique
-  authority    String               @default("STAFF") // EXECUTIVE, DIRECTOR, MANAGER, DEPUTY, TEAM_LEAD, STAFF, INTERN
-  departmentId String?
-  level        Int                  @default(1) // 1=cao nhất (Giám đốc), 7=thấp nhất (Thực tập)
-  description  String?
-  parentId     String?
-  minSalary    Decimal?             @db.Decimal(15, 0)
-  maxSalary    Decimal?             @db.Decimal(15, 0)
-  status       String               @default("ACTIVE") // ACTIVE, INACTIVE
-  sortOrder    Int                  @default(0)
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @default(now()) @updatedAt
-  jobPostings  JobPosting[]
-  department   Department?          @relation(fields: [departmentId], references: [id])
-  users        User[]
-  parent       Position?            @relation("PositionHierarchy", fields: [parentId], references: [id])
-  children     Position[]           @relation("PositionHierarchy")
-  roleMapping  PositionRoleMapping?
+  id               String               @id @default(cuid())
+  name             String
+  code             String               @unique
+  authority        String               @default("STAFF") // EXECUTIVE, DIRECTOR, MANAGER, DEPUTY, TEAM_LEAD, STAFF, INTERN
+  departmentId     String?
+  level            Int                  @default(1) // 1=cao nhất (Giám đốc), 7=thấp nhất (Thực tập)
+  description      String?
+  parentId         String?
+  minSalary        Decimal?             @db.Decimal(15, 0)
+  maxSalary        Decimal?             @db.Decimal(15, 0)
+  status           String               @default("ACTIVE") // ACTIVE, INACTIVE
+  sortOrder        Int                  @default(0)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @default(now()) @updatedAt
+  jobPostings      JobPosting[]
+  department       Department?          @relation(fields: [departmentId], references: [id])
+  users            User[]
+  parent           Position?            @relation("PositionHierarchy", fields: [parentId], references: [id])
+  children         Position[]           @relation("PositionHierarchy")
+  roleMapping      PositionRoleMapping?
+  positionSalaries PositionSalary[]
 
   @@map("positions")
 }
 
 model Shift {
-  id               String            @id @default(cuid())
-  name             String
-  code             String            @unique
-  startTime        String
-  endTime          String
-  breakMinutes     Int               @default(60)
-  lateThreshold    Int               @default(15)
-  earlyThreshold   Int               @default(15)
-  isDefault        Boolean           @default(false)
-  isActive         Boolean           @default(true)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  attendances      Attendance[]
-  shiftAssignments ShiftAssignment[]
-  workCycleEntries WorkCycleEntry[]
+  id                  String            @id @default(cuid())
+  name                String
+  code                String            @unique
+  startTime           String
+  endTime             String
+  breakMinutes        Int               @default(60)
+  lateThreshold       Int               @default(15)
+  earlyThreshold      Int               @default(15)
+  isDefault           Boolean           @default(false)
+  isActive            Boolean           @default(true)
+  type                String            @default("FIXED") // "FIXED" | "FLEXIBLE" | "FLEXIBLE_WINDOW"
+  checkinWindowStart  String?
+  checkinWindowEnd    String?
+  checkoutWindowStart String?
+  checkoutWindowEnd   String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  attendances         Attendance[]
+  shiftAssignments    ShiftAssignment[]
+  workCycleEntries    WorkCycleEntry[]
 
   @@map("shifts")
 }
@@ -1017,6 +1028,8 @@ model PayrollRecord {
   payslips        Payslip[]
   departments     Department[]          @relation("DepartmentToPayrollRecord")
   department      Department?           @relation("PayrollRecordDepartment", fields: [departmentId], references: [id])
+  processedByUser User?                 @relation("ProcessedByUser", fields: [processedBy], references: [id])
+  approvedByUser  User?                 @relation("ApprovedByUser", fields: [approvedBy], references: [id])
 
   @@unique([month, year, departmentId])
   @@index([status])
@@ -1029,6 +1042,7 @@ model PayrollRecordDetail {
   payrollRecordId       String
   userId                String
   baseSalary            Decimal              @db.Decimal(15, 0)
+  proratedSalary        Decimal              @default(0) @db.Decimal(15, 0)
   grossSalary           Decimal              @db.Decimal(15, 0)
   taxableIncome         Decimal              @db.Decimal(15, 0)
   netSalary             Decimal              @db.Decimal(15, 0)
@@ -1081,7 +1095,6 @@ model Payslip {
   payrollRecordId String
   month           Int
   year            Int
-  employeeCode    String?
   employeeName    String
   departmentName  String?
   position        String?
@@ -1594,6 +1607,28 @@ model PositionRoleMapping {
   @@map("position_role_mappings")
 }
 
+// =============================================
+// POSITION SALARY - Lương cơ bản theo chức vụ
+// =============================================
+
+model PositionSalary {
+  id            String   @id @default(cuid())
+  positionId    String
+  salaryGrade   String   @default("A") // A, B, C, D... (bậc lương)
+  baseSalary    Decimal  @db.Decimal(15, 0)
+  description   String?
+  isActive      Boolean  @default(true)
+  effectiveDate DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  position      Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  @@unique([positionId, salaryGrade])
+  @@index([positionId])
+  @@index([isActive])
+  @@map("position_salaries")
+}
+
 // ==================== HỢP ĐỒNG LAO ĐỘNG ====================
 
 model Contract {
@@ -1602,6 +1637,7 @@ model Contract {
   contractNumber  String    @unique
   title           String
   contractTypeId  String?
+  templateId      String?
   startDate       DateTime
   endDate         DateTime?
   signedDate      DateTime?
@@ -1614,9 +1650,15 @@ model Contract {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id])
-  contractType ContractType? @relation(fields: [contractTypeId], references: [id])
+  user             User                     @relation(fields: [userId], references: [id])
+  contractType     ContractType?            @relation(fields: [contractTypeId], references: [id])
+  template         ContractTemplate?        @relation(fields: [templateId], references: [id])
+  addendums        ContractAddendum[]
+  expiryDispatches ContractExpiryDispatch[]
 
+  @@index([userId])
+  @@index([status, endDate])
+  @@index([templateId])
   @@map("contracts")
 }
 
@@ -1632,6 +1674,66 @@ model ContractType {
   contracts Contract[]
 
   @@map("contract_types")
+}
+
+model ContractTemplate {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  content     String
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator   User?      @relation("ContractTemplatesCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  contracts Contract[]
+
+  @@index([isActive])
+  @@map("contract_templates")
+}
+
+model ContractAddendum {
+  id            String    @id @default(cuid())
+  contractId    String
+  addendumType  String // EXTENSION | SALARY_CHANGE
+  title         String
+  effectiveDate DateTime
+  oldEndDate    DateTime?
+  newEndDate    DateTime?
+  oldSalary     Float?
+  newSalary     Float?
+  reason        String?
+  notes         String?
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  creator  User?    @relation("ContractAddendumsCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([contractId, effectiveDate])
+  @@index([addendumType])
+  @@map("contract_addendums")
+}
+
+model ContractExpiryDispatch {
+  id              String   @id @default(cuid())
+  contractId      String
+  recipientId     String
+  reminderDays    Int
+  contractEndDate DateTime
+  source          String? // scheduler | page_open
+  sentAt          DateTime @default(now())
+
+  contract  Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  recipient User     @relation("ContractExpiryDispatchRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, recipientId, reminderDays, contractEndDate])
+  @@index([recipientId, sentAt])
+  @@map("contract_expiry_dispatches")
 }
 
 // Lịch nghỉ lễ - nhóm ngày lễ theo quốc gia/năm

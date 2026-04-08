@@ -10,6 +10,31 @@ const port = parseInt(process.env.PORT || "3000", 10);
 const app = next({dev, hostname, port });
 const handle = app.getRequestHandler();
 
+let lastContractReminderRunDate: string | null = null;
+
+async function runContractReminderJob(trigger: "startup" | "interval") {
+    const todayKey = new Date().toISOString().split("T")[0] || "";
+
+    if (trigger === "interval" && lastContractReminderRunDate === todayKey) {
+        return;
+    }
+
+    try {
+        const { dispatchContractExpiryReminders } = await import("./src/lib/contracts/expiry-reminder");
+        const result = await dispatchContractExpiryReminders({
+            days: [15, 30],
+            source: "scheduler",
+        });
+
+        lastContractReminderRunDate = todayKey;
+        console.log(
+            `[ContractScheduler] Processed=${result.processedContracts}, Created=${result.createdDispatches}, Skipped=${result.skippedDispatches}`,
+        );
+    } catch (error) {
+        console.error("[ContractScheduler] Failed to dispatch reminders:", error);
+    }
+}
+
 app.prepare().then(() => {
     const httpServer = createServer((req, res) => {
         const parsedUrl = parse(req.url!, true);
@@ -75,4 +100,11 @@ app.prepare().then(() => {
             `> Ready on http://localhost:${port} (Socket.IO enabled)`,
         );
     });
+
+    if (process.env.ENABLE_CONTRACT_EXPIRY_SCHEDULER !== "false") {
+        void runContractReminderJob("startup");
+        setInterval(() => {
+            void runContractReminderJob("interval");
+        }, 60 * 60 * 1000);
+    }
 });

@@ -1,580 +1,1227 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import {
+  useMemo,
+  useRef,
+  useEffect,
+  useState,
+  useCallback,
+  Fragment,
+} from "react";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  type ColumnDef,
+} from "@tanstack/react-table";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, ChevronRight, Eye, FileDown, Search, Loader2, MoreHorizontal, Filter, X } from "lucide-react";
-import type { PayrollRecordDetail, PayrollDetailStatus } from "@/app/(protected)/payroll/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useClickOutside, useMergedRef } from "@mantine/hooks";
+import {
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  FileDown,
+  Search,
+  MoreHorizontal,
+  RefreshCw,
+  ListFilter,
+  Settings,
+  User,
+  BadgeCheck,
+  Hash,
+  Building2,
+  Coins,
+  Plus,
+  Gift,
+  Timer,
+  DollarSign,
+  Shield,
+  ShieldCheck,
+  AlertTriangle,
+  Receipt,
+  Minus,
+  Banknote,
+  CircleDot,
+  CalendarDays,
+} from "lucide-react";
+import { TableSettingsPanel } from "@/components/ui/table-settings-panel";
+import type {
+  PayrollRecordDetail,
+  PayrollDetailStatus,
+} from "@/app/(protected)/payroll/types";
+
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "all", label: "Tất cả" },
+  { value: "PENDING", label: "Chờ duyệt" },
+  { value: "CONFIRMED", label: "Đã xác nhận" },
+  { value: "PAID", label: "Đã trả" },
+];
 
 export function formatCurrency(amount: number | bigint | unknown): string {
-    const num = typeof amount === "bigint" ? Number(amount) : Number(amount) || 0;
-    return new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND",
-        maximumFractionDigits: 0,
-    }).format(num);
+  const num = typeof amount === "bigint" ? Number(amount) : Number(amount) || 0;
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(num);
 }
 
 interface PayrollDetailTableProps {
-    details: PayrollRecordDetail[];
-    departments: { id: string; name: string }[];
-    onViewPayslip: (userId: string) => void;
-    onExportPayslip: (userId: string) => void;
+  details: PayrollRecordDetail[];
+  departments: { id: string; name: string }[];
+  departmentId: string | null;
+  onViewPayslip: (userId: string) => void;
+  onExportPayslip: (userId: string) => void;
+  onViewEmployeeDetail: (detail: PayrollRecordDetail) => void;
+  isLoading?: boolean;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
+  totalDetails: number;
 }
 
 export function PayrollDetailTable({
-    details: initialDetails,
-    departments,
-    onViewPayslip,
-    onExportPayslip,
+  details,
+  departments,
+  departmentId,
+  onViewPayslip,
+  onExportPayslip,
+  onViewEmployeeDetail,
+  isLoading,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
+  totalDetails,
 }: PayrollDetailTableProps) {
-    const [search, setSearch] = useState("");
-    const [filterDepartment, setFilterDepartment] = useState<string>("all");
-    const [filterStatus, setFilterStatus] = useState<string>("all");
-    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-    const [page, setPage] = useState(1);
-    const [showFilters, setShowFilters] = useState(false);
-    const [selectedDetail, setSelectedDetail] = useState<PayrollRecordDetail | null>(null);
-    const PAGE_SIZE = 20;
+  const [search, setSearch] = useState("");
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [filterDepartment, setFilterDepartment] = useState<string>(
+    departmentId ?? "all",
+  );
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-    const filteredDetails = initialDetails.filter((detail) => {
-        const matchesSearch =
-            search === "" ||
-            detail.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-            detail.user?.employeeCode?.toLowerCase().includes(search.toLowerCase());
+    // Column visibility settings
+  const [columnVisibility, setColumnVisibility] = useState<
+    Record<string, boolean>
+  >({
+    stt: true,
+    username: true,
+    name: true,
+    department: true,
+    position: true,
+    baseSalary: true,
+    salarySource: true,
+    proratedSalary: true,
+    allowanceAmount: true,
+    bonusAmount: false,
+    overtimeAmount: false,
+    grossSalary: true,
+    socialInsurance: false,
+    healthInsurance: false,
+    unemploymentInsurance: false,
+    taxAmount: false,
+    deductionAmount: false,
+    netSalary: true,
+    status: true,
+    workDays: true,
+  });
 
-        const matchesDepartment =
-            filterDepartment === "all" ||
-            detail.user?.department?.name === departments.find((d) => d.id === filterDepartment)?.name;
+  // Settings panel state
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [wrapText, setWrapText] = useState(false);
 
-        const matchesStatus = filterStatus === "all" || detail.status === filterStatus;
+  const clickOutsideRef = useClickOutside(() => {
+    if (searchExpanded) {
+      if (search.trim()) setSearch("");
+      setSearchExpanded(false);
+    }
+  });
+  const mergedSearchRef = useMergedRef(searchContainerRef, clickOutsideRef);
 
-        return matchesSearch && matchesDepartment && matchesStatus;
+  const handleSearchToggle = useCallback(() => {
+    if (!searchExpanded) {
+      setSearchExpanded(true);
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    } else {
+      if (search.trim()) setSearch("");
+      setSearchExpanded(false);
+    }
+  }, [searchExpanded, search]);
+
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Escape") {
+        setSearch("");
+        setSearchExpanded(false);
+      }
+    },
+    [],
+  );
+
+  const filteredDetails = useMemo(() => {
+    return details.filter((detail) => {
+      const matchesSearch =
+        search === "" ||
+        detail.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        detail.user?.username?.toLowerCase().includes(search.toLowerCase());
+
+      const matchesDepartment =
+        filterDepartment === "all" ||
+        detail.user?.department?.name ===
+          departments.find((d) => d.id === filterDepartment)?.name;
+
+      const matchesStatus =
+        filterStatus === "all" || detail.status === filterStatus;
+
+      return matchesSearch && matchesDepartment && matchesStatus;
     });
+  }, [details, search, filterDepartment, filterStatus, departments]);
 
-    const totalPages = Math.ceil(filteredDetails.length / PAGE_SIZE);
-    const paginatedDetails = filteredDetails.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const toggleRow = (id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
-    const toggleRow = (id: string) => {
-        const newExpanded = new Set(expandedRows);
-        if (newExpanded.has(id)) {
-            newExpanded.delete(id);
-        } else {
-            newExpanded.add(id);
-        }
-        setExpandedRows(newExpanded);
-    };
+  const getStatusBadge = (status: PayrollDetailStatus) => {
+    switch (status) {
+      case "PENDING":
+        return <Badge variant="secondary">Chờ duyệt</Badge>;
+      case "CONFIRMED":
+        return (
+          <Badge variant="outline" className="bg-blue-50">
+            Đã xác nhận
+          </Badge>
+        );
+      case "PAID":
+        return (
+          <Badge variant="default" className="bg-green-600">
+            Đã trả
+          </Badge>
+        );
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
 
-    const getStatusBadge = (status: PayrollDetailStatus) => {
-        switch (status) {
-            case "PENDING":
-                return <Badge variant="secondary">Chờ duyệt</Badge>;
-            case "CONFIRMED":
-                return <Badge variant="outline" className="bg-blue-50">Đã xác nhận</Badge>;
-            case "PAID":
-                return <Badge variant="default" className="bg-green-600">Đã trả</Badge>;
-            default:
-                return <Badge>{status}</Badge>;
-        }
-    };
+  const activeFiltersCount = [
+    filterDepartment !== "all",
+    filterStatus !== "all",
+  ].filter(Boolean).length;
 
-    const activeFiltersCount = [
-        filterDepartment !== "all",
-        filterStatus !== "all",
-    ].filter(Boolean).length;
+  const clearFilters = () => {
+    setFilterDepartment("all");
+    setFilterStatus("all");
+  };
 
-    const clearFilters = () => {
-        setFilterDepartment("all");
-        setFilterStatus("all");
-        setPage(1);
-    };
+  // ─── TanStack Table columns ──────────────────────────────────────────────
 
-    return (
-        <div className="space-y-4">
-            {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <div className="relative flex-1 w-full sm:max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Tìm theo mã NV, họ tên..."
-                        value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value);
-                            setPage(1);
-                        }}
-                        className="pl-9 pr-9"
-                    />
-                    {search && (
-                        <button
-                            onClick={() => setSearch("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
-                    )}
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <Button
-                        variant={showFilters ? "secondary" : "outline"}
-                        size="sm"
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="hidden sm:flex"
-                    >
-                        <Filter className="h-4 w-4 mr-2" />
-                        Bộ lọc
-                        {activeFiltersCount > 0 && (
-                            <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 justify-center items-center text-xs">
-                                {activeFiltersCount}
-                            </Badge>
-                        )}
-                    </Button>
-
-                    {/* Mobile filter dropdown */}
-                    <div className="flex sm:hidden gap-2 w-full">
-                        <Select value={filterDepartment} onValueChange={(v) => { setFilterDepartment(v); setPage(1); }}>
-                            <SelectTrigger className="flex-1">
-                                <SelectValue placeholder="Phòng ban" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Tất cả phòng ban</SelectItem>
-                                {departments.map((dept) => (
-                                    <SelectItem key={dept.id} value={dept.id}>
-                                        {dept.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
-                            <SelectTrigger className="w-[130px]">
-                                <SelectValue placeholder="Trạng thái" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Tất cả</SelectItem>
-                                <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-                                <SelectItem value="CONFIRMED">Đã xác nhận</SelectItem>
-                                <SelectItem value="PAID">Đã trả</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Desktop filters panel */}
-                    {showFilters && (
-                        <div className="hidden sm:flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
-                            <Select value={filterDepartment} onValueChange={(v) => { setFilterDepartment(v); setPage(1); }}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Phòng ban" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Tất cả phòng ban</SelectItem>
-                                    {departments.map((dept) => (
-                                        <SelectItem key={dept.id} value={dept.id}>
-                                            {dept.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
-                                <SelectTrigger className="w-[150px]">
-                                    <SelectValue placeholder="Trạng thái" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Tất cả</SelectItem>
-                                    <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-                                    <SelectItem value="CONFIRMED">Đã xác nhận</SelectItem>
-                                    <SelectItem value="PAID">Đã trả</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            {activeFiltersCount > 0 && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={clearFilters}
-                                    className="text-muted-foreground"
-                                >
-                                    Xóa bộ lọc
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Summary Bar */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
-                <div className="flex items-center gap-4">
-                    <span>
-                        Hiển thị <strong>{paginatedDetails.length}</strong> / <strong>{filteredDetails.length}</strong> nhân viên
-                    </span>
-                    {activeFiltersCount > 0 && (
-                        <Badge variant="secondary" className="hidden sm:inline-flex">
-                            {activeFiltersCount} bộ lọc đang active
-                        </Badge>
-                    )}
-                </div>
-                {search && (
-                    <span className="hidden sm:inline">
-                        Tìm thấy "<strong>{filteredDetails.length}</strong>" kết quả cho "<strong>{search}</strong>"
-                    </span>
-                )}
-            </div>
-
-            {/* Table with horizontal scroll */}
-            <div className="rounded-lg border bg-background overflow-hidden">
-                <ScrollArea className="w-full">
-                    <div className="min-w-[900px]">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-muted/50">
-                                    <TableHead className="w-10 sticky left-0 bg-muted/50 z-10"></TableHead>
-                                    <TableHead className="w-12 sticky left-10 bg-muted/50 z-10">STT</TableHead>
-                                    <TableHead className="w-28 sticky left-18 bg-muted/50 z-10">Mã NV</TableHead>
-                                    <TableHead className="min-w-[150px] sticky left-38 bg-muted/50 z-10">Họ tên</TableHead>
-                                    <TableHead className="min-w-[120px]">Phòng ban</TableHead>
-                                    <TableHead className="text-right min-w-[120px]">Lương CB</TableHead>
-                                    <TableHead className="text-right min-w-[100px]">Phụ cấp</TableHead>
-                                    <TableHead className="text-right min-w-[100px]">Thưởng</TableHead>
-                                    <TableHead className="text-right min-w-[100px]">Tăng ca</TableHead>
-                                    <TableHead className="text-right min-w-[120px] bg-emerald-50/50">Gross</TableHead>
-                                    <TableHead className="text-right min-w-[90px]">BHXH</TableHead>
-                                    <TableHead className="text-right min-w-[90px]">BHYT</TableHead>
-                                    <TableHead className="text-right min-w-[90px]">BHTN</TableHead>
-                                    <TableHead className="text-right min-w-[100px]">Thuế TNCN</TableHead>
-                                    <TableHead className="text-right min-w-[100px]">Khấu trừ</TableHead>
-                                    <TableHead className="text-right min-w-[120px] bg-blue-50/50 font-semibold">Net</TableHead>
-                                    <TableHead className="w-28">Trạng thái</TableHead>
-                                    <TableHead className="w-20 text-center">Ngày công</TableHead>
-                                    <TableHead className="w-28 text-right sticky right-0 bg-muted/50 z-10">Thao tác</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {paginatedDetails.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={19} className="text-center py-12 text-muted-foreground">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <Search className="h-8 w-8 text-muted-foreground/50" />
-                                                <p>Không có dữ liệu</p>
-                                                {(search || activeFiltersCount > 0) && (
-                                                    <Button
-                                                        variant="link"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            setSearch("");
-                                                            clearFilters();
-                                                        }}
-                                                    >
-                                                        Xóa bộ lọc
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    paginatedDetails.map((detail, index) => (
-                                        <>
-                                            <TableRow key={detail.id} className="hover:bg-muted/50 group">
-                                                <TableCell className="sticky left-0 bg-background group-hover:bg-muted/50 z-10">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-6 w-6"
-                                                        onClick={() => toggleRow(detail.id)}
-                                                    >
-                                                        {expandedRows.has(detail.id) ? (
-                                                            <ChevronDown className="h-4 w-4" />
-                                                        ) : (
-                                                            <ChevronRight className="h-4 w-4" />
-                                                        )}
-                                                    </Button>
-                                                </TableCell>
-                                                <TableCell className="sticky left-10 bg-background group-hover:bg-muted/50 z-10">
-                                                    {(page - 1) * PAGE_SIZE + index + 1}
-                                                </TableCell>
-                                                <TableCell className="sticky left-18 bg-background group-hover:bg-muted/50 z-10 font-mono text-sm">
-                                                    {detail.user?.employeeCode || "—"}
-                                                </TableCell>
-                                                <TableCell className="sticky left-38 bg-background group-hover:bg-muted/50 z-10 font-medium">
-                                                    {detail.user?.name || "—"}
-                                                </TableCell>
-                                                <TableCell>{detail.user?.department?.name || "—"}</TableCell>
-                                                <TableCell className="text-right">
-                                                    {formatCurrency(detail.baseSalary)}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    {formatCurrency(detail.allowanceAmount)}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    {formatCurrency(detail.bonusAmount)}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    {formatCurrency(detail.overtimeAmount)}
-                                                </TableCell>
-                                                <TableCell className="text-right font-medium bg-emerald-50/30">
-                                                    {formatCurrency(detail.grossSalary)}
-                                                </TableCell>
-                                                <TableCell className="text-right text-red-600">
-                                                    {formatCurrency(detail.socialInsurance)}
-                                                </TableCell>
-                                                <TableCell className="text-right text-red-600">
-                                                    {formatCurrency(detail.healthInsurance)}
-                                                </TableCell>
-                                                <TableCell className="text-right text-red-600">
-                                                    {formatCurrency(detail.unemploymentInsurance)}
-                                                </TableCell>
-                                                <TableCell className="text-right text-red-600">
-                                                    {formatCurrency(detail.taxAmount)}
-                                                </TableCell>
-                                                <TableCell className="text-right text-red-600">
-                                                    {formatCurrency(detail.deductionAmount)}
-                                                </TableCell>
-                                                <TableCell className="text-right font-semibold text-green-600 bg-blue-50/30">
-                                                    {formatCurrency(detail.netSalary)}
-                                                </TableCell>
-                                                <TableCell>{getStatusBadge(detail.status)}</TableCell>
-                                                <TableCell className="text-center">
-                                                    <Badge variant="outline" className="font-mono">
-                                                        {detail.workDays}/{detail.standardDays}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right sticky right-0 bg-background group-hover:bg-muted/50 z-10">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8"
-                                                            >
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem onClick={() => onViewPayslip(detail.userId)}>
-                                                                <Eye className="mr-2 h-4 w-4" />
-                                                                Xem phiếu lương
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => onExportPayslip(detail.userId)}>
-                                                                <FileDown className="mr-2 h-4 w-4" />
-                                                                Tải PDF
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
-                                            </TableRow>
-                                            {expandedRows.has(detail.id) && (
-                                                <TableRow key={`${detail.id}-expanded`} className="bg-muted/20">
-                                                    <TableCell colSpan={19} className="p-4">
-                                                        <div className="bg-background rounded-lg border p-4 space-y-4">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <h4 className="font-medium flex items-center gap-2">
-                                                                    <ChevronDown className="h-4 w-4" />
-                                                                    Chi tiết lương của {detail.user?.name}
-                                                                </h4>
-                                                                <div className="flex gap-2">
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={() => onViewPayslip(detail.userId)}
-                                                                    >
-                                                                        <Eye className="mr-2 h-4 w-4" />
-                                                                        Xem phiếu lương
-                                                                    </Button>
-                                                                </div>
-                                                            </div>
-                                                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Lương cơ bản</p>
-                                                                    <p className="font-medium">{formatCurrency(detail.baseSalary)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Phụ cấp</p>
-                                                                    <p className="font-medium">{formatCurrency(detail.allowanceAmount)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Thưởng</p>
-                                                                    <p className="font-medium">{formatCurrency(detail.bonusAmount)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Tăng ca ({detail.overtimeHours}h)</p>
-                                                                    <p className="font-medium">{formatCurrency(detail.overtimeAmount)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Tổng Gross</p>
-                                                                    <p className="font-medium text-green-600">{formatCurrency(detail.grossSalary)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">BHXH (8%)</p>
-                                                                    <p className="font-medium text-red-600">{formatCurrency(detail.socialInsurance)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">BHYT (1.5%)</p>
-                                                                    <p className="font-medium text-red-600">{formatCurrency(detail.healthInsurance)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">BHTN (1%)</p>
-                                                                    <p className="font-medium text-red-600">{formatCurrency(detail.unemploymentInsurance)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Giảm trừ cá nhân</p>
-                                                                    <p className="font-medium">{formatCurrency(detail.personalDeduction)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Giảm trừ phụ thuộc</p>
-                                                                    <p className="font-medium">{formatCurrency(detail.dependentDeduction)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Thuế TNCN</p>
-                                                                    <p className="font-medium text-red-600">{formatCurrency(detail.taxAmount)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Khấu trừ khác</p>
-                                                                    <p className="font-medium text-red-600">{formatCurrency(detail.deductionAmount)}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Ngày công</p>
-                                                                    <p className="font-medium">{detail.workDays}/{detail.standardDays}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Ngày muộn</p>
-                                                                    <p className="font-medium">{detail.lateDays}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Số tài khoản</p>
-                                                                    <p className="font-medium font-mono">{detail.bankAccount || "—"}</p>
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-muted-foreground">Ngân hàng</p>
-                                                                    <p className="font-medium">{detail.bankName || "—"}</p>
-                                                                </div>
-                                                            </div>
-                                                            <Separator />
-                                                            <div className="flex items-center justify-end">
-                                                                <div className="text-right">
-                                                                    <p className="text-sm text-muted-foreground">Lương thực nhận (Net)</p>
-                                                                    <p className="text-2xl font-bold text-green-600">{formatCurrency(detail.netSalary)}</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                    <ScrollBar orientation="horizontal" />
-                </ScrollArea>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-muted/30 rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                        Trang <strong>{page}</strong> / <strong>{totalPages}</strong>
-                        {" | "}
-                        Tổng <strong>{filteredDetails.length}</strong> bản ghi
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(1)}
-                            disabled={page === 1}
-                        >
-                            Đầu
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                        >
-                            Trước
-                        </Button>
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                let pageNum: number;
-                                if (totalPages <= 5) {
-                                    pageNum = i + 1;
-                                } else if (page <= 3) {
-                                    pageNum = i + 1;
-                                } else if (page >= totalPages - 2) {
-                                    pageNum = totalPages - 4 + i;
-                                } else {
-                                    pageNum = page - 2 + i;
-                                }
-                                return (
-                                    <Button
-                                        key={pageNum}
-                                        variant={page === pageNum ? "default" : "outline"}
-                                        size="sm"
-                                        className="w-9"
-                                        onClick={() => setPage(pageNum)}
-                                    >
-                                        {pageNum}
-                                    </Button>
-                                );
-                            })}
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages}
-                        >
-                            Sau
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(totalPages)}
-                            disabled={page === totalPages}
-                        >
-                            Cuối
-                        </Button>
-                    </div>
-                </div>
+  const columns = useMemo<ColumnDef<PayrollRecordDetail>[]>(
+    () => [
+      {
+        id: "expand",
+        header: "",
+        size: 40,
+        cell: ({ row }) => (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className="opacity-0 group-hover/row:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleRow(row.original.id);
+            }}
+          >
+            {expandedRows.has(row.original.id) ? (
+              <ChevronDown />
+            ) : (
+              <ChevronRight />
             )}
+          </Button>
+        ),
+        enableSorting: false,
+      },
+      {
+        id: "stt",
+        header: "STT",
+        size: 48,
+        cell: ({ row }) => {
+          const idx = filteredDetails.findIndex(
+            (d) => d.id === row.original.id,
+          );
+          return (
+            <span className="text-muted-foreground text-xs">{idx + 1}</span>
+          );
+        },
+        enableSorting: false,
+      },
+      {
+        accessorKey: "user.username",
+        id: "username",
+        header: "Mã nhân viên",
+        size: 112,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">
+            {row.original.user?.username || "—"}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "user.name",
+        id: "name",
+        header: "Họ tên",
+        size: 180,
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.user?.name || "—"}</span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "user.department.name",
+        id: "department",
+        header: "Phòng ban",
+        size: 140,
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {row.original.user?.department?.name || "—"}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        id: "position",
+        header: "Chức vụ",
+        size: 140,
+        cell: ({ row }) => {
+          const name = row.original.positionName || row.original.user?.position?.name || "—";
+          const authority = row.original.positionAuthority || row.original.user?.position?.authority;
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm truncate">{name}</span>
+              {authority && (
+                <Badge variant="outline" className="text-[10px] px-1 py-0 w-fit">
+                  {authority}
+                </Badge>
+              )}
+            </div>
+          );
+        },
+        enableSorting: false,
+      },
+      {
+        accessorKey: "baseSalary",
+        id: "baseSalary",
+        header: "Lương CB",
+        size: 130,
+        cell: ({ row }) => (
+          <span className="text-right block font-medium">
+            {formatCurrency(row.original.baseSalary)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "proratedSalary",
+        id: "proratedSalary",
+        header: "Lương CK",
+        size: 130,
+        cell: ({ row }) => (
+          <span
+            className="text-right block"
+            title="Lương cơ bản đã điều chỉnh theo ngày công thực tế"
+          >
+            {formatCurrency(row.original.proratedSalary)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "allowanceAmount",
+        id: "allowanceAmount",
+        header: "Phụ cấp",
+        size: 110,
+        cell: ({ row }) => (
+          <span className="text-right block">
+            {formatCurrency(row.original.allowanceAmount)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "bonusAmount",
+        id: "bonusAmount",
+        header: "Thưởng",
+        size: 100,
+        cell: ({ row }) => (
+          <span className="text-right block">
+            {formatCurrency(row.original.bonusAmount)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "overtimeAmount",
+        id: "overtimeAmount",
+        header: "Tăng ca",
+        size: 100,
+        cell: ({ row }) => (
+          <span className="text-right block">
+            {formatCurrency(row.original.overtimeAmount)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "grossSalary",
+        id: "grossSalary",
+        header: "Gross",
+        size: 130,
+        cell: ({ row }) => (
+          <span className="text-right block font-medium text-green-700 bg-emerald-50/30 px-1.5 py-0.5 rounded">
+            {formatCurrency(row.original.grossSalary)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "socialInsurance",
+        id: "socialInsurance",
+        header: "BHXH",
+        size: 100,
+        cell: ({ row }) => (
+          <span className="text-right block text-red-600">
+            {formatCurrency(row.original.socialInsurance)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "healthInsurance",
+        id: "healthInsurance",
+        header: "BHYT",
+        size: 100,
+        cell: ({ row }) => (
+          <span className="text-right block text-red-600">
+            {formatCurrency(row.original.healthInsurance)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "unemploymentInsurance",
+        id: "unemploymentInsurance",
+        header: "BHTN",
+        size: 100,
+        cell: ({ row }) => (
+          <span className="text-right block text-red-600">
+            {formatCurrency(row.original.unemploymentInsurance)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "taxAmount",
+        id: "taxAmount",
+        header: "Thuế TNCN",
+        size: 110,
+        cell: ({ row }) => (
+          <span className="text-right block text-red-600">
+            {formatCurrency(row.original.taxAmount)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "deductionAmount",
+        id: "deductionAmount",
+        header: "Khấu trừ",
+        size: 110,
+        cell: ({ row }) => (
+          <span className="text-right block text-red-600">
+            {formatCurrency(row.original.deductionAmount)}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: "netSalary",
+        id: "netSalary",
+        header: "Net",
+        size: 130,
+        cell: ({ row }) => {
+          const isZeroNet = row.original.netSalary === 0;
+          return (
+            <span
+              className={cn(
+                "text-right block font-semibold px-1.5 py-0.5 rounded",
+                isZeroNet
+                  ? "text-red-600 bg-red-50"
+                  : "text-green-600 bg-blue-50/30"
+              )}
+            >
+              {formatCurrency(row.original.netSalary)}
+            </span>
+          );
+        },
+        enableSorting: false,
+      },
+      {
+        accessorKey: "status",
+        id: "status",
+        header: "Trạng thái",
+        size: 120,
+        cell: ({ row }) =>
+          getStatusBadge(row.original.status as PayrollDetailStatus),
+        enableSorting: false,
+      },
+      {
+        id: "workDays",
+        header: "Ngày công",
+        size: 80,
+        cell: ({ row }) => {
+          const workDays = row.original.workDays;
+          const standardDays = row.original.standardDays;
+          const isZeroDays = workDays === 0;
+          return (
+            <div className="text-center">
+              <Badge
+                variant={isZeroDays ? "destructive" : "outline"}
+                className="font-mono"
+                title={isZeroDays ? "0 ngày công - không nhận lương" : ""}
+              >
+                {workDays}/{standardDays}
+              </Badge>
+            </div>
+          );
+        },
+        enableSorting: false,
+      },
+      {
+        id: "actions",
+        header: "",
+        size: 48,
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover/row:opacity-100 transition-opacity"
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-50">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewEmployeeDetail(row.original);
+                  }}
+                >
+                  <Eye />
+                  Xem phiếu lương
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onExportPayslip(row.original.userId);
+                  }}
+                >
+                  <FileDown />
+                  Tải PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ),
+        enableSorting: false,
+      },
+    ],
+    [expandedRows, filteredDetails, onViewEmployeeDetail, onExportPayslip],
+  );
+
+  // TanStack Table setup
+  // eslint-disable-next-line
+  const table = useReactTable({
+    data: filteredDetails,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    state: {
+      columnVisibility,
+    },
+    onColumnVisibilityChange: setColumnVisibility,
+    getRowId: (row) => row.id,
+  });
+
+  return (
+    <div className="flex-1 flex flex-col h-full overflow-hidden min-h-0">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 h-10 justify-end">
+        {/* Status filter dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant={filterStatus !== "all" ? "outline" : "ghost"}
+              size="xs"
+              className={cn(
+                "h-7 text-xs",
+                filterStatus !== "all" &&
+                  "bg-primary/10 border-primary text-primary hover:text-primary",
+              )}
+            >
+              <ListFilter className="h-3 w-3" />
+              {filterStatus !== "all" && (
+                <span className="ml-1 text-xs">
+                  {STATUS_OPTIONS.find((s) => s.value === filterStatus)?.label}
+                </span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              Trạng thái
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={filterStatus}
+              onValueChange={setFilterStatus}
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => setFilterStatus(option.value)}
+                  className="text-sm cursor-pointer"
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Department filter */}
+        {departmentId ? (
+          <div className="flex items-center border rounded-md px-2 py-1">
+            <span className="text-xs font-medium">
+              {departments.find((d) => d.id === departmentId)?.name}
+            </span>
+          </div>
+        ) : (
+          <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+            <SelectTrigger
+              size="sm"
+              className={cn(
+                "text-xs w-[160px] h-6!",
+                filterDepartment !== "all" &&
+                  "bg-primary/10 border-primary text-primary",
+              )}
+            >
+              <SelectValue placeholder="Phòng ban" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả phòng ban</SelectItem>
+              {departments.map((dept) => (
+                <SelectItem key={dept.id} value={dept.id}>
+                  {dept.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {/* Search expand */}
+        <div className="relative flex items-center" ref={mergedSearchRef}>
+          <Input
+            ref={searchInputRef}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Tìm theo mã NV, họ tên..."
+            className={cn(
+              "h-7 text-xs transition-all duration-300 ease-in-out pr-6",
+              searchExpanded ? "w-50 opacity-100 pl-3" : "w-0 opacity-0 pl-0",
+            )}
+          />
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            onClick={handleSearchToggle}
+            className={cn(
+              "absolute right-0.5 z-10",
+              searchExpanded && "[&_svg]:text-primary",
+            )}
+          >
+            <Search className="h-3 w-3" />
+          </Button>
         </div>
+
+        <Separator orientation="vertical" className="h-4!" />
+
+        {isFetchingNextPage && (
+          <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
+            <RefreshCw className="h-3 w-3 animate-spin" />
+          </span>
+        )}
+
+        <Button
+          size="icon-xs"
+          variant="outline"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Settings />
+        </Button>
+      </div>
+
+      {/* Settings Panel */}
+      <TableSettingsPanel
+        className="top-9"
+        open={settingsOpen}
+        onClose={setSettingsOpen}
+        columnVisibility={columnVisibility}
+        setColumnVisibility={setColumnVisibility}
+        defaultVisibleColumns={{
+          stt: true,
+          username: true,
+          name: true,
+          department: true,
+          baseSalary: true,
+          proratedSalary: true,
+          allowanceAmount: true,
+          bonusAmount: false,
+          overtimeAmount: false,
+          grossSalary: true,
+          socialInsurance: false,
+          healthInsurance: false,
+          unemploymentInsurance: false,
+          taxAmount: false,
+          deductionAmount: false,
+          netSalary: true,
+          status: true,
+          workDays: true,
+        }}
+        columnOptions={[
+          {
+            key: "stt",
+            label: "STT",
+            icon: Hash,
+          },
+          {
+            key: "username",
+            label: "Mã nhân viên",
+            icon: BadgeCheck,
+          },
+          {
+            key: "name",
+            label: "Họ tên",
+            icon: User,
+          },
+          {
+            key: "department",
+            label: "Phòng ban",
+            icon: Building2,
+          },
+          {
+            key: "baseSalary",
+            label: "Lương CB",
+            icon: Coins,
+          },
+          {
+            key: "proratedSalary",
+            label: "Lương CK",
+            icon: Coins,
+          },
+          {
+            key: "allowanceAmount",
+            label: "Phụ cấp",
+            icon: Plus,
+          },
+          {
+            key: "bonusAmount",
+            label: "Thưởng",
+            icon: Gift,
+          },
+          {
+            key: "overtimeAmount",
+            label: "Tăng ca",
+            icon: Timer,
+          },
+          {
+            key: "grossSalary",
+            label: "Gross",
+            icon: DollarSign,
+          },
+          {
+            key: "socialInsurance",
+            label: "BHXH",
+            icon: Shield,
+          },
+          {
+            key: "healthInsurance",
+            label: "BHYT",
+            icon: ShieldCheck,
+          },
+          {
+            key: "unemploymentInsurance",
+            label: "BHTN",
+            icon: Shield,
+          },
+          {
+            key: "taxAmount",
+            label: "Thuế TNCN",
+            icon: Receipt,
+          },
+          {
+            key: "deductionAmount",
+            label: "Khấu trừ",
+            icon: Minus,
+          },
+          {
+            key: "netSalary",
+            label: "Net",
+            icon: Banknote,
+          },
+          {
+            key: "status",
+            label: "Trạng thái",
+            icon: CircleDot,
+          },
+          {
+            key: "workDays",
+            label: "Ngày công",
+            icon: CalendarDays,
+          },
+        ]}
+        wrapText={wrapText}
+        setWrapText={setWrapText}
+        disabledColumnIndices={[0]}
+        hiddenColumnIndices={[]}
+      />
+
+      {/* Table container */}
+      <section className="flex-1 relative h-full min-h-0 overflow-hidden border-t">
+        <div className="h-full relative flex flex-col pb-8">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className={cn(
+                        "h-7 px-2 select-none z-10 relative",
+                        header.column.id === "actions" ? "text-right" : "",
+                        header.column.id === "baseSalary" ||
+                          header.column.id === "proratedSalary" ||
+                          header.column.id === "allowanceAmount" ||
+                          header.column.id === "bonusAmount" ||
+                          header.column.id === "overtimeAmount"
+                          ? "text-center"
+                          : "",
+                        header.column.id === "grossSalary"
+                          ? "text-center bg-emerald-50/50"
+                          : "",
+                        header.column.id === "socialInsurance" ||
+                          header.column.id === "healthInsurance" ||
+                          header.column.id === "unemploymentInsurance" ||
+                          header.column.id === "taxAmount" ||
+                          header.column.id === "deductionAmount"
+                          ? "text-center"
+                          : "",
+                        header.column.id === "netSalary"
+                          ? "text-center bg-blue-50/50 font-semibold"
+                          : "",
+                      )}
+                      style={{ width: header.getSize() }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {columns.map((col, j) => (
+                      <TableCell
+                        key={j}
+                        style={{ width: (col as { size?: number }).size }}
+                        className="p-2"
+                      >
+                        <Skeleton className="h-3.5 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-32 text-center"
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <Search className="h-8 w-8 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">
+                        Không có dữ liệu
+                      </p>
+                      {(search || activeFiltersCount > 0) && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => {
+                            setSearch("");
+                            clearFilters();
+                          }}
+                        >
+                          Xóa bộ lọc
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <Fragment key={row.id}>
+                    <TableRow
+                      className="group/row cursor-pointer hover:bg-muted/30 transition-colors"
+                      onClick={() => onViewEmployeeDetail(row.original)}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          style={{ width: cell.column.getSize() }}
+                          className={cn(
+                            "p-2",
+                            cell.column.id === "actions" ? "text-center" : "",
+                            cell.column.id === "baseSalary" ||
+                              cell.column.id === "proratedSalary" ||
+                              cell.column.id === "allowanceAmount" ||
+                              cell.column.id === "bonusAmount" ||
+                              cell.column.id === "overtimeAmount" ||
+                              cell.column.id === "socialInsurance" ||
+                              cell.column.id === "healthInsurance" ||
+                              cell.column.id === "unemploymentInsurance" ||
+                              cell.column.id === "taxAmount" ||
+                              cell.column.id === "deductionAmount"
+                              ? "text-center"
+                              : "",
+                            cell.column.id === "grossSalary"
+                              ? "text-right bg-emerald-50/20"
+                              : "",
+                            cell.column.id === "netSalary"
+                              ? "text-right bg-blue-50/20"
+                              : "",
+                          )}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+
+                    {/* Expanded detail row */}
+                    {expandedRows.has(row.original.id) && (
+                      <TableRow
+                        key={`${row.id}-expanded`}
+                        className="bg-muted/20"
+                      >
+                        <TableCell colSpan={columns.length} className="p-2">
+                          <div className="bg-background rounded-lg border p-3 space-y-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-medium text-lg">
+                                Chi tiết lương của {row.original.user?.name}
+                              </h4>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onViewEmployeeDetail(row.original);
+                                  }}
+                                >
+                                  Xem phiếu lương
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Lương cơ bản (gốc):
+                                </p>
+                                <p className="font-medium">
+                                  {formatCurrency(row.original.baseSalary)}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Lương theo ngày công:
+                                </p>
+                                <p className="font-medium text-green-600">
+                                  {formatCurrency(row.original.proratedSalary)}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {row.original.workDays}/
+                                  {row.original.standardDays} ngày
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Phụ cấp:
+                                </p>
+                                <p className="font-medium">
+                                  {formatCurrency(row.original.allowanceAmount)}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">Thưởng:</p>
+                                <p className="font-medium">
+                                  {formatCurrency(row.original.bonusAmount)}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Tăng ca ({row.original.overtimeHours}h):
+                                </p>
+                                <p className="font-medium">
+                                  {formatCurrency(row.original.overtimeAmount)}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Tổng Gross:
+                                </p>
+                                <p className="font-medium text-green-600">
+                                  {formatCurrency(row.original.grossSalary)}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  BHXH (8%):
+                                </p>
+                                <p className="font-medium text-red-600">
+                                  {formatCurrency(row.original.socialInsurance)}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  BHYT (1.5%):
+                                </p>
+                                <p className="font-medium text-red-600">
+                                  {formatCurrency(row.original.healthInsurance)}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  BHTN (1%):
+                                </p>
+                                <p className="font-medium text-red-600">
+                                  {formatCurrency(
+                                    row.original.unemploymentInsurance,
+                                  )}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Giảm trừ cá nhân:
+                                </p>
+                                <p className="font-medium">
+                                  {formatCurrency(
+                                    row.original.personalDeduction,
+                                  )}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Giảm trừ phụ thuộc:
+                                </p>
+                                <p className="font-medium">
+                                  {formatCurrency(
+                                    row.original.dependentDeduction,
+                                  )}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Thuế TNCN:
+                                </p>
+                                <p className="font-medium text-red-600">
+                                  {formatCurrency(row.original.taxAmount)}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Khấu trừ khác:
+                                </p>
+                                <p className="font-medium text-red-600">
+                                  {formatCurrency(row.original.deductionAmount)}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Ngày công:
+                                </p>
+                                <p className="font-medium">
+                                  {row.original.workDays}/
+                                  {row.original.standardDays}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Ngày muộn:
+                                </p>
+                                <p className="font-medium">
+                                  {row.original.lateDays}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Số tài khoản:
+                                </p>
+                                <p className="font-medium font-mono">
+                                  {row.original.bankAccount || "—"}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">
+                                  Ngân hàng:
+                                </p>
+                                <p className="font-medium">
+                                  {row.original.bankName || "—"}
+                                </p>
+                              </div>
+                            </div>
+                            <Separator />
+                            <div className="flex items-center justify-start">
+                              <div className="text-left flex items-center gap-x-2">
+                                <p className="text-sm text-muted-foreground">
+                                  Lương thực nhận (Net):
+                                </p>
+                                <p className="text-xl font-bold text-green-600">
+                                  {formatCurrency(row.original.netSalary)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </section>
+
+      {/* Load more sentinel */}
+      {hasNextPage && (
+        <LoadMoreSentinel
+          hasNextPage={!!hasNextPage}
+          isFetchingNextPage={!!isFetchingNextPage}
+          onLoadMore={onLoadMore}
+        />
+      )}
+
+      {/* Summary bar */}
+      {!isLoading && filteredDetails.length > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-2 py-2 border-t bg-background shrink-0">
+          <p className="text-xs text-muted-foreground">
+            Hiển thị <strong>{filteredDetails.length}</strong> /{" "}
+            <strong>{totalDetails}</strong> nhân viên
+          </p>
+          {!hasNextPage && filteredDetails.length < totalDetails && (
+            <span className="text-xs text-muted-foreground">Đã tải hết</span>
+          )}
+          {isFetchingNextPage && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              Đang tải thêm...
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── LoadMoreSentinel ─────────────────────────────────────────────────────────
+
+interface LoadMoreSentinelProps {
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore?: () => void;
+}
+
+function LoadMoreSentinel({
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
+}: LoadMoreSentinelProps) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !isFetchingNextPage) {
+          onLoadMore?.();
+        }
+      },
+      { rootMargin: "200px" },
     );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, onLoadMore]);
+
+  return <div ref={sentinelRef} className="h-1" />;
 }

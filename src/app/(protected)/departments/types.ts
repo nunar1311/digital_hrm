@@ -81,3 +81,32 @@ export interface UpdatePositionForDepartmentInput {
     sortOrder?: number;
     status?: string;
 }
+
+// =============================================
+// POSITION SALARY TYPES
+// =============================================
+
+export interface PositionSalaryItem {
+    id: string;
+    positionId: string;
+    salaryGrade: string;
+    baseSalary: string;
+    description: string | null;
+    isActive: boolean;
+    effectiveDate: Date;
+}
+
+export interface CreatePositionSalaryInput {
+    positionId: string;
+    salaryGrade: string;
+    baseSalary: number;
+    description?: string;
+    effectiveDate?: string;
+}
+
+export interface UpdatePositionSalaryInput {
+    baseSalary?: number;
+    description?: string;
+    isActive?: boolean;
+    effectiveDate?: string;
+}

@@ -25,6 +25,7 @@ import {
   getTurnoverRateTrend,
   getGenderDistribution,
   getTodayAttendanceSummary,
+  getContractExpiryWarnings,
 } from "@/app/(protected)/dashboard/actions";
 import type {
   DashboardStats,
@@ -33,6 +34,7 @@ import type {
   TurnoverTrendItem,
   GenderDistributionItem,
   TodayAttendanceSummary,
+  ContractExpiryDashboardItem,
 } from "@/app/(protected)/dashboard/actions";
 import type { GetEmployeesResult } from "@/app/(protected)/employees/actions";
 import { cn } from "@/lib/utils";
@@ -48,6 +50,7 @@ interface DashboardClientProps {
   turnoverTrendData: TurnoverTrendItem[];
   genderData: GenderDistributionItem[];
   todayAttendanceData: TodayAttendanceSummary;
+  contractExpiryWarnings: ContractExpiryDashboardItem[];
 }
 
 const DashboardClient = ({
@@ -58,6 +61,7 @@ const DashboardClient = ({
   turnoverTrendData: turnoverTrendDataProp,
   genderData: genderDataProp,
   todayAttendanceData: todayAttendanceDataProp,
+  contractExpiryWarnings: contractExpiryWarningsProp,
 }: DashboardClientProps) => {
   const mainRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -139,6 +143,16 @@ const DashboardClient = ({
     staleTime: 0,
   });
 
+  const {
+    data: contractExpiryWarnings = contractExpiryWarningsProp,
+    isRefetching: isRefetchingContractExpiry,
+  } = useQuery({
+    queryKey: ["dashboard-contract-expiry"],
+    queryFn: getContractExpiryWarnings,
+    initialData: contractExpiryWarningsProp,
+    staleTime: 0,
+  });
+
   // Check if any query is refetching
   const isRefetching =
     isRefetchingStats ||
@@ -146,7 +160,8 @@ const DashboardClient = ({
     isRefetchingDept ||
     isRefetchingTurnover ||
     isRefetchingGender ||
-    isRefetchingToday;
+    isRefetchingToday ||
+    isRefetchingContractExpiry;
 
   const toggleFullscreen = useCallback(async () => {
     try {
@@ -311,6 +326,9 @@ const DashboardClient = ({
         queryClient.invalidateQueries({
           queryKey: ["dashboard-gender-distribution"],
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["dashboard-contract-expiry"],
+        }),
       ]);
       setLastUpdated(new Date());
     } catch {
@@ -467,6 +485,17 @@ const DashboardClient = ({
             props: { genderData: genderData },
           }),
         },
+        {
+          id: "contract-expiry-list",
+          w: 4,
+          h: 8,
+          minW: 2,
+          minH: 3,
+          content: JSON.stringify({
+            name: "cardContractExpiryList",
+            props: { items: contractExpiryWarnings },
+          }),
+        },
       ],
       lazyLoad: true,
     }),
@@ -475,6 +504,7 @@ const DashboardClient = ({
       departmentData,
       turnoverTrendData,
       genderData,
+      contractExpiryWarnings,
       initialEmployees,
       stats.newEmployees,
       stats.newPercentage,
@@ -505,6 +535,9 @@ const DashboardClient = ({
         });
         queryClient.invalidateQueries({
           queryKey: ["dashboard-gender-distribution"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["dashboard-contract-expiry"],
         });
         setLastUpdated(new Date());
       }, 60 * 1000);
@@ -616,6 +649,7 @@ const DashboardClient = ({
                   genderData={genderData}
                   initialEmployees={initialEmployees}
                   todayAttendanceData={todayAttendanceData}
+                  contractExpiryWarnings={contractExpiryWarnings}
                 />
               </div>
             </nav>

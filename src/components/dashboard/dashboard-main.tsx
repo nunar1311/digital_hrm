@@ -11,25 +11,27 @@ import CardChartTurnoverRate from "./cards/card-chart-turnover-rate";
 import CardChartGender from "./cards/card-chart-gender";
 import CardComingSoon from "./cards/card-coming-soon";
 import CardTimesheetSummary from "./cards/card-timesheet-summary";
+import CardContractExpiryList from "./cards/card-contract-expiry-list";
 
 const DashboardMain = () => {
-    return (
-        <GridStackRender
-            componentMap={{
-                cardChartPie: CardChartPie,
-                cardChartAreaInteractive: CardChartAreaInteractive,
-                cardChartTurnoverRate: CardChartTurnoverRate,
-                cardChartGender: CardChartGender,
-                totalEmployees: CardWidgetCalculation,
-                totalEmployeesWorking: CardWidgetCalculation,
-                newEmployees: CardWidgetCalculation,
-                resignedEmployees: CardWidgetCalculation,
-                listEmployees: CardWidgetList,
-                cardComingSoon: CardComingSoon,
-                cardTimesheetSummary: CardTimesheetSummary,
-            }}
-        />
-    );
+  return (
+    <GridStackRender
+      componentMap={{
+        cardChartPie: CardChartPie,
+        cardChartAreaInteractive: CardChartAreaInteractive,
+        cardChartTurnoverRate: CardChartTurnoverRate,
+        cardChartGender: CardChartGender,
+        totalEmployees: CardWidgetCalculation,
+        totalEmployeesWorking: CardWidgetCalculation,
+        newEmployees: CardWidgetCalculation,
+        resignedEmployees: CardWidgetCalculation,
+        listEmployees: CardWidgetList,
+        cardComingSoon: CardComingSoon,
+        cardTimesheetSummary: CardTimesheetSummary,
+        cardContractExpiryList: CardContractExpiryList,
+      }}
+    />
+  );
 };
 
 export default DashboardMain;

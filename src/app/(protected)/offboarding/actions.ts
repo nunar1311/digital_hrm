@@ -17,7 +17,7 @@ export async function getUsers(departmentId?: string): Promise<UserItem[]> {
         select: {
             id: true,
             name: true,
-            employeeCode: true,
+            username: true,
             departmentId: true,
             position: true,
             email: true,
@@ -34,7 +34,7 @@ interface UserItem {
     id: string;
     name: string | null;
     email: string;
-    employeeCode: string | null;
+    username: string | null;
     departmentId: string | null;
     position: string | null;
 }
@@ -145,7 +145,7 @@ export async function getOffboardings(params?: {
         where.user = {
             OR: [
                 { name: { contains: params.search, mode: "insensitive" } },
-                { employeeCode: { contains: params.search, mode: "insensitive" } },
+                { username: { contains: params.search, mode: "insensitive" } },
                 { email: { contains: params.search, mode: "insensitive" } },
             ],
         };
@@ -159,7 +159,7 @@ export async function getOffboardings(params?: {
                     id: true,
                     name: true,
                     email: true,
-                    employeeCode: true,
+                    username: true,
                     departmentId: true,
                     position: true,
                     image: true,
@@ -195,7 +195,7 @@ export async function getOffboardingById(id: string): Promise<OffboardingDetailD
                     id: true,
                     name: true,
                     email: true,
-                    employeeCode: true,
+                    username: true,
                     departmentId: true,
                     position: true,
                     image: true,
@@ -231,7 +231,7 @@ export async function getMyOffboardings(): Promise<OffboardingListItem[]> {
                     id: true,
                     name: true,
                     email: true,
-                    employeeCode: true,
+                    username: true,
                     departmentId: true,
                     position: true,
                     image: true,
@@ -371,7 +371,71 @@ export async function updateOffboarding(
     const updateData: Record<string, unknown> = { ...data };
 
     if (data.status === "COMPLETED") {
-        updateData.completedAt = new Date();
+        const completedOffboarding = await prisma.$transaction(async (tx) => {
+            const current = await tx.offboarding.findUnique({
+                where: { id },
+                select: {
+                    id: true,
+                    userId: true,
+                    lastWorkDate: true,
+                    checklist: {
+                        select: {
+                            id: true,
+                            isCompleted: true,
+                        },
+                    },
+                    assets: {
+                        select: {
+                            id: true,
+                            status: true,
+                        },
+                    },
+                },
+            });
+
+            if (!current) {
+                throw new Error("Không tìm thấy quy trình offboarding");
+            }
+
+            const hasIncompleteChecklist = current.checklist.some((item) => !item.isCompleted);
+            if (hasIncompleteChecklist) {
+                throw new Error("Vui lòng hoàn tất toàn bộ checklist bàn giao trước khi chốt offboarding.");
+            }
+
+            const hasPendingAssets = current.assets.some((asset) => asset.status === "PENDING");
+            if (hasPendingAssets) {
+                throw new Error("Vui lòng xử lý toàn bộ tài sản trước khi chốt offboarding.");
+            }
+
+            const updatedOffboarding = await tx.offboarding.update({
+                where: { id },
+                data: {
+                    ...updateData,
+                    completedAt: new Date(),
+                },
+            });
+
+            await tx.user.update({
+                where: { id: current.userId },
+                data: {
+                    employeeStatus: "RESIGNED",
+                    resignDate: current.lastWorkDate,
+                    banned: true,
+                    banReason: "OFFBOARDING_COMPLETED",
+                    banExpires: null,
+                },
+            });
+
+            await tx.session.deleteMany({
+                where: { userId: current.userId },
+            });
+
+            return updatedOffboarding;
+        });
+
+        revalidatePath("/offboarding");
+        revalidatePath(`/offboarding/${id}`);
+        return completedOffboarding;
     }
 
     const offboarding = await prisma.offboarding.update({

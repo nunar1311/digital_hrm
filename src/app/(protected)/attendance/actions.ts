@@ -851,6 +851,7 @@ export async function checkIn(
     });
 
     revalidatePath("/attendance");
+    revalidatePath("/ess/attendance");
     return { success: true, data: attendance };
 }
 
@@ -955,6 +956,7 @@ export async function checkOut(
     });
 
     revalidatePath("/attendance");
+    revalidatePath("/ess/attendance");
     return { success: true, data: attendance };
 }
 
@@ -971,7 +973,7 @@ const shiftSchema = z.object({
     isDefault: z.boolean().default(false),
     isActive: z.boolean().default(true),
     // Flexible shift fields
-    type: z.string().default("FIXED"), // "FIXED" | "FLEXIBLE" | "FLEXIBLE_WINDOW"
+    type: z.string(), // "FIXED" | "FLEXIBLE" | "FLEXIBLE_WINDOW"
     checkinWindowStart: z.string().optional(),
     checkinWindowEnd: z.string().optional(),
     checkoutWindowStart: z.string().optional(),

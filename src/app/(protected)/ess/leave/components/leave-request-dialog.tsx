@@ -230,97 +230,60 @@ function LeaveTypeOption({ type }: { type: LeaveType }) {
   );
 }
 
-function LeaveTypeInfoCard({ type }: { type: LeaveType }) {
-  const usagePercent = type.balance
-    ? 100 -
-      ((type.balance.usedDays + type.balance.pendingDays) /
-        type.balance.totalDays) *
-        100
-    : 0;
+// function DaysPreview({
+//   days,
+//   balance,
+//   isEnough,
+// }: {
+//   days: number;
+//   balance: LeaveBalance | null;
+//   isEnough: boolean;
+// }) {
+//   const remaining = balance ? balance.available - days : null;
 
-  return (
-    <Card className="bg-muted/30 border-dashed p-2">
-      <CardContent className="px-2 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-400" />
-            <span className="font-medium text-sm">{type.name}</span>
-            {type.description && (
-              <span className="text-xs text-muted-foreground">
-                — {type.description}
-              </span>
-            )}
-          </div>
-          {type.balance && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                Đã dùng: {type.balance.usedDays} / {type.balance.totalDays}
-              </span>
-              <div className="w-12">
-                <Progress value={usagePercent} className="h-1.5" />
-              </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function DaysPreview({
-  days,
-  balance,
-  isEnough,
-}: {
-  days: number;
-  balance: LeaveBalance | null;
-  isEnough: boolean;
-}) {
-  const remaining = balance ? balance.available - days : null;
-
-  return (
-    <Card
-      className={cn(
-        "bg-muted/30 py-2",
-        !isEnough && "border-destructive/50 bg-destructive/5",
-      )}
-    >
-      <CardContent className="px-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Số ngày nghỉ:</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span
-              className={cn(
-                "text-lg font-bold",
-                !isEnough && "text-destructive",
-              )}
-            >
-              {days} ngày
-            </span>
-            {balance && (
-              <Badge variant={isEnough ? "secondary" : "destructive"}>
-                {isEnough ? (
-                  <>Còn lại: {remaining} ngày</>
-                ) : (
-                  <>Thiếu {days - balance.available} ngày</>
-                )}
-              </Badge>
-            )}
-          </div>
-        </div>
-        {!isEnough && (
-          <div className="flex items-center gap-2 mt-2 text-destructive text-sm">
-            <AlertCircle className="h-4 w-4" />
-            <span>Số ngày nghỉ vượt quá số ngày khả dụng!</span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+//   return (
+//     <Card
+//       className={cn(
+//         "bg-muted/30 py-2",
+//         !isEnough && "border-destructive/50 bg-destructive/5",
+//       )}
+//     >
+//       <CardContent className="px-2">
+//         <div className="flex items-center justify-between">
+//           <div className="flex items-center gap-2">
+//             <Sparkles className="h-4 w-4 text-muted-foreground" />
+//             <span className="text-sm font-medium">Số ngày nghỉ:</span>
+//           </div>
+//           <div className="flex items-center gap-3">
+//             <span
+//               className={cn(
+//                 "text-lg font-bold",
+//                 !isEnough && "text-destructive",
+//               )}
+//             >
+//               {days} ngày
+//             </span>
+//             {balance && (
+//               <Badge variant={isEnough ? "secondary" : "destructive"}>
+//                 {isEnough ? (
+//                   <>Còn lại: {remaining} ngày</>
+//                 ) : (
+//                   <>Thiếu {days - balance.available} ngày</>
+//                 )}
+//               </Badge>
+//             )}
+//           </div>
+//         </div>
+//         {!isEnough && (
+//           <div className="flex items-center gap-2 mt-2 text-destructive text-sm">
+//             <AlertCircle className="h-4 w-4" />
+//             <span>Số ngày nghỉ vượt quá số ngày khả dụng!</span>
+//           </div>
+//         )}
+//       </CardContent>
+//     </Card>
+//   );
+// }
 
 function RequestSummary({
   leaveType,
@@ -335,18 +298,17 @@ function RequestSummary({
     <Card className="bg-blue-50/50 border-blue-100 py-2">
       <CardContent className="px-2">
         <div className="flex items-start gap-2">
-          <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
           <div className="text-sm">
             <p className="font-medium text-blue-900">Tóm tắt yêu cầu:</p>
-            <ul className="mt-2 space-y-1 text-blue-800">
+            <ul className="mt-2 space-y-1 text-blue-800 list-disc list-inside">
               <li>
-                • Loại nghỉ phép: <strong>{leaveType}</strong>
+                Loại nghỉ phép: <strong>{leaveType}</strong>
               </li>
               <li>
-                • Số ngày: <strong>{days} ngày</strong>
+                Số ngày: <strong>{days} ngày</strong>
               </li>
               <li>
-                • Người duyệt: <strong>{approverName}</strong>
+                Người duyệt: <strong>{approverName}</strong>
               </li>
             </ul>
           </div>
@@ -490,9 +452,9 @@ export function LeaveRequestDialog({
             />
 
             {/* Leave Type Info Card */}
-            {selectedLeaveType && (
+            {/* {selectedLeaveType && (
               <LeaveTypeInfoCard type={selectedLeaveType} />
-            )}
+            )} */}
 
             {/* Date Range */}
             <div className="grid gap-4 sm:grid-cols-2">
@@ -571,7 +533,6 @@ export function LeaveRequestDialog({
                             date < (startDate || new Date()) ||
                             isWeekendOrHoliday(date)
                           }
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
@@ -582,11 +543,18 @@ export function LeaveRequestDialog({
             </div>
 
             {/* Days Preview */}
-            {calculatedDays > 0 && selectedLeaveType && (
+            {/* {calculatedDays > 0 && selectedLeaveType && (
               <DaysPreview
                 days={calculatedDays}
                 balance={selectedLeaveType.balance}
                 isEnough={isBalanceEnough}
+              />
+            )} */}
+            {selectedLeaveType && calculatedDays > 0 && isBalanceEnough && (
+              <RequestSummary
+                leaveType={selectedLeaveType.name}
+                days={calculatedDays}
+                approverName={manager?.name || "Quản lý trực tiếp"}
               />
             )}
 
@@ -601,7 +569,6 @@ export function LeaveRequestDialog({
                     <Textarea
                       {...field}
                       placeholder="Nhập lý do nghỉ phép (không bắt buộc)..."
-                      className="min-h-[80px]"
                     />
                   </FormControl>
                   <FormDescription>
@@ -613,34 +580,28 @@ export function LeaveRequestDialog({
             />
 
             {/* Summary */}
-            {selectedLeaveType && calculatedDays > 0 && isBalanceEnough && (
-              <RequestSummary
-                leaveType={selectedLeaveType.name}
-                days={calculatedDays}
-                approverName={manager?.name || "Quản lý trực tiếp"}
-              />
-            )}
 
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => onOpenChange(false)}
               >
                 Hủy
               </Button>
               <Button
                 type="submit"
+                size="sm"
                 disabled={!canSubmit || submitMutation.isPending}
               >
                 {submitMutation.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang
-                    gửi...
+                    <Loader2 className="animate-spin" /> Đang gửi...
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="mr-2 h-4 w-4" /> Gửi yêu cầu
+                    <CheckCircle2 /> Gửi yêu cầu
                   </>
                 )}
               </Button>

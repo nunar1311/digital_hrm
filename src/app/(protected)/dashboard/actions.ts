@@ -29,6 +29,15 @@ export interface TodayAttendanceSummary {
     leave: number;
 }
 
+export interface ContractExpiryDashboardItem {
+    contractId: string;
+    contractNumber: string;
+    employeeName: string;
+    employeeCode: string | null;
+    endDate: string;
+    daysUntilExpiry: number;
+}
+
 // ─── getDashboardStats ───────────────────────────────────────────────────────
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -263,6 +272,55 @@ export async function getTodayAttendanceSummary(): Promise<TodayAttendanceSummar
         leave,
         absent,
     };
+}
+
+export async function getContractExpiryWarnings(): Promise<ContractExpiryDashboardItem[]> {
+    await requirePermission(Permission.DASHBOARD_VIEW, Permission.CONTRACT_VIEW_ALL);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const in30Days = new Date(today);
+    in30Days.setDate(in30Days.getDate() + 30);
+    in30Days.setHours(23, 59, 59, 999);
+
+    const contracts = await prisma.contract.findMany({
+        where: {
+            status: { in: ["ACTIVE", "PENDING"] },
+            endDate: {
+                gte: today,
+                lte: in30Days,
+            },
+        },
+        include: {
+            user: {
+                select: {
+                    name: true,
+                    employeeCode: true,
+                },
+            },
+        },
+        orderBy: {
+            endDate: "asc",
+        },
+        take: 50,
+    });
+
+    return contracts
+        .filter((contract) => contract.endDate)
+        .map((contract) => {
+            const diffMs = (contract.endDate as Date).getTime() - today.getTime();
+            const daysUntilExpiry = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+
+            return {
+                contractId: contract.id,
+                contractNumber: contract.contractNumber,
+                employeeName: contract.user.name,
+                employeeCode: contract.user.employeeCode,
+                endDate: (contract.endDate as Date).toISOString(),
+                daysUntilExpiry,
+            };
+        });
 }
 
 // ─── getDepartmentDistribution ───────────────────────────────────────────────

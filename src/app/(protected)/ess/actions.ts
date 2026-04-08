@@ -148,16 +148,21 @@ export async function getMyAttendanceHistory(month: number, year: number) {
         }
     });
 
-    const attendances = records.map(r => ({
-        id: r.id,
-        date: r.date.toISOString().slice(0, 10),
-        checkIn: r.checkIn ? r.checkIn.toISOString() : null,
-        checkOut: r.checkOut ? r.checkOut.toISOString() : null,
-        status: r.status,
-        lateMinutes: r.lateMinutes,
-        earlyMinutes: r.earlyMinutes,
-        shift: r.shift,
-    }));
+    const attendances = records.map(r => {
+        // Format date using toLocaleDateString with explicit timezone
+        // This ensures correct date regardless of server timezone
+        const dateStr = r.date.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+        return {
+            id: r.id,
+            date: dateStr,
+            checkIn: r.checkIn ? r.checkIn.toISOString() : null,
+            checkOut: r.checkOut ? r.checkOut.toISOString() : null,
+            status: r.status,
+            lateMinutes: r.lateMinutes,
+            earlyMinutes: r.earlyMinutes,
+            shift: r.shift,
+        };
+    });
 
     const summary = await prisma.attendanceSummary.findUnique({
         where: {
@@ -196,7 +201,7 @@ export async function getESSDashboardData() {
                 id: true,
                 name: true,
                 email: true,
-                employeeCode: true,
+                username: true,
                 department: { select: { id: true, name: true } },
                 position: { select: { id: true, name: true } },
                 manager: { select: { id: true, name: true } },
@@ -280,22 +285,79 @@ export async function getCurrentMonthSummary() {
 
 export async function getTodayShift() {
     const session = await requireAuth();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const userId = session.user.id;
 
-    const assignment = await prisma.shiftAssignment.findFirst({
+    // Use UTC midnight to match @db.Date storage
+    const today = new Date(
+        Date.UTC(
+            new Date().getFullYear(),
+            new Date().getMonth(),
+            new Date().getDate(),
+        ),
+    );
+
+    // Get day type (weekday, weekend, holiday)
+    const holiday = await prisma.holiday.findFirst({
         where: {
-            userId: session.user.id,
-            startDate: { lte: today },
-            OR: [{ endDate: null }, { endDate: { gte: today } }]
+            OR: [
+                { date: today, endDate: null },
+                {
+                    date: { lte: today },
+                    endDate: { gte: today },
+                },
+            ],
         },
-        include: { shift: true },
-        orderBy: { startDate: "desc" }
+    });
+    if (holiday) return null;
+
+    const dayOfWeek = today.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) return null;
+
+    // Get all shift assignments (direct + work cycle)
+    const assignments = await prisma.shiftAssignment.findMany({
+        where: {
+            userId,
+            startDate: { lte: today },
+            OR: [{ endDate: null }, { endDate: { gte: today } }],
+        },
+        include: {
+            shift: true,
+            workCycle: {
+                include: {
+                    entries: {
+                        orderBy: { dayIndex: "asc" },
+                        include: { shift: true },
+                    },
+                },
+            },
+        },
     });
 
-    return assignment?.shift || null;
+    for (const a of assignments) {
+        if (a.shift && a.shift.isActive) {
+            return a.shift;
+        } else if (a.workCycleId && a.workCycle && a.cycleStartDate) {
+            const cycleStart = new Date(a.cycleStartDate);
+            const totalDays = a.workCycle.totalDays;
+            const dayDiff = Math.round(
+                (today.getTime() - cycleStart.getTime()) / 86400000,
+            );
+            const dayIndex = ((dayDiff % totalDays) + totalDays) % totalDays;
+            const entry = a.workCycle.entries.find(
+                (e) => e.dayIndex === dayIndex,
+            );
+            if (
+                entry &&
+                !entry.isDayOff &&
+                entry.shift &&
+                entry.shift.isActive
+            ) {
+                return entry.shift;
+            }
+        }
+    }
+
+    return null;
 }
 
 // ============================================================

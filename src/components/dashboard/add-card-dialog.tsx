@@ -30,13 +30,19 @@ import {
   Clock,
   HandCoins,
   GraduationCap,
+  AlertTriangle,
 } from "lucide-react";
 import { useGridStackContext } from "@/contexts/grid-stack-context";
 import { Input } from "../ui/input";
 import { cn } from "@/lib/utils";
 import type {
-  DashboardStats, AttendanceTrendItem, DepartmentDistributionItem,
-  TurnoverTrendItem, GenderDistributionItem, TodayAttendanceSummary,
+  DashboardStats,
+  AttendanceTrendItem,
+  DepartmentDistributionItem,
+  TurnoverTrendItem,
+  GenderDistributionItem,
+  TodayAttendanceSummary,
+  ContractExpiryDashboardItem,
 } from "@/app/(protected)/dashboard/actions";
 import type { GetEmployeesResult } from "@/app/(protected)/employees/actions";
 
@@ -48,6 +54,7 @@ interface AddCardDialogProps {
   genderData: GenderDistributionItem[];
   initialEmployees: GetEmployeesResult;
   todayAttendanceData: TodayAttendanceSummary;
+  contractExpiryWarnings: ContractExpiryDashboardItem[];
 }
 
 // Map color strings to tailwind classes
@@ -249,6 +256,19 @@ const templates = [
     badge: "Premium",
   },
   {
+    id: "contract-expiry-list",
+    name: "Cảnh báo hợp đồng",
+    description: "Danh sách hợp đồng sắp hết hạn trong 30 ngày tới",
+    icon: AlertTriangle,
+    color: "orange",
+    w: 4,
+    h: 8,
+    minW: 2,
+    minH: 3,
+    category: "Danh sách",
+    badge: "HR",
+  },
+  {
     id: "mock-payroll-overview",
     name: "Tổng quan quỹ lương",
     description: "Biểu đồ biến động quỹ lương qua các tháng",
@@ -289,7 +309,14 @@ const categories = [
 ];
 
 const AddCardDialog = ({
-  stats, attendanceTrendData, departmentData, turnoverTrendData, genderData, initialEmployees, todayAttendanceData,
+  stats,
+  attendanceTrendData,
+  departmentData,
+  turnoverTrendData,
+  genderData,
+  initialEmployees,
+  todayAttendanceData,
+  contractExpiryWarnings,
 }: AddCardDialogProps) => {
   const { addWidget } = useGridStackContext();
   const [open, setOpen] = useState(false);
@@ -398,14 +425,36 @@ const AddCardDialog = ({
         });
         break;
       case "gender-chart":
-        content = JSON.stringify({ name: "cardChartGender", props: { genderData } }); break;
+        content = JSON.stringify({
+          name: "cardChartGender",
+          props: { genderData },
+        });
+        break;
       case "list-employees":
-        content = JSON.stringify({ name: "listEmployees", props: { initialEmployees } }); break;
+        content = JSON.stringify({
+          name: "listEmployees",
+          props: { initialEmployees },
+        });
+        break;
       case "mock-timesheet-summary":
-        content = JSON.stringify({ name: "cardTimesheetSummary", props: { summaryData: todayAttendanceData } }); break;
+        content = JSON.stringify({
+          name: "cardTimesheetSummary",
+          props: { summaryData: todayAttendanceData },
+        });
+        break;
+      case "contract-expiry-list":
+        content = JSON.stringify({
+          name: "cardContractExpiryList",
+          props: { items: contractExpiryWarnings },
+        });
+        break;
       default:
         // Mock cards
-        content = JSON.stringify({ name: "cardComingSoon", props: { title: template.name } }); break;
+        content = JSON.stringify({
+          name: "cardComingSoon",
+          props: { title: template.name },
+        });
+        break;
     }
 
     addWidget({
@@ -428,7 +477,7 @@ const AddCardDialog = ({
       </DialogTrigger>
       <DialogContent className="sm:max-w-6xl w-[90vw] h-[85vh] p-0 flex flex-row overflow-hidden border-0 shadow-2xl gap-0">
         {/* ─── Sidebar ─── */}
-        <div className="w-[260px] bg-secondary/30 border-r flex flex-col h-full overflow-hidden shrink-0">
+        <div className="w-65 bg-secondary/30 border-r flex flex-col h-full overflow-hidden shrink-0">
           <div className="p-4 flex items-center gap-2 border-b mb-2 bg-background/50 text-foreground">
             <div className="bg-primary/10 text-primary p-1 rounded-md">
               <LayoutDashboard className="w-5 h-5" />
@@ -513,7 +562,7 @@ const AddCardDialog = ({
                   placeholder="Tìm kiếm danh mục thẻ..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-[280px] h-9 pl-9 bg-secondary/50 border-input text-sm placeholder:text-muted-foreground/70"
+                  className="w-70 h-9 pl-9 bg-secondary/50 border-input text-sm placeholder:text-muted-foreground/70"
                 />
                 {searchQuery && (
                   <Button

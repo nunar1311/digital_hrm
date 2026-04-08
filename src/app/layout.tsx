@@ -14,6 +14,8 @@ import { KeyboardShortcutsProvider } from "@/components/providers/keyboard-short
 const googleSans = Google_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {

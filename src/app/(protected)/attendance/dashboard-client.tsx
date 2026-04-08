@@ -100,6 +100,10 @@ export function AttendanceDashboard({
         queryClient.invalidateQueries({
             queryKey: ["attendance", "today"],
         });
+        queryClient.refetchQueries({
+            queryKey: ["attendance", "today"],
+            type: "active",
+        });
         queryClient.invalidateQueries({
             queryKey: ["attendance", "monthly"],
         });
@@ -113,6 +117,10 @@ export function AttendanceDashboard({
     useSocketEvent("attendance:check-out", (data) => {
         queryClient.invalidateQueries({
             queryKey: ["attendance", "today"],
+        });
+        queryClient.refetchQueries({
+            queryKey: ["attendance", "today"],
+            type: "active",
         });
         queryClient.invalidateQueries({
             queryKey: ["attendance", "monthly"],
@@ -137,10 +145,20 @@ export function AttendanceDashboard({
     // ─── Mutations ───
     const checkInMutation = useMutation({
         mutationFn: checkIn,
-        onSuccess: () => {
+        onSuccess: (result) => {
+            // Check if server returned error (not thrown)
+            if (!result.success) {
+                toast.error(result.error || "Có lỗi xảy ra khi chấm công");
+                return;
+            }
             toast.success("Check-in thành công!");
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "today"],
+            });
+            // Force refetch to update UI immediately
+            queryClient.refetchQueries({
+                queryKey: ["attendance", "today"],
+                type: "active",
             });
         },
         onError: (error: Error) => {
@@ -152,10 +170,20 @@ export function AttendanceDashboard({
 
     const checkOutMutation = useMutation({
         mutationFn: checkOut,
-        onSuccess: () => {
+        onSuccess: (result) => {
+            // Check if server returned error (not thrown)
+            if (!result.success) {
+                toast.error(result.error || "Có lỗi xảy ra khi check-out");
+                return;
+            }
             toast.success("Check-out thành công!");
             queryClient.invalidateQueries({
                 queryKey: ["attendance", "today"],
+            });
+            // Force refetch to update UI immediately
+            queryClient.refetchQueries({
+                queryKey: ["attendance", "today"],
+                type: "active",
             });
         },
         onError: (error: Error) => {

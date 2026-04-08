@@ -27,8 +27,8 @@ export interface SalaryComponentType {
     maxAmount: number | null;
     isActive: boolean;
     sortOrder: number;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 // ─── Employee Salary Component ───
@@ -38,11 +38,11 @@ export interface EmployeeSalaryComponent {
     userId: string;
     componentTypeId: string;
     amount: number;
-    effectiveDate: string;
-    endDate: string | null;
+    effectiveDate: Date;
+    endDate: Date | null;
     isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: Date;
+    updatedAt: Date;
     componentType: SalaryComponentType;
     user?: {
         id: string;
@@ -57,9 +57,9 @@ export interface Salary {
     id: string;
     userId: string;
     baseSalary: number;
-    effectiveDate: string;
-    createdAt: string;
-    updatedAt: string;
+    effectiveDate: Date;
+    createdAt: Date;
+    updatedAt: Date;
     user?: {
         id: string;
         name: string;
@@ -87,16 +87,19 @@ export interface PayrollRecord {
     totalInsurance: number;
     totalDeductions: number;
     processedBy: string | null;
-    processedAt: string | null;
+    processedByName: string | null;
+    processedAt: Date | null;
     approvedBy: string | null;
-    approvedAt: string | null;
+    approvedByName: string | null;
+    approvedAt: Date | null;
     note: string | null;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: Date;
+    updatedAt: Date;
     department?: {
         id: string;
         name: string;
     } | null;
+    departments?: { id: string; name: string }[];
     details?: PayrollRecordDetail[];
 }
 
@@ -112,6 +115,7 @@ export interface PayrollRecordDetail {
     payrollRecordId: string;
     userId: string;
     baseSalary: number;
+    proratedSalary: number;
     grossSalary: number;
     taxableIncome: number;
     netSalary: number;
@@ -129,20 +133,29 @@ export interface PayrollRecordDetail {
     standardDays: number;
     lateDays: number;
     overtimeHours: number;
-    status: PayrollDetailStatus;
-    paidAt: string | null;
+    status: string;
+    paidAt: Date | null;
     bankAccount: string | null;
     bankName: string | null;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: Date;
+    updatedAt: Date;
+    positionName?: string | null;
+    positionAuthority?: string | null;
     user?: {
         id: string;
         name: string;
-        employeeCode: string | null;
+        username: string | null;
         bankAccount: string | null;
         bankName: string | null;
         department?: {
+            id?: string;
             name: string;
+        };
+        position?: {
+            id?: string;
+            name: string;
+            code?: string;
+            authority?: string;
         };
     };
 }
@@ -173,7 +186,7 @@ export interface Payslip {
     payrollRecordId: string;
     month: number;
     year: number;
-    employeeCode: string | null;
+    username: string | null;
     employeeName: string;
     departmentName: string | null;
     position: string | null;
@@ -187,19 +200,22 @@ export interface Payslip {
     status: PayslipStatus;
     isSecure: boolean;
     passwordHash: string | null;
-    viewedAt: string | null;
-    downloadedAt: string | null;
-    sentEmailAt: string | null;
+    viewedAt: Date | null;
+    downloadedAt: Date | null;
+    sentEmailAt: Date | null;
     signedBy: string | null;
-    signedAt: string | null;
-    createdAt: string;
-    updatedAt: string;
+    signedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
     user?: {
         id: string;
         name: string;
         email: string;
-        employeeCode: string | null;
+        username: string | null;
         department?: {
+            name: string;
+        };
+        position?: {
             name: string;
         };
     };
@@ -242,6 +258,7 @@ export interface PayslipTax {
 export interface PayrollCalculationResult {
     userId: string;
     baseSalary: number;
+    proratedSalary: number;
     grossSalary: number;
     taxableIncome: number;
     netSalary: number;
@@ -279,7 +296,7 @@ export interface InsuranceCap {
     maxSalary: number;
     region: string | null;
     isActive: boolean;
-    effectiveDate: string;
+    effectiveDate: Date;
 }
 
 // ─── Standard Work Days ───
@@ -334,10 +351,10 @@ export interface PayrollFormula {
     priority: number;
     isActive: boolean;
     isSystem: boolean;
-    effectiveDate: string;
+    effectiveDate: Date;
     createdBy: string | null;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 // ─── Payroll Approval ───
@@ -353,9 +370,9 @@ export interface PayrollApproval {
     note: string | null;
     approverId: string | null;
     approverName: string | null;
-    approvedAt: string | null;
-    createdAt: string;
-    updatedAt: string;
+    approvedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 // ─── Payslip Email ───

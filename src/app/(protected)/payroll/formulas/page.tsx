@@ -1,14 +1,26 @@
 import type { Metadata } from "next";
-import { getAllSalaryComponentTypes } from "../actions";
+import { getAllSalaryComponentTypes, getPayrollFormulas } from "../actions";
 import FormulasClient from "./formulas-client";
 
 export const metadata: Metadata = {
-    title: "Cấu hình lương | Digital HRM",
-    description: "Quản lý cấu trúc lương, phụ cấp, thưởng",
+  title: "Cấu hình lương | Digital HRM",
+  description: "Quản lý cấu trúc lương, phụ cấp, thưởng",
 };
 
 export default async function FormulasPage() {
-    const componentTypes = await getAllSalaryComponentTypes();
+  const componentTypes = await getAllSalaryComponentTypes();
+  let formulas: unknown[] = [];
 
-    return <FormulasClient initialData={JSON.parse(JSON.stringify(componentTypes))} />;
+  try {
+    formulas = await getPayrollFormulas();
+  } catch {
+    formulas = [];
+  }
+
+  return (
+    <FormulasClient
+      initialData={JSON.parse(JSON.stringify(componentTypes))}
+      initialFormulas={JSON.parse(JSON.stringify(formulas))}
+    />
+  );
 }

@@ -78,7 +78,7 @@ export function TableSettingsPanel({
         </div>
 
         {/* Panel content */}
-        <div className="flex-1 overflow-auto pt-2">
+        <div className="flex-1 overflow-auto pt-2 no-scrollbar">
           {hasGeneralToggles && (
             <>
               <div className="px-2 min-w-0 flex flex-col">
@@ -94,6 +94,7 @@ export function TableSettingsPanel({
                       Hiện phòng ban trống
                     </Label>
                     <Switch
+                      size="sm"
                       id="show-empty-departments"
                       checked={showEmptyDepartments}
                       onCheckedChange={setShowEmptyDepartments}
@@ -110,6 +111,7 @@ export function TableSettingsPanel({
                   >
                     <Label htmlFor="wrap-text">Xuống dòng</Label>
                     <Switch
+                      size="sm"
                       id="wrap-text"
                       checked={wrapText}
                       onCheckedChange={setWrapText}
@@ -155,6 +157,7 @@ export function TableSettingsPanel({
                     <span className="text-sm">{option.label}</span>
                   </Label>
                   <Switch
+                    size="sm"
                     id={`column-${option.key}`}
                     checked={
                       columnVisibility[

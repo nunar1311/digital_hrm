@@ -231,6 +231,34 @@ export interface UpdateTemplateData {
   isActive?: boolean;
 }
 
+// ─── Import/Export Types ────────────────────────────────────────────────
+
+export interface ExportedTemplate {
+  name: string;
+  description: string;
+  tasks: Array<{
+    title: string;
+    description: string;
+    category: string;
+    assigneeRole: string;
+    dueDays: number;
+    isRequired: boolean;
+  }>;
+}
+
+export interface ImportedTemplateData {
+  name: string;
+  description?: string;
+  tasks?: Array<{
+    title: string;
+    description?: string;
+    category?: string;
+    assigneeRole?: string;
+    dueDays?: number;
+    isRequired?: boolean;
+  }>;
+}
+
 // ─── Welcome Portal Types ─────────────────────────────────────────────────
 
 export interface WelcomePortalData {

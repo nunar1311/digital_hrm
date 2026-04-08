@@ -2,18 +2,27 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin, organization, username } from "better-auth/plugins";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
-        provider: "postgresql", // hoặc "mysql", "sqlite"
+        provider: "postgresql",
     }),
 
     // ─── Email + Password ───
     emailAndPassword: {
         enabled: true,
-        minPasswordLength: 8,
+        minPasswordLength: 1,
         maxPasswordLength: 128,
         autoSignIn: true,
+        password: {
+            hash: async (password: string) => {
+                return await bcrypt.hash(password, 10);
+            },
+            verify: async ({ hash, password }: { hash: string; password: string }) => {
+                return await bcrypt.compare(password, hash);
+            },
+        },
     },
 
     // ─── Session config ───

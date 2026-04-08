@@ -12,6 +12,9 @@ import type {
     DepartmentPosition,
     CreatePositionForDepartmentInput,
     UpdatePositionForDepartmentInput,
+    PositionSalaryItem,
+    CreatePositionSalaryInput,
+    UpdatePositionSalaryInput,
 } from "./types";
 import {
     getDepartmentTree,
@@ -975,4 +978,199 @@ export async function deletePositionForDepartment(
         console.error("deletePositionForDepartment error:", err);
         return { success: false, error: "Đã xảy ra lỗi khi xóa chức vụ" };
     }
+}
+
+// =============================================
+// POSITION SALARY MANAGEMENT
+// =============================================
+
+/**
+ * Lấy danh sách lương theo chức vụ
+ */
+export async function getPositionSalaries(
+    positionId: string,
+): Promise<PositionSalaryItem[]> {
+    await requirePermission(Permission.POSITION_VIEW_ALL);
+
+    const salaries = await prisma.positionSalary.findMany({
+        where: { positionId },
+        orderBy: [{ salaryGrade: "asc" }, { effectiveDate: "desc" }],
+    });
+
+    return salaries.map((s) => ({
+        id: s.id,
+        positionId: s.positionId,
+        salaryGrade: s.salaryGrade,
+        baseSalary: s.baseSalary.toString(),
+        description: s.description,
+        isActive: s.isActive,
+        effectiveDate: s.effectiveDate,
+    }));
+}
+
+/**
+ * Lấy lương hiện tại của chức vụ (bậc cao nhất đang active)
+ */
+export async function getCurrentPositionSalary(
+    positionId: string,
+): Promise<PositionSalaryItem | null> {
+    await requirePermission(Permission.POSITION_VIEW_ALL);
+
+    const salary = await prisma.positionSalary.findFirst({
+        where: { positionId, isActive: true },
+        orderBy: { effectiveDate: "desc" },
+    });
+
+    if (!salary) return null;
+
+    return {
+        id: salary.id,
+        positionId: salary.positionId,
+        salaryGrade: salary.salaryGrade,
+        baseSalary: salary.baseSalary.toString(),
+        description: salary.description,
+        isActive: salary.isActive,
+        effectiveDate: salary.effectiveDate,
+    };
+}
+
+/**
+ * Tạo lương mới cho chức vụ
+ */
+export async function createPositionSalary(
+    data: CreatePositionSalaryInput,
+): Promise<{ success: true; id: string } | { success: false; error: string }> {
+    try {
+        await requirePermission(Permission.POSITION_CREATE);
+
+        // Check position exists
+        const position = await prisma.position.findUnique({
+            where: { id: data.positionId },
+        });
+        if (!position) {
+            return { success: false, error: "Chức vụ không tồn tại" };
+        }
+
+        // Check unique grade for this position
+        const existing = await prisma.positionSalary.findFirst({
+            where: { positionId: data.positionId, salaryGrade: data.salaryGrade },
+        });
+        if (existing) {
+            return { success: false, error: `Bậc lương ${data.salaryGrade} đã tồn tại cho chức vụ này` };
+        }
+
+        const salary = await prisma.positionSalary.create({
+            data: {
+                positionId: data.positionId,
+                salaryGrade: data.salaryGrade,
+                baseSalary: data.baseSalary,
+                description: data.description,
+                effectiveDate: data.effectiveDate ? new Date(data.effectiveDate) : new Date(),
+                isActive: true,
+            },
+        });
+
+        revalidatePath(`/departments/${position.departmentId}`);
+        return { success: true, id: salary.id };
+    } catch (err) {
+        console.error("createPositionSalary error:", err);
+        return { success: false, error: "Đã xảy ra lỗi khi tạo lương chức vụ" };
+    }
+}
+
+/**
+ * Cập nhật lương chức vụ
+ */
+export async function updatePositionSalary(
+    salaryId: string,
+    data: UpdatePositionSalaryInput,
+): Promise<{ success: true } | { success: false; error: string }> {
+    try {
+        await requirePermission(Permission.POSITION_EDIT);
+
+        const salary = await prisma.positionSalary.findUnique({
+            where: { id: salaryId },
+        });
+        if (!salary) {
+            return { success: false, error: "Không tìm thấy lương chức vụ" };
+        }
+
+        await prisma.positionSalary.update({
+            where: { id: salaryId },
+            data: {
+                ...(data.baseSalary !== undefined && { baseSalary: data.baseSalary }),
+                ...(data.description !== undefined && { description: data.description }),
+                ...(data.isActive !== undefined && { isActive: data.isActive }),
+                ...(data.effectiveDate !== undefined && { effectiveDate: new Date(data.effectiveDate) }),
+            },
+        });
+
+        // Revalidate department page
+        const position = await prisma.position.findUnique({
+            where: { id: salary.positionId },
+        });
+        if (position?.departmentId) {
+            revalidatePath(`/departments/${position.departmentId}`);
+        }
+
+        return { success: true };
+    } catch (err) {
+        console.error("updatePositionSalary error:", err);
+        return { success: false, error: "Đã xảy ra lỗi khi cập nhật lương chức vụ" };
+    }
+}
+
+/**
+ * Xóa lương chức vụ (soft delete)
+ */
+export async function deletePositionSalary(
+    salaryId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+    try {
+        await requirePermission(Permission.POSITION_DELETE);
+
+        const salary = await prisma.positionSalary.findUnique({
+            where: { id: salaryId },
+        });
+        if (!salary) {
+            return { success: false, error: "Không tìm thấy lương chức vụ" };
+        }
+
+        // Soft delete - set isActive = false
+        await prisma.positionSalary.update({
+            where: { id: salaryId },
+            data: { isActive: false },
+        });
+
+        // Revalidate
+        const position = await prisma.position.findUnique({
+            where: { id: salary.positionId },
+        });
+        if (position?.departmentId) {
+            revalidatePath(`/departments/${position.departmentId}`);
+        }
+
+        return { success: true };
+    } catch (err) {
+        console.error("deletePositionSalary error:", err);
+        return { success: false, error: "Đã xảy ra lỗi khi xóa lương chức vụ" };
+    }
+}
+
+/**
+ * Lấy lương chức vụ mặc định (tham khảo) để gợi ý khi tạo nhân viên mới
+ */
+export async function getDefaultPositionSalary(
+    departmentId: string,
+    authority: string,
+): Promise<PositionSalaryItem | null> {
+    await requirePermission(Permission.POSITION_VIEW_ALL);
+
+    // Find position with given authority in department
+    const position = await prisma.position.findFirst({
+        where: { departmentId, authority, status: "ACTIVE" },
+    });
+    if (!position) return null;
+
+    return getCurrentPositionSalary(position.id);
 }

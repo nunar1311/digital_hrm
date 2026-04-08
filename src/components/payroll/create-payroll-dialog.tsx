@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -34,16 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Users, AlertCircle, Loader2, Plus } from "lucide-react";
 import {
-  Calculator,
-  Eye,
-  Users,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-} from "lucide-react";
-import { createPayrollRecord } from "@/app/(protected)/payroll/actions";
-import type { PayrollRecord } from "@/app/(protected)/payroll/types";
+  createPayrollRecord,
+  getDepartmentsForPayroll,
+  previewPayroll,
+} from "@/app/(protected)/payroll/actions";
 
 const createPayrollSchema = z.object({
   month: z.string().min(1, "Tháng không được trống"),
@@ -54,25 +49,15 @@ const createPayrollSchema = z.object({
 
 type CreatePayrollForm = z.infer<typeof createPayrollSchema>;
 
-interface CreatePayrollDialogProps {
-  children: React.ReactNode;
-  departments: { id: string; name: string }[];
-  onSuccess?: (record: PayrollRecord) => void;
-}
-
-export function CreatePayrollDialog({
-  children,
-  departments,
-  onSuccess,
-}: CreatePayrollDialogProps) {
+export function CreatePayrollDialog() {
   const [open, setOpen] = useState(false);
-  const [previewData, setPreviewData] = useState<{
-    employeeCount: number;
-    estimatedGross: number;
-    estimatedNet: number;
-  } | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+  const [enablePreview, setEnablePreview] = useState(false);
   const queryClient = useQueryClient();
+
+  const { data: departments = [] } = useQuery({
+    queryKey: ["departments"],
+    queryFn: getDepartmentsForPayroll,
+  });
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -88,67 +73,54 @@ export function CreatePayrollDialog({
     },
   });
 
+  const watchMonth = form.watch("month");
+  const watchYear = form.watch("year");
+  const watchDepartmentId = form.watch("departmentId");
+
+  const { data: previewData, isFetching: isPreviewFetching } = useQuery({
+    queryKey: ["payroll-preview", watchMonth, watchYear, watchDepartmentId],
+    queryFn: async () => {
+      const values = form.getValues();
+      return previewPayroll({
+        month: parseInt(values.month),
+        year: parseInt(values.year),
+        departmentId:
+          values.departmentId === "all" || !values.departmentId
+            ? undefined
+            : values.departmentId,
+      });
+    },
+    enabled: enablePreview,
+    refetchOnWindowFocus: false,
+  });
+
   const createMutation = useMutation({
-    mutationFn: async (data: {
-      month: number;
-      year: number;
-      departmentId?: string;
-    }) => {
-      const result = await createPayrollRecord(data);
-      return result;
+    mutationFn: async (data: CreatePayrollForm) => {
+      const record = await createPayrollRecord({
+        month: parseInt(data.month),
+        year: parseInt(data.year),
+        departmentId:
+          data.departmentId === "all" || !data.departmentId
+            ? undefined
+            : data.departmentId,
+      });
+      return record;
     },
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["payroll-records"] });
+    onSuccess: (record, data) => {
+      toast.success(`Đã tạo bảng lương tháng ${data.month}/${data.year}`);
+      setEnablePreview(false);
       setOpen(false);
-      setShowPreview(false);
-      return {};
-    },
-    onSuccess: (result) => {
-      toast.success(`Đã tạo bảng lương tháng ${result.month}/${result.year}`);
-      setPreviewData(null);
       form.reset();
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
     },
     onError: (error) => {
       toast.error(
         error instanceof Error ? error.message : "Lỗi khi tạo bảng lương",
       );
-      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
-    }
-  });
-
-  const previewMutation = useMutation({
-    mutationFn: async () => {
-      const values = form.getValues();
-      const response = await fetch(
-        "/api/payroll/preview?" +
-          new URLSearchParams({
-            month: values.month,
-            year: values.year,
-            departmentId: values.departmentId || "",
-          }),
-      );
-      if (!response.ok) throw new Error("Lỗi khi xem trước");
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setPreviewData(data);
-      setShowPreview(true);
-    },
-    onError: () => {
-      toast.error("Không thể xem trước. Vui lòng thử lại.");
     },
   });
-
-  const onSubmit = (data: CreatePayrollForm) => {
-    createMutation.mutate({
-      month: parseInt(data.month),
-      year: parseInt(data.year),
-      departmentId: data.departmentId === "all" ? undefined : data.departmentId,
-    });
-  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -158,29 +130,36 @@ export function CreatePayrollDialog({
     }).format(amount);
   };
 
-  const selectedDepartment = form.watch("departmentId");
-  const selectedDepartmentName =
-    selectedDepartment && selectedDepartment !== "all"
-      ? departments.find((d) => d.id === selectedDepartment)?.name
-      : "Toàn công ty";
+  const handleSubmit = () => {
+    createMutation.mutate(form.getValues());
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
+      setEnablePreview(false);
+      form.reset();
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button size="xs" onClick={() => setOpen(true)}>
+          <Plus /> Tạo bảng lương mới
+        </Button>
+      </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
-            Tạo bảng lương mới
-          </DialogTitle>
-          <DialogDescription>
+          <DialogTitle>Tạo bảng lương mới</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
             Tính lương cho nhân viên trong tháng. Hệ thống sẽ tự động tính toán
             các khoản BHXH, BHYT, BHTN và thuế TNCN.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -193,7 +172,7 @@ export function CreatePayrollDialog({
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Chọn tháng" />
                         </SelectTrigger>
                       </FormControl>
@@ -220,7 +199,7 @@ export function CreatePayrollDialog({
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Chọn năm" />
                         </SelectTrigger>
                       </FormControl>
@@ -244,24 +223,26 @@ export function CreatePayrollDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Phòng ban (tùy chọn)</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Toàn công ty" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="all">Toàn công ty</SelectItem>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-3">
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Toàn công ty" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="all">Toàn công ty</SelectItem>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -290,121 +271,106 @@ export function CreatePayrollDialog({
               )}
             />
 
-            {showPreview && previewData && (
-              <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+            <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <Eye className="h-4 w-4" />
-                  Xem trước bảng lương
+                  <span>Xem trước bảng lương</span>
+                  {isPreviewFetching && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
                 </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">
-                        Số nhân viên
-                      </p>
-                      <p className="font-semibold">
-                        {previewData.employeeCount}
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      Tổng Gross ước tính
-                    </p>
-                    <p className="font-semibold text-blue-600">
-                      {formatCurrency(previewData.estimatedGross)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      Tổng Net ước tính
-                    </p>
-                    <p className="font-semibold text-green-600">
-                      {formatCurrency(previewData.estimatedNet)}
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    size="sm"
+                    id="enable-preview"
+                    checked={enablePreview}
+                    onCheckedChange={setEnablePreview}
+                  />
+                  <label
+                    htmlFor="enable-preview"
+                    className="text-sm text-muted-foreground cursor-pointer"
+                  >
+                    Preview
+                  </label>
                 </div>
-
-                {previewData.employeeCount === 0 && (
-                  <div className="flex items-center gap-2 text-amber-600 text-sm">
-                    <AlertCircle className="h-4 w-4" />
-                    Không có nhân viên nào trong phạm vi này
-                  </div>
-                )}
               </div>
-            )}
+              {enablePreview && (
+                <>
+                  {isPreviewFetching ? (
+                    <div className="text-center py-3 text-sm text-muted-foreground">
+                      Đang tải dữ liệu preview...
+                    </div>
+                  ) : previewData ? (
+                    <>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              Số nhân viên
+                            </p>
+                            <p className="font-semibold">
+                              {previewData.employeeCount}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Tổng Gross ước tính
+                          </p>
+                          <p className="font-semibold text-blue-600">
+                            {formatCurrency(previewData.estimatedGross)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Tổng Net ước tính
+                          </p>
+                          <p className="font-semibold text-green-600">
+                            {formatCurrency(previewData.estimatedNet)}
+                          </p>
+                        </div>
+                      </div>
 
-            <DialogFooter className="gap-2">
-              {!showPreview ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => previewMutation.mutate()}
-                    disabled={
-                      previewMutation.isPending || !form.formState.isValid
-                    }
-                  >
-                    {previewMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Đang xem trước...
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Xem trước
-                      </>
-                    )}
-                  </Button>
-                  <Button type="submit" disabled={createMutation.isPending}>
-                    {createMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Đang tạo...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Tạo bảng lương
-                      </>
-                    )}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowPreview(false)}
-                  >
-                    Quay lại
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="default"
-                    onClick={() => onSubmit(form.getValues())}
-                    disabled={
-                      createMutation.isPending ||
-                      previewData?.employeeCount === 0
-                    }
-                  >
-                    {createMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Đang tạo...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Xác nhận tạo
-                      </>
-                    )}
-                  </Button>
+                      {previewData.employeeCount === 0 && (
+                        <div className="flex items-center gap-2 text-amber-600 text-sm">
+                          <AlertCircle className="h-4 w-4" />
+                          Không có nhân viên nào trong phạm vi này
+                        </div>
+                      )}
+                    </>
+                  ) : null}
                 </>
               )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                onClick={() => setOpen(false)}
+              >
+                Hủy
+              </Button>
+              <Button
+                size="sm"
+                type="button"
+                onClick={handleSubmit}
+                disabled={
+                  createMutation.isPending ||
+                  (enablePreview && previewData?.employeeCount === 0)
+                }
+              >
+                {createMutation.isPending ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Đang tạo...
+                  </>
+                ) : (
+                  <>Tạo bảng lương</>
+                )}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

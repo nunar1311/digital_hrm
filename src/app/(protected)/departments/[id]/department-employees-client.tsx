@@ -77,6 +77,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PositionsSectionInline } from "@/components/positions/positions-section-inline";
 import { PositionDropdown } from "@/components/positions/position-dropdown";
+import { PositionSalaryList } from "@/components/departments/position-salary-list";
 import {
   Popover,
   PopoverTrigger,
@@ -141,7 +142,7 @@ export function DepartmentEmployeesClient({
   const [wrapText, setWrapText] = useState(false);
 
   // View toggle state
-  const [activeView, setActiveView] = useState<"employees" | "positions">(
+  const [activeView, setActiveView] = useState<"employees" | "positions" | "salaries">(
     "employees",
   );
 
@@ -560,6 +561,20 @@ export function DepartmentEmployeesClient({
               <span className="text-sm">Chức vụ</span>
             </div>
           </div>
+          <div
+            className="relative pointer-events-auto cursor-pointer"
+            onClick={() => setActiveView("salaries")}
+          >
+            <div
+              className={cn(
+                "h-6 rounded static min-w-0 flex items-center px-1 gap-1",
+                activeView === "salaries" &&
+                  "before:content-[''] before:absolute before:-bottom-1 before:left-0 before:right-0 before:border-b-2 before:border-accent-foreground hover:bg-muted font-semibold",
+              )}
+            >
+              <span className="text-sm">Lương</span>
+            </div>
+          </div>
         </div>
 
         {/* Content */}
@@ -878,6 +893,13 @@ export function DepartmentEmployeesClient({
                 setPositionFormOpen(true);
               }}
               onDelete={(pos: PositionListItem) => setDeletePositionTarget(pos)}
+            />
+          )}
+
+          {activeView === "salaries" && (
+            <PositionSalaryList
+              departmentId={departmentId}
+              departmentName={departmentName}
             />
           )}
         </div>

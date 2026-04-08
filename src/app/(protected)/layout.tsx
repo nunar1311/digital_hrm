@@ -9,10 +9,12 @@ import { SidebarMindWrapper } from "@/components/sidebar-mind-wrapper";
 import BannerNotification from "@/components/banner-notification";
 import { AttendanceCheckDialog } from "@/components/attendance/attendance-check-dialog";
 import { ShiftReminderNotifier } from "@/components/attendance/shift-reminder-notifier";
+import { ContractExpiryReminderNotifier } from "@/components/contracts/contract-expiry-reminder-notifier";
 import {
   SidebarContextProvider,
   SidebarSlot,
 } from "@/contexts/sidebar-context";
+import RightSidebar from "@/components/right-sidebar";
 
 export default async function ProtectedLayout({
   children,
@@ -46,16 +48,19 @@ export default async function ProtectedLayout({
               <AppHeader />
             </div>
 
-            <div className="flex flex-1 overflow-hidden mb-1.5">
+            <div className="flex flex-1 overflow-hidden mb-1.5 transition-all duration-300 ease-in-out">
               <SidebarMindWrapper />
-              <div className="border rounded-lg flex-1 flex overflow-hidden relative mr-1.5">
+              <div className="border rounded-lg flex-1 flex overflow-hidden relative mr-1.5 ml-1.5">
                 <SidebarSlot className="overflow-hidden flex-1 relative min-h-0">
                   <BannerNotification />
                   <AttendanceCheckDialog />
                   <ShiftReminderNotifier />
+                  <ContractExpiryReminderNotifier />
                   <main className="h-full overflow-hidden">{children}</main>
                 </SidebarSlot>
               </div>
+
+              <RightSidebar />
             </div>
           </SidebarProvider>
         </div>

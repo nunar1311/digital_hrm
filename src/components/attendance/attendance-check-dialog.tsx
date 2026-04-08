@@ -101,10 +101,19 @@ export function AttendanceCheckDialog() {
   // Check-in mutation
   const checkInMutation = useMutation({
     mutationFn: checkIn,
-    onSuccess: () => {
+    onSuccess: (result) => {
+      // Check if server returned error (not thrown)
+      if (!result.success) {
+        toast.error(result.error || "Có lỗi xảy ra khi chấm công");
+        return;
+      }
       toast.success("Check-in thành công!");
       queryClient.invalidateQueries({
         queryKey: ["attendance", "today"],
+      });
+      queryClient.refetchQueries({
+        queryKey: ["attendance", "today"],
+        type: "active",
       });
       queryClient.invalidateQueries({
         queryKey: ["attendance", "login-check"],

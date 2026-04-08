@@ -34,10 +34,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { createOnboarding, getEmployeesForOnboarding, getOnboardingTemplates } from "@/app/(protected)/onboarding/actions";
+import {
+  createOnboarding,
+  getEmployeesForOnboarding,
+  getOnboardingTemplates,
+} from "@/app/(protected)/onboarding/actions";
+import { DatePicker } from "../ui/date-picker";
 
 const createOnboardingSchema = z.object({
   userId: z.string().min(1, "Vui lòng chọn nhân viên"),
@@ -59,7 +68,11 @@ export function CreateOnboardingDialog({
   onOpenChange,
   onSuccess,
 }: CreateOnboardingDialogProps) {
-  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; department?: { name: string } | null } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<{
+    id: string;
+    name: string;
+    department?: { name: string } | null;
+  } | null>(null);
 
   const form = useForm<CreateOnboardingForm>({
     resolver: zodResolver(createOnboardingSchema),
@@ -118,18 +131,14 @@ export function CreateOnboardingDialog({
   useEffect(() => {
     if (!open) {
       form.reset();
-      setSelectedUser(null);
     }
   }, [open, form]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5 text-blue-600" />
-            Tạo onboarding mới
-          </DialogTitle>
+          <DialogTitle>Tạo onboarding mới</DialogTitle>
           <DialogDescription>
             Tạo quy trình tiếp nhận cho nhân viên mới vào công ty
           </DialogDescription>
@@ -144,12 +153,9 @@ export function CreateOnboardingDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nhân viên</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={handleUserSelect}
-                  >
+                  <Select value={field.value} onValueChange={handleUserSelect}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Chọn nhân viên..." />
                       </SelectTrigger>
                     </FormControl>
@@ -202,15 +208,19 @@ export function CreateOnboardingDialog({
                   <FormLabel>Template</FormLabel>
                   <Select
                     value={field.value}
-                    onValueChange={(value) => field.onChange(value || undefined)}
+                    onValueChange={(value) =>
+                      field.onChange(value || undefined)
+                    }
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Chọn template (mặc định: template chuẩn)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="__default__">Template mặc định</SelectItem>
+                      <SelectItem value="__default__">
+                        Template mặc định
+                      </SelectItem>
                       {templates.map((tmpl) => (
                         <SelectItem key={tmpl.id} value={tmpl.id}>
                           <div className="flex items-center gap-2">
@@ -236,39 +246,7 @@ export function CreateOnboardingDialog({
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Ngày bắt đầu</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {field.value ? (
-                            field.value.toLocaleDateString("vi-VN", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            })
-                          ) : (
-                            <span>Chọn ngày</span>
-                          )}
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date < new Date()}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DatePicker date={field.value} setDate={field.onChange} />
                   <FormMessage />
                 </FormItem>
               )}
@@ -297,15 +275,13 @@ export function CreateOnboardingDialog({
               <Button
                 type="button"
                 variant="outline"
+                size={"sm"}
                 onClick={() => onOpenChange(false)}
               >
                 Hủy
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending}
-              >
-                {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Button size={"sm"} type="submit" disabled={mutation.isPending}>
+                {mutation.isPending && <Loader2 className="animate-spin" />}
                 Tạo onboarding
               </Button>
             </DialogFooter>
