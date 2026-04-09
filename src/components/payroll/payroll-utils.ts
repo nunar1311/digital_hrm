@@ -89,7 +89,7 @@ export function calculatePayrollSummary(
     };
   }
 
-  return records.reduce(
+  return records.reduce<PayrollSummary>(
     (acc, r) => ({
       totalEmployees:
         acc.totalEmployees + Number(r.totalEmployees ?? 0),

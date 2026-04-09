@@ -4,6 +4,7 @@ import {
   Building2Icon,
   CalendarCheck2,
   ChevronsRightIcon,
+  FileText,
   HomeIcon,
   LayoutDashboard,
   LucideIcon,
@@ -12,6 +13,7 @@ import {
   UserMinus,
   UserPlus,
   UsersIcon,
+  UsersRound,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useSidebar } from "./ui/sidebar";
@@ -63,6 +65,12 @@ const MENU_ITEM: MenuItem[] = [
     icon: OrbitIcon,
     href: "/payroll",
     permissions: [Permission.ORG_CHART_VIEW],
+  },
+  {
+    label: "Hợp đồng",
+    icon: FileText,
+    href: "/contracts",
+    permissions: [Permission.CONTRACT_VIEW_ALL],
   },
   {
     label: "Tiếp nhận",
@@ -125,6 +133,7 @@ const SidebarMind = () => {
                   <Button
                     key={item.href}
                     tooltip={item.label}
+                    tooltipSide="right"
                     variant="ghost"
                     size="icon-sm"
                     isActive={isActive}
@@ -141,6 +150,7 @@ const SidebarMind = () => {
         {canAny([Permission.SETTINGS_VIEW]) && (
           <Button
             tooltip={"Cài đặt"}
+            tooltipSide="right"
             variant="ghost"
             isActive={isSettings}
             size="icon-sm"

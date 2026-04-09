@@ -554,7 +554,7 @@ export function LeaveRequestDialog({
               <RequestSummary
                 leaveType={selectedLeaveType.name}
                 days={calculatedDays}
-                approverName={manager?.name || "Quản lý trực tiếp"}
+                approverName={manager?.name || ""}
               />
             )}
 

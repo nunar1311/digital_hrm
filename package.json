@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "cross-env NODE_ENV=production node --import tsx server.ts",
     "start:next": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "update-managers": "tsx scripts/update-manager-ids.ts"
   },
   "dependencies": {
     "@better-fetch/fetch": "^1.1.21",

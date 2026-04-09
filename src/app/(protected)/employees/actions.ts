@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth-session";
 import { Permission } from "@/lib/rbac/permissions";
 import { revalidatePath } from "next/cache";
 import { getIO, emitToAll } from "@/lib/socket/server";
+import { auth } from "@/lib/auth";
 
 // Types
 export interface GetEmployeesParams {
@@ -104,6 +105,7 @@ export async function getEmployees(
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
       { fullName: { contains: search, mode: "insensitive" } },
+      { employeeCode: { contains: search, mode: "insensitive" } },
       {
         username: {
           contains: search,
@@ -260,7 +262,7 @@ export async function checkNationalIdExists(
 }
 
 /**
- * Tạo mới nhân viên
+ * Tạo mới nhân viên và đồng thời tạo tài khoản better-auth
  */
 export async function createEmployee(data: {
   name: string;
@@ -301,6 +303,21 @@ export async function createEmployee(data: {
 }) {
   await requirePermission(Permission.EMPLOYEE_CREATE);
 
+  // Kiểm tra username đã tồn tại chưa
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { username: data.username },
+        { email: data.email },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (existingUser) {
+    throw new Error("Tên đăng nhập hoặc email đã tồn tại trong hệ thống");
+  }
+
   // Validate positionId nếu được cung cấp
   let positionId = data.positionId;
   if (positionId) {
@@ -325,6 +342,7 @@ export async function createEmployee(data: {
     }
   }
 
+  // Tạo employee user
   const employee = await prisma.user.create({
     data: {
       name: data.name,
@@ -365,7 +383,33 @@ export async function createEmployee(data: {
     },
   });
 
+  // Tạo tài khoản better-auth với mật khẩu là username
+  try {
+    await auth.api.signUpEmail({
+      body: {
+        name: data.name,
+        email: data.email,
+        username: data.username,
+        password: data.username, // Mật khẩu mặc định là username
+        employeeCode: data.username,
+        hrmRole: "EMPLOYEE",
+        departmentId: departmentId,
+      },
+    });
+  } catch (authError) {
+    // Nếu tạo tài khoản better-auth thất bại, xóa user đã tạo
+    await prisma.user.delete({ where: { id: employee.id } });
+    throw new Error(`Tạo tài khoản thất bại: ${authError instanceof Error ? authError.message : "Lỗi không xác định"}`);
+  }
+
   revalidatePath("/employees");
+
+  // Emit sự kiện để thông báo cho các client
+  const io = getIO();
+  if (io) {
+    emitToAll("employee:created", { employeeId: employee.id });
+  }
+
   return employee;
 }
 
@@ -548,6 +592,7 @@ export async function getAssignableEmployees(search?: string) {
       id: true,
       name: true,
       fullName: true,
+      employeeCode: true,
       username: true,
       image: true,
       position: { select: { id: true, name: true } },

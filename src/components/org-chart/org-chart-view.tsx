@@ -58,6 +58,8 @@ import "@/app/(protected)/org-chart/print.css";
 
 interface OrgChartViewProps {
     data: DepartmentNode[];
+    /** Khi false, biểu đồ bị khóa ở chế độ chỉ đọc, không hiện nút chỉnh sửa */
+    canEdit?: boolean;
 }
 
 function collectAllIds(nodes: DepartmentNode[]): Set<string> {
@@ -120,6 +122,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export function OrgChartView({
     data: initialData,
+    canEdit = true,
 }: OrgChartViewProps) {
     const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
@@ -130,7 +133,7 @@ export function OrgChartView({
         string | null
     >(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isLocked, setIsLocked] = useState(false);
+    const [isLocked, setIsLocked] = useState(!canEdit);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [editDeptId, setEditDeptId] = useState<string | null>(null);
     const [templateToApply, setTemplateToApply] = useState<
@@ -178,6 +181,13 @@ export function OrgChartView({
             // ignore
         }
     }, [chartTheme, cardStyle, chartLayout]);
+
+    // Auto-lock chart when canEdit changes
+    useEffect(() => {
+        if (!canEdit) {
+            setIsLocked(true);
+        }
+    }, [canEdit]);
 
     const handleShare = useCallback(() => {
         const url =
@@ -691,6 +701,7 @@ export function OrgChartView({
                         onShare={handleShare}
                         onExportImage={handleExportImage}
                         canvasRef={canvasRef}
+                        canEdit={canEdit}
                     />
                 </div>
             </div>
@@ -719,8 +730,8 @@ export function OrgChartView({
                 />
             )}
 
-            {/* Bulk Move Bar */}
-            {selectedEmployeeIds.size > 0 && (
+            {/* Bulk Move Bar - chỉ hiện khi có quyền chỉnh sửa */}
+            {canEdit && selectedEmployeeIds.size > 0 && (
                 <BulkMoveBar
                     selectedEmployeeIds={selectedEmployeeIds}
                     allDepartments={treeData}
@@ -737,6 +748,7 @@ export function OrgChartView({
                     setEditDeptId(id);
                     setSelectedDeptId(null);
                 }}
+                canEdit={canEdit}
             />
 
             <DepartmentFormDialog

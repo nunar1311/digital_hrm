@@ -4,6 +4,19 @@ import { admin, organization, username } from "better-auth/plugins";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+const envTrustedOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const trustedOrigins = Array.from(
+    new Set([
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        ...envTrustedOrigins,
+    ]),
+);
+
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "postgresql",
@@ -85,7 +98,7 @@ export const auth = betterAuth({
     trustHost: true,
 
     // ─── Trusted origins ───
-    trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL!],
+    trustedOrigins,
 });
 
 export type Session = typeof auth.$Infer.Session;

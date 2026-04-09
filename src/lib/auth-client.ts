@@ -6,8 +6,15 @@ import {
     usernameClient,
 } from "better-auth/client/plugins";
 
+function resolveAuthBaseURL(): string | undefined {
+    const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    if (configured) return configured;
+    if (typeof window !== "undefined") return window.location.origin;
+    return undefined;
+}
+
 export const authClient = createAuthClient({
-    baseURL: process.env.NEXT_PUBLIC_APP_URL!,
+    baseURL: resolveAuthBaseURL(),
     plugins: [
         adminClient(),
         organizationClient(),

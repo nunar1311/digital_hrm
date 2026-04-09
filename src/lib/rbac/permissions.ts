@@ -440,6 +440,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.PERFORMANCE_VIEW_SELF,
         Permission.ASSET_VIEW_SELF,
         Permission.REWARD_VIEW,
+        Permission.ORG_CHART_VIEW,
         Permission.ESS_VIEW,
         Permission.ESS_UPDATE_PROFILE,
         Permission.ESS_SEND_REQUEST,

@@ -56,12 +56,14 @@ interface DepartmentDetailPanelProps {
     department: DepartmentNode | null;
     onClose: () => void;
     onEdit: (id: string) => void;
+    canEdit?: boolean;
 }
 
 export function DepartmentDetailPanel({
     department,
     onClose,
     onEdit,
+    canEdit = true,
 }: DepartmentDetailPanelProps) {
     const queryClient = useQueryClient();
     const router = useRouter();
@@ -176,6 +178,7 @@ export function DepartmentDetailPanel({
                                                 onClick={() =>
                                                     onEdit(department.id)
                                                 }
+                                                className={!canEdit ? "hidden" : ""}
                                             >
                                                 <Pencil />
                                                 Chỉnh sửa

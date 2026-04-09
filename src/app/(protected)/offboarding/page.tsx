@@ -6,7 +6,7 @@ import { OffboardingClient } from "./offboarding-client";
 import { getOffboardings, getOffboardingStats } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Thôi việc | Digital HRM",
+  title: "Thôi việc",
   description: "Quản lý quy trình offboarding, bàn giao và chốt nghỉ việc",
 };
 

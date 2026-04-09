@@ -72,7 +72,7 @@ export function LoginForm() {
           noValidate
         >
           {form.formState.errors.root && (
-            <div className="rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-700">
+            <div className="text-sm relative px-4 after:absolute after:w-0.5 after:bg-primary after:left-0 after:h-full">
               {form.formState.errors.root.message}
             </div>
           )}

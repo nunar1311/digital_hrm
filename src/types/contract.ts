@@ -12,6 +12,7 @@ export type ContractExportFormat = "DOCX" | "PDF";
 export interface ContractEmployeeRef {
     id: string;
     name: string;
+    employeeCode?: string | null;
     username: string | null;
 }
 
@@ -106,3 +107,7 @@ export interface ContractExportResult {
     mimeType: string;
     base64Content: string;
 }
+
+// Backward-compatible aliases for shared type barrel exports.
+export type Contract = ContractListItem;
+export type ContractTemplate = ContractTemplateItem;

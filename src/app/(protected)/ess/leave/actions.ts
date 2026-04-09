@@ -168,20 +168,12 @@ export async function getMyLeaveRequests(params: {
     }
 
     if (year) {
-        where.OR = [
-            {
-                startDate: {
-                    gte: new Date(year, 0, 1),
-                    lte: new Date(year, 11, 31),
-                },
-            },
-            {
-                endDate: {
-                    gte: new Date(year, 0, 1),
-                    lte: new Date(year, 11, 31),
-                },
-            },
-        ];
+        const startOfYear = new Date(year, 0, 1);
+        const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+
+        // Include every leave request that overlaps the selected year.
+        where.startDate = { lte: endOfYear };
+        where.endDate = { gte: startOfYear };
     }
 
     const [requests, total] = await Promise.all([
@@ -247,14 +239,14 @@ export async function getMyLeaveRequests(params: {
 // GET MY LEAVE BALANCES
 // ============================================================
 
-export async function getMyLeaveBalances() {
+export async function getMyLeaveBalances(year = new Date().getFullYear()) {
     const session = await requireAuth();
-    const currentYear = new Date().getFullYear();
+    const targetYear = year;
 
     const balances = await prisma.leaveBalance.findMany({
         where: {
             userId: session.user.id,
-            policyYear: currentYear,
+            policyYear: targetYear,
         },
         include: {
             leaveType: {

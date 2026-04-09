@@ -29,7 +29,7 @@ check_docker() {
         log_error "Docker is not installed. Please install Docker first."
         exit 1
     fi
-    if ! command -v docker compose &> /dev/null; then
+    if ! docker compose version > /dev/null 2>&1; then
         log_error "Docker Compose is not installed. Please install Docker Compose first."
         exit 1
     fi

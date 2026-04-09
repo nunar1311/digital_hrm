@@ -9,6 +9,7 @@ import AttendanceSidebar from "@/components/attendance/attendance-sidebar";
 import ESSSidebar from "@/components/ess/ess-sidebar";
 import OnboardingSidebar from "@/components/onboarding/onboarding-sidebar";
 import PayrollSidebar from "@/components/payroll/payroll-sidebar";
+import RecruitmentSidebar from "@/components/recruitment/recruitment-sidebar";
 
 // ============================================================
 // Department tree context
@@ -146,6 +147,10 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
       return "payroll";
     }
 
+    if (pathname === "/recruitment" || pathname.startsWith("/recruitment/")) {
+      return "recruitment";
+    }
+
     if (
       pathname === "/ess" ||
       pathname.startsWith("/ess/") ||
@@ -170,6 +175,9 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
     }
     if (sidebarType === "payroll") {
       return <PayrollSidebar />;
+    }
+    if (sidebarType === "recruitment") {
+      return <RecruitmentSidebar />;
     }
     if (sidebarType === "ess") {
       return <ESSSidebar />;

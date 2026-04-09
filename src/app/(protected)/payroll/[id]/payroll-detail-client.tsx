@@ -143,21 +143,30 @@ export default function PayrollDetailClient({
     onSuccess: (result) => {
       if (result.success) {
         toast.success(result.message);
-        queryClient.invalidateQueries({ queryKey: ["payroll-record", recordId] });
+        queryClient.invalidateQueries({
+          queryKey: ["payroll-record", recordId],
+        });
         queryClient.invalidateQueries({ queryKey: ["payroll-records"] });
-        queryClient.invalidateQueries({ queryKey: ["payslips-for-record", recordId] });
+        queryClient.invalidateQueries({
+          queryKey: ["payslips-for-record", recordId],
+        });
       } else {
         toast.error(result.message || "Lỗi khi tính lại bảng lương");
       }
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Lỗi khi tính lại bảng lương");
+      toast.error(
+        error instanceof Error ? error.message : "Lỗi khi tính lại bảng lương",
+      );
     },
   });
 
   // ─── Derived data ───
   const isPending =
-    isLoading || updateStatusMutation.isPending || exportMutation.isPending || recalculateMutation.isPending;
+    isLoading ||
+    updateStatusMutation.isPending ||
+    exportMutation.isPending ||
+    recalculateMutation.isPending;
 
   const details: PayrollRecordDetail[] = record?.details ?? [];
   const filteredPayslips = useMemo(
@@ -278,7 +287,7 @@ export default function PayrollDetailClient({
                 </DropdownMenuItem>
                 {record.status === "COMPLETED" && (
                   <DropdownMenuItem
-                  onClick={() => toast.info("Tính năng đang phát triển")}
+                    onClick={() => toast.info("Tính năng đang phát triển")}
                     disabled={isPending}
                   >
                     <Mail />
@@ -345,9 +354,17 @@ export default function PayrollDetailClient({
         <div className="flex items-center px-2 pb-0 border-b bg-background shrink-0">
           {(
             [
-              { value: "overview", label: "Tổng quan", count: undefined as number | undefined },
+              {
+                value: "overview",
+                label: "Tổng quan",
+                count: undefined as number | undefined,
+              },
               { value: "details", label: "Chi tiết", count: details.length },
-              { value: "payslips", label: "Phiếu lương", count: filteredPayslips.length },
+              {
+                value: "payslips",
+                label: "Phiếu lương",
+                count: filteredPayslips.length,
+              },
             ] as const
           ).map((tab) => (
             <button
@@ -427,17 +444,17 @@ export default function PayrollDetailClient({
 
           {/* Tab: Payslips */}
           {activeTab === "payslips" && (
-              <PayrollPayslipsTab
-                recordId={recordId}
-                recordStatus={record.status}
-                filteredPayslips={filteredPayslips}
-                onViewPayslip={handleViewPayslip}
-                onViewEmployeeDetail={handleViewEmployeeDetailFromPayslip}
-                onExportAll={() => exportMutation.mutate()}
-                onSendEmail={() => toast.info("Tính năng đang phát triển")}
-                onDeleteRecord={() => toast.info("Tính năng đang phát triển")}
-                onRefetch={handleRefresh}
-              />
+            <PayrollPayslipsTab
+              recordId={recordId}
+              recordStatus={record.status}
+              filteredPayslips={filteredPayslips}
+              onViewPayslip={handleViewPayslip}
+              onViewEmployeeDetail={handleViewEmployeeDetailFromPayslip}
+              onExportAll={() => exportMutation.mutate()}
+              onSendEmail={() => toast.info("Tính năng đang phát triển")}
+              onDeleteRecord={() => toast.info("Tính năng đang phát triển")}
+              onRefetch={handleRefresh}
+            />
           )}
         </div>
       </div>

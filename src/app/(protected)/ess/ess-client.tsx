@@ -6,8 +6,6 @@ import {
   CalendarCheck,
   ChevronRight,
   ArrowRight,
-  AlertCircle,
-  Bell,
   Clock,
   FileText,
   Wallet,
@@ -74,32 +72,28 @@ export function ESSClient({ initialData }: ESSClientProps) {
 
   return (
     <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
-      <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+      <div className="flex-1 overflow-auto p-2 sm:p-3 space-y-4 sm:space-y-6">
         {/* Welcome Header */}
-        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-linear-to-b from-primary/5 to-primary/10 border border-primary/10">
-          <div className="relative px-4 py-4 sm:p-6 md:p-8">
+        <div className="relative overflow-hidden">
+          <div className="relative">
             <div className="flex flex-col gap-4 sm:gap-6">
               {/* Top row: greeting + date */}
               <div className="flex items-start sm:items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight">
                     {greeting}, <span className="text-primary">{userName}</span>
                   </h1>
                   <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-1 text-xs sm:text-sm text-muted-foreground">
-                    <Badge className="text-sm px-1.5 py-0.5">
+                    <Badge className="text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2">
                       {initialData.profile.username}
                     </Badge>
-                    <span className="text-muted-foreground/50 hidden xs:inline">
-                      •
-                    </span>
+                    <span className="text-muted-foreground/50 ">•</span>
                     <span className="truncate">
-                      {initialData.profile.department?.name || "Chưa phòng ban"}
+                      {initialData.profile.department?.name || ""}
                     </span>
-                    <span className="text-muted-foreground/50 hidden sm:inline">
-                      •
-                    </span>
-                    <span className="hidden sm:inline truncate">
-                      {initialData.profile.position?.name || "Chưa chức vụ"}
+                    <span className="text-muted-foreground/50 ">•</span>
+                    <span className="truncate">
+                      {initialData.profile.position?.name || ""}
                     </span>
                   </div>
                 </div>
@@ -117,7 +111,6 @@ export function ESSClient({ initialData }: ESSClientProps) {
                       })}
                     </div>
                   </div>
-                  <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                 </div>
               </div>
             </div>

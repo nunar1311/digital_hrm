@@ -3,7 +3,7 @@ import { getContracts } from "@/app/(protected)/contracts/actions";
 import { ContractsListClient } from "@/components/contracts/contracts-list-client";
 
 export const metadata: Metadata = {
-  title: "Danh sách hợp đồng | Digital HRM",
+  title: "Danh sách hợp đồng",
 };
 
 export default async function ContractsPage() {

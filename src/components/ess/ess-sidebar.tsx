@@ -8,14 +8,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
   SidebarTrigger,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import {
-  Calendar,
   CalendarCheck,
   CalendarOff,
   FileText,
@@ -23,7 +21,6 @@ import {
   Network,
   Package,
   Receipt,
-  Settings,
   User,
   Wallet,
 } from "lucide-react";
@@ -37,7 +34,7 @@ const ESS_MENU = [
   {
     title: "Tổng quan",
     icon: Home,
-    url: "/ess",
+    url: "/",
     permissions: [Permission.ESS_VIEW],
   },
   {
@@ -92,20 +89,25 @@ const ESS_MENU = [
 
 const ESSSidebar = () => {
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
   const { canAny } = useAuth();
 
   const visibleItems = ESS_MENU.filter((item) => canAny(item.permissions));
 
   const isActive = (url: string) => {
-    if (url === "/ess") {
-      return pathname === "/ess";
+    if (url === "/") {
+      return pathname === "/";
     }
-    return pathname.startsWith(url);
+    return pathname === url || pathname.startsWith(`${url}/`);
+  };
+
+  const handleMenuItemClick = () => {
+    setOpenMobile(false);
   };
 
   return (
     <Sidebar collapsible="offcanvas" className="absolute h-full! group/sidebar">
-      <SidebarHeader className="flex-row h-[44px] items-center justify-between">
+      <SidebarHeader className="flex-row h-11 items-center justify-between">
         <h2 className="text-base font-bold group-data-[collapsible=icon]:hidden">
           Cổng nhân viên
         </h2>
@@ -126,7 +128,7 @@ const ESSSidebar = () => {
                   isActive={isActive(item.url)}
                   tooltip={item.title}
                 >
-                  <Link href={item.url}>
+                  <Link href={item.url} onClick={handleMenuItemClick}>
                     <item.icon className="size-4" />
                     <span>{item.title}</span>
                   </Link>

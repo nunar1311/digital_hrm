@@ -127,9 +127,14 @@ export function WorkTab({ employee }: Props) {
                         .pop()?.[0]
                     }
                   </div>
-                  <span>
-                    {employee.manager.fullName || employee.manager.name} -{" "}
-                    {employee.manager.employeeCode}
+                  <span className="flex flex-col">
+                    <span>
+                      {employee.manager.fullName || employee.manager.name} -{" "}
+                      {employee.manager.employeeCode}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      (Người có chức cao nhất trong phòng ban)
+                    </span>
                   </span>
                 </Link>
               ) : (

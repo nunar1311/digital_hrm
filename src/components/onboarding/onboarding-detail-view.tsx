@@ -2,7 +2,14 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, Clock, Users, User, XCircle } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  Clock,
+  Users,
+  User,
+  XCircle,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,7 +23,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { getOnboardingDetail, updateChecklistItem } from "@/app/(protected)/onboarding/actions";
+import {
+  getOnboardingDetail,
+  updateChecklistItem,
+} from "@/app/(protected)/onboarding/actions";
 import {
   STATUS_LABELS,
   CATEGORY_LABELS,
@@ -67,10 +77,12 @@ function formatDate(dateStr: string | Date | null | undefined): string {
   }
 }
 
-export function OnboardingDetailView({ onboardingId }: OnboardingDetailViewProps) {
+export function OnboardingDetailView({
+  onboardingId,
+}: OnboardingDetailViewProps) {
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery<OnboardingDetailData>({
+  const { data, isLoading } = useQuery<OnboardingDetailData | null>({
     queryKey: ["onboarding-detail", onboardingId],
     queryFn: () => getOnboardingDetail(onboardingId),
     enabled: !!onboardingId,
@@ -108,7 +120,9 @@ export function OnboardingDetailView({ onboardingId }: OnboardingDetailViewProps
   if (!data) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4">
-        <p className="text-muted-foreground text-sm">Không tìm thấy thông tin</p>
+        <p className="text-muted-foreground text-sm">
+          Không tìm thấy thông tin
+        </p>
       </div>
     );
   }
@@ -189,7 +203,9 @@ export function OnboardingDetailView({ onboardingId }: OnboardingDetailViewProps
           <Accordion type="multiple" className="space-y-2">
             {categories.map((category) => {
               const categoryTasks = data.checklistByCategory[category];
-              const completedInCategory = categoryTasks.filter((t) => t.isCompleted).length;
+              const completedInCategory = categoryTasks.filter(
+                (t) => t.isCompleted,
+              ).length;
               const totalInCategory = categoryTasks.length;
               const categoryPercent =
                 totalInCategory > 0
@@ -209,7 +225,8 @@ export function OnboardingDetailView({ onboardingId }: OnboardingDetailViewProps
                       </div>
                       <div className="flex-1 text-left">
                         <p className="text-xs font-medium">
-                          {CATEGORY_LABELS[category as OnboardingCategory] || category}
+                          {CATEGORY_LABELS[category as OnboardingCategory] ||
+                            category}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
                           {completedInCategory}/{totalInCategory} hoàn thành
@@ -231,7 +248,9 @@ export function OnboardingDetailView({ onboardingId }: OnboardingDetailViewProps
                       {categoryTasks.map((task) => {
                         const daysUntil = getDaysUntilDue(task.dueDate);
                         const isOverdue =
-                          daysUntil !== null && daysUntil < 0 && !task.isCompleted;
+                          daysUntil !== null &&
+                          daysUntil < 0 &&
+                          !task.isCompleted;
                         const isDueSoon =
                           daysUntil !== null &&
                           daysUntil >= 0 &&
@@ -251,7 +270,10 @@ export function OnboardingDetailView({ onboardingId }: OnboardingDetailViewProps
                             <Checkbox
                               checked={task.isCompleted}
                               onCheckedChange={(checked) =>
-                                checklistMutation.mutate({ id: task.id, isCompleted: !!checked })
+                                checklistMutation.mutate({
+                                  id: task.id,
+                                  isCompleted: !!checked,
+                                })
                               }
                               disabled={
                                 checklistMutation.isPending ||
@@ -263,7 +285,8 @@ export function OnboardingDetailView({ onboardingId }: OnboardingDetailViewProps
                               <p
                                 className={cn(
                                   "text-xs font-medium leading-tight",
-                                  task.isCompleted && "line-through text-muted-foreground",
+                                  task.isCompleted &&
+                                    "line-through text-muted-foreground",
                                 )}
                               >
                                 {task.taskTitle}
@@ -275,7 +298,10 @@ export function OnboardingDetailView({ onboardingId }: OnboardingDetailViewProps
                               )}
                               <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                                 {task.assigneeRole && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] px-1 py-0 h-4"
+                                  >
                                     <User className="h-2.5 w-2.5 mr-0.5" />
                                     {ASSIGNEE_ROLE_LABELS[
                                       task.assigneeRole as keyof typeof ASSIGNEE_ROLE_LABELS
@@ -283,7 +309,10 @@ export function OnboardingDetailView({ onboardingId }: OnboardingDetailViewProps
                                   </Badge>
                                 )}
                                 {task.assignee && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-blue-50">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] px-1 py-0 h-4 bg-blue-50"
+                                  >
                                     {task.assignee.name}
                                   </Badge>
                                 )}

@@ -36,6 +36,7 @@ import { offset } from "@floating-ui/dom";
 import "shepherd.js/dist/css/shepherd.css";
 import "./shepherd.css";
 import ThemePreset from "./themes/theme-preset";
+import Link from "next/link";
 
 const UserProfile = () => {
   const router = useRouter();
@@ -67,7 +68,7 @@ const UserProfile = () => {
         .map((n: string) => n[0])
         .join("")
         .toUpperCase()
-        .slice(0, 2)
+        .slice(0, 1)
     : "??";
 
   useEffect(() => {
@@ -122,12 +123,12 @@ const UserProfile = () => {
     };
   }, [isThemeOpen]);
   return (
-    <DropdownMenu open={isDropdownOpen}>
+    <DropdownMenu open={isDropdownOpen} modal>
       <DropdownMenuTrigger asChild>
         <Button
           variant={"ghost"}
           className="rounded-full border-0 bg-transparent has-[>svg]:px-1 h-8 visited:ring-0 gap-1 [&[data-state=open]>svg]:rotate-180"
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          onClick={() => setIsDropdownOpen(true)}
         >
           <Avatar className="size-6 rounded-full">
             <AvatarImage src={user?.image ?? undefined} alt={user?.name} />
@@ -187,9 +188,11 @@ const UserProfile = () => {
             <PaintRollerIcon />
             Chủ đề
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <SettingsIcon />
-            Cài đặt
+          <DropdownMenuItem asChild>
+            <Link href="/settings">
+              <SettingsIcon />
+              Cài đặt
+            </Link>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />

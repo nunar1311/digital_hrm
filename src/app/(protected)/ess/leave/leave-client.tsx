@@ -194,7 +194,7 @@ function BalanceBadge({ balance }: { balance: LeaveBalance }) {
       <TooltipTrigger asChild>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-muted/30 hover:bg-muted/50 cursor-default transition-colors">
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-medium truncate max-w-[120px]">
+            <span className="text-xs font-medium truncate max-w-30">
               {balance.leaveTypeName}
             </span>
             <div className="flex items-center gap-1 mt-0.5">
@@ -267,6 +267,21 @@ function LeaveDetailDialog({
   isMobile?: boolean;
 }) {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const isMobileSheetOpen = Boolean(request) && !showCancelDialog;
+
+  const handleMobileSheetOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open && !showCancelDialog) {
+        onCancel("");
+      }
+    },
+    [onCancel, showCancelDialog],
+  );
+
+  const handleConfirmCancelRequest = useCallback(() => {
+    onCancel(request?.id ?? "");
+    setShowCancelDialog(false);
+  }, [onCancel, request?.id]);
 
   if (!request) return null;
 
@@ -277,12 +292,18 @@ function LeaveDetailDialog({
   if (isMobile) {
     return (
       <>
-        <Sheet open={!!request} onOpenChange={(v) => !v && onCancel("")}>
-          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh]">
+        <Sheet
+          open={isMobileSheetOpen}
+          onOpenChange={handleMobileSheetOpenChange}
+        >
+          <SheetContent
+            side="bottom"
+            className="rounded-t-2xl max-h-[85vh] p-3"
+          >
             <SheetHeader className="sr-only">
               <SheetTitle>Chi tiết yêu cầu nghỉ phép</SheetTitle>
             </SheetHeader>
-            <div className="space-y-4 pt-4">
+            <div className="space-y-4">
               {/* Header */}
               <div className="flex items-start justify-between">
                 <div>
@@ -311,25 +332,16 @@ function LeaveDetailDialog({
                     )}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => onCancel("")}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
 
               <Separator />
 
               {/* Date Card */}
               <Card className="p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  <span className="text-xs text-muted-foreground">
-                    Thời gian nghỉ
-                  </span>
-                </div>
+                <span className="text-xs text-muted-foreground">
+                  Thời gian nghỉ
+                </span>
+
                 <div className="text-lg font-semibold">
                   {formatDateRange(request.startDate, request.endDate)}
                 </div>
@@ -411,7 +423,9 @@ function LeaveDetailDialog({
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={() => setShowCancelDialog(true)}
+                    onClick={() => {
+                      setShowCancelDialog(true);
+                    }}
                   >
                     Hủy yêu cầu
                   </Button>
@@ -433,10 +447,7 @@ function LeaveDetailDialog({
             <AlertDialogFooter>
               <AlertDialogCancel>Đóng</AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => {
-                  onCancel(request.id);
-                  setShowCancelDialog(false);
-                }}
+                onClick={handleConfirmCancelRequest}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 {isCancelling ? (
@@ -591,10 +602,7 @@ function LeaveDetailDialog({
           <AlertDialogFooter>
             <AlertDialogCancel>Đóng</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                onCancel(request.id);
-                setShowCancelDialog(false);
-              }}
+              onClick={handleConfirmCancelRequest}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isCancelling ? (
@@ -709,6 +717,7 @@ export function ESSLeaveClient({
 }: ESSLeaveClientProps) {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const currentYear = new Date().getFullYear();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -747,13 +756,14 @@ export function ESSLeaveClient({
     queryFn: getMyLeaveTypes,
   });
 
-  const { data: balances = initialBalances } = useQuery({
+  const { data: balances } = useQuery({
     queryKey: ["my-leave-balances", selectedYear],
-    queryFn: () => getMyLeaveBalances(),
-    initialData: initialBalances,
+    queryFn: () => getMyLeaveBalances(selectedYear),
+    initialData: selectedYear === currentYear ? initialBalances : undefined,
+    staleTime: 0,
   });
 
-  const { data: requestsData = initialRequests, isLoading: isLoadingRequests } =
+  const { data: requestsData, isLoading: isLoadingRequests } =
     useQuery({
       queryKey: ["my-leave-requests", selectedYear, statusFilter],
       queryFn: () =>
@@ -768,8 +778,23 @@ export function ESSLeaveClient({
           page: 1,
           pageSize: 100,
         }),
-      initialData: initialRequests,
+      initialData:
+        selectedYear === currentYear && statusFilter === "ALL"
+          ? initialRequests
+          : undefined,
+      staleTime: 0,
     });
+
+  const effectiveBalances = balances ?? [];
+  const effectiveRequestsData =
+    requestsData ??
+    {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 100,
+      totalPages: 0,
+    };
 
   useSocketEvents(
     [
@@ -785,9 +810,9 @@ export function ESSLeaveClient({
   );
 
   const filteredRequests = useMemo(() => {
-    if (!search.trim()) return requestsData.items;
+    if (!search.trim()) return effectiveRequestsData.items;
     const q = search.toLowerCase();
-    return requestsData.items.filter((r) => {
+    return effectiveRequestsData.items.filter((r) => {
       const typeName = r.leaveType?.name?.toLowerCase() ?? "";
       const reason = r.reason?.toLowerCase() ?? "";
       const dateRange = formatDateRange(r.startDate, r.endDate).toLowerCase();
@@ -795,7 +820,7 @@ export function ESSLeaveClient({
         typeName.includes(q) || reason.includes(q) || dateRange.includes(q)
       );
     });
-  }, [requestsData.items, search]);
+  }, [effectiveRequestsData.items, search]);
 
   const handleSearchToggle = useCallback(() => {
     if (!searchExpanded) {
@@ -1015,7 +1040,7 @@ export function ESSLeaveClient({
 
           <div className="flex items-center justify-between gap-1 sm:gap-2 px-2 py-2">
             {/* Left: Year Navigator */}
-            <div className="flex items-center gap-0.5 sm:gap-1">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
                 variant="outline"
                 size="icon-xs"
@@ -1023,7 +1048,7 @@ export function ESSLeaveClient({
               >
                 <ChevronLeft />
               </Button>
-              <span className="text-xs sm:text-sm font-medium min-w-[60px] sm:min-w-[80px] text-center">
+              <span className="text-xs sm:text-sm font-medium min-w-10 sm:min-w-20 text-center">
                 {selectedYear}
               </span>
               <Button
@@ -1166,13 +1191,13 @@ export function ESSLeaveClient({
         </section>
 
         {/* Balances Row */}
-        {balances.length > 0 && (
+        {effectiveBalances.length > 0 && (
           <section className="px-2 py-2 border-b bg-muted/20">
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               <span className="text-xs text-muted-foreground shrink-0">
                 Số dư:
               </span>
-              {balances.map((b) => (
+              {effectiveBalances.map((b) => (
                 <BalanceBadge key={b.id} balance={b} />
               ))}
             </div>
@@ -1330,7 +1355,7 @@ export function ESSLeaveClient({
               <div className="absolute bottom-0 left-0 right-0 bg-background flex items-center justify-between px-2 py-2 border-t shrink-0">
                 <p className="text-xs text-muted-foreground">
                   Hiển thị <strong>{filteredRequests.length}</strong> /{" "}
-                  <strong>{requestsData.total}</strong> yêu cầu
+                  <strong>{effectiveRequestsData.total}</strong> yêu cầu
                 </p>
                 {statusFilter !== "ALL" && (
                   <span className="text-xs text-muted-foreground">

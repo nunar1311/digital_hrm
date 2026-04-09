@@ -33,6 +33,7 @@ export interface UserBasicInfo {
     id: string;
     name: string;
     email: string;
+    employeeCode: string | null;
     username: string | null;
     departmentId: string | null;
     position: string | null;

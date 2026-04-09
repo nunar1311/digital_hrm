@@ -1,0 +1,218 @@
+"use client";
+
+import { useState, useCallback, useRef } from "react";
+import { Search, Plus, ListFilter, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { useClickOutside, useMergedRef } from "@mantine/hooks";
+import { cn } from "@/lib/utils";
+
+interface InterviewToolbarProps {
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  statusFilter: string;
+  onStatusFilterChange: (value: string) => void;
+  jobPostingIdFilter: string;
+  onJobPostingIdFilterChange: (value: string) => void;
+  fromDate: Date | undefined;
+  onFromDateChange: (date: Date | undefined) => void;
+  toDate: Date | undefined;
+  onToDateChange: (date: Date | undefined) => void;
+  jobPostings: Array<{ id: string; title: string }>;
+  onCreateClick: () => void;
+  isLoading?: boolean;
+}
+
+const STATUS_OPTIONS = [
+  { value: "ALL", label: "Tất cả" },
+  { value: "SCHEDULED", label: "Đã lên lịch" },
+  { value: "IN_PROGRESS", label: "Đang phỏng vấn" },
+  { value: "COMPLETED", label: "Hoàn thành" },
+  { value: "CANCELLED", label: "Đã hủy" },
+  { value: "NO_SHOW", label: "Không đến" },
+];
+
+export function InterviewToolbar({
+  searchValue,
+  onSearchChange,
+  statusFilter,
+  onStatusFilterChange,
+  jobPostingIdFilter,
+  onJobPostingIdFilterChange,
+  fromDate,
+  onFromDateChange,
+  toDate,
+  onToDateChange,
+  jobPostings,
+  onCreateClick,
+  isLoading,
+}: InterviewToolbarProps) {
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const clickOutsideRef = useClickOutside(() => {
+    if (searchExpanded) {
+      if (searchValue.trim()) {
+        onSearchChange("");
+      }
+      setSearchExpanded(false);
+    }
+  });
+  const mergedSearchRef = useMergedRef(searchContainerRef, clickOutsideRef);
+
+  const handleSearchToggle = useCallback(() => {
+    if (!searchExpanded) {
+      setSearchExpanded(true);
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    } else {
+      if (searchValue.trim()) {
+        onSearchChange("");
+      }
+      setSearchExpanded(false);
+    }
+  }, [searchExpanded, searchValue, onSearchChange]);
+
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Escape") {
+        onSearchChange("");
+        setSearchExpanded(false);
+      }
+    },
+    [onSearchChange],
+  );
+
+  const hasActiveFilters =
+    statusFilter !== "ALL" ||
+    jobPostingIdFilter !== "ALL" ||
+    fromDate !== undefined ||
+    toDate !== undefined ||
+    searchValue !== "";
+
+  const clearFilters = useCallback(() => {
+    onSearchChange("");
+    onStatusFilterChange("ALL");
+    onJobPostingIdFilterChange("ALL");
+    onFromDateChange(undefined);
+    onToDateChange(undefined);
+    setSearchExpanded(false);
+  }, [onSearchChange, onStatusFilterChange, onJobPostingIdFilterChange, onFromDateChange, onToDateChange]);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col sm:flex-row gap-2 justify-between">
+        <div className="flex flex-1 gap-2 flex-wrap items-center">
+          {/* Search */}
+          <div className="relative flex items-center" ref={mergedSearchRef}>
+            <Input
+              ref={searchInputRef}
+              value={searchValue}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Tìm kiếm..."
+              className={cn(
+                "h-7 text-xs transition-all duration-300 ease-in-out pr-6",
+                searchExpanded
+                  ? "w-56 opacity-100 pl-3"
+                  : "w-32 opacity-100 pl-7",
+              )}
+            />
+            <Button
+              size={"icon-xs"}
+              variant={"ghost"}
+              onClick={handleSearchToggle}
+              className={cn(
+                "absolute right-0.5 z-10",
+                searchExpanded && "[&_svg]:text-primary",
+              )}
+            >
+              {searchExpanded && searchValue ? (
+                <X className="h-3 w-3" />
+              ) : (
+                <Search className="h-3 w-3" />
+              )}
+            </Button>
+          </div>
+
+          {/* Status filter */}
+          <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+            <SelectTrigger
+              className={cn(
+                "h-7 text-xs w-[150px]",
+                statusFilter !== "ALL" && "bg-primary/10 border-primary text-primary",
+              )}
+            >
+              <ListFilter className="h-3 w-3 mr-1" />
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Job posting filter */}
+          <Select value={jobPostingIdFilter} onValueChange={onJobPostingIdFilterChange}>
+            <SelectTrigger
+              className={cn(
+                "h-7 text-xs w-[180px]",
+                jobPostingIdFilter !== "ALL" && "bg-primary/10 border-primary text-primary",
+              )}
+            >
+              <SelectValue placeholder="Vị trí" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Tất cả vị trí</SelectItem>
+              {jobPostings.map((jp) => (
+                <SelectItem key={jp.id} value={jp.id}>
+                  {jp.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Date range */}
+          <DatePicker
+            date={fromDate}
+            setDate={onFromDateChange}
+            className="h-7 text-xs w-[130px]"
+          />
+          <DatePicker
+            date={toDate}
+            setDate={onToDateChange}
+            className="h-7 text-xs w-[130px]"
+          />
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="h-7 text-xs text-muted-foreground"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Xóa lọc
+            </Button>
+          )}
+        </div>
+
+        <Button onClick={onCreateClick} disabled={isLoading} size="xs" className="shrink-0">
+          <Plus className="h-3 w-3 mr-1" />
+          Đặt lịch PV
+        </Button>
+      </div>
+    </div>
+  );
+}

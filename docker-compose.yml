@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # PostgreSQL Database
   db:
@@ -44,6 +42,7 @@ services:
 
   # Digital HRM Application
   app:
+    image: digital_hrm_app_prod
     build:
       context: .
       dockerfile: Dockerfile
@@ -57,10 +56,10 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=prefer}
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable}
       REDIS_URL: redis://redis:6379
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-your-better-auth-secret-change-in-production}
+      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-}
     ports:
       - "3000:3000"
     volumes:

@@ -56,9 +56,6 @@ const Layout = ({ children }: { children: ReactNode }) => {
             href="/"
             className="bg-background flex items-center gap-2.5 py-6 text-2xl"
           >
-            <div className="size-6 flex items-center justify-center md:size-10 sm:size-8 rounded-md bg-blue-500">
-              <UserCog2 className="size-4 md:size-5 text-white" />
-            </div>
             <p className="font-bold">Digital HRM</p>
           </Link>
 
@@ -86,7 +83,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
             <p className="-mt-1 text-sm">
               Báo cáo lỗi, góp ý:{" "}
               <Link href={"mailto:contact@breadflow.com"} className="underline">
-                support@breadit.com
+                support@digitalhrm.com
               </Link>
             </p>
           </div>
@@ -94,13 +91,21 @@ const Layout = ({ children }: { children: ReactNode }) => {
       </section>
 
       {/* Form đăng nhập - chiếm full width trên mobile, 3/5 trên desktop */}
-      <div className="relative flex w-full md:w-3/5 items-center justify-center border-r transition-all">
+      <div className="relative flex w-full items-center justify-center border-r transition-all">
         {/* Header mobile - chỉ hiển thị trên mobile */}
         <div className="md:hidden absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2.5">
-          <div className="size-8 rounded-md bg-blue-500"></div>
           <p className="font-bold text-lg">Digital HRM</p>
         </div>
         {children}
+
+        <div className="md:hidden absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2.5">
+          <p className="-mt-1 text-sm text-center">
+            Báo cáo lỗi, góp ý:{" "}
+            <Link href={"mailto:contact@breadflow.com"} className="underline">
+              support@digitalhrm.com
+            </Link>
+          </p>
+        </div>
       </div>
     </main>
   );

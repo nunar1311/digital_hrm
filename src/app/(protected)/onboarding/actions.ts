@@ -164,7 +164,7 @@ export async function getOnboardingDetail(id: string) {
           name: true,
           email: true,
           image: true,
-          employeeCode: true,
+          username: true,
           department: { select: { id: true, name: true } },
           position: { select: { id: true, name: true } },
           manager: { select: { id: true, name: true } },

@@ -46,13 +46,14 @@ function Button({
   isActive = false,
   tooltip,
   asChild = false,
-
+  tooltipSide = "top",
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     isActive?: boolean;
     tooltip?: string | React.ComponentProps<typeof TooltipContent>;
+    tooltipSide?: "top" | "right" | "bottom" | "left";
   }) {
   const Comp = asChild ? Slot.Root : "button";
 
@@ -80,7 +81,7 @@ function Button({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side="top" align="center" {...tooltip} />
+      <TooltipContent side={tooltipSide} align="center" {...tooltip} />
     </Tooltip>
   );
 }

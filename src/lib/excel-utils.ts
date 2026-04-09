@@ -10,7 +10,7 @@ import type { Employee } from '@/types';
 // ─── Vietnamese Column Mapping ──────────────────────────────────────────────
 
 export const COLUMN_MAP: Record<string, string> = {
-    employeeCode: 'Mã nhân viên',
+    username: 'Mã nhân viên',
     fullName: 'Họ và tên',
     dateOfBirth: 'Ngày sinh',
     gender: 'Giới tính',
@@ -98,7 +98,7 @@ export function parseVietnameseDate(dateStr: string): string | null {
 export async function exportEmployeesToExcel(employees: Employee[], filename = 'danh-sach-nhan-vien') {
     const XLSX = await import('xlsx');
     const vietnameseData = employees.map((emp) => ({
-        [COLUMN_MAP.employeeCode]: emp.employeeCode,
+        [COLUMN_MAP.username]: emp.username,
         [COLUMN_MAP.fullName]: emp.fullName,
         [COLUMN_MAP.dateOfBirth]: formatDateForExcel(emp.dateOfBirth),
         [COLUMN_MAP.gender]: emp.gender ? GENDER_MAP[emp.gender] || emp.gender : '',

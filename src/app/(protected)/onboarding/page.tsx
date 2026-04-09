@@ -5,7 +5,7 @@ import { requirePermission } from "@/lib/auth-session";
 import { Permission } from "@/lib/rbac/permissions";
 
 export const metadata: Metadata = {
-  title: "Tiếp nhận nhân sự | Digital HRM",
+  title: "Tiếp nhận nhân sự",
   description: "Quản lý quy trình tiếp nhận nhân viên mới vào công ty",
 };
 

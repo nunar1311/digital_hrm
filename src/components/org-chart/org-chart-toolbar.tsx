@@ -74,6 +74,8 @@ interface OrgChartToolbarProps {
   onShare?: () => void;
   onExportImage?: () => void;
   canvasRef?: React.RefObject<HTMLElement | null>;
+  /** Khi false, ẩn toàn bộ nút chỉnh sửa (tạo phòng ban, mẫu cơ cấu, khóa/mở khóa, bulk selection) */
+  canEdit?: boolean;
 }
 
 export function OrgChartToolbar({
@@ -101,6 +103,7 @@ export function OrgChartToolbar({
   onShare,
   onExportImage,
   canvasRef,
+  canEdit = true,
 }: OrgChartToolbarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -131,19 +134,21 @@ export function OrgChartToolbar({
           <Search className="h-3.5 w-3.5" />
         </Button>
 
-        {/* Lock */}
-        <Button
-          variant={isLocked ? "default" : "outline"}
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          onClick={onToggleLock}
-        >
-          {isLocked ? (
-            <Lock className="h-3.5 w-3.5" />
-          ) : (
-            <Unlock className="h-3.5 w-3.5" />
-          )}
-        </Button>
+        {/* Lock - chỉ hiện khi có quyền chỉnh sửa */}
+        {canEdit && (
+          <Button
+            variant={isLocked ? "default" : "outline"}
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={onToggleLock}
+          >
+            {isLocked ? (
+              <Lock className="h-3.5 w-3.5" />
+            ) : (
+              <Unlock className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        )}
 
         {/* Expand/Collapse */}
         <Button
@@ -307,9 +312,11 @@ export function OrgChartToolbar({
         </DropdownMenu>
 
         {/* Create button */}
-        <Button size="sm" onClick={onCreateDepartment} className="h-8 px-2 shrink-0">
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
+        {canEdit && (
+          <Button size="sm" onClick={onCreateDepartment} className="h-8 px-2 shrink-0">
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        )}
 
         {/* Search overlay on mobile */}
         {filtersOpen && (
@@ -577,44 +584,50 @@ export function OrgChartToolbar({
           )}
         </Button>
 
-        <Button
-          variant={isLocked ? "default" : "outline"}
-          size="icon-xs"
-          onClick={onToggleLock}
-          tooltip={isLocked ? TOOLTIPS.UNLOCK : TOOLTIPS.LOCK}
-        >
-          {isLocked ? (
-            <Lock className="h-3.5 w-3.5" />
-          ) : (
-            <Unlock className="h-3.5 w-3.5" />
-          )}
-        </Button>
+        {canEdit && (
+          <Button
+            variant={isLocked ? "default" : "outline"}
+            size="icon-xs"
+            onClick={onToggleLock}
+            tooltip={isLocked ? TOOLTIPS.UNLOCK : TOOLTIPS.LOCK}
+          >
+            {isLocked ? (
+              <Lock className="h-3.5 w-3.5" />
+            ) : (
+              <Unlock className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        )}
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="xs" className="ml-auto border">
-            <LayoutTemplate className="h-3.5 w-3.5" />
-            {TOOLTIPS.TEMPLATES}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          {COMPANY_STRUCTURE_TEMPLATES.map((t) => (
-            <DropdownMenuItem
-              key={t.id}
-              onClick={() => onApplyTemplate(t.id)}
-              className="cursor-pointer"
-            >
-              {t.name}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {canEdit && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="xs" className="ml-auto border">
+              <LayoutTemplate className="h-3.5 w-3.5" />
+              {TOOLTIPS.TEMPLATES}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {COMPANY_STRUCTURE_TEMPLATES.map((t) => (
+              <DropdownMenuItem
+                key={t.id}
+                onClick={() => onApplyTemplate(t.id)}
+                className="cursor-pointer"
+              >
+                {t.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
-      <Button size="xs" onClick={onCreateDepartment}>
-        <Plus className="h-3.5 w-3.5" />
-        {TOOLTIPS.CREATE_DEPT}
-      </Button>
+      {canEdit && (
+        <Button size="xs" onClick={onCreateDepartment}>
+          <Plus className="h-3.5 w-3.5" />
+          {TOOLTIPS.CREATE_DEPT}
+        </Button>
+      )}
     </div>
   );
 }

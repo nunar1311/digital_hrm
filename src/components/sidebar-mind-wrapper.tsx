@@ -16,11 +16,12 @@ export function SidebarMindWrapper() {
     Permission.DEPT_VIEW,
     Permission.ATTENDANCE_VIEW_ALL,
     Permission.SETTINGS_VIEW,
+    Permission.RECRUITMENT_VIEW,
   ]);
 
-  if (!canViewAdminSidebar) {
-    return null;
+  if (canViewAdminSidebar) {
+    return <SidebarMind />;
   }
 
-  return <SidebarMind />;
+  return null;
 }
