@@ -47,6 +47,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runner
+      args:
+        DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable}
     container_name: digital_hrm_app
     restart: unless-stopped
     depends_on:

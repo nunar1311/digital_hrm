@@ -27,6 +27,10 @@ COPY . .
 
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
+# Pass DATABASE_URL to Prisma generate
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
 RUN pnpm prisma generate
 
 RUN pnpm build
