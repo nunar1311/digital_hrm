@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { format, startOfWeek, addDays, isSameDay, isToday, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths } from "date-fns";
+import { format, startOfWeek, addDays, isSameDay, isToday, startOfMonth, isSameMonth, addMonths, subMonths } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   ChevronLeft,
@@ -114,34 +114,32 @@ function InterviewCardMini({ interview, onEdit, onDelete, onViewDetail, onFeedba
       </div>
 
       {/* Candidate name */}
-      {interview.candidate && (
-        <p className="font-medium text-xs leading-tight line-clamp-1 mb-1">
-          {interview.candidate.name}
-        </p>
-      )}
+      <p className="font-medium text-xs leading-tight line-clamp-1 mb-1">
+        {interview.candidateName}
+      </p>
 
       {/* Position */}
-      {interview.jobPosting && (
+      {interview.jobPostingTitle && (
         <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1.5">
-          {interview.jobPosting.title}
+          {interview.jobPostingTitle}
         </p>
       )}
 
       {/* Interviewers */}
-      {interview.interviewers && interview.interviewers.length > 0 && (
+      {interview.interviewerNames && interview.interviewerNames.length > 0 && (
         <div className="flex items-center gap-0.5 mb-1">
           <Users className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
           <div className="flex -space-x-1">
-            {interview.interviewers.slice(0, 3).map((iv, i) => (
+            {interview.interviewerNames.slice(0, 3).map((name: string, i: number) => (
               <Avatar key={i} className="w-4 h-4 border border-background">
                 <AvatarFallback className="text-[7px] bg-primary/10 text-primary">
-                  {getInitials(iv.name ?? "?")}
+                  {getInitials(name ?? "?")}
                 </AvatarFallback>
               </Avatar>
             ))}
-            {interview.interviewers.length > 3 && (
+            {interview.interviewerNames.length > 3 && (
               <span className="text-[9px] text-muted-foreground ml-1">
-                +{interview.interviewers.length - 3}
+                +{interview.interviewerNames.length - 3}
               </span>
             )}
           </div>
@@ -225,7 +223,6 @@ export function InterviewCalendar({
   const weekDays = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
   const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
 
   // Build calendar grid (6 weeks)
   const calendarDays = useMemo(() => {
@@ -235,7 +232,7 @@ export function InterviewCalendar({
       days.push(addDays(start, i));
     }
     return days;
-  }, [currentDate]);
+  }, [monthStart]);
 
   // Group interviews by date
   const interviewsByDate = useMemo(() => {
@@ -389,7 +386,7 @@ export function InterviewCalendar({
                             STATUS_COLORS[iv.status ?? "SCHEDULED"].text,
                           )}
                         >
-                          {iv.scheduledTime} {iv.candidate?.name ?? ""}
+                          {iv.scheduledTime} {iv.candidateName ?? ""}
                         </div>
                       ))}
                       {dayInterviews.length > 2 && (

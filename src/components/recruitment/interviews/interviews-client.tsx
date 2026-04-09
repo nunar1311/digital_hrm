@@ -225,7 +225,38 @@ export function InterviewsClient() {
   });
 
   const interviews = useMemo(
-    () => interviewsData?.pages.flatMap((p) => p.items) ?? [],
+    () =>
+      (interviewsData?.pages.flatMap((p) => p.items) ?? []).map((item) => ({
+        id: item.id,
+        candidateId: item.candidateId,
+        candidateName: item.candidateName,
+        jobPostingId: item.jobPostingId,
+        jobPostingTitle: item.jobPostingTitle,
+        round: item.round,
+        type: item.type as import("@/app/(protected)/recruitment/types").InterviewType,
+        method: item.method as import("@/app/(protected)/recruitment/types").InterviewMethod,
+        scheduledDate: item.scheduledDate,
+        scheduledTime: item.scheduledTime,
+        endTime: item.endTime,
+        duration: item.duration,
+        location: item.location,
+        meetingLink: item.meetingLink,
+        meetingId: item.meetingId,
+        interviewerIds: item.interviewerIds,
+        interviewerNames: item.interviewerNames,
+        status: item.status as import("@/app/(protected)/recruitment/types").InterviewStatus,
+        result: item.result as import("@/app/(protected)/recruitment/types").InterviewResult | null,
+        score: item.score,
+        strengths: item.strengths,
+        weaknesses: item.weaknesses,
+        notes: item.notes,
+        googleEventId: item.googleEventId,
+        calendarSync: item.calendarSync,
+        reviewedBy: item.reviewedBy,
+        reviewedAt: item.reviewedAt,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      })),
     [interviewsData],
   );
 

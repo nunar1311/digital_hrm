@@ -8,7 +8,6 @@ import {
   Phone,
   Mail,
   Briefcase,
-  ExternalLink,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -332,11 +331,11 @@ export function CandidatePipeline({
                           <p className="font-semibold text-xs leading-tight line-clamp-1">
                             {candidate.name}
                           </p>
-                          {candidate.jobPosting && (
+                          {candidate.jobPostingTitle && (
                             <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
                               <Briefcase className="h-2.5 w-2.5 shrink-0" />
                               <span className="truncate">
-                                {candidate.jobPosting.title}
+                                {candidate.jobPostingTitle}
                               </span>
                             </p>
                           )}

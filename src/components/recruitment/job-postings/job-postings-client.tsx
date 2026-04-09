@@ -71,7 +71,6 @@ import type {
   JobPostingFilters,
   CreateJobPostingForm,
   JobPostingStatus,
-  JobPostingPriority,
   Department,
   Position,
 } from "@/app/(protected)/recruitment/types";
@@ -197,7 +196,17 @@ export function JobPostingsClient() {
   });
 
   const jobPostings = useMemo(
-    () => jobPostingsData?.pages.flatMap((p) => p.items) ?? [],
+    () =>
+      (jobPostingsData?.pages.flatMap((p) => p.items) ?? []).map((item) => ({
+        ...item,
+        departmentName: item.departmentName ?? undefined,
+        positionName: item.positionName ?? undefined,
+        departmentId: item.departmentId ?? null,
+        positionId: item.positionId ?? null,
+        status: item.status as JobPostingStatus,
+        priority: item.priority as import("@/app/(protected)/recruitment/types").JobPostingPriority,
+        employmentType: item.employmentType as import("@/app/(protected)/recruitment/types").EmploymentType,
+      })),
     [jobPostingsData],
   );
 
@@ -218,7 +227,7 @@ export function JobPostingsClient() {
     mutationFn: ({
       id,
       data,
-    }: { id: string; data: Partial<CreateJobPostingForm> }) =>
+    }: { id: string; data: Partial<CreateJobPostingForm> & { status?: JobPostingStatus } }) =>
       updateJobPosting(id, data),
     onSuccess: () => {
       toast.success("Cập nhật tin tuyển dụng thành công");

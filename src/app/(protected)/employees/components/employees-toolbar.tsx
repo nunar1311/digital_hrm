@@ -110,11 +110,7 @@ export function EmployeesToolbar({
   return (
     <>
       <div className="flex items-center justify-between gap-2 px-2 py-2">
-        <Button
-          variant={"outline"}
-          size={"xs"}
-          onClick={onExport}
-        >
+        <Button variant={"outline"} size={"xs"} onClick={onExport}>
           Xuất file Excel
         </Button>
 
@@ -176,9 +172,7 @@ export function EmployeesToolbar({
               placeholder="Tìm kiếm nhân viên..."
               className={cn(
                 "h-7 text-xs transition-all duration-300 ease-in-out pr-6",
-                searchExpanded
-                  ? "w-50 opacity-100 pl-3"
-                  : "w-0 opacity-0 pl-0",
+                searchExpanded ? "w-50 opacity-100 pl-3" : "w-0 opacity-0 pl-0",
               )}
             />
             <Button
@@ -216,7 +210,13 @@ export function EmployeesToolbar({
         open={settingsOpen}
         onClose={() => onSettingsOpenChange(false)}
         columnVisibility={columnVisibility}
-        setColumnVisibility={onColumnVisibilityChange}
+        setColumnVisibility={(valueOrUpdater) => {
+          const next =
+            typeof valueOrUpdater === "function"
+              ? valueOrUpdater(columnVisibility)
+              : valueOrUpdater;
+          onColumnVisibilityChange(next);
+        }}
         defaultVisibleColumns={{
           username: false,
           fullName: true,
@@ -229,7 +229,11 @@ export function EmployeesToolbar({
         columnOptions={[
           { key: "username", label: "Mã nhân viên", icon: BadgeCheck },
           { key: "fullName", label: "Họ và tên", icon: User },
-          { key: "positionName", label: "Chức vụ / Phòng ban", icon: BadgeCheck },
+          {
+            key: "positionName",
+            label: "Chức vụ / Phòng ban",
+            icon: BadgeCheck,
+          },
           { key: "phone", label: "SĐT / Email", icon: Phone },
           { key: "employeeStatus", label: "Trạng thái", icon: CircleDot },
           { key: "gender", label: "Giới tính", icon: VenusAndMars },

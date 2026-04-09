@@ -332,13 +332,16 @@ export async function createEmployee(data: {
 
   // Validate departmentId nếu được cung cấp
   let departmentId = data.departmentId;
+  let departmentName: string | undefined;
   if (departmentId) {
-    const deptExists = await prisma.department.findUnique({
+    const dept = await prisma.department.findUnique({
       where: { id: departmentId },
-      select: { id: true },
+      select: { id: true, name: true },
     });
-    if (!deptExists) {
+    if (!dept) {
       departmentId = undefined;
+    } else {
+      departmentName = dept.name;
     }
   }
 
@@ -407,7 +410,12 @@ export async function createEmployee(data: {
   // Emit sự kiện để thông báo cho các client
   const io = getIO();
   if (io) {
-    emitToAll("employee:created", { employeeId: employee.id });
+    emitToAll("employee:created", {
+      employeeId: employee.id,
+      employeeName: employee.name,
+      departmentId: departmentId ?? "",
+      departmentName: departmentName ?? "",
+    });
   }
 
   return employee;

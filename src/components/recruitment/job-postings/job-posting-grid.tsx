@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Briefcase, Users, Clock, MapPin, DollarSign, ChevronRight, Star } from "lucide-react";
+import { Briefcase, Users, Clock, MapPin, DollarSign, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2, Eye, RefreshCw, ExternalLink } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Eye, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { JobPostingWithStats, JobPostingStatus, JobPostingPriority } from "@/app/(protected)/recruitment/types";
 
@@ -188,7 +188,7 @@ export function JobPostingGrid({
               {posting.priority === "URGENT" && (
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-red-500 to-orange-400" />
               )}
-              {posting.priority === "HIGH" && posting.status !== "URGENT" && (
+              {posting.priority === "HIGH" && (
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-orange-400 to-amber-400" />
               )}
 
@@ -213,8 +213,8 @@ export function JobPostingGrid({
                     <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-0.5">
                       {posting.title}
                     </h3>
-                    {posting.department && (
-                      <p className="text-xs text-muted-foreground">{posting.department.name}</p>
+                    {posting.departmentName && (
+                      <p className="text-xs text-muted-foreground">{posting.departmentName}</p>
                     )}
                   </div>
                   <Badge
@@ -258,7 +258,7 @@ export function JobPostingGrid({
                 <div className="flex items-center gap-4 pt-3 border-t text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Users className="h-3 w-3" />
-                    <strong className="text-foreground">{posting._count?.candidates ?? 0}</strong>
+                    <strong className="text-foreground">{posting.candidateCount ?? 0}</strong>
                     <span>ứng viên</span>
                   </span>
                   {posting.headcount && (
