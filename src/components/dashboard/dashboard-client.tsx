@@ -27,6 +27,7 @@ import {
   getTodayAttendanceSummary,
   getContractExpiryWarnings,
 } from "@/app/(protected)/dashboard/actions";
+import { getAutoAISummary } from "@/app/(protected)/dashboard/ai-actions";
 import type {
   DashboardStats,
   AttendanceTrendItem,
@@ -329,6 +330,10 @@ const DashboardClient = ({
         queryClient.invalidateQueries({
           queryKey: ["dashboard-contract-expiry"],
         }),
+        queryClient.fetchQuery({
+          queryKey: ["dashboard-ai-summary"],
+          queryFn: () => getAutoAISummary("standard", true),
+        }),
       ]);
       setLastUpdated(new Date());
     } catch {
@@ -363,9 +368,21 @@ const DashboardClient = ({
       },
       children: [
         {
+          id: "ai-executive-summary",
+          x: 0,
+          w: 6,
+          h: 6,
+          minW: 3,
+          minH: 4,
+          content: JSON.stringify({
+            name: "cardAIExecutiveSummary",
+            props: {},
+          }),
+        },
+        {
           id: "total-employees",
           w: 3,
-          h: 4,
+          h: 3,
           minW: 2,
           minH: 3,
           content: JSON.stringify({
@@ -379,25 +396,9 @@ const DashboardClient = ({
           }),
         },
         {
-          id: "total-employees-working",
-          w: 3,
-          h: 4,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "totalEmployeesWorking",
-            props: {
-              title: "Tổng nhân viên đang làm việc",
-              total: stats.totalEmployeesWorking,
-              label: "nhân viên",
-              percentage: stats.workingPercentage,
-            },
-          }),
-        },
-        {
           id: "new-employees",
           w: 3,
-          h: 4,
+          h: 3,
           minW: 2,
           minH: 3,
           content: JSON.stringify({
@@ -411,9 +412,25 @@ const DashboardClient = ({
           }),
         },
         {
+          id: "total-employees-working",
+          w: 3,
+          h: 3,
+          minW: 2,
+          minH: 3,
+          content: JSON.stringify({
+            name: "totalEmployeesWorking",
+            props: {
+              title: "Tổng nhân viên đang làm việc",
+              total: stats.totalEmployeesWorking,
+              label: "nhân viên",
+              percentage: stats.workingPercentage,
+            },
+          }),
+        },
+        {
           id: "resigned-employees",
           w: 3,
-          h: 4,
+          h: 3,
           minW: 2,
           minH: 3,
           content: JSON.stringify({
@@ -427,34 +444,8 @@ const DashboardClient = ({
           }),
         },
         {
-          id: "area-chart",
-          x: 0,
-          w: 6,
-          h: 8,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "cardChartAreaInteractive",
-            props: { trendData: attendanceTrendData },
-          }),
-        },
-        {
-          id: "list-employees",
-          x: 0,
-          w: 8,
-          h: 8,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "listEmployees",
-            props: {
-              initialEmployees,
-            },
-          }),
-        },
-        {
           id: "pie-chart",
-          w: 4,
+          w: 5,
           h: 8,
           minW: 2,
           minH: 3,
@@ -476,7 +467,7 @@ const DashboardClient = ({
         },
         {
           id: "gender-chart",
-          w: 4,
+          w: 3,
           h: 8,
           minW: 2,
           minH: 3,
@@ -486,14 +477,27 @@ const DashboardClient = ({
           }),
         },
         {
-          id: "contract-expiry-list",
-          w: 4,
-          h: 8,
+          id: "list-employees",
+          w: 7,
+          h: 10,
           minW: 2,
           minH: 3,
           content: JSON.stringify({
-            name: "cardContractExpiryList",
-            props: { items: contractExpiryWarnings },
+            name: "listEmployees",
+            props: {
+              initialEmployees,
+            },
+          }),
+        },
+        {
+          id: "area-chart",
+          w: 5,
+          h: 10,
+          minW: 2,
+          minH: 3,
+          content: JSON.stringify({
+            name: "cardChartAreaInteractive",
+            props: { trendData: attendanceTrendData },
           }),
         },
       ],
@@ -598,6 +602,7 @@ const DashboardClient = ({
               <div className="flex items-center gap-x-2">
                 <Switch
                   id="edit-mode"
+                  size="sm"
                   checked={editMode}
                   onCheckedChange={setEditMode}
                   className="h-4 w-6"

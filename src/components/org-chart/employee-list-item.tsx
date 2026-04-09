@@ -44,21 +44,21 @@ export function EmployeeListItem({
         .toUpperCase();
 
     return (
-        <div className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50 border text-sm group">
-            <Avatar className="h-7 w-7">
+        <div className="flex items-center gap-3.5 p-3 rounded-xl bg-background border border-border/50 shadow-sm hover:shadow-md hover:border-border transition-all group">
+            <Avatar className="h-10 w-10 border border-primary/10">
                 <AvatarImage src={employee.image ?? undefined} />
-                <AvatarFallback className="text-[9px] bg-muted font-bold">
+                <AvatarFallback className="text-[10px] bg-primary/5 text-primary font-bold">
                     {initials}
                 </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-                <p className="font-medium text-xs truncate">{employee.name}</p>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                    <span className="truncate">{employee.position}</span>
+                <p className="font-semibold text-sm truncate text-foreground group-hover:text-primary transition-colors">{employee.name}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                    <span className="truncate">{employee.position || "Chưa có vị trí"}</span>
                     {employee.employeeCode && (
                         <>
                             <span>•</span>
-                            <span className="font-mono">{employee.employeeCode}</span>
+                            <span className="font-mono text-[10px] bg-muted/50 px-1.5 py-0.5 rounded">{employee.employeeCode}</span>
                         </>
                     )}
                 </div>
@@ -69,26 +69,26 @@ export function EmployeeListItem({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0"
                         >
-                            <MoreVertical className="h-3 w-3" />
+                            <MoreVertical className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-40">
                         {onViewProfile && (
-                            <DropdownMenuItem onClick={() => onViewProfile(employee.id)}>
+                            <DropdownMenuItem onClick={() => onViewProfile(employee.id)} className="cursor-pointer">
                                 Xem hồ sơ
                             </DropdownMenuItem>
                         )}
                         {employee.email && (
-                            <DropdownMenuItem>
-                                <Mail className="mr-2 h-3 w-3" />
+                            <DropdownMenuItem className="cursor-pointer">
+                                <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
                                 Gửi email
                             </DropdownMenuItem>
                         )}
                         {employee.phone && (
-                            <DropdownMenuItem>
-                                <Phone className="mr-2 h-3 w-3" />
+                            <DropdownMenuItem className="cursor-pointer">
+                                <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
                                 Gọi điện
                             </DropdownMenuItem>
                         )}

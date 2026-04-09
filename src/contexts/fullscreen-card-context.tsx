@@ -25,6 +25,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cardRegistry } from "./fullscreen-card-registry";
+import { getAutoAISummary } from "@/app/(protected)/dashboard/ai-actions";
 import { cn } from "@/lib/utils";
 import {
     ResizableHandle,
@@ -132,6 +133,10 @@ export function FullscreenCardProvider({
                 }),
                 queryClient.invalidateQueries({
                     queryKey: ["dashboard-department-distribution"],
+                }),
+                queryClient.fetchQuery({
+                    queryKey: ["dashboard-ai-summary"],
+                    queryFn: () => getAutoAISummary("standard", true),
                 }),
             ]);
             setLastRefreshed(new Date());

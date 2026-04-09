@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { ESSDashboardData } from "./types";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 interface ESSClientProps {
   initialData: ESSDashboardData;
@@ -84,7 +86,7 @@ export function ESSClient({ initialData }: ESSClientProps) {
                     {greeting}, <span className="text-primary">{userName}</span>
                   </h1>
                   <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-1 text-xs sm:text-sm text-muted-foreground">
-                    <Badge className="text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2">
+                    <Badge className="text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1">
                       {initialData.profile.username}
                     </Badge>
                     <span className="text-muted-foreground/50 ">•</span>
@@ -99,16 +101,8 @@ export function ESSClient({ initialData }: ESSClientProps) {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="text-right hidden sm:block">
-                    <div className="text-xs text-muted-foreground">
-                      {new Date().toLocaleDateString("vi-VN", {
-                        weekday: "short",
-                      })}
-                    </div>
                     <div className="text-sm sm:text-lg font-semibold leading-tight">
-                      {new Date().toLocaleDateString("vi-VN", {
-                        day: "numeric",
-                        month: "short",
-                      })}
+                      {format(new Date(), "EEEE, dd MMMM yyyy", { locale: vi })}
                     </div>
                   </div>
                 </div>
@@ -118,8 +112,8 @@ export function ESSClient({ initialData }: ESSClientProps) {
         </div>
 
         {/* Quick Actions */}
-        <Card className="bg-linear-to-b from-primary/5 to-primary/10 border-primary/10 p-2">
-          <CardHeader className="px-2 sm:px-4">
+        <Card className="bg-linear-to-b from-primary/5 to-primary/10 border-primary/10 p-3">
+          <CardHeader className="px-2 sm:px-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                 <span className="hidden xs:inline">Thao tác nhanh</span>
@@ -138,13 +132,13 @@ export function ESSClient({ initialData }: ESSClientProps) {
               </Link>
             </div>
           </CardHeader>
-          <CardContent className="px-2 sm:px-4">
+          <CardContent className="px-2 sm:px-3">
             <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
               {quickActions.map((action) => {
                 const Icon = action.icon;
                 return (
                   <Link key={action.href} href={action.href}>
-                    <div className="flex items-center gap-2 sm:gap-4 p-2.5 sm:p-4 rounded-lg bg-white hover:bg-white/80 border border-border/50 hover:border-primary/20 hover:shadow-sm transition-all duration-200 group cursor-pointer active:scale-[0.98]">
+                    <div className="flex items-center gap-2 sm:gap-4 p-2.5 sm:p-4 rounded-lg bg-muted-foreground/10  border border-border hover:border-primary/20 hover:shadow-sm transition-all duration-200 group cursor-pointer active:scale-[0.98]">
                       <div
                         className={cn(
                           "p-1.5 sm:p-2.5 rounded-lg shrink-0",
@@ -174,7 +168,7 @@ export function ESSClient({ initialData }: ESSClientProps) {
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           {/* Leave Balance */}
           <Card className="p-2">
-            <CardHeader className="flex flex-row items-center justify-between px-2 sm:px-4">
+            <CardHeader className="flex items-center justify-between px-2 sm:px-4">
               <div className="space-y-1 min-w-0">
                 <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                   <span className="truncate">Số dư ngày nghỉ phép</span>

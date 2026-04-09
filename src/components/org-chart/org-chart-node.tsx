@@ -170,6 +170,33 @@ export function OrgChartNode({
         )}
       />
 
+      {/* Structural drag handle */}
+      {!isLocked && (
+        <div
+          className="absolute top-1 right-1 text-muted-foreground/30 hover:text-muted-foreground cursor-grab active:cursor-grabbing p-1.5"
+          draggable
+          title="Kéo & thả để chuyển đổi cấp phòng ban"
+          onDragStart={(e) => {
+            if (isLocked) {
+              e.preventDefault();
+              return;
+            }
+            e.stopPropagation();
+            e.dataTransfer.setData("departmentId", node.id);
+            e.dataTransfer.effectAllowed = "move";
+            
+            // Create a drag image so it looks like we're dragging the node
+            const target = e.target as HTMLElement;
+            const nodeElement = target.closest('[data-dept-id]') as HTMLElement;
+            if (nodeElement) {
+                e.dataTransfer.setDragImage(nodeElement, 20, 20);
+            }
+          }}
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      )}
+
       <div
         className={cn(
           "pt-5",

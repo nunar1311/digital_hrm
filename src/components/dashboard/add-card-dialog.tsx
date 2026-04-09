@@ -189,7 +189,20 @@ const templates = [
     badge: "Pro",
   },
 
-  // NEW MOCKUP CARDS
+  // AI CARDS
+  {
+    id: "ai-executive-summary",
+    name: "AI Executive Summary",
+    description: "Báo cáo tóm tắt điều hành tự động từ AI phân tích dữ liệu thực",
+    icon: Sparkles,
+    color: "purple",
+    w: 6,
+    h: 8,
+    minW: 3,
+    minH: 4,
+    category: "Trí tuệ nhân tạo (AI)",
+    badge: "AI",
+  },
   {
     id: "mock-ai-assistant",
     name: "Trợ lý AI HR",
@@ -335,6 +348,7 @@ const AddCardDialog = ({
           "area-chart",
           "pie-chart",
           "list-employees",
+          "ai-executive-summary",
           "mock-ai-assistant",
         ].includes(t.id),
       );
@@ -446,6 +460,12 @@ const AddCardDialog = ({
         content = JSON.stringify({
           name: "cardContractExpiryList",
           props: { items: contractExpiryWarnings },
+        });
+        break;
+      case "ai-executive-summary":
+        content = JSON.stringify({
+          name: "cardAIExecutiveSummary",
+          props: {},
         });
         break;
       default:

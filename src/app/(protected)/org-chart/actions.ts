@@ -47,7 +47,7 @@ export async function getDepartmentTree(): Promise<DepartmentNode[]> {
             name: true,
             username: true,
             image: true,
-            position: { select: { name: true } },
+            position: { select: { name: true, authority: true } },
             employeeCode: true,
             departmentId: true,
         },
@@ -75,6 +75,32 @@ export async function getDepartmentTree(): Promise<DepartmentNode[]> {
 
     for (const d of departments) {
         const emps = usersByDept[d.id] || [];
+        
+        let currentManager = d.manager
+            ? {
+                  id: d.manager.id,
+                  name: d.manager.name,
+                  image: d.manager.image,
+                  position: d.manager.position?.name ?? null,
+              }
+            : null;
+
+        // Fallback: If no explicit manager is set, find an employee in this department with MANAGER or DIRECTOR authority
+        if (!currentManager) {
+            const fallbackManager = users.find(
+                (u) => u.departmentId === d.id && 
+                       (u.position?.authority === "MANAGER" || u.position?.authority === "DIRECTOR")
+            );
+            if (fallbackManager) {
+                currentManager = {
+                    id: fallbackManager.id,
+                    name: fallbackManager.name,
+                    image: fallbackManager.image,
+                    position: fallbackManager.position?.name ?? null,
+                };
+            }
+        }
+
         nodeMap.set(d.id, {
             id: d.id,
             name: d.name,
@@ -86,14 +112,7 @@ export async function getDepartmentTree(): Promise<DepartmentNode[]> {
             parentId: d.parentId,
             secondaryParentIds: d.secondaryParentIds,
             managerId: d.managerId,
-            manager: d.manager
-                ? {
-                      id: d.manager.id,
-                      name: d.manager.name,
-                      image: d.manager.image,
-                      position: d.manager.position?.name ?? null,
-                  }
-                : null,
+            manager: currentManager,
             employeeCount: emps.length,
             positionCount: d._count.positions,
             children: [],

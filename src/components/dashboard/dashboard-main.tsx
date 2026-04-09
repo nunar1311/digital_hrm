@@ -12,6 +12,7 @@ import CardChartGender from "./cards/card-chart-gender";
 import CardComingSoon from "./cards/card-coming-soon";
 import CardTimesheetSummary from "./cards/card-timesheet-summary";
 import CardContractExpiryList from "./cards/card-contract-expiry-list";
+import CardAIExecutiveSummary from "./cards/card-ai-executive-summary";
 
 const DashboardMain = () => {
   return (
@@ -29,6 +30,7 @@ const DashboardMain = () => {
         cardComingSoon: CardComingSoon,
         cardTimesheetSummary: CardTimesheetSummary,
         cardContractExpiryList: CardContractExpiryList,
+        cardAIExecutiveSummary: CardAIExecutiveSummary,
       }}
     />
   );

@@ -1771,3 +1771,18 @@ model Invitation {
   @@index([email])
   @@map("invitation")
 }
+
+// ==================== AI DASHBOARD ====================
+
+model AIDashboardSummary {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date // Ngày tạo báo cáo (để tìm kiếm theo ngày)
+  detailLevel String   @default("standard")
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([date, detailLevel])
+  @@index([date])
+  @@map("ai_dashboard_summaries")
+}

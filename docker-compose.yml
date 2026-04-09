@@ -62,6 +62,9 @@ services:
       REDIS_URL: redis://redis:6379
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-your-better-auth-secret-change-in-production}
       BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-}
+      # AI Service Configuration
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_SERVICE_KEY: ${AI_INTERNAL_API_KEY:-}
     ports:
       - "3000:3000"
     volumes:
@@ -87,6 +90,51 @@ services:
       - digital_hrm_network
     profiles:
       - admin
+
+  # AI Service - Python Microservice for AI Integration
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: digital_hrm_ai
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      # AI Provider API Keys (configure in .env)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      # Database - Direct PostgreSQL access for AI analysis
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@db:5432/${POSTGRES_DB:-digital_hrm}?sslmode=disable
+      DB_POOL_MIN_SIZE: "2"
+      DB_POOL_MAX_SIZE: "10"
+      # Redis Configuration
+      REDIS_URL: redis://redis:6379
+      REDIS_ENABLED: "true"
+      CACHE_TTL_SECONDS: "3600"
+      # Rate Limiting
+      RATE_LIMIT_PER_MINUTE: "60"
+      RATE_LIMIT_PER_DAY: "1000"
+      # AI Defaults
+      DEFAULT_PROVIDER: ${AI_DEFAULT_PROVIDER:-openai}
+      DEFAULT_MODEL: ${AI_DEFAULT_MODEL:-gpt-4o}
+      REQUEST_TIMEOUT_SECONDS: "120"
+      # Internal Auth
+      INTERNAL_API_KEY: ${AI_INTERNAL_API_KEY:-}
+      NEXT_PUBLIC_API_URL: http://app:3000
+      # Logging
+      LOG_LEVEL: ${AI_LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+    networks:
+      - digital_hrm_network
+    profiles:
+      - ai
 
 networks:
   digital_hrm_network:

@@ -151,9 +151,9 @@ export function OrgChartCanvas({
     onZoomIn: zoomInRef,
     onZoomOut: zoomOutRef,
     onResetView: resetView,
-    onUndo: onUndo,
-    onRedo: onRedo,
-    enabled: !isLocked,
+    onUndo: !isLocked ? onUndo : undefined,
+    onRedo: !isLocked ? onRedo : undefined,
+    enabled: true,
   });
 
   // --- Node movement ---
@@ -209,14 +209,13 @@ export function OrgChartCanvas({
 
   const handleWheel = useCallback(
     (e: WheelEvent) => {
-      if (isLocked) return;
       e.preventDefault();
       const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
       setZoom((prev) =>
         Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +(prev + delta).toFixed(2))),
       );
     },
-    [isLocked],
+    [],
   );
 
   // Touch gesture state for pinch-zoom on mobile
@@ -240,7 +239,6 @@ export function OrgChartCanvas({
     };
 
     const handleTouchStart = (e: TouchEvent) => {
-      if (isLocked) return;
       if (e.touches.length === 1) {
         touchStartRef.current = {
           x: e.touches[0].clientX,
@@ -255,7 +253,6 @@ export function OrgChartCanvas({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (isLocked) return;
       e.preventDefault();
 
       if (e.touches.length === 2 && lastTouchDistRef.current !== null) {
@@ -299,7 +296,7 @@ export function OrgChartCanvas({
       el.removeEventListener("touchmove", handleTouchMove);
       el.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [handleWheel, isLocked]);
+  }, [handleWheel]);
 
   // --- Arrow key navigation ---
   useEffect(() => {
@@ -336,7 +333,6 @@ export function OrgChartCanvas({
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (isLocked) return;
       if (e.button !== 0) return;
       const target = e.target as HTMLElement;
       if (
@@ -351,7 +347,7 @@ export function OrgChartCanvas({
         y: e.clientY - pan.y,
       };
     },
-    [pan, isLocked],
+    [pan],
   );
 
   const handleMouseMove = useCallback(
@@ -518,7 +514,6 @@ export function OrgChartCanvas({
         }}
       />
 
-      {/* Zoom controls - touch-friendly on mobile */}
       <div
         className={cn(
           "absolute z-20 flex flex-col gap-1 items-center",
@@ -537,7 +532,6 @@ export function OrgChartCanvas({
             "bg-background/90 backdrop-blur-sm shadow-md",
             isMobile ? "h-11 w-11" : "h-8 w-8",
           )}
-          disabled={isLocked}
           onClick={zoomInRef}
         >
           <ZoomIn className={cn(isMobile ? "h-5 w-5" : "h-3.5 w-3.5")} />
@@ -558,7 +552,6 @@ export function OrgChartCanvas({
             "bg-background/90 backdrop-blur-sm shadow-md",
             isMobile ? "h-11 w-11" : "h-8 w-8",
           )}
-          disabled={isLocked}
           onClick={zoomOutRef}
         >
           <ZoomOut className={cn(isMobile ? "h-5 w-5" : "h-3.5 w-3.5")} />
@@ -570,7 +563,6 @@ export function OrgChartCanvas({
             "bg-background/90 backdrop-blur-sm shadow-md",
             isMobile ? "h-11 w-11" : "h-8 w-8",
           )}
-          disabled={isLocked}
           onClick={resetView}
         >
           <RotateCcw className={cn(isMobile ? "h-5 w-5" : "h-3.5 w-3.5")} />
@@ -582,7 +574,7 @@ export function OrgChartCanvas({
         ref={containerRef}
         className="w-full h-full overflow-hidden select-none"
         style={{
-          cursor: isLocked ? "default" : isPanning ? "grabbing" : "grab",
+          cursor: isPanning ? "grabbing" : "grab",
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}

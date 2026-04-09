@@ -170,7 +170,9 @@ export function OrgChartToolbar({
             variant={viewMode === "tree" ? "secondary" : "outline"}
             size="icon"
             className="h-8 w-8 shrink-0"
-            onClick={() => onViewModeChange(viewMode === "tree" ? "list" : "tree")}
+            onClick={() =>
+              onViewModeChange(viewMode === "tree" ? "list" : "tree")
+            }
           >
             {viewMode === "tree" ? (
               <GitBranch className="h-3.5 w-3.5" />
@@ -215,11 +217,15 @@ export function OrgChartToolbar({
             {onChartLayoutChange && viewMode === "tree" && (
               <>
                 <div className="h-px bg-border my-1" />
-                <DropdownMenuItem onClick={() => onChartLayoutChange("hierarchy")}>
+                <DropdownMenuItem
+                  onClick={() => onChartLayoutChange("hierarchy")}
+                >
                   <GitBranch className="h-3.5 w-3.5 mr-2" />
                   Phân cấp
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onChartLayoutChange("functional")}>
+                <DropdownMenuItem
+                  onClick={() => onChartLayoutChange("functional")}
+                >
                   <LayoutGrid className="h-3.5 w-3.5 mr-2" />
                   Theo nhóm chức năng
                 </DropdownMenuItem>
@@ -249,32 +255,38 @@ export function OrgChartToolbar({
                 <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                   Màu nổi bật
                 </div>
-                {(Object.entries(CHART_THEMES) as [ChartThemeId, { label: string }][]).map(
-                  ([id, { label }]) => (
-                    <DropdownMenuCheckboxItem
-                      key={id}
-                      checked={chartTheme === id}
-                      onCheckedChange={() => onChartThemeChange?.(id)}
-                    >
-                      {label}
-                    </DropdownMenuCheckboxItem>
-                  ),
-                )}
+                {(
+                  Object.entries(CHART_THEMES) as [
+                    ChartThemeId,
+                    { label: string },
+                  ][]
+                ).map(([id, { label }]) => (
+                  <DropdownMenuCheckboxItem
+                    key={id}
+                    checked={chartTheme === id}
+                    onCheckedChange={() => onChartThemeChange?.(id)}
+                  >
+                    {label}
+                  </DropdownMenuCheckboxItem>
+                ))}
                 <div className="h-px bg-border my-1" />
                 <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                   Kiểu thẻ
                 </div>
-                {(Object.entries(CHART_CARD_STYLES) as [ChartCardStyle, { label: string }][]).map(
-                  ([id, { label }]) => (
-                    <DropdownMenuCheckboxItem
-                      key={id}
-                      checked={cardStyle === id}
-                      onCheckedChange={() => onCardStyleChange?.(id)}
-                    >
-                      {label}
-                    </DropdownMenuCheckboxItem>
-                  ),
-                )}
+                {(
+                  Object.entries(CHART_CARD_STYLES) as [
+                    ChartCardStyle,
+                    { label: string },
+                  ][]
+                ).map(([id, { label }]) => (
+                  <DropdownMenuCheckboxItem
+                    key={id}
+                    checked={cardStyle === id}
+                    onCheckedChange={() => onCardStyleChange?.(id)}
+                  >
+                    {label}
+                  </DropdownMenuCheckboxItem>
+                ))}
               </>
             )}
 
@@ -313,7 +325,11 @@ export function OrgChartToolbar({
 
         {/* Create button */}
         {canEdit && (
-          <Button size="sm" onClick={onCreateDepartment} className="h-8 px-2 shrink-0">
+          <Button
+            size="sm"
+            onClick={onCreateDepartment}
+            className="h-8 px-2 shrink-0"
+          >
             <Plus className="h-3.5 w-3.5" />
           </Button>
         )}
@@ -600,7 +616,7 @@ export function OrgChartToolbar({
         )}
       </div>
 
-      {canEdit && (
+      {/* {canEdit && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="xs" className="ml-auto border">
@@ -620,7 +636,7 @@ export function OrgChartToolbar({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      )}
+      )} */}
 
       {canEdit && (
         <Button size="xs" onClick={onCreateDepartment}>
