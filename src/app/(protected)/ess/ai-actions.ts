@@ -5,12 +5,11 @@
  * AI-powered HR chatbot and employee self-service features
  */
 
-import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// AI Service integration
-async function callAIService(endpoint: string, data: any) {
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -30,17 +29,33 @@ async function callAIService(endpoint: string, data: any) {
   return response.json();
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "An unexpected error occurred";
+}
+
+interface ChatMessage {
+  role: string;
+  content: string;
+}
+
+interface HRContext {
+  employee_name?: string;
+  department?: string | null;
+  position?: string | null;
+  employee_code?: string;
+  [key: string]: string | null | undefined;
+}
+
 /**
  * Chat with HR Bot
  * Get instant answers to HR-related questions
  */
 export async function chatWithHRBot(data: {
-  messages: Array<{ role: string; content: string }>;
+  messages: ChatMessage[];
   sessionId?: string;
   userId?: string;
 }) {
   try {
-    // Add user context if available
     let contextMessages = data.messages;
 
     if (data.userId) {
@@ -53,11 +68,10 @@ export async function chatWithHRBot(data: {
       });
 
       if (user) {
-        // Add system message with user context
         contextMessages = [
           {
             role: "system",
-            content: `User context: ${user.name}, Department: ${user.department?.name || "N/A"}, Position: ${user.position?.title || "N/A"}`,
+            content: `User context: ${user.name}, Department: ${user.department?.name || "N/A"}, Position: ${user.position?.name || "N/A"}`,
           },
           ...data.messages,
         ];
@@ -75,11 +89,11 @@ export async function chatWithHRBot(data: {
       sessionId: result.session_id,
       provider: result.provider,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("HR Chat error:", error);
     return {
       success: false,
-      error: error.message || "Failed to get response",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -93,7 +107,7 @@ export async function askHRQuestion(data: {
   language?: "vi" | "en";
 }) {
   try {
-    let context: Record<string, any> = {};
+    const context: HRContext = {};
 
     if (data.userId) {
       const user = await prisma.user.findUnique({
@@ -105,12 +119,10 @@ export async function askHRQuestion(data: {
       });
 
       if (user) {
-        context = {
-          employee_name: user.name,
-          department: user.department?.name,
-          position: user.position?.title,
-          employee_code: user.employeeCode,
-        };
+        context.employee_name = user.name;
+        context.department = user.department?.name;
+        context.position = user.position?.name;
+        context.employee_code = user.employeeCode ?? undefined;
       }
     }
 
@@ -124,11 +136,11 @@ export async function askHRQuestion(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("HR Question error:", error);
     return {
       success: false,
-      error: error.message || "Failed to answer question",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -179,9 +191,9 @@ export async function getPersonalizedDashboard(userId: string) {
           content: `Tạo dashboard cá nhân cho nhân viên:
 - Tên: ${user.name}
 - Phòng ban: ${user.department?.name || "N/A"}
-- Vị trí: ${user.position?.title || "N/A"}
+- Vị trí: ${user.position?.name || "N/A"}
 - Số ngày làm việc (30 ngày qua): ${user.attendances.filter((a) => a.status === "PRESENT").length}
-- Ngày nghỉ còn lại: ${user.leaveBalances?.totalDays || 0}
+- Ngày nghỉ còn lại: ${user.leaveBalances?.[0]?.totalDays || 0}
 - Đơn nghỉ đang chờ: ${user.leaveRequests?.length || 0}
 
 Tạo tóm tắt ngắn gọn, động viên nhân viên.`,
@@ -194,15 +206,15 @@ Tạo tóm tắt ngắn gọn, động viên nhân viên.`,
       content: result.content,
       metrics: {
         workDaysLast30: user.attendances.filter((a) => a.status === "PRESENT").length,
-        leaveBalance: user.leaveBalances?.totalDays || 0,
+        leaveBalance: user.leaveBalances?.[0]?.totalDays || 0,
         pendingRequests: user.leaveRequests?.length || 0,
       },
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Personalized Dashboard error:", error);
     return {
       success: false,
-      error: error.message || "Failed to get dashboard",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -238,7 +250,7 @@ export async function suggestLeaveDays(userId: string) {
 
     const result = await callAIService("/api/ai/recommend/leave-suggestion", {
       employee_name: user.name,
-      leave_balance: user.leaveBalances?.totalDays || 0,
+      leave_balance: user.leaveBalances?.[0]?.totalDays || 0,
       pending_requests: user.leaveRequests?.length,
       recent_workload: user.attendances?.slice(0, 10).map((a) => ({
         date: a.date,
@@ -251,11 +263,11 @@ export async function suggestLeaveDays(userId: string) {
       content: result.content,
       suggestions: result.suggestions,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Leave Suggestion error:", error);
     return {
       success: false,
-      error: error.message || "Failed to suggest leave days",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -286,7 +298,7 @@ export async function getPersonalDevelopmentPlan(userId: string) {
 
     const result = await callAIService("/api/ai/recommend/training", {
       employee_id: user.employeeCode,
-      position: user.position?.title || "",
+      position: user.position?.name || "",
       experience_years: user.hireDate
         ? Math.floor(
             (new Date().getTime() - user.hireDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
@@ -298,11 +310,11 @@ export async function getPersonalDevelopmentPlan(userId: string) {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Development Plan error:", error);
     return {
       success: false,
-      error: error.message || "Failed to get development plan",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -327,11 +339,11 @@ export async function answerPolicyQuestion(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Policy Answer error:", error);
     return {
       success: false,
-      error: error.message || "Failed to answer question",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -367,7 +379,7 @@ export async function getPersonalizedBenefits(userId: string) {
           content: `Cung cấp thông tin phúc lợi cho nhân viên:
 - Tên: ${user.name}
 - Phòng ban: ${user.department?.name || "N/A"}
-- Vị trí: ${user.position?.title || "N/A"}
+- Vị trí: ${user.position?.name || "N/A"}
 - Ngày vào làm: ${user.hireDate?.toISOString().split("T")[0]}
 
 Liệt kê các phúc lợi mà nhân viên này có thể được hưởng và giải thích ngắn gọn.`,
@@ -379,11 +391,11 @@ Liệt kê các phúc lợi mà nhân viên này có thể được hưởng và
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Benefits Info error:", error);
     return {
       success: false,
-      error: error.message || "Failed to get benefits",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -452,11 +464,11 @@ export async function analyzeWorkLifeBalance(userId: string) {
         totalWorkDays: user.attendances.length,
       },
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Work-Life Balance error:", error);
     return {
       success: false,
-      error: error.message || "Failed to analyze",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -466,6 +478,7 @@ export async function analyzeWorkLifeBalance(userId: string) {
  */
 export async function getPersonalizedWellness(userId: string) {
   try {
+    void userId; // Reserved for future personalization using user data
     const result = await callAIService("/api/ai/chat", {
       messages: [
         {
@@ -484,11 +497,11 @@ export async function getPersonalizedWellness(userId: string) {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Wellness Tips error:", error);
     return {
       success: false,
-      error: error.message || "Failed to get tips",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -538,11 +551,11 @@ export async function getAttendanceSummaryAI(userId: string) {
       content: result.content,
       attendanceData,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Attendance Summary AI error:", error);
     return {
       success: false,
-      error: error.message || "Failed to get summary",
+      error: getErrorMessage(error),
     };
   }
 }

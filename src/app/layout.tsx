@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Google_Sans } from "next/font/google";
+import { Roboto } from "next/font/google";
 import Providers from "@/providers";
 
 import "./globals.css";
@@ -11,7 +11,7 @@ import { TimezoneProvider } from "@/contexts/timezone-context";
 import { ToastProvider } from "@/providers/toast-provider";
 import { KeyboardShortcutsProvider } from "@/components/providers/keyboard-shortcuts-provider";
 
-const googleSans = Google_Sans({
+const roboto = Roboto({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
@@ -42,7 +42,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${googleSans.className} antialiased [--header-height:calc(var(--spacing)*10)] scroll-smooth overscroll-none overflow-hidden`}
+        className={`${roboto.className} antialiased [--header-height:calc(var(--spacing)*10)] scroll-smooth overscroll-none overflow-hidden`}
       >
         <SettingsProvider settingsCookies={settingsCookie}>
           <KeyboardShortcutsProvider>

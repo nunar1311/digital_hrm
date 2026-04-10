@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth-session";
 import { Permission } from "@/lib/rbac/permissions";
 import { revalidatePath } from "next/cache";
-import { getIO } from "@/lib/socket/server";
+import { emitPositionCreated, emitPositionUpdated, emitPositionDeleted } from "@/lib/socket/server";
 import type {
     PositionDetail,
     GetPositionsParams,
@@ -254,15 +254,7 @@ export async function createPosition(
         revalidatePath("/employees");
 
         // Emit socket event
-        try {
-            const io = getIO();
-            if (io) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (io as any).emit("position:created", { id: position.id, name: position.name });
-            }
-        } catch {
-            // Socket not available
-        }
+        emitPositionCreated(position.id, position.name);
 
         return { success: true, id: position.id };
     } catch (err) {
@@ -328,15 +320,7 @@ export async function updatePosition(
         revalidatePath(`/positions/${id}`);
         revalidatePath("/employees");
 
-        try {
-            const io = getIO();
-            if (io) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (io as any).emit("position:updated", { id: position.id, name: position.name });
-            }
-        } catch {
-            // Socket not available
-        }
+        emitPositionUpdated(position.id, position.name);
 
         return { success: true };
     } catch (err) {
@@ -395,15 +379,7 @@ export async function deletePosition(
 
         revalidatePath("/positions");
 
-        try {
-            const io = getIO();
-            if (io) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (io as any).emit("position:deleted", { id });
-            }
-        } catch {
-            // Socket not available
-        }
+        emitPositionDeleted(id);
 
         return { success: true };
     } catch (err) {

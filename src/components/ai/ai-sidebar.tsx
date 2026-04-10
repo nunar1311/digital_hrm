@@ -129,8 +129,9 @@ export function AISidebar({ defaultOpen = false, className }: AISidebarProps) {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (err: any) {
-      setError(err.message || "Đã xảy ra lỗi");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Đã xảy ra lỗi";
+      setError(message);
     } finally {
       setIsLoading(false);
     }

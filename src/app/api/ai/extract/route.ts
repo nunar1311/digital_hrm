@@ -36,10 +36,11 @@ export async function POST(request: NextRequest) {
       { success: false, error: "Unknown extraction type" },
       { status: 400 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Extract error:", error);
+    const message = error instanceof Error ? error.message : "AI extraction failed";
     return NextResponse.json(
-      { success: false, error: error.message || "AI extraction failed" },
+      { success: false, error: message },
       { status: 500 }
     );
   }

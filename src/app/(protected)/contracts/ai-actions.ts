@@ -5,11 +5,12 @@
  * AI-powered contract analysis, risk detection, and compliance checking
  */
 
-import { revalidatePath } from "next/cache";
+import { getServerSession } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 
-// AI Service integration
-async function callAIService(endpoint: string, data: any) {
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -29,16 +30,30 @@ async function callAIService(endpoint: string, data: any) {
   return response.json();
 }
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : "An unexpected error occurred";
+}
+
 /**
  * Analyze contract risks
  */
 export async function analyzeContractRisks(data: { contractId: string }) {
   try {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const contract = await prisma.contract.findUnique({
       where: { id: data.contractId },
       include: {
-        employee: { include: { position: true, department: true } },
-        contractType: true,
+        user: {
+          include: {
+            position: { select: { name: true } },
+            department: { select: { name: true } },
+          },
+        },
+        contractType: { select: { name: true } },
       },
     });
 
@@ -49,20 +64,23 @@ export async function analyzeContractRisks(data: { contractId: string }) {
     const result = await callAIService("/api/ai/generate/contract", {
       prompt: "Phân tích rủi ro hợp đồng",
       context: {
-        contract_type: contract.contractType.name,
+        contract_type: contract.contractType?.name || "Không xác định",
+        contract_number: contract.contractNumber,
+        title: contract.title,
         start_date: contract.startDate?.toISOString(),
         end_date: contract.endDate?.toISOString(),
         salary: contract.salary,
-        employee_position: contract.employee.position?.title,
-        department: contract.employee.department?.name,
-        terms: contract.terms,
+        employee_position: contract.user.position?.name,
+        department: contract.user.department?.name,
+        notes: contract.notes,
       },
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
-    console.error("Contract Risk Analysis error:", error);
-    return { success: false, error: error.message };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Contract Risk Analysis error:", err);
+    return { success: false, error: message };
   }
 }
 
@@ -74,9 +92,24 @@ export async function suggestContractTerms(data: {
   contractType: string;
 }) {
   try {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const employee = await prisma.user.findUnique({
       where: { id: data.employeeId },
-      include: { position: true, department: true, salary: true },
+      select: {
+        id: true,
+        name: true,
+        employeeCode: true,
+        hireDate: true,
+        nationalId: true,
+        address: true,
+        dateOfBirth: true,
+        position: { select: { name: true } },
+        department: { select: { name: true } },
+      },
     });
 
     if (!employee) {
@@ -87,18 +120,19 @@ export async function suggestContractTerms(data: {
       prompt: "Gợi ý điều khoản hợp đồng",
       context: {
         employee_name: employee.name,
-        position: employee.position?.title,
+        employee_code: employee.employeeCode,
+        position: employee.position?.name,
         department: employee.department?.name,
         contract_type: data.contractType,
-        current_salary: employee.salary?.baseSalary,
         hire_date: employee.hireDate?.toISOString(),
       },
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
-    console.error("Contract Terms Suggestion error:", error);
-    return { success: false, error: error.message };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Contract Terms Suggestion error:", err);
+    return { success: false, error: message };
   }
 }
 
@@ -107,33 +141,53 @@ export async function suggestContractTerms(data: {
  */
 export async function checkContractCompliance(data: { contractId: string }) {
   try {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const contract = await prisma.contract.findUnique({
       where: { id: data.contractId },
-      include: { employee: true, contractType: true },
+      include: {
+        user: { select: { name: true } },
+        contractType: { select: { name: true } },
+      },
     });
 
     if (!contract) {
       return { success: false, error: "Contract not found" };
     }
 
+    const durationMonths =
+      contract.endDate && contract.startDate
+        ? Math.round(
+            (contract.endDate.getTime() - contract.startDate.getTime()) /
+              (30 * 24 * 60 * 60 * 1000)
+          )
+        : null;
+
     const result = await callAIService("/api/ai/generate/contract", {
       prompt: "Kiểm tra tuân thủ Bộ luật Lao động Việt Nam 2019",
       context: {
-        contract_type: contract.contractType.name,
-        duration_months: contract.endDate && contract.startDate
-          ? Math.round((contract.endDate.getTime() - contract.startDate.getTime()) / (30 * 24 * 60 * 60 * 1000))
-          : null,
+        contract_type: contract.contractType?.name || "Không xác định",
+        contract_number: contract.contractNumber,
+        duration_months: durationMonths,
         start_date: contract.startDate?.toISOString(),
         salary: contract.salary,
-        terms: contract.terms,
-        probation_period: contract.probationPeriod,
+        probation_salary: contract.probationSalary,
+        notes: contract.notes,
       },
     });
 
-    return { success: true, content: result.content, compliance: result.compliance };
-  } catch (error: any) {
-    console.error("Contract Compliance error:", error);
-    return { success: false, error: error.message };
+    return {
+      success: true,
+      content: result.content,
+      compliance: result.compliance,
+    };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Contract Compliance error:", err);
+    return { success: false, error: message };
   }
 }
 
@@ -146,9 +200,17 @@ export async function generateContractDraft(data: {
   customTerms?: string;
 }) {
   try {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const employee = await prisma.user.findUnique({
       where: { id: data.employeeId },
-      include: { position: true, department: true },
+      include: {
+        position: { select: { name: true } },
+        department: { select: { name: true } },
+      },
     });
 
     if (!employee) {
@@ -162,16 +224,17 @@ export async function generateContractDraft(data: {
         date_of_birth: employee.dateOfBirth?.toISOString(),
         id_card: employee.nationalId,
         address: employee.address,
-        position: employee.position?.title,
+        position: employee.position?.name,
         department: employee.department?.name,
         contract_type: data.contractType,
       },
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
-    console.error("Contract Draft error:", error);
-    return { success: false, error: error.message };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Contract Draft error:", err);
+    return { success: false, error: message };
   }
 }
 
@@ -180,11 +243,16 @@ export async function generateContractDraft(data: {
  */
 export async function predictRenewalNeeded(data: { contractId: string }) {
   try {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const contract = await prisma.contract.findUnique({
       where: { id: data.contractId },
       include: {
-        employee: { include: { position: true } },
-        contractType: true,
+        user: { include: { position: { select: { name: true } } } },
+        contractType: { select: { name: true } },
       },
     });
 
@@ -192,22 +260,30 @@ export async function predictRenewalNeeded(data: { contractId: string }) {
       return { success: false, error: "Contract not found" };
     }
 
+    const tenure = contract.startDate
+      ? Math.round(
+          (new Date().getTime() - contract.startDate.getTime()) /
+            (365.25 * 24 * 60 * 60 * 1000)
+        )
+      : 0;
+
     const result = await callAIService("/api/ai/generate/contract", {
       prompt: "Dự đoán cần gia hạn hợp đồng",
       context: {
-        contract_type: contract.contractType.name,
+        contract_type: contract.contractType?.name,
+        contract_number: contract.contractNumber,
         end_date: contract.endDate?.toISOString(),
-        position: contract.employee.position?.title,
-        tenure: contract.startDate
-          ? Math.round((new Date().getTime() - contract.startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-          : 0,
+        position: contract.user.position?.name,
+        tenure_years: tenure,
+        salary: contract.salary,
       },
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
-    console.error("Renewal Prediction error:", error);
-    return { success: false, error: error.message };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Renewal Prediction error:", err);
+    return { success: false, error: message };
   }
 }
 
@@ -219,23 +295,48 @@ export async function summarizeContractChanges(data: {
   newContractId: string;
 }) {
   try {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const [oldContract, newContract] = await Promise.all([
-      prisma.contract.findUnique({ where: { id: data.oldContractId } }),
-      prisma.contract.findUnique({ where: { id: data.newContractId } }),
+      prisma.contract.findUnique({
+        where: { id: data.oldContractId },
+        include: { contractType: { select: { name: true } } },
+      }),
+      prisma.contract.findUnique({
+        where: { id: data.newContractId },
+        include: { contractType: { select: { name: true } } },
+      }),
     ]);
 
     if (!oldContract || !newContract) {
       return { success: false, error: "Contract not found" };
     }
 
+    const summaryContent = [
+      "Thay đổi hợp đồng:",
+      `Loại: ${oldContract.contractType?.name} → ${newContract.contractType?.name}`,
+      `Lương: ${oldContract.salary} → ${newContract.salary}`,
+      `Ngày bắt đầu: ${oldContract.startDate?.toISOString()} → ${newContract.startDate?.toISOString()}`,
+      `Ngày kết thúc: ${oldContract.endDate?.toISOString()} → ${newContract.endDate?.toISOString()}`,
+      oldContract.notes || newContract.notes
+        ? `Ghi chú trước: ${oldContract.notes}\nGhi chú sau: ${newContract.notes}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     const result = await callAIService("/api/ai/summarize/content", {
-      content: `Thay đổi hợp đồng:\nTrước: Lương ${oldContract.salary}, Từ ${oldContract.startDate?.toISOString()} đến ${oldContract.endDate?.toISOString()}\nSau: Lương ${newContract.salary}, Từ ${newContract.startDate?.toISOString()} đến ${newContract.endDate?.toISOString()}`,
+      content: summaryContent,
       summary_type: "detailed",
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
-    console.error("Contract Changes Summary error:", error);
-    return { success: false, error: error.message };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Contract Changes Summary error:", err);
+    return { success: false, error: message };
   }
 }

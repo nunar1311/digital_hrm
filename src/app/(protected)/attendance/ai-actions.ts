@@ -5,12 +5,13 @@
  * AI-powered attendance analysis, anomaly detection, and insights
  */
 
-import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
+import { getServerSession } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "../../../../generated/prisma/client";
 
-// AI Service integration
-async function callAIService(endpoint: string, data: any) {
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -30,6 +31,33 @@ async function callAIService(endpoint: string, data: any) {
   return response.json();
 }
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : "An unexpected error occurred";
+}
+
+function buildAttendanceWhere(data: {
+  employeeId?: string;
+  departmentId?: string;
+  startDate?: string;
+  endDate?: string;
+}): Prisma.AttendanceWhereInput {
+  const where: Prisma.AttendanceWhereInput = {};
+
+  if (data.employeeId) {
+    where.userId = data.employeeId;
+  }
+  if (data.departmentId) {
+    where.user = { departmentId: data.departmentId };
+  }
+  if (data.startDate || data.endDate) {
+    where.date = {};
+    if (data.startDate) where.date.gte = new Date(data.startDate);
+    if (data.endDate) where.date.lte = new Date(data.endDate);
+  }
+
+  return where;
+}
+
 /**
  * Detect attendance anomalies using AI
  */
@@ -40,25 +68,19 @@ export async function detectAttendanceAnomalies(data: {
   endDate?: string;
 }) {
   try {
-    const where: any = {};
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
 
-    if (data.employeeId) where.userId = data.employeeId;
-    if (data.departmentId) {
-      const users = await prisma.user.findMany({
-        where: { departmentId: data.departmentId },
-        select: { id: true },
-      });
-      where.userId = { in: users.map((u) => u.id) };
-    }
-    if (data.startDate || data.endDate) {
-      where.date = {};
-      if (data.startDate) where.date.gte = new Date(data.startDate);
-      if (data.endDate) where.date.lte = new Date(data.endDate);
-    }
+    const where = buildAttendanceWhere(data);
 
     const attendances = await prisma.attendance.findMany({
       where,
-      include: { user: { include: { department: true } } },
+      include: {
+        user: { include: { department: true } },
+        explanation: true,
+      },
       orderBy: { date: "desc" },
       take: 100,
     });
@@ -72,7 +94,9 @@ export async function detectAttendanceAnomalies(data: {
       check_out: a.checkOut?.toISOString(),
       status: a.status,
       overtime_hours: a.overtimeHours,
-      explanation: a.explanation,
+      late_minutes: a.lateMinutes,
+      early_minutes: a.earlyMinutes,
+      explanation: a.explanation?.reason || null,
     }));
 
     const result = await callAIService("/api/ai/analyze/attendance", {
@@ -85,12 +109,10 @@ export async function detectAttendanceAnomalies(data: {
       content: result.content,
       anomalies: result.anomalies || [],
     };
-  } catch (error: any) {
-    console.error("Attendance Anomaly Detection error:", error);
-    return {
-      success: false,
-      error: error.message || "Failed to detect anomalies",
-    };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Attendance Anomaly Detection error:", err);
+    return { success: false, error: message };
   }
 }
 
@@ -103,16 +125,15 @@ export async function analyzeCheckInPatterns(data: {
   period?: string;
 }) {
   try {
-    const where: any = {};
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const where: Prisma.AttendanceWhereInput = {};
 
     if (data.employeeId) where.userId = data.employeeId;
-    if (data.departmentId) {
-      const users = await prisma.user.findMany({
-        where: { departmentId: data.departmentId },
-        select: { id: true },
-      });
-      where.userId = { in: users.map((u) => u.id) };
-    }
+    if (data.departmentId) where.user = { departmentId: data.departmentId };
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - (data.period === "quarter" ? 90 : 30));
@@ -120,11 +141,28 @@ export async function analyzeCheckInPatterns(data: {
 
     const attendances = await prisma.attendance.findMany({
       where,
-      include: { user: true },
+      include: {
+        user: { include: { department: true } },
+        explanation: true,
+      },
     });
 
+    const attendanceData = attendances.map((a) => ({
+      employee_id: a.user.employeeCode,
+      employee_name: a.user.name,
+      department: a.user.department?.name,
+      date: a.date.toISOString().split("T")[0],
+      check_in: a.checkIn?.toISOString(),
+      check_out: a.checkOut?.toISOString(),
+      status: a.status,
+      overtime_hours: a.overtimeHours,
+      late_minutes: a.lateMinutes,
+      early_minutes: a.earlyMinutes,
+      explanation: a.explanation?.reason || null,
+    }));
+
     const result = await callAIService("/api/ai/analyze/attendance", {
-      attendance_data: { attendances },
+      attendance_data: { attendances: attendanceData },
       analysis_type: "pattern",
     });
 
@@ -132,13 +170,24 @@ export async function analyzeCheckInPatterns(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
-    console.error("Check-in Pattern Analysis error:", error);
-    return {
-      success: false,
-      error: error.message || "Failed to analyze patterns",
-    };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Check-in Pattern Analysis error:", err);
+    return { success: false, error: message };
   }
+}
+
+interface ProjectData {
+  projectName?: string;
+  deadline?: string;
+  requiredHours?: number;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+interface EmployeePreferences {
+  shiftPreference?: string;
+  workDays?: string[];
+  [key: string]: string | string[] | boolean | null | undefined;
 }
 
 /**
@@ -146,32 +195,41 @@ export async function analyzeCheckInPatterns(data: {
  */
 export async function predictOvertimeNeeds(data: {
   departmentId?: string;
-  projectData?: Record<string, any>;
+  projectData?: ProjectData;
 }) {
   try {
-    const where: any = {};
-    if (data.departmentId) {
-      const users = await prisma.user.findMany({
-        where: { departmentId: data.departmentId },
-        select: { id: true },
-      });
-      where.userId = { in: users.map((u) => u.id) };
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
     }
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 90);
-    where.date = { gte: startDate };
 
-    const overtimeRequests = await prisma.attendance.findMany({
+    const overtimeRequests = await prisma.overtimeRequest.findMany({
       where: {
-        ...where,
-        overtimeHours: { gt: 0 },
+        user: data.departmentId
+          ? { departmentId: data.departmentId }
+          : undefined,
+        date: { gte: startDate },
+        status: { in: ["APPROVED", "CONFIRMED"] },
       },
       include: { user: { include: { department: true } } },
     });
 
+    const overtimeData = overtimeRequests.map((r) => ({
+      employee_id: r.user.employeeCode,
+      employee_name: r.user.name,
+      department: r.user.department?.name,
+      date: r.date.toISOString().split("T")[0],
+      requested_hours: r.hours,
+      actual_hours: r.actualHours,
+      day_type: r.dayType,
+      status: r.status,
+    }));
+
     const result = await callAIService("/api/ai/analyze/attendance", {
-      attendance_data: { overtime_history: overtimeRequests },
+      attendance_data: { overtime_history: overtimeData },
       analysis_type: "overtime",
     });
 
@@ -179,12 +237,10 @@ export async function predictOvertimeNeeds(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
-    console.error("Overtime Prediction error:", error);
-    return {
-      success: false,
-      error: error.message || "Failed to predict overtime",
-    };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Overtime Prediction error:", err);
+    return { success: false, error: message };
   }
 }
 
@@ -193,16 +249,27 @@ export async function predictOvertimeNeeds(data: {
  */
 export async function suggestOptimalShift(data: {
   departmentId: string;
-  employeePreferences?: Record<string, any>;
+  employeePreferences?: EmployeePreferences;
 }) {
   try {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const department = await prisma.department.findUnique({
       where: { id: data.departmentId },
       include: {
         positions: {
           include: {
-            position: true,
-            users: { include: { user: true } },
+            users: {
+              select: {
+                id: true,
+                name: true,
+                employeeCode: true,
+                image: true,
+              },
+            },
           },
         },
       },
@@ -212,8 +279,26 @@ export async function suggestOptimalShift(data: {
       return { success: false, error: "Department not found" };
     }
 
+    const departmentData = {
+      id: department.id,
+      name: department.name,
+      code: department.code,
+      positions: department.positions.map((pos) => ({
+        id: pos.id,
+        name: pos.name,
+        authority: pos.authority,
+        users: pos.users.map((u) => ({
+          id: u.id,
+          name: u.name,
+          employeeCode: u.employeeCode,
+          image: u.image,
+        })),
+      })),
+      employee_preferences: data.employeePreferences,
+    };
+
     const result = await callAIService("/api/ai/analyze/attendance", {
-      attendance_data: { department },
+      attendance_data: { department: departmentData },
       analysis_type: "shift_optimization",
     });
 
@@ -221,12 +306,10 @@ export async function suggestOptimalShift(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
-    console.error("Shift Optimization error:", error);
-    return {
-      success: false,
-      error: error.message || "Failed to optimize shifts",
-    };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Shift Optimization error:", err);
+    return { success: false, error: message };
   }
 }
 
@@ -237,10 +320,16 @@ export async function autoProcessLeaveRequest(data: {
   leaveRequestId: string;
 }) {
   try {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const leaveRequest = await prisma.leaveRequest.findUnique({
       where: { id: data.leaveRequestId },
       include: {
         user: { include: { department: true } },
+        leaveType: true,
       },
     });
 
@@ -249,7 +338,7 @@ export async function autoProcessLeaveRequest(data: {
     }
 
     const result = await callAIService("/api/ai/generate/leave-response", {
-      leave_type: leaveRequest.leaveType,
+      leave_type: leaveRequest.leaveType.name,
       start_date: leaveRequest.startDate.toISOString().split("T")[0],
       end_date: leaveRequest.endDate.toISOString().split("T")[0],
       reason: leaveRequest.reason,
@@ -261,12 +350,10 @@ export async function autoProcessLeaveRequest(data: {
       content: result.content,
       recommendation: result.recommendation,
     };
-  } catch (error: any) {
-    console.error("Leave Request Auto-Process error:", error);
-    return {
-      success: false,
-      error: error.message || "Failed to process request",
-    };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Leave Request Auto-Process error:", err);
+    return { success: false, error: message };
   }
 }
 
@@ -279,7 +366,12 @@ export async function generateAttendanceReport(data: {
   endDate: string;
 }) {
   try {
-    const where: any = {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const where: Prisma.AttendanceWhereInput = {
       date: {
         gte: new Date(data.startDate),
         lte: new Date(data.endDate),
@@ -287,21 +379,34 @@ export async function generateAttendanceReport(data: {
     };
 
     if (data.departmentId) {
-      const users = await prisma.user.findMany({
-        where: { departmentId: data.departmentId },
-        select: { id: true },
-      });
-      where.userId = { in: users.map((u) => u.id) };
+      where.user = { departmentId: data.departmentId };
     }
 
     const attendances = await prisma.attendance.findMany({
       where,
-      include: { user: { include: { department: true } } },
+      include: {
+        user: { include: { department: true } },
+        explanation: true,
+      },
     });
+
+    const attendanceData = attendances.map((a) => ({
+      employee_id: a.user.employeeCode,
+      employee_name: a.user.name,
+      department: a.user.department?.name,
+      date: a.date.toISOString().split("T")[0],
+      check_in: a.checkIn?.toISOString(),
+      check_out: a.checkOut?.toISOString(),
+      status: a.status,
+      overtime_hours: a.overtimeHours,
+      late_minutes: a.lateMinutes,
+      early_minutes: a.earlyMinutes,
+      explanation: a.explanation?.reason || null,
+    }));
 
     const result = await callAIService("/api/ai/summarize/report", {
       report_type: "attendance",
-      report_data: { attendances },
+      report_data: { attendances: attendanceData },
       period: `${data.startDate} - ${data.endDate}`,
     });
 
@@ -309,12 +414,10 @@ export async function generateAttendanceReport(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
-    console.error("Attendance Report Generation error:", error);
-    return {
-      success: false,
-      error: error.message || "Failed to generate report",
-    };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Attendance Report Generation error:", err);
+    return { success: false, error: message };
   }
 }
 
@@ -327,7 +430,12 @@ export async function getAttendanceComplianceAnalysis(data: {
   endDate: string;
 }) {
   try {
-    const where: any = {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const where: Prisma.AttendanceWhereInput = {
       date: {
         gte: new Date(data.startDate),
         lte: new Date(data.endDate),
@@ -335,23 +443,33 @@ export async function getAttendanceComplianceAnalysis(data: {
     };
 
     if (data.departmentId) {
-      const users = await prisma.user.findMany({
-        where: { departmentId: data.departmentId },
-        select: { id: true },
-      });
-      where.userId = { in: users.map((u) => u.id) };
+      where.user = { departmentId: data.departmentId };
     }
 
     const attendances = await prisma.attendance.findMany({
       where,
       include: {
         user: { include: { department: true } },
-        userShifts: { include: { shift: true } },
+        shift: true,
       },
     });
 
+    const attendanceData = attendances.map((a) => ({
+      employee_id: a.user.employeeCode,
+      employee_name: a.user.name,
+      department: a.user.department?.name,
+      date: a.date.toISOString().split("T")[0],
+      check_in: a.checkIn?.toISOString(),
+      check_out: a.checkOut?.toISOString(),
+      status: a.status,
+      overtime_hours: a.overtimeHours,
+      late_minutes: a.lateMinutes,
+      early_minutes: a.earlyMinutes,
+      shift_name: a.shift?.name,
+    }));
+
     const result = await callAIService("/api/ai/analyze/attendance", {
-      attendance_data: { attendances },
+      attendance_data: { attendances: attendanceData },
       analysis_type: "compliance",
     });
 
@@ -359,11 +477,9 @@ export async function getAttendanceComplianceAnalysis(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
-    console.error("Compliance Analysis error:", error);
-    return {
-      success: false,
-      error: error.message || "Failed to analyze compliance",
-    };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("Compliance Analysis error:", err);
+    return { success: false, error: message };
   }
 }

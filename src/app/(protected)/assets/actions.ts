@@ -6,6 +6,7 @@ import {
 } from "@/lib/auth-session";
 import { Permission } from "@/lib/rbac/permissions";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "../../../../generated/prisma/client";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { emitToAll, emitToUser } from "@/lib/socket/server";
@@ -332,7 +333,7 @@ export async function updateAsset(
 
     const validated = assetSchema.partial().parse(data);
 
-    const updateData: Record<string, any> = { ...validated };
+    const updateData: Record<string, unknown> = { ...validated };
 
     if (validated.purchaseDate) {
         updateData.purchaseDate = new Date(validated.purchaseDate);
@@ -360,7 +361,7 @@ export async function updateAsset(
             action: "UPDATE",
             entity: "Asset",
             entityId: item.id,
-            newData: updateData ,
+            newData: updateData as Prisma.InputJsonValue,
         },
     });
 

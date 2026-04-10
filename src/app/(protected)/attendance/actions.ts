@@ -2944,8 +2944,7 @@ export async function getUsersPaginated({
 }) {
     await requireAuth();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: Record<string, any> = {
+    const where: Record<string, unknown> = {
         // Only active users for shift assignment
         employeeStatus: "ACTIVE",
     };
@@ -3027,8 +3026,7 @@ export async function getUsersWithAssignmentsPaginated({
 }) {
     await requireAuth();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: Record<string, any> = {
+    const where: Record<string, unknown> = {
         employeeStatus: "ACTIVE",
     };
 
@@ -3168,7 +3166,7 @@ export async function searchUsersForApproval(params: {
     const { search = "", page = 1, pageSize = 20 } = params;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: Record<string, any> = {};
+    const where: Record<string, unknown> = {};
 
     if (search.trim()) {
         where.OR = [

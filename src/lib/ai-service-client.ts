@@ -3,8 +3,6 @@
  * Sử dụng API bên thứ ba: OpenAI, Claude, Google Gemini
  */
 
-import { auth } from "@/lib/auth";
-
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -70,9 +68,9 @@ class AIServiceClient {
       }
 
       return response.json();
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
+      if ((error as { name?: string }).name === "AbortError") {
         throw new Error("AI Service timeout");
       }
       throw error;
@@ -95,7 +93,7 @@ class AIServiceClient {
 
   async hrQuestion(
     question: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     language: string = "vi"
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/hr-question", {
@@ -150,7 +148,7 @@ class AIServiceClient {
   }
 
   async analyzeAttendance(
-    attendanceData: Record<string, any>,
+    attendanceData: Record<string, unknown>,
     employeeId?: string,
     analysisType: "anomaly" | "pattern" | "overtime" = "anomaly"
   ): Promise<AIResponse> {
@@ -165,7 +163,7 @@ class AIServiceClient {
   }
 
   async analyzePayroll(
-    payrollData: Record<string, any>,
+    payrollData: Record<string, unknown>,
     employeeId?: string,
     analysisType: "fairness" | "anomaly" | "forecast" = "fairness"
   ): Promise<AIResponse> {
@@ -180,7 +178,7 @@ class AIServiceClient {
   }
 
   async analyzeTurnover(
-    employeeData: Record<string, any>,
+    employeeData: Record<string, unknown>,
     employeeId?: string
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/analyze/turnover", {
@@ -209,14 +207,8 @@ class AIServiceClient {
   async extractDocument(
     text: string,
     extractionType: "employee_id" | "resume" | "contract" | "certificate",
-    schema?: Record<string, any>
-  ): Promise<{
-    success: boolean;
-    data?: Record<string, any>;
-    confidence?: number;
-    warnings?: string[];
-    error?: string;
-  }> {
+    schema?: Record<string, unknown>
+) {
     return this.fetch("/api/ai/extract/document", {
       method: "POST",
       body: JSON.stringify({
@@ -232,7 +224,7 @@ class AIServiceClient {
     backText?: string
   ): Promise<{
     success: boolean;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
     confidence?: number;
     error?: string;
   }> {
@@ -250,7 +242,7 @@ class AIServiceClient {
     includeSections?: string[]
   ): Promise<{
     success: boolean;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
     confidence?: number;
     error?: string;
   }> {
@@ -269,7 +261,7 @@ class AIServiceClient {
 
   async generateContract(
     prompt: string,
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/generate/contract", {
       method: "POST",
@@ -383,7 +375,7 @@ class AIServiceClient {
   }
 
   async summarizeFeedback(
-    feedbacks: Array<Record<string, any>>,
+    feedbacks: Array<Record<string, unknown>>,
     candidateName?: string
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/summarize/feedback", {
@@ -397,7 +389,7 @@ class AIServiceClient {
 
   async summarizeReport(
     reportType: "attendance" | "payroll" | "recruitment" | "turnover",
-    reportData: Record<string, any>,
+    reportData: Record<string, unknown>,
     period?: string
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/summarize/report", {
@@ -411,7 +403,7 @@ class AIServiceClient {
   }
 
   async summarizeNotifications(
-    notifications: Array<Record<string, any>>,
+    notifications: Array<Record<string, unknown>>,
     period: "today" | "this_week" | "this_month" = "today"
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/summarize/notifications", {
@@ -456,7 +448,7 @@ class AIServiceClient {
 
   async recommendCandidates(params: {
     job_requirements: string;
-    candidates: Array<Record<string, any>>;
+    candidates: Array<Record<string, unknown>>;
     top_n?: number;
   }): Promise<AIResponse> {
     return this.fetch("/api/ai/recommend/candidate", {
@@ -470,7 +462,7 @@ class AIServiceClient {
     new_employee_skills?: string[];
     new_employee_interests?: string[];
     department_id: string;
-    available_buddies: Array<Record<string, any>>;
+    available_buddies: Array<Record<string, unknown>>;
   }): Promise<AIResponse> {
     return this.fetch("/api/ai/recommend/onboarding-buddy", {
       method: "POST",
@@ -483,7 +475,7 @@ class AIServiceClient {
   // =====================
 
   async getDashboardInsights(
-    dashboardData: Record<string, any>,
+    dashboardData: Record<string, unknown>,
     period?: string,
     focusAreas?: string[]
   ): Promise<{
@@ -508,7 +500,7 @@ class AIServiceClient {
   }
 
   async generateDashboardSummary(
-    metrics: Record<string, any>,
+    metrics: Record<string, unknown>,
     period: string
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/dashboard/summary", {
@@ -519,7 +511,7 @@ class AIServiceClient {
 
   async queryNaturalLanguage(
     query: string,
-    dashboardData?: Record<string, any>
+    dashboardData?: Record<string, unknown>
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/dashboard/query", {
       method: "POST",
@@ -531,8 +523,8 @@ class AIServiceClient {
   }
 
   async detectAnomalies(
-    metrics: Record<string, any>,
-    historicalData?: Record<string, any>
+    metrics: Record<string, unknown>,
+    historicalData?: Record<string, unknown>
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/dashboard/anomaly-alert", {
       method: "POST",
@@ -544,7 +536,7 @@ class AIServiceClient {
   }
 
   async getPredictiveAnalytics(
-    historicalData: Record<string, any>,
+    historicalData: Record<string, unknown>,
     predictionType: "headcount" | "turnover" | "payroll" | "attendance",
     forecastPeriods: number = 3
   ): Promise<AIResponse> {
@@ -604,9 +596,9 @@ class AIServiceClient {
     summary?: string;
     recommendations?: string[];
     health_score?: number;
-    data_snapshot?: Record<string, any>;
+    data_snapshot?: Record<string, unknown>;
     provider?: string;
-    usage?: Record<string, any>;
+    usage?: Record<string, number>;
     error?: string;
   }> {
     return this.fetch("/api/ai/dashboard/auto-insights", {

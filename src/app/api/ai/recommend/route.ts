@@ -30,10 +30,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Recommend error:", error);
+    const message = error instanceof Error ? error.message : "AI recommendation failed";
     return NextResponse.json(
-      { success: false, error: error.message || "AI recommendation failed" },
+      { success: false, error: message },
       { status: 500 }
     );
   }

@@ -58,10 +58,11 @@ export async function POST(request: NextRequest) {
       { success: false, error: "Unknown analysis type" },
       { status: 400 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Analyze error:", error);
+    const message = error instanceof Error ? error.message : "AI analysis failed";
     return NextResponse.json(
-      { success: false, error: error.message || "AI analysis failed" },
+      { success: false, error: message },
       { status: 500 }
     );
   }

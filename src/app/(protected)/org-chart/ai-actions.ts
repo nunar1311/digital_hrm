@@ -6,7 +6,9 @@
 
 import { prisma } from "@/lib/prisma";
 
-async function callAIService(endpoint: string, data: any) {
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -21,6 +23,10 @@ async function callAIService(endpoint: string, data: any) {
 
   if (!response.ok) throw new Error(`AI Service error: ${response.status}`);
   return response.json();
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "An unexpected error occurred";
 }
 
 /**
@@ -55,9 +61,9 @@ export async function analyzeOrgHealth() {
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Org Health Analysis error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -70,7 +76,6 @@ export async function suggestSuccessor(data: { positionId: string }) {
       where: { id: data.positionId },
       include: {
         department: true,
-        role: true,
       },
     });
 
@@ -79,25 +84,24 @@ export async function suggestSuccessor(data: { positionId: string }) {
     const potentialCandidates = await prisma.user.findMany({
       where: {
         positionId: data.positionId,
-        status: "ACTIVE",
+        employeeStatus: "ACTIVE",
       },
-      include: { position: true },
+      include: { position: true, department: true },
     });
 
     const result = await callAIService("/api/ai/recommend/candidate", {
-      job_requirements: `Position: ${position.title}, Department: ${position.department?.name}`,
+      job_requirements: `Position: ${position.name}, Department: ${position.department?.name}`,
       candidates: potentialCandidates.map((c) => ({
         name: c.name,
-        skills: c.skills?.split(",") || [],
         experience: `${new Date().getFullYear() - (c.hireDate?.getFullYear() || 0)} years`,
       })),
       top_n: 5,
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Successor Suggestion error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -124,9 +128,9 @@ export async function optimizeOrgStructure() {
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Org Structure Optimization error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -135,10 +139,11 @@ export async function optimizeOrgStructure() {
  */
 export async function analyzeSpanOfControl(data: { departmentId?: string }) {
   try {
-    const where = data.departmentId ? { departmentId: data.departmentId } : {};
     const managers = await prisma.user.findMany({
-      where: { ...where, isManager: true },
-      include: { department: true },
+      where: data.departmentId
+        ? { departmentId: data.departmentId, hrmRole: "MANAGER" }
+        : { hrmRole: "MANAGER" },
+      include: { department: true, position: true },
     });
 
     const controlData = await Promise.all(
@@ -168,9 +173,9 @@ export async function analyzeSpanOfControl(data: { departmentId?: string }) {
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Span of Control error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -198,8 +203,8 @@ export async function generateOrgInsights() {
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Org Insights error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }

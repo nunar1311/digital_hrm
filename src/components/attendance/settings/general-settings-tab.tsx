@@ -83,7 +83,7 @@ export function GeneralSettingsTab({ config, queryClient }: Props) {
             }),
         onMutate: async (values) => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
-            queryClient.setQueryData(["attendance", "config"], (old: any) => {
+            queryClient.setQueryData<Partial<AttendanceConfig> | undefined>(["attendance", "config"], (old) => {
                 if (!old) return old;
                 return { ...old, ...values };
             });

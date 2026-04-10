@@ -24,7 +24,7 @@ export function useUpdateCompanyInfo() {
         },
         onMutate: async (data) => {
             await queryClient.cancelQueries({ queryKey: ["company"] });
-            queryClient.setQueryData(["company"], (old: any) => {
+            queryClient.setQueryData<Partial<CompanyInfo> | undefined>(["company"], (old) => {
                 if (!old) return old;
                 return { ...old, ...data };
             });
@@ -70,7 +70,7 @@ export function useDeleteCompanyLogo() {
         },
         onMutate: async () => {
             await queryClient.cancelQueries({ queryKey: ["company"] });
-            queryClient.setQueryData(["company"], (old: any) => {
+            queryClient.setQueryData<{ logo: string | null } | undefined>(["company"], (old) => {
                 if (!old) return old;
                 return { ...old, logo: null };
             });

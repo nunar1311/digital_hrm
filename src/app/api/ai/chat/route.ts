@@ -19,10 +19,11 @@ export async function POST(request: NextRequest) {
     const result = await aiService.chat(messages, { provider, model, temperature });
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Chat error:", error);
+    const message = error instanceof Error ? error.message : "AI request failed";
     return NextResponse.json(
-      { success: false, error: error.message || "AI request failed" },
+      { success: false, error: message },
       { status: 500 }
     );
   }

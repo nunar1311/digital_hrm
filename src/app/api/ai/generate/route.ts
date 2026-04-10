@@ -63,10 +63,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Generate error:", error);
+    const message = error instanceof Error ? error.message : "AI generation failed";
     return NextResponse.json(
-      { success: false, error: error.message || "AI generation failed" },
+      { success: false, error: message },
       { status: 500 }
     );
   }

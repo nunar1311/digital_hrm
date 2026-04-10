@@ -9,13 +9,13 @@ export async function GET() {
   try {
     const health = await aiService.healthCheck();
     return NextResponse.json(health);
-  } catch (error: any) {
-    // If AI service is down, return degraded status
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "AI service unavailable";
     return NextResponse.json(
       {
         status: "degraded",
         service: "digital-hrm-ai",
-        error: error.message || "AI service unavailable",
+        error: message,
       },
       { status: 503 }
     );

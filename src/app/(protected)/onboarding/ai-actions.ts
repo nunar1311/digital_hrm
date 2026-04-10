@@ -4,10 +4,11 @@
  * Onboarding AI Server Actions
  */
 
-import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
-async function callAIService(endpoint: string, data: any) {
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -24,6 +25,10 @@ async function callAIService(endpoint: string, data: any) {
   return response.json();
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "An unexpected error occurred";
+}
+
 /**
  * Generate personalized onboarding plan
  */
@@ -34,26 +39,30 @@ export async function generateOnboardingPlan(data: {
     const onboarding = await prisma.onboarding.findUnique({
       where: { id: data.onboardingId },
       include: {
-        employee: { include: { position: true, department: true } },
-        checklist: { include: { templateTask: true } },
+        user: { include: { position: true, department: true } },
+        checklist: true,
       },
     });
 
     if (!onboarding) return { success: false, error: "Onboarding not found" };
 
     const result = await callAIService("/api/ai/generate/onboarding", {
-      employee_name: onboarding.employee.name,
-      position: onboarding.employee.position?.title || "",
-      department: onboarding.employee.department?.name || "",
+      employee_name: onboarding.user.name,
+      position: onboarding.user.position?.name || "",
+      department: onboarding.user.department?.name || "",
       start_date: onboarding.startDate?.toISOString().split("T")[0],
-      employment_type: "Full-time",
-      previous_experience: onboarding.employee.experience || undefined,
+      employment_type: onboarding.user.employmentType || "FULL_TIME",
+      checklist_items: onboarding.checklist.map((c: { taskTitle: string; taskDescription: string | null; isCompleted: boolean }) => ({
+        title: c.taskTitle,
+        description: c.taskDescription,
+        completed: c.isCompleted,
+      })),
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Onboarding Plan error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -66,12 +75,16 @@ export async function recommendOnboardingBuddy(data: {
 }) {
   try {
     const [newEmployee, availableBuddies] = await Promise.all([
-      prisma.user.findUnique({ where: { id: data.newEmployeeId } }),
+      prisma.user.findUnique({
+        where: { id: data.newEmployeeId },
+        include: { position: true },
+      }),
       prisma.user.findMany({
         where: {
           departmentId: data.departmentId,
           id: { not: data.newEmployeeId },
         },
+        include: { position: true },
       }),
     ]);
 
@@ -79,14 +92,14 @@ export async function recommendOnboardingBuddy(data: {
 
     const result = await callAIService("/api/ai/recommend/onboarding-buddy", {
       new_employee_id: newEmployee.employeeCode,
-      new_employee_skills: newEmployee.skills?.split(",").map((s: string) => s.trim()),
+      new_employee_skills: [],
       new_employee_interests: [],
       department_id: data.departmentId,
       available_buddies: availableBuddies.map((b) => ({
         id: b.id,
         name: b.name,
-        position: b.position?.title,
-        skills: b.skills?.split(",").map((s: string) => s.trim()) || [],
+        position: b.position?.name,
+        skills: [],
         interests: [],
         years_experience: b.hireDate
           ? Math.floor((new Date().getTime() - b.hireDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
@@ -95,9 +108,9 @@ export async function recommendOnboardingBuddy(data: {
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Buddy Recommendation error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -111,23 +124,23 @@ export async function generateWelcomeContent(data: {
     const onboarding = await prisma.onboarding.findUnique({
       where: { id: data.onboardingId },
       include: {
-        employee: { include: { position: true, department: true } },
+        user: { include: { position: true, department: true } },
       },
     });
 
     if (!onboarding) return { success: false, error: "Onboarding not found" };
 
     const result = await callAIService("/api/ai/generate/welcome-email", {
-      employee_name: onboarding.employee.name,
-      position: onboarding.employee.position?.title || "",
-      department: onboarding.employee.department?.name || "",
+      employee_name: onboarding.user.name,
+      position: onboarding.user.position?.name || "",
+      department: onboarding.user.department?.name || "",
       start_date: onboarding.startDate?.toISOString().split("T")[0],
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Welcome Content error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -140,21 +153,21 @@ export async function recommendTrainingPath(data: {
   try {
     const onboarding = await prisma.onboarding.findUnique({
       where: { id: data.onboardingId },
-      include: { employee: { include: { position: true } } },
+      include: { user: { include: { position: true } } },
     });
 
     if (!onboarding) return { success: false, error: "Onboarding not found" };
 
     const result = await callAIService("/api/ai/recommend/training", {
-      employee_id: onboarding.employee.employeeCode,
-      position: onboarding.employee.position?.title || "",
+      employee_id: onboarding.user.employeeCode,
+      position: onboarding.user.position?.name || "",
       experience_years: 0,
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Training Path error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -168,21 +181,21 @@ export async function generateOnboardingReport(data: {
     const onboarding = await prisma.onboarding.findUnique({
       where: { id: data.onboardingId },
       include: {
-        employee: { include: { position: true } },
-        checklist: { include: { templateTask: true } },
+        user: { include: { position: true } },
+        checklist: true,
       },
     });
 
     if (!onboarding) return { success: false, error: "Onboarding not found" };
 
-    const completedTasks = onboarding.checklist.filter((c) => c.isCompleted).length;
+    const completedTasks = onboarding.checklist.filter((c: { isCompleted: boolean }) => c.isCompleted).length;
     const totalTasks = onboarding.checklist.length;
 
     const result = await callAIService("/api/ai/summarize/report", {
       report_type: "onboarding",
       report_data: {
-        employee: onboarding.employee.name,
-        position: onboarding.employee.position?.title,
+        employee: onboarding.user.name,
+        position: onboarding.user.position?.name,
         start_date: onboarding.startDate?.toISOString(),
         tasks_completed: completedTasks,
         total_tasks: totalTasks,
@@ -192,8 +205,8 @@ export async function generateOnboardingReport(data: {
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Onboarding Report error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }

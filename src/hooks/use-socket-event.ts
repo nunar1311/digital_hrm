@@ -4,6 +4,10 @@ import { useEffect, useRef, useMemo } from "react";
 import { useSocket } from "@/providers/socket-provider";
 import type { ServerToClientEvents } from "@/lib/socket/types";
 
+type ServerToClientHandler<E extends keyof ServerToClientEvents> =
+    | ((data: Parameters<ServerToClientEvents[E]>[0]) => void)
+    | (() => void);
+
 /**
  * Hook để lắng nghe một Socket.IO event cụ thể
  *
@@ -14,14 +18,11 @@ import type { ServerToClientEvents } from "@/lib/socket/types";
  */
 export function useSocketEvent<E extends keyof ServerToClientEvents>(
     event: E,
-    handler: Parameters<ServerToClientEvents[E]>[0] extends infer D
-        ? (data: D) => void
-        : never,
+    handler: ServerToClientHandler<E>,
 ) {
     const { socket, isConnected } = useSocket();
     const handlerRef = useRef(handler);
 
-    // Keep handler ref up to date
     useEffect(() => {
         handlerRef.current = handler;
     }, [handler]);
@@ -29,18 +30,12 @@ export function useSocketEvent<E extends keyof ServerToClientEvents>(
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        const listener = (data: unknown) => {
-            handlerRef.current(
-                data as Parameters<ServerToClientEvents[E]>[0],
-            );
-        };
-
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        socket.on(event as any, listener);
+        socket.on(event, handlerRef.current as any);
 
         return () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            socket.off(event as any, listener);
+            socket.off(event, handlerRef.current as any);
         };
     }, [socket, isConnected, event]);
 }
@@ -61,28 +56,29 @@ export function useSocketEvents(
 ) {
     const { socket, isConnected } = useSocket();
     const handlerRef = useRef(handler);
-    const eventsKey = useMemo(() => events.join(","), [events]);
 
     useEffect(() => {
         handlerRef.current = handler;
     }, [handler]);
 
+    const eventsKey = useMemo(() => events.join(","), [events]);
+
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        const listeners = events.map((event) => {
+        const listeners = events.map((ev) => {
             const listener = (data: unknown) => {
-                handlerRef.current(event, data);
+                handlerRef.current(ev, data);
             };
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            socket.on(event as any, listener);
-            return { event, listener };
+            socket.on(ev, listener as any);
+            return { event: ev, listener };
         });
 
         return () => {
-            listeners.forEach(({ event, listener }) => {
+            listeners.forEach(({ event: ev, listener }) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                socket.off(event as any, listener);
+                socket.off(ev, listener as any);
             });
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

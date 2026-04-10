@@ -1,6 +1,6 @@
 "use client";
 
-import { format, isToday } from "date-fns";
+import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   ChevronLeft,
@@ -31,15 +31,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useState } from "react";
 import { getJobPostings } from "@/app/(protected)/recruitment/actions";
-import type {
-  JobPostingBasic,
-  CandidateBasic,
-} from "@/app/(protected)/recruitment/types";
 import { initialFormData, type InterviewFormData } from "./calendar-utils";
 import { cn } from "@/lib/utils";
 
@@ -73,20 +68,11 @@ export function CalendarHeader({
     queryFn: () => getJobPostings({}, { limit: 100 }),
   });
 
-  const { data: candidatesData } = useQuery({
-    queryKey: ["recruitment", "candidates"],
-    queryFn: async () => {
-      const { getCandidates } =
-        await import("@/app/(protected)/recruitment/actions");
-      return getCandidates({}, { limit: 200 });
-    },
-  });
-
   const createMutation = useMutation({
     mutationFn: async (data: InterviewFormData) => {
       const { createInterview } =
         await import("@/app/(protected)/recruitment/actions");
-      return createInterview(data as any);
+      return createInterview(data as unknown as Parameters<typeof createInterview>[0]);
     },
     onSuccess: () => {
       toast.success("Đã lên lịch phỏng vấn thành công");
@@ -321,7 +307,7 @@ export function CalendarHeader({
                     onValueChange={(value) =>
                       setFormData({
                         ...formData,
-                        type: value,
+                        type: value as "ONSITE" | "ONLINE" | "PHONE",
                       })
                     }
                   >
@@ -389,7 +375,7 @@ export function CalendarHeader({
                     onValueChange={(value) =>
                       setFormData({
                         ...formData,
-                        method: value,
+                        method: value as "INDIVIDUAL" | "GROUP" | "PANEL",
                       })
                     }
                   >

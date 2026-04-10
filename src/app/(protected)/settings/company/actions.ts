@@ -101,11 +101,13 @@ export async function updateCompanyInfo(data: Record<string, unknown>) {
         throw new Error("Không tìm thấy thông tin công ty");
     }
 
-    let metadata: Record<string, any> = {};
+    let metadata: Record<string, unknown> = {};
     if (company.metadata) {
         try {
-            metadata = JSON.parse(company.metadata);
-        } catch (e) {}
+            metadata = JSON.parse(company.metadata) as Record<string, unknown>;
+        } catch (e) {
+            // ignore parse error
+        }
     }
 
     const oldData = { ...metadata, companyName: company.name, companyEmail: company.email, companyCountry: company.country, companyLogo: company.logo };
@@ -116,7 +118,7 @@ export async function updateCompanyInfo(data: Record<string, unknown>) {
         metadata[key] = value;
     }
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
         metadata: JSON.stringify(metadata)
     };
 

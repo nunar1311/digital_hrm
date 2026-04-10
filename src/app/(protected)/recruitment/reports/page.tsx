@@ -4,6 +4,7 @@ import {
   getCandidates,
   getInterviews,
 } from "../actions";
+import type { JobPostingBasic, CandidateBasic, InterviewBasic } from "../types";
 import { RecruitmentReportsClient } from "./reports-client";
 
 export default async function RecruitmentReportsPage() {
@@ -18,9 +19,9 @@ export default async function RecruitmentReportsPage() {
   return (
     <RecruitmentReportsClient
       initialStats={statsData}
-      initialJobPostings={jobPostingsData.items as any}
-      initialCandidates={candidatesData.items as any}
-      initialInterviews={interviewsData.items as any}
+      initialJobPostings={jobPostingsData.items as JobPostingBasic[]}
+      initialCandidates={candidatesData.items as CandidateBasic[]}
+      initialInterviews={interviewsData.items as InterviewBasic[]}
     />
   );
 }

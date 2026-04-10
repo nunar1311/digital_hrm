@@ -27,10 +27,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Summarize error:", error);
+    const message = error instanceof Error ? error.message : "AI summarization failed";
     return NextResponse.json(
-      { success: false, error: error.message || "AI summarization failed" },
+      { success: false, error: message },
       { status: 500 }
     );
   }

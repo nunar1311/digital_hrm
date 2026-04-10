@@ -5,12 +5,11 @@
  * AI-powered insights, summarization, and analytics for the HR Dashboard
  */
 
-import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// AI Service integration
-async function callAIService(endpoint: string, data: any) {
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -30,15 +29,58 @@ async function callAIService(endpoint: string, data: any) {
   return response.json();
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "An unexpected error occurred";
+}
+
+interface EmployeeDashboardRecord {
+  id?: string;
+  name?: string;
+  employeeCode?: string;
+  [key: string]: unknown;
+}
+
+interface AttendanceDashboardRecord {
+  date?: string;
+  status?: string;
+  checkIn?: string | null;
+  checkOut?: string | null;
+  [key: string]: unknown;
+}
+
+interface PayrollDashboardRecord {
+  period?: string;
+  grossSalary?: number;
+  netSalary?: number;
+  [key: string]: unknown;
+}
+
+interface RecruitmentDashboardRecord {
+  status?: string;
+  position?: string;
+  [key: string]: unknown;
+}
+
+interface DashboardMetrics {
+  totalEmployees?: number;
+  attendanceRate?: number;
+  turnoverRate?: number;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+interface MetricsTrend {
+  [key: string]: string[] | number[] | boolean[] | null | undefined;
+}
+
 /**
  * Get AI-powered insights from dashboard data
  * Analyzes HR metrics and provides intelligent insights
  */
 export async function getDashboardAIInsights(data: {
-  employees: any[];
-  attendance: any[];
-  payroll: any[];
-  recruitment: any[];
+  employees: EmployeeDashboardRecord[];
+  attendance: AttendanceDashboardRecord[];
+  payroll: PayrollDashboardRecord[];
+  recruitment: RecruitmentDashboardRecord[];
   period?: string;
 }) {
   try {
@@ -58,11 +100,11 @@ export async function getDashboardAIInsights(data: {
       summary: result.summary,
       recommendations: result.recommendations || [],
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Dashboard AI Insights error:", error);
     return {
       success: false,
-      error: error.message || "Failed to get AI insights",
+      error: getErrorMessage(error),
       insights: [],
       recommendations: [],
     };
@@ -73,7 +115,7 @@ export async function getDashboardAIInsights(data: {
  * Generate AI-powered executive summary for dashboard
  */
 export async function generateDashboardSummary(data: {
-  metrics: Record<string, any>;
+  metrics: DashboardMetrics;
   period: string;
 }) {
   try {
@@ -86,11 +128,11 @@ export async function generateDashboardSummary(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Dashboard Summary error:", error);
     return {
       success: false,
-      error: error.message || "Failed to generate summary",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -100,7 +142,7 @@ export async function generateDashboardSummary(data: {
  */
 export async function askDashboardNaturalLanguage(
   query: string,
-  dashboardData?: Record<string, any>
+  dashboardData?: Record<string, unknown>
 ) {
   try {
     const result = await callAIService("/api/ai/dashboard/query", {
@@ -112,11 +154,11 @@ export async function askDashboardNaturalLanguage(
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Natural Language Query error:", error);
     return {
       success: false,
-      error: error.message || "Failed to answer query",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -125,7 +167,7 @@ export async function askDashboardNaturalLanguage(
  * Get predictive analytics for HR metrics
  */
 export async function getPredictiveAnalytics(data: {
-  historicalData: Record<string, any>;
+  historicalData: Record<string, unknown>;
   predictionType: "headcount" | "turnover" | "payroll" | "attendance";
   forecastPeriods?: number;
 }) {
@@ -140,11 +182,11 @@ export async function getPredictiveAnalytics(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Predictive Analytics error:", error);
     return {
       success: false,
-      error: error.message || "Failed to get predictions",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -153,8 +195,8 @@ export async function getPredictiveAnalytics(data: {
  * Detect anomalies in HR metrics
  */
 export async function detectDashboardAnomalies(data: {
-  currentMetrics: Record<string, any>;
-  historicalData?: Record<string, any>;
+  currentMetrics: Record<string, unknown>;
+  historicalData?: Record<string, unknown>;
 }) {
   try {
     const result = await callAIService("/api/ai/dashboard/anomaly-alert", {
@@ -166,11 +208,11 @@ export async function detectDashboardAnomalies(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Anomaly Detection error:", error);
     return {
       success: false,
-      error: error.message || "Failed to detect anomalies",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -180,7 +222,7 @@ export async function detectDashboardAnomalies(data: {
  */
 export async function generateHRReportAI(data: {
   reportType: "attendance" | "payroll" | "recruitment" | "turnover";
-  reportData: Record<string, any>;
+  reportData: Record<string, unknown>;
   period: string;
 }) {
   try {
@@ -194,11 +236,11 @@ export async function generateHRReportAI(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("HR Report AI error:", error);
     return {
       success: false,
-      error: error.message || "Failed to generate report",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -207,7 +249,7 @@ export async function generateHRReportAI(data: {
  * Get trend analysis from historical data
  */
 export async function getTrendAnalysis(data: {
-  metrics: Record<string, any[]>;
+  metrics: MetricsTrend;
   metricName: string;
 }) {
   try {
@@ -224,11 +266,11 @@ export async function getTrendAnalysis(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Trend Analysis error:", error);
     return {
       success: false,
-      error: error.message || "Failed to analyze trends",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -254,11 +296,11 @@ export async function compareMetricsWithTargets(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Metrics Comparison error:", error);
     return {
       success: false,
-      error: error.message || "Failed to compare metrics",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -285,11 +327,11 @@ export async function getAutoAIInsights(focusAreas?: string[]) {
       health_score: result.health_score,
       data_snapshot: result.data_snapshot,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Auto AI Insights error:", error);
     return {
       success: false,
-      error: error.message || "Failed to get auto insights",
+      error: getErrorMessage(error),
       insights: [],
       recommendations: [],
     };
@@ -305,9 +347,8 @@ export async function getAutoAISummary(
   forceRefresh: boolean = false
 ) {
   try {
-    // 1. Kiểm tra database nếu không yêu cầu refresh
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalized to midnight for standard day comparison
+    today.setHours(0, 0, 0, 0);
 
     if (!forceRefresh) {
       const existingSummary = await prisma.aIDashboardSummary.findFirst({
@@ -325,15 +366,13 @@ export async function getAutoAISummary(
       }
     }
 
-    // 2. Chưa có trong cache hoặc yêu cầu refresh -> Gọi AI Service
     const result = await callAIService("/api/ai/dashboard/auto-summary", {
       language: "vi",
       detail_level: detailLevel,
     });
 
-    // 3. Lưu kết quả vào cơ sở dữ liệu
     if (result.content) {
-      // Upsert để nếu người dùng ấn refresh nhiều lần trong ngày, ta chỉ cập nhật lại bản ghi của ngày đó
+      const content = String(result.content);
       await prisma.aIDashboardSummary.upsert({
         where: {
           date_detailLevel: {
@@ -342,25 +381,25 @@ export async function getAutoAISummary(
           },
         },
         update: {
-          content: result.content,
+          content: content,
         },
         create: {
           date: today,
           detailLevel: detailLevel,
-          content: result.content,
+          content: content,
         },
       });
     }
 
     return {
       success: true,
-      content: result.content,
+      content: result.content ? String(result.content) : "",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Auto AI Summary error:", error);
     return {
       success: false,
-      error: error.message || "Failed to generate auto summary",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -379,11 +418,11 @@ export async function getWorkforceAnalysis() {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Workforce Analysis error:", error);
     return {
       success: false,
-      error: error.message || "Failed to analyze workforce",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -407,11 +446,11 @@ export async function smartChatWithAI(
       content: result.content,
       data_sources: result.data_sources,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Smart Chat error:", error);
     return {
       success: false,
-      error: error.message || "Failed to process smart chat",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -431,11 +470,11 @@ export async function analyzeDepartmentAI(departmentId: string) {
       content: result.content,
       metadata: result.metadata,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Department Analysis error:", error);
     return {
       success: false,
-      error: error.message || "Failed to analyze department",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -455,12 +494,11 @@ export async function analyzeEmployee360AI(userId: string) {
       content: result.content,
       metadata: result.metadata,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Employee 360 Analysis error:", error);
     return {
       success: false,
-      error: error.message || "Failed to analyze employee",
+      error: getErrorMessage(error),
     };
   }
 }
-

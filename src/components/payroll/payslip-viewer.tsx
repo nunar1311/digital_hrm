@@ -56,14 +56,20 @@ export function PayslipViewer({
   const [showContent, setShowContent] = useState(!isSecure);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
-  const earnings: PayslipItem[] = payslip.earnings
-    ? JSON.parse(payslip.earnings).map((e: any) => ({
+interface PayslipEarningsRow {
+  name?: string;
+  amount?: string | number;
+  type?: string;
+}
+
+const earnings: PayslipItem[] = payslip.earnings
+    ? JSON.parse(payslip.earnings).map((e: PayslipEarningsRow) => ({
         ...e,
         amount: Number(e.amount || 0),
       }))
     : [];
-  const deductions: PayslipItem[] = payslip.deductions
-    ? JSON.parse(payslip.deductions).map((d: any) => ({
+const deductions: PayslipItem[] = payslip.deductions
+    ? JSON.parse(payslip.deductions).map((d: PayslipEarningsRow) => ({
         ...d,
         amount: Number(d.amount || 0),
       }))

@@ -524,8 +524,7 @@ export async function updateEmployeesDepartment(
 
   const employees = await prisma.user.updateMany({
     where: { id: { in: employeeIds } },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data: { departmentId, departmentRole: "MEMBER" } as any,
+    data: { departmentId, departmentRole: "MEMBER" } as { departmentId: string; departmentRole: "MEMBER" },
   });
 
   revalidatePath("/employees");

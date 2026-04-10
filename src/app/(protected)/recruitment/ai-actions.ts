@@ -5,12 +5,11 @@
  * AI-powered candidate analysis, interview questions, and recruitment insights
  */
 
-import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// AI Service integration
-async function callAIService(endpoint: string, data: any) {
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -30,6 +29,31 @@ async function callAIService(endpoint: string, data: any) {
   return response.json();
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "An unexpected error occurred";
+}
+
+interface CandidateFeedback {
+  interviewer: string;
+  feedback: string;
+  rating?: number;
+}
+
+interface RecruitmentMetrics {
+  totalCandidates?: number;
+  totalInterviews?: number;
+  totalOffers?: number;
+  totalHires?: number;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+interface CandidateRankingResult {
+  candidateId: string;
+  candidateName: string;
+  score: number;
+  summary?: string;
+}
+
 /**
  * Analyze candidate with AI
  * Provides score, strengths, weaknesses, and recommendations
@@ -41,7 +65,6 @@ export async function analyzeCandidateWithAI(data: {
   jobDescription?: string;
 }) {
   try {
-    // Get candidate from database if ID provided
     let resumeText = data.resumeText;
 
     if (data.candidateId && !resumeText) {
@@ -49,9 +72,15 @@ export async function analyzeCandidateWithAI(data: {
         where: { id: data.candidateId },
       });
       if (candidate) {
-        resumeText = `${candidate.name}\n${candidate.email}\n${candidate.phone || ""}\n${
-          candidate.skills || ""
-        }\n${candidate.experience || ""}\n${candidate.education || ""}`;
+        resumeText = [
+          candidate.name,
+          candidate.email,
+          candidate.phone || "",
+          candidate.address || "",
+          candidate.gender || "",
+          candidate.notes || "",
+          candidate.cvUrl || "",
+        ].join("\n");
       }
     }
 
@@ -59,7 +88,6 @@ export async function analyzeCandidateWithAI(data: {
       resume_text: resumeText,
       job_requirements: data.jobRequirements,
       job_description: data.jobDescription,
-      candidate_name: data.candidateId,
     });
 
     return {
@@ -71,11 +99,11 @@ export async function analyzeCandidateWithAI(data: {
       recommendations: result.recommendations || [],
       summary: result.summary,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Candidate AI Analysis error:", error);
     return {
       success: false,
-      error: error.message || "Failed to analyze candidate",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -103,11 +131,11 @@ export async function generateInterviewQuestions(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Interview Questions Generation error:", error);
     return {
       success: false,
-      error: error.message || "Failed to generate questions",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -117,27 +145,23 @@ export async function generateInterviewQuestions(data: {
  */
 export async function summarizeInterviewFeedback(data: {
   candidateId: string;
-  feedbacks: Array<{
-    interviewer: string;
-    feedback: string;
-    rating?: number;
-  }>;
+  feedbacks: CandidateFeedback[];
 }) {
   try {
     const result = await callAIService("/api/ai/summarize/feedback", {
       feedbacks: data.feedbacks,
-      candidate_name: data.candidateId,
+      candidate_id: data.candidateId,
     });
 
     return {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Interview Feedback Summary error:", error);
     return {
       success: false,
-      error: error.message || "Failed to summarize feedback",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -150,7 +174,6 @@ export async function recommendCandidates(data: {
   candidateIds: string[];
 }) {
   try {
-    // Get job posting details
     const jobPosting = await prisma.jobPosting.findUnique({
       where: { id: data.jobPostingId },
     });
@@ -162,22 +185,18 @@ export async function recommendCandidates(data: {
       };
     }
 
-    // Get candidates
     const candidates = await prisma.candidate.findMany({
       where: { id: { in: data.candidateIds } },
     });
 
     const candidateData = candidates.map((c) => ({
       name: c.name,
-      skills: c.skills?.split(",").map((s: string) => s.trim()) || [],
-      experience: c.experience,
-      score: 0,
+      rating: c.rating || 0,
+      notes: c.notes || "",
     }));
 
     const result = await callAIService("/api/ai/recommend/candidate", {
-      job_requirements: `${jobPosting.title}\n${jobPosting.description}\n${
-        jobPosting.requirements || ""
-      }`,
+      job_requirements: `${jobPosting.title}\n${jobPosting.description}\n${jobPosting.requirements}`,
       candidates: candidateData,
       top_n: Math.min(candidates.length, 10),
     });
@@ -186,11 +205,11 @@ export async function recommendCandidates(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Candidate Recommendation error:", error);
     return {
       success: false,
-      error: error.message || "Failed to recommend candidates",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -216,11 +235,11 @@ export async function optimizeJobDescription(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Job Description Optimization error:", error);
     return {
       success: false,
-      error: error.message || "Failed to optimize description",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -246,7 +265,7 @@ export async function predictOfferAcceptance(data: {
     }
 
     const result = await callAIService("/api/ai/analyze/resume", {
-      resume_text: `${candidate.name}\n${candidate.experience}\nExpected: ${candidate.expectedSalary}`,
+      resume_text: [candidate.name, candidate.notes || "", candidate.cvUrl || ""].join("\n"),
       job_description: `Offer: ${data.offeredSalary || "TBD"}\nBenefits: ${data.benefits?.join(", ") || "Standard"}`,
     });
 
@@ -255,11 +274,11 @@ export async function predictOfferAcceptance(data: {
       content: result.content,
       score: result.score,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Offer Acceptance Prediction error:", error);
     return {
       success: false,
-      error: error.message || "Failed to predict",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -284,11 +303,11 @@ export async function analyzeResumeWithAI(data: {
       weaknesses: result.weaknesses || [],
       summary: result.summary,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Resume Analysis error:", error);
     return {
       success: false,
-      error: error.message || "Failed to analyze resume",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -298,7 +317,7 @@ export async function analyzeResumeWithAI(data: {
  */
 export async function generateRecruitmentReport(data: {
   period: string;
-  metrics: Record<string, any>;
+  metrics: RecruitmentMetrics;
 }) {
   try {
     const result = await callAIService("/api/ai/summarize/report", {
@@ -311,11 +330,11 @@ export async function generateRecruitmentReport(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Recruitment Report error:", error);
     return {
       success: false,
-      error: error.message || "Failed to generate report",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -332,17 +351,19 @@ export async function extractCandidateSkills(data: {
       include_sections: ["skills", "certifications", "languages"],
     });
 
+    const extractedData = result.data as Record<string, string[]> | undefined;
+
     return {
       success: true,
-      skills: result.data?.skills || [],
-      certifications: result.data?.certifications || [],
-      languages: result.data?.languages || [],
+      skills: extractedData?.skills || [],
+      certifications: extractedData?.certifications || [],
+      languages: extractedData?.languages || [],
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Skills Extraction error:", error);
     return {
       success: false,
-      error: error.message || "Failed to extract skills",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -363,10 +384,10 @@ export async function rankCandidatesByFit(data: {
       where: { id: { in: data.candidateIds } },
     });
 
-    const rankings = await Promise.all(
+    const rankings: CandidateRankingResult[] = await Promise.all(
       candidates.map(async (candidate) => {
         const analysis = await callAIService("/api/ai/analyze/resume", {
-          resume_text: `${candidate.name}\n${candidate.skills || ""}\n${candidate.experience || ""}`,
+          resume_text: [candidate.name, candidate.notes || "", candidate.cvUrl || ""].join("\n"),
           job_requirements: jobPosting?.requirements,
           job_description: `${jobPosting?.title}\n${jobPosting?.description}`,
         });
@@ -374,24 +395,23 @@ export async function rankCandidatesByFit(data: {
         return {
           candidateId: candidate.id,
           candidateName: candidate.name,
-          score: analysis.score || 0,
-          summary: analysis.summary,
+          score: (analysis.score as number) || 0,
+          summary: analysis.summary as string | undefined,
         };
       })
     );
 
-    // Sort by score descending
     rankings.sort((a, b) => b.score - a.score);
 
     return {
       success: true,
       rankings,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Candidate Ranking error:", error);
     return {
       success: false,
-      error: error.message || "Failed to rank candidates",
+      error: getErrorMessage(error),
     };
   }
 }

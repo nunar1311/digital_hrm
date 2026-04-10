@@ -92,7 +92,7 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
             }),
         onMutate: async (values) => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
-            queryClient.setQueryData(["attendance", "config"], (old: any) => {
+            queryClient.setQueryData<Partial<AttendanceConfig> | undefined>(["attendance", "config"], (old) => {
                 if (!old) return old;
                 return { ...old, ...values };
             });
@@ -128,7 +128,7 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
-            queryClient.setQueryData(["attendance", "config"], (old: any) => {
+            queryClient.setQueryData<AttendanceConfig | undefined>(["attendance", "config"], (old) => {
                 if (!old) return old;
                 return {
                     ...old,
@@ -157,11 +157,11 @@ export function MethodSettingsTab({ config, queryClient }: Props) {
         mutationFn: removeWifiWhitelist,
         onMutate: async (id) => {
             await queryClient.cancelQueries({ queryKey: ["attendance", "config"] });
-            queryClient.setQueryData(["attendance", "config"], (old: any) => {
+            queryClient.setQueryData<AttendanceConfig | undefined>(["attendance", "config"], (old) => {
                 if (!old) return old;
                 return {
                     ...old,
-                    wifiWhitelist: (old.wifiWhitelist || []).filter((w: any) => w.id !== id),
+                    wifiWhitelist: (old.wifiWhitelist || []).filter((w: { id: string }) => w.id !== id),
                 };
             });
             return {};

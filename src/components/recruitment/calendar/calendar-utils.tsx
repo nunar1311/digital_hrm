@@ -65,14 +65,15 @@ export interface InterviewFormData {
     candidateId: string;
     jobPostingId: string;
     round: number;
-    type: string;
-    method: string;
+    type: "ONSITE" | "ONLINE" | "PHONE";
+    method: "INDIVIDUAL" | "GROUP" | "PANEL";
     scheduledDate: string;
     scheduledTime: string;
     duration: number;
     location: string;
     meetingLink: string;
     notes: string;
+    interviewerIds: string[];
 }
 
 export const initialFormData: InterviewFormData = {
@@ -87,4 +88,5 @@ export const initialFormData: InterviewFormData = {
     location: "",
     meetingLink: "",
     notes: "",
+    interviewerIds: [],
 };

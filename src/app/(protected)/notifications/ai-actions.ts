@@ -5,8 +5,12 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "../../../../generated/prisma/client";
 
-async function callAIService(endpoint: string, data: any) {
+
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -23,6 +27,10 @@ async function callAIService(endpoint: string, data: any) {
   return response.json();
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "An unexpected error occurred";
+}
+
 /**
  * Generate smart notification summary
  */
@@ -31,8 +39,8 @@ export async function generateNotificationSummary(data: {
   period: "today" | "this_week" | "this_month";
 }) {
   try {
-    const where: any = { userId: data.userId };
     const now = new Date();
+    const where: Prisma.NotificationWhereInput = { userId: data.userId };
 
     if (data.period === "today") {
       where.createdAt = { gte: new Date(now.setHours(0, 0, 0, 0)) };
@@ -50,16 +58,16 @@ export async function generateNotificationSummary(data: {
     const result = await callAIService("/api/ai/summarize/notifications", {
       notifications: notifications.map((n) => ({
         title: n.title,
-        message: n.message,
+        message: n.content,
         type: n.type,
       })),
       period: data.period,
     });
 
     return { success: true, content: result.content, count: notifications.length };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Notification Summary error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -82,15 +90,15 @@ export async function prioritizeNotifications(data: { userId: string }) {
         },
         {
           role: "user",
-          content: `Ưu tiên thông báo:\n${notifications.map((n, i) => `${i + 1}. [${n.type}] ${n.title}: ${n.message}`).join("\n")}`,
+          content: `Ưu tiên thông báo:\n${notifications.map((n, i) => `${i + 1}. [${n.type}] ${n.title}: ${n.content}`).join("\n")}`,
         },
       ],
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Notification Prioritization error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -117,9 +125,9 @@ export async function draftNotification(data: {
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Notification Drafting error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -144,15 +152,15 @@ export async function analyzeNotificationEngagement(data: {
         },
         {
           role: "user",
-          content: `Phân tích thông báo "${notification.title}":\nNội dung: ${notification.message}\nLoại: ${notification.type}`,
+          content: `Phân tích thông báo "${notification.title}":\nNội dung: ${notification.content}\nLoại: ${notification.type}`,
         },
       ],
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Notification Analysis error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -170,16 +178,16 @@ export async function batchNotificationSummary(data: {
     const result = await callAIService("/api/ai/summarize/notifications", {
       notifications: notifications.map((n) => ({
         title: n.title,
-        message: n.message,
+        message: n.content,
         type: n.type,
       })),
       period: "batch",
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Batch Notification Summary error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -202,14 +210,14 @@ export async function suggestEscalation(data: { notificationId: string }) {
         },
         {
           role: "user",
-          content: `Đề xuất escalation cho: ${notification.title}\nNội dung: ${notification.message}\nLoại: ${notification.type}`,
+          content: `Đề xuất escalation cho: ${notification.title}\nNội dung: ${notification.content}\nLoại: ${notification.type}`,
         },
       ],
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Escalation Suggestion error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }

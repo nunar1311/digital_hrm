@@ -4,10 +4,11 @@
  * Offboarding AI Server Actions
  */
 
-import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
-async function callAIService(endpoint: string, data: any) {
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -24,6 +25,10 @@ async function callAIService(endpoint: string, data: any) {
   return response.json();
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "An unexpected error occurred";
+}
+
 /**
  * Analyze exit interview
  */
@@ -34,16 +39,15 @@ export async function analyzeExitInterview(data: {
     const offboarding = await prisma.offboarding.findUnique({
       where: { id: data.offboardingId },
       include: {
-        employee: { include: { position: true, department: true } },
-        exitInterviewResponses: true,
+        user: { include: { position: true, department: true } },
+        assets: true,
+        checklist: true,
       },
     });
 
     if (!offboarding) return { success: false, error: "Offboarding not found" };
 
-    const interviewText = offboarding.exitInterviewResponses
-      .map((r) => `Q: ${r.question}\nA: ${r.response}`)
-      .join("\n\n");
+    const exitInterviewText = offboarding.exitInterview || "";
 
     const result = await callAIService("/api/ai/chat", {
       messages: [
@@ -53,15 +57,15 @@ export async function analyzeExitInterview(data: {
         },
         {
           role: "user",
-          content: `Phân tích phỏng vấn nghỉ việc của ${offboarding.employee.name}:\n${interviewText}`,
+          content: `Phân tích phỏng vấn nghỉ việc của ${offboarding.user.name}:\n${exitInterviewText}`,
         },
       ],
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Exit Interview Analysis error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -86,7 +90,7 @@ export async function detectResignationRisk(data: {
     const result = await callAIService("/api/ai/analyze/turnover", {
       employee_data: {
         name: employee.name,
-        position: employee.position?.title,
+        position: employee.position?.name,
         tenure_years: employee.hireDate
           ? Math.floor((new Date().getTime() - employee.hireDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
           : 0,
@@ -99,9 +103,9 @@ export async function detectResignationRisk(data: {
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Resignation Risk error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -115,8 +119,8 @@ export async function generateKnowledgeTransfer(data: {
     const offboarding = await prisma.offboarding.findUnique({
       where: { id: data.offboardingId },
       include: {
-        employee: { include: { position: true } },
-        assetReturns: true,
+        user: { include: { position: true } },
+        assets: true,
       },
     });
 
@@ -130,15 +134,15 @@ export async function generateKnowledgeTransfer(data: {
         },
         {
           role: "user",
-          content: `Tạo kế hoạch chuyển giao kiến thức cho nhân viên ${offboarding.employee.name} - ${offboarding.employee.position?.title}\nTài sản cần bàn giao: ${offboarding.assetReturns.length}\nNgày nghỉ cuối: ${offboarding.lastWorkingDate?.toISOString()}`,
+          content: `Tạo kế hoạch chuyển giao kiến thức cho nhân viên ${offboarding.user.name} - ${offboarding.user.position?.name}\nTài sản cần bàn giao: ${offboarding.assets.length}\nNgày nghỉ cuối: ${offboarding.lastWorkDate?.toISOString()}`,
         },
       ],
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Knowledge Transfer error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -151,15 +155,11 @@ export async function classifyResignationReason(data: {
   try {
     const offboarding = await prisma.offboarding.findUnique({
       where: { id: data.offboardingId },
-      include: { exitInterviewResponses: true },
     });
 
     if (!offboarding) return { success: false, error: "Offboarding not found" };
 
-    const reasons = offboarding.exitInterviewResponses
-      .filter((r) => r.question.toLowerCase().includes("tại sao"))
-      .map((r) => r.response)
-      .join(" ");
+    const exitInterviewText = offboarding.exitInterview || offboarding.reason || "";
 
     const result = await callAIService("/api/ai/chat", {
       messages: [
@@ -169,15 +169,15 @@ export async function classifyResignationReason(data: {
         },
         {
           role: "user",
-          content: `Phân loại lý do nghỉ: ${reasons}`,
+          content: `Phân loại lý do nghỉ: ${exitInterviewText}`,
         },
       ],
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Resignation Classification error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -191,31 +191,34 @@ export async function generateOffboardingReport(data: {
     const offboarding = await prisma.offboarding.findUnique({
       where: { id: data.offboardingId },
       include: {
-        employee: { include: { position: true } },
+        user: { include: { position: true } },
         checklist: true,
-        assetReturns: true,
+        assets: true,
       },
     });
 
     if (!offboarding) return { success: false, error: "Offboarding not found" };
 
+    const completedCount = offboarding.checklist.filter((c: { isCompleted: boolean }) => c.isCompleted).length;
+    const returnedCount = offboarding.assets.filter((a: { returnDate: Date | null }) => a.returnDate).length;
+
     const result = await callAIService("/api/ai/summarize/report", {
       report_type: "offboarding",
       report_data: {
-        employee: offboarding.employee.name,
-        position: offboarding.employee.position?.title,
-        resignation_date: offboarding.resignationDate?.toISOString(),
-        last_working_date: offboarding.lastWorkingDate?.toISOString(),
-        checklist_completion: `${offboarding.checklist.filter((c) => c.isCompleted).length}/${offboarding.checklist.length}`,
-        assets_returned: offboarding.assetReturns.filter((a) => a.returnDate).length,
+        employee: offboarding.user.name,
+        position: offboarding.user.position?.name,
+        resignation_date: offboarding.resignDate?.toISOString(),
+        last_working_date: offboarding.lastWorkDate?.toISOString(),
+        checklist_completion: `${completedCount}/${offboarding.checklist.length}`,
+        assets_returned: returnedCount,
       },
       period: "offboarding",
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Offboarding Report error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -241,14 +244,14 @@ export async function suggestRetentionActions(data: {
         },
         {
           role: "user",
-          content: `Đề xuất hành động giữ chân cho nhân viên ${employee.name} - ${employee.position?.title} ở ${employee.department?.name}`,
+          content: `Đề xuất hành động giữ chân cho nhân viên ${employee.name} - ${employee.position?.name} ở ${employee.department?.name}`,
         },
       ],
     });
 
     return { success: true, content: result.content };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Retention Actions error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }

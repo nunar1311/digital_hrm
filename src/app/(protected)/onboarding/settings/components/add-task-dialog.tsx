@@ -43,10 +43,10 @@ import {
 const createTaskSchema = z.object({
   title: z.string().min(1, "Tiêu đề không được trống"),
   description: z.string().optional(),
-  category: z.string().default("GENERAL"),
+  category: z.string(),
   assigneeRole: z.string().optional(),
-  dueDays: z.number().int().min(1).default(3),
-  isRequired: z.boolean().default(true),
+  dueDays: z.number().int().min(1),
+  isRequired: z.boolean(),
 });
 
 type CreateTaskForm = z.infer<typeof createTaskSchema>;
@@ -63,8 +63,7 @@ export function AddTaskDialog({
   onSuccess,
 }: AddTaskDialogProps) {
   const form = useForm<CreateTaskForm>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(createTaskSchema) as any,
+    resolver: zodResolver(createTaskSchema),
     defaultValues: {
       title: "",
       description: "",

@@ -5,12 +5,13 @@
  * AI-powered payroll analysis, salary recommendations, and insights
  */
 
-import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 
-// AI Service integration
-async function callAIService(endpoint: string, data: any) {
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "../../../../generated/prisma/client";
+
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -30,6 +31,10 @@ async function callAIService(endpoint: string, data: any) {
   return response.json();
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "An unexpected error occurred";
+}
+
 /**
  * Analyze salary fairness across organization
  */
@@ -38,9 +43,9 @@ export async function analyzeSalaryFairness(data: {
   positionId?: string;
 }) {
   try {
-    const where: any = {};
-    if (data.departmentId) where.departmentId = data.departmentId;
-    if (data.positionId) where.positionId = data.positionId;
+    const where: Prisma.SalaryWhereInput = {};
+    if (data.departmentId) where.user = { departmentId: data.departmentId };
+    if (data.positionId) where.user = { positionId: data.positionId };
 
     const salaries = await prisma.salary.findMany({
       where,
@@ -53,7 +58,7 @@ export async function analyzeSalaryFairness(data: {
       employee_id: s.user.employeeCode,
       employee_name: s.user.name,
       department: s.user.department?.name,
-      position: s.user.position?.title,
+      position: s.user.position?.name,
       basic_salary: Number(s.baseSalary),
       experience_years: s.user.hireDate
         ? Math.floor((new Date().getTime() - s.user.hireDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
@@ -69,11 +74,11 @@ export async function analyzeSalaryFairness(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Salary Fairness Analysis error:", error);
     return {
       success: false,
-      error: error.message || "Failed to analyze",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -103,11 +108,11 @@ export async function recommendSalary(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Salary Recommendation error:", error);
     return {
       success: false,
-      error: error.message || "Failed to recommend",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -134,11 +139,11 @@ export async function optimizeTaxStrategy(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Tax Optimization error:", error);
     return {
       success: false,
-      error: error.message || "Failed to optimize",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -152,13 +157,6 @@ export async function explainPayslip(data: {
   try {
     const payslip = await prisma.payslip.findUnique({
       where: { id: data.payslipId },
-      include: {
-        payrollRecord: {
-          include: {
-            user: { include: { position: true, department: true } },
-          },
-        },
-      },
     });
 
     if (!payslip) {
@@ -174,9 +172,9 @@ export async function explainPayslip(data: {
         {
           role: "user",
           content: `Giải thích phiếu lương:
-- Nhân viên: ${payslip.payrollRecord.user.name}
-- Phòng ban: ${payslip.payrollRecord.user.department?.name}
-- Kỳ lương: ${payslip.payPeriod}
+- Nhân viên: ${payslip.employeeName}
+- Phòng ban: ${payslip.departmentName}
+- Kỳ lương: ${payslip.month}/${payslip.year}
 - Lương gross: ${payslip.grossSalary}
 - Lương net: ${payslip.netSalary}
 - Các khoản khấu trừ: ${JSON.stringify(payslip.deductions || {})}
@@ -190,11 +188,11 @@ Giải thích chi tiết từng khoản mục và cách tính.`,
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Payslip Explanation error:", error);
     return {
       success: false,
-      error: error.message || "Failed to explain",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -209,8 +207,11 @@ export async function detectPayrollAnomalies(data: {
     const record = await prisma.payrollRecord.findUnique({
       where: { id: data.payrollRecordId },
       include: {
-        details: true,
-        user: { include: { position: true, department: true } },
+        payslips: {
+          include: {
+            user: { include: { position: true, department: true } },
+          },
+        },
       },
     });
 
@@ -218,12 +219,17 @@ export async function detectPayrollAnomalies(data: {
       return { success: false, error: "Payroll record not found" };
     }
 
+    const details = await prisma.payrollRecordDetail.findMany({
+      where: { payrollRecordId: data.payrollRecordId },
+      include: { user: { include: { position: true, department: true } } },
+    });
+
     const result = await callAIService("/api/ai/analyze/payroll", {
       payroll_data: {
         payroll_record: record,
-        details: record.details,
+        details: details,
       },
-      employee_id: record.user.employeeCode,
+      employee_id: details[0]?.user.employeeCode,
       analysis_type: "anomaly",
     });
 
@@ -231,11 +237,11 @@ export async function detectPayrollAnomalies(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Payroll Anomaly Detection error:", error);
     return {
       success: false,
-      error: error.message || "Failed to detect anomalies",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -249,41 +255,43 @@ export async function generatePayrollNarrative(data: {
   try {
     const record = await prisma.payrollRecord.findUnique({
       where: { id: data.payrollRecordId },
-      include: {
-        details: true,
-        user: { include: { department: true, position: true } },
-      },
     });
 
     if (!record) {
       return { success: false, error: "Payroll record not found" };
     }
 
+    const details = await prisma.payrollRecordDetail.findMany({
+      where: { payrollRecordId: data.payrollRecordId },
+      include: { user: { include: { department: true, position: true } } },
+    });
+
     const result = await callAIService("/api/ai/summarize/report", {
       report_type: "payroll",
       report_data: {
-        employee: record.user.name,
-        department: record.user.department?.name,
-        period: record.period,
+        employee: details[0]?.user.name,
+        department: details[0]?.user.department?.name,
+        period: `${record.month}/${record.year}`,
         total_gross: Number(record.totalGross),
         total_net: Number(record.totalNet),
-        details: record.details.map((d) => ({
-          type: d.componentType,
-          amount: Number(d.amount),
+        details: details.map((d) => ({
+          type: d.componentTypeId,
+          gross: Number(d.grossSalary),
+          net: Number(d.netSalary),
         })),
       },
-      period: record.period,
+      period: `${record.month}/${record.year}`,
     });
 
     return {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Payroll Narrative error:", error);
     return {
       success: false,
-      error: error.message || "Failed to generate narrative",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -296,19 +304,13 @@ export async function forecastPayroll(data: {
   periods: number;
 }) {
   try {
-    const where: any = {};
-    if (data.departmentId) {
-      const users = await prisma.user.findMany({
-        where: { departmentId: data.departmentId },
-        select: { id: true },
-      });
-      where.userId = { in: users.map((u) => u.id) };
-    }
-
     const historicalRecords = await prisma.payrollRecord.findMany({
-      where,
-      orderBy: { period: "desc" },
-      take: 6,
+      where: data.departmentId ? { departmentId: data.departmentId } : {},
+      orderBy: [
+        { year: "desc" },
+        { month: "desc" },
+      ],
+      take: data.periods,
     });
 
     const result = await callAIService("/api/ai/analyze/payroll", {
@@ -320,11 +322,11 @@ export async function forecastPayroll(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Payroll Forecast error:", error);
     return {
       success: false,
-      error: error.message || "Failed to forecast",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -350,16 +352,16 @@ export async function compareMarketSalary(data: {
     if (data.employeeId) {
       employee = await prisma.user.findUnique({
         where: { id: data.employeeId },
-        include: { salary: true },
+        include: { salaries: true },
       });
     }
 
     const result = await callAIService("/api/ai/recommend/salary", {
-      position: position.title,
+      position: position.name,
       experience_years: employee?.hireDate
         ? Math.floor((new Date().getTime() - employee.hireDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
         : 0,
-      current_salary: employee?.salary?.baseSalary,
+      current_salary: employee?.salaries?.baseSalary,
     });
 
     return {
@@ -367,11 +369,11 @@ export async function compareMarketSalary(data: {
       content: result.content,
       marketData: result.market_data,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Market Salary Comparison error:", error);
     return {
       success: false,
-      error: error.message || "Failed to compare",
+      error: getErrorMessage(error),
     };
   }
 }

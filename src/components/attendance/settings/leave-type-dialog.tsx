@@ -29,15 +29,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { createLeaveType, updateLeaveType } from "@/app/(protected)/attendance/actions";
+import {
+  createLeaveType,
+  updateLeaveType,
+} from "@/app/(protected)/attendance/actions";
 
 const formSchema = z.object({
   name: z.string().min(1, "Vui lòng nhập tên loại nghỉ phép"),
   description: z.string().optional(),
-  isPaidLeave: z.boolean().default(true),
-  defaultDays: z.coerce.number().min(0, "Số ngày không được âm").default(0),
-  isActive: z.boolean().default(true),
-  sortOrder: z.coerce.number().default(0),
+  isPaidLeave: z.boolean(),
+  defaultDays: z.number().min(0, "Số ngày không được âm"),
+  isActive: z.boolean(),
+  sortOrder: z.number(),
 });
 
 export type LeaveTypeFormData = z.infer<typeof formSchema>;
@@ -68,7 +71,7 @@ export function LeaveTypeDialog({
   const isEditing = !!leaveType;
 
   const form = useForm<LeaveTypeFormData>({
-    resolver: zodResolver(formSchema) as any,
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       description: "",
@@ -112,7 +115,9 @@ export function LeaveTypeDialog({
       }
     },
     onSuccess: () => {
-      toast.success(isEditing ? "Đã cập nhật loại nghỉ phép" : "Đã tạo loại nghỉ phép");
+      toast.success(
+        isEditing ? "Đã cập nhật loại nghỉ phép" : "Đã tạo loại nghỉ phép",
+      );
       onOpenChange(false);
       onSuccess?.();
     },
@@ -148,7 +153,10 @@ export function LeaveTypeDialog({
                 <FormItem>
                   <FormLabel>Tên loại nghỉ phép (*)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ví dụ: Phép năm, Nghỉ ốm..." {...field} />
+                    <Input
+                      placeholder="Ví dụ: Phép năm, Nghỉ ốm..."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

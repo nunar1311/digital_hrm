@@ -112,23 +112,14 @@ export function AssetFormDialog({
       location: asset?.location || "",
       description: asset?.description || "",
     });
-  }, [open, asset, mode]);
+  }, [open, asset, mode, form]);
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const payload = {
-        ...values,
-        purchaseDate: values.purchaseDate
-          ? values.purchaseDate.toISOString()
-          : undefined,
-        warrantyEnd: values.warrantyEnd
-          ? values.warrantyEnd.toISOString()
-          : undefined,
-      };
       if (mode === "edit" && asset) {
-        return updateAsset(asset.id, payload as any);
+        return updateAsset(asset.id, values);
       }
-      return createAsset(payload as any);
+      return createAsset(values);
     },
     onSuccess: () => {
       toast.success(

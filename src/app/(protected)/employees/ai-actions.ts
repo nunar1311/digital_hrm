@@ -5,12 +5,11 @@
  * AI-powered employee management, skill analysis, and career path suggestions
  */
 
-import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// AI Service integration
-async function callAIService(endpoint: string, data: any) {
+type AIServicePayload = Record<string, unknown>;
+
+async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -28,6 +27,10 @@ async function callAIService(endpoint: string, data: any) {
   }
 
   return response.json();
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "An unexpected error occurred";
 }
 
 /**
@@ -48,11 +51,11 @@ export async function extractEmployeeFromID(data: {
       data: result.data,
       confidence: result.confidence,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("ID Card Extraction error:", error);
     return {
       success: false,
-      error: error.message || "Failed to extract data",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -73,11 +76,11 @@ export async function extractEmployeeFromResume(data: {
       data: result.data,
       confidence: result.confidence,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Resume Extraction error:", error);
     return {
       success: false,
-      error: error.message || "Failed to extract data",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -122,7 +125,7 @@ export async function predictTurnoverRisk(data: {
         employee_id: employee.employeeCode,
         name: employee.name,
         department: employee.department?.name,
-        position: employee.position?.title,
+        position: employee.position?.name,
         hire_date: employee.hireDate?.toISOString(),
         tenure_years: employee.hireDate
           ? Math.floor((new Date().getTime() - employee.hireDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
@@ -139,11 +142,11 @@ export async function predictTurnoverRisk(data: {
       content: result.content,
       riskLevel: result.risk_level,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Turnover Risk Prediction error:", error);
     return {
       success: false,
-      error: error.message || "Failed to predict",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -164,7 +167,7 @@ export async function suggestCareerPath(data: {
           orderBy: { startDate: "desc" },
         },
         rewards: {
-          orderBy: { date: "desc" },
+          orderBy: { decisionDate: "desc" },
         },
       },
     });
@@ -183,7 +186,7 @@ export async function suggestCareerPath(data: {
           role: "user",
           content: `Đề xuất lộ trình sự nghiệp cho nhân viên:
 - Tên: ${employee.name}
-- Vị trí hiện tại: ${employee.position?.title || "N/A"}
+- Vị trí hiện tại: ${employee.position?.name || "N/A"}
 - Phòng ban: ${employee.department?.name || "N/A"}
 - Ngày vào làm: ${employee.hireDate?.toISOString().split("T")[0]}
 - Kinh nghiệm làm việc: ${employee.workHistories.map((w) => `${w.position} tại ${w.company}`).join(", ") || "Không có"}
@@ -202,11 +205,11 @@ export async function suggestCareerPath(data: {
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Career Path Suggestion error:", error);
     return {
       success: false,
-      error: error.message || "Failed to suggest",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -221,6 +224,7 @@ export async function analyzeSkillGap(data: {
   try {
     const employee = await prisma.user.findUnique({
       where: { id: data.employeeId },
+      include: { position: true },
     });
 
     let targetPosition = null;
@@ -240,8 +244,8 @@ export async function analyzeSkillGap(data: {
           role: "user",
           content: `Phân tích khoảng trống kỹ năng:
 - Nhân viên: ${employee?.name || "N/A"}
-- Vị trí hiện tại: ${employee?.position?.title || "N/A"}
-- Vị trí mục tiêu: ${targetPosition?.title || "Chưa xác định"}
+- Vị trí hiện tại: ${employee?.position?.name || "N/A"}
+- Vị trí mục tiêu: ${targetPosition?.name || "Chưa xác định"}
 
 Phân tích:
 1. Kỹ năng hiện có
@@ -256,11 +260,11 @@ Phân tích:
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Skill Gap Analysis error:", error);
     return {
       success: false,
-      error: error.message || "Failed to analyze",
+      error: getErrorMessage(error),
     };
   }
 }
@@ -282,7 +286,7 @@ export async function generateEmployeeProfileSummary(data: {
           take: 3,
         },
         rewards: {
-          orderBy: { date: "desc" },
+          orderBy: { decisionDate: "desc" },
           take: 5,
         },
         attendances: {
@@ -307,7 +311,7 @@ export async function generateEmployeeProfileSummary(data: {
 - Tên: ${employee.name}
 - Mã NV: ${employee.employeeCode}
 - Phòng ban: ${employee.department?.name}
-- Vị trí: ${employee.position?.title}
+- Vị trí: ${employee.position?.name}
 - Ngày vào làm: ${employee.hireDate?.toISOString().split("T")[0]}
 - Kinh nghiệm: ${employee.workHistories.map((w) => `${w.position}@${w.company}`).join(", ") || "Không có"}
 - Thành tích: ${employee.rewards.map((r) => r.type).join(", ") || "Không có"}
@@ -322,20 +326,24 @@ Tóm tắt ngắn gọn về điểm mạnh, tiềm năng và lưu ý.`,
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Profile Summary error:", error);
     return {
       success: false,
-      error: error.message || "Failed to generate",
+      error: getErrorMessage(error),
     };
   }
+}
+
+interface EmployeeImportRecord {
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 /**
  * Batch import validation with AI
  */
 export async function validateEmployeeImport(data: {
-  employees: Array<Record<string, any>>;
+  employees: EmployeeImportRecord[];
 }) {
   try {
     const result = await callAIService("/api/ai/chat", {
@@ -363,11 +371,11 @@ Kiểm tra:
       success: true,
       content: result.content,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Import Validation error:", error);
     return {
       success: false,
-      error: error.message || "Failed to validate",
+      error: getErrorMessage(error),
     };
   }
 }
