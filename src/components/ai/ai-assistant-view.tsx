@@ -540,9 +540,7 @@ export function AIAssistantView() {
 
                   <div
                     className={`relative px-4 py-1 text-sm max-w-[85%] rounded-2xl ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
-                        : ""
+                      message.role === "user" ? "bg-primary rounded-br-sm" : ""
                     }`}
                   >
                     {message.role === "assistant" && message.isTyping ? (
@@ -684,7 +682,7 @@ export function AIAssistantView() {
               }
             }}
             placeholder="Ask AI, create, search..."
-            className="flex-1 border-0 focus-visible:ring-0 bg-transparent h-10 px-2 shadow-none"
+            className="flex-1 border-0 focus-visible:ring-0 bg-transparent! h-10 px-2 shadow-none"
             disabled={isLoading}
           />
 
