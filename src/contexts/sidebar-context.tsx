@@ -39,6 +39,7 @@ export type RightSidebarType =
   | "employee"
   | "payroll_employee"
   | "payslip_employee"
+  | "ai_assistant"
   | null;
 
 export interface RightSidebarContextValue {

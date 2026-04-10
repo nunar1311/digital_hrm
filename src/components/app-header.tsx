@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/breadcrumb";
 import UserProfile from "./user-profile";
 import Link from "next/link";
+import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useRightSidebar } from "@/contexts/sidebar-context";
 
 const importantRouteLabels: Record<string, string> = {
   "org-chart": "Sơ đồ tổ chức",
@@ -62,6 +65,7 @@ const isIdSegment = (segment: string) =>
 
 export function AppHeader() {
   const pathname = usePathname();
+  const { openRightSidebar } = useRightSidebar();
   const segments = pathname.split("/").filter(Boolean);
   const breadcrumbItems = segments.reduce<{ href: string; label: string }[]>(
     (items, segment, index) => {
@@ -127,7 +131,25 @@ export function AppHeader() {
         </Breadcrumb>
       </div>
 
-      <UserProfile />
+      <div className="flex shrink-0 items-center justify-end gap-2">
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={() => openRightSidebar("ai_assistant", {})}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          <span>Ask AI</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => openRightSidebar("ai_assistant", {})}
+          className="h-8 w-8 text-primary sm:hidden"
+        >
+          <Sparkles className="h-4 w-4" />
+        </Button>
+        <UserProfile />
+      </div>
     </header>
   );
 }

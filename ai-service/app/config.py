@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(default="", description="OpenAI API Key")
     anthropic_api_key: str = Field(default="", description="Anthropic Claude API Key")
     google_api_key: str = Field(default="", description="Google Gemini API Key")
+    openrouter_api_key: str = Field(default="", description="OpenRouter API Key")
+    openrouter_default_model: str = Field(default="google/gemini-2.0-flash-001", description="Default model cho OpenRouter")
 
     # Service Config
     service_host: str = Field(default="0.0.0.0", description="Service host")

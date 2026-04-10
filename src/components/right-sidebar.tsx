@@ -9,6 +9,7 @@ import type {
   PayrollRecordDetail,
   Payslip,
 } from "@/app/(protected)/payroll/types";
+import { AIAssistantView } from "./ai/ai-assistant-view";
 
 const RightSidebar = () => {
   const { rightOpen, rightType, rightData, closeRightSidebar } =
@@ -33,6 +34,7 @@ const RightSidebar = () => {
           {rightType === "employee" && "Thông tin nhân viên"}
           {rightType === "payroll_employee" && "Chi tiết lương nhân viên"}
           {rightType === "payslip_employee" && "Chi tiết phiếu lương"}
+          {rightType === "ai_assistant" && "Trợ lý AI Digital HRM"}
           {!rightType && "Chi tiết"}
         </h2>
         <button
@@ -71,6 +73,7 @@ const RightSidebar = () => {
             }
           />
         )}
+        {rightType === "ai_assistant" && <AIAssistantView />}
       </div>
     </div>
   );

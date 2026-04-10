@@ -10,11 +10,12 @@ from app.config import settings
 from app.services.openai_service import OpenAIService, get_openai_service
 from app.services.anthropic_service import AnthropicService, get_anthropic_service
 from app.services.google_ai_service import GoogleAIService, get_google_ai_service
+from app.services.openrouter_service import OpenRouterService, get_openrouter_service
 
 logger = logging.getLogger(__name__)
 
 # AI Provider types
-ProviderType = Literal["openai", "anthropic", "google"]
+ProviderType = Literal["openai", "anthropic", "google", "openrouter"]
 
 
 class ProviderRouter:
@@ -24,6 +25,7 @@ class ProviderRouter:
         self.openai = get_openai_service()
         self.anthropic = get_anthropic_service()
         self.google = get_google_ai_service()
+        self.openrouter = get_openrouter_service()
         self.default_provider = settings.default_provider
         self.default_model = settings.default_model
 
@@ -44,6 +46,8 @@ class ProviderRouter:
             return (self.anthropic, "anthropic", "claude-3-5-sonnet-20241022")
         elif provider == "google" and self.google.enabled:
             return (self.google, "google", "gemini-2.5-flash")
+        elif provider == "openrouter" and self.openrouter.enabled:
+            return (self.openrouter, "openrouter", settings.openrouter_default_model)
 
         # Fallback to default provider
         if self.default_provider == "openai" and self.openai.enabled:
@@ -52,8 +56,12 @@ class ProviderRouter:
             return (self.anthropic, "anthropic", self.default_model if self.default_provider == "anthropic" else "claude-3-5-sonnet-20241022")
         elif self.default_provider == "google" and self.google.enabled:
             return (self.google, "google", self.default_model if self.default_provider == "google" else "gemini-2.5-flash")
+        elif self.default_provider == "openrouter" and self.openrouter.enabled:
+            return (self.openrouter, "openrouter", settings.openrouter_default_model)
 
         # Last resort - any available provider
+        if self.openrouter.enabled:
+            return (self.openrouter, "openrouter", settings.openrouter_default_model)
         if self.openai.enabled:
             return (self.openai, "openai", "gpt-4o")
         if self.anthropic.enabled:
@@ -213,6 +221,7 @@ class ProviderRouter:
             "openai": self.openai.enabled,
             "anthropic": self.anthropic.enabled,
             "google": self.google.enabled,
+            "openrouter": self.openrouter.enabled,
         }
 
     def get_best_provider_for_task(self, task: str) -> str:
@@ -225,6 +234,9 @@ class ProviderRouter:
         Returns:
             Best provider name
         """
+        # OpenRouter ưu tiên nếu có key (nhiều model, giá tốt)
+        if self.openrouter.enabled:
+            return "openrouter"
         # Claude is best for long-form analysis and nuanced tasks
         if task in ["analysis", "extraction"] and self.anthropic.enabled:
             return "anthropic"
