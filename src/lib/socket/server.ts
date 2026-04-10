@@ -118,3 +118,17 @@ export function emitPositionDeleted(positionId: string): void {
     }
     io.emit("position:deleted", { id: positionId });
 }
+
+/**
+ * Emit holiday:updated event
+ */
+export function emitHolidayUpdated(params: {
+    holidayId: string;
+    holidayName: string;
+    date: string;
+    action: "created" | "updated" | "deleted";
+    calendarId?: string;
+    calendarYear?: number;
+}): void {
+    emitToAll("holiday:updated", params);
+}

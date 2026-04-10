@@ -1,6 +1,7 @@
 """
 Dashboard Router - AI Dashboard insights endpoints
 Bao gom Auto-Insights va Auto-Summary tu du lieu thuc
+Co phan quyen: Admin roles moi duoc xem dashboard tong quan
 """
 
 import logging
@@ -8,11 +9,12 @@ import json
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, Depends
 
 from app.services.provider_router import get_provider_router
 from app.utils.response_formatter import ResponseFormatter
 from app.services.db_queries import HRDataQueries
+from app.middleware.rbac import require_dashboard_access, require_full_access, extract_user_context
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -145,10 +147,11 @@ class AutoInsightsRequest(BaseModel):
 
 
 @router.post("/auto-insights")
-async def get_auto_insights(request: AutoInsightsRequest):
+async def get_auto_insights(request: AutoInsightsRequest, raw_request: Request):
     """
     Auto AI Insights - Tự động lấy dữ liệu từ Database và phân tích
 
+    CHỈ DÀNH CHO: SUPER_ADMIN, DIRECTOR, HR_MANAGER
     KHÔNG cần gửi data từ frontend - AI Service tự truy vấn database.
 
     Trả về:
@@ -156,6 +159,8 @@ async def get_auto_insights(request: AutoInsightsRequest):
     - Phát hiện bất thường
     - Khuyến nghị hành động
     """
+    # Kiểm tra quyền truy cập dashboard
+    require_dashboard_access(raw_request)
     try:
         # Step 1: Fetch data from database
         hr_data = await HRDataQueries.get_full_hr_snapshot()
@@ -269,15 +274,18 @@ class AutoSummaryRequest(BaseModel):
 
 
 @router.post("/auto-summary")
-async def get_auto_summary(request: AutoSummaryRequest):
+async def get_auto_summary(request: AutoSummaryRequest, raw_request: Request):
     """
     Auto Executive Summary - Tạo tóm tắt điều hành tự động từ dữ liệu thực
 
-    Tui document có thể dùng cho:
+    CHỈ DÀNH CHO: SUPER_ADMIN, DIRECTOR, HR_MANAGER
+    Dùng cho:
     - Báo cáo cho Ban Giám đốc
     - Review tình hình HR hàng tháng
     - Slide thuyết trình
     """
+    # Kiểm tra quyền truy cập dashboard
+    require_dashboard_access(raw_request)
     try:
         # Fetch data
         hr_data = await HRDataQueries.get_full_hr_snapshot()
@@ -343,16 +351,19 @@ Sử dụng SỐ LIỆU CỤ THỂ từ dữ liệu được cung cấp.
 # =====================
 
 @router.post("/workforce-analysis")
-async def workforce_analysis():
+async def workforce_analysis(raw_request: Request):
     """
     Workforce Analysis - Phân tích toàn diện lực lượng lao động từ database
 
+    CHỈ DÀNH CHO: Admin roles có quyền full access
     Bao gồm:
     - Cơ cấu nhân sự theo phòng ban, giới tính, loại hợp đồng
     - Biến động nhân sự: tuyển mới, nghỉ việc
     - Phân tích thâm niên, độ tuổi
     - Cảnh báo rủi ro
     """
+    # Kiểm tra quyền truy cập full data
+    require_full_access(raw_request)
     try:
         # Fetch comprehensive data
         employee_data = await HRDataQueries.get_employee_overview()

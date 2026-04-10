@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 import {
   Briefcase,
   CalendarDays,
   Edit,
+  Eye,
+  EyeOff,
+  KeyRound,
   Loader2,
+  Mail,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -35,7 +40,26 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { submitProfileUpdateRequest } from "../actions";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
+
+// Schema xác thực form đổi mật khẩu
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Vui lòng nhập mật khẩu hiện tại"),
+    newPassword: z.string().min(6, "Mật khẩu mới phải có ít nhất 6 ký tự"),
+    confirmPassword: z.string().min(1, "Vui lòng xác nhận mật khẩu mới"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Mật khẩu xác nhận không khớp",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "Mật khẩu mới không được trùng với mật khẩu hiện tại",
+    path: ["newPassword"],
+  });
+
+type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 interface UserProfile {
   id: string;
@@ -327,11 +351,9 @@ function InfoCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="p-2">
-      <CardHeader className="px-2 sm:px-3 pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          {title}
-        </CardTitle>
+    <Card className="p-3 gap-1">
+      <CardHeader className="px-2 sm:px-3 ">
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="px-2 sm:px-3 space-y-0">{children}</CardContent>
     </Card>
@@ -383,9 +405,47 @@ export function ESSProfileClient({ initialProfile }: ESSProfileClientProps) {
   const [editField, setEditField] = useState<EditableField | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // State cho dialog đổi mật khẩu
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // State cho dialog đổi email
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [showCurrentEmail, setShowCurrentEmail] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+
   const form = useForm<{ value: string }>({
     defaultValues: { value: "" },
   });
+
+  // Form riêng cho đổi mật khẩu (phải định nghĩa trước khi sử dụng trong handleChangePassword)
+  const passwordForm = useForm<PasswordFormValues>({
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  // Form riêng cho đổi email
+  const emailForm = useForm<EmailFormValues>({
+    defaultValues: {
+      newEmail: "",
+    },
+  });
+
+  // Validation schema cho form đổi email
+  const emailValidationSchema = z.object({
+    newEmail: z
+      .string()
+      .min(1, "Vui lòng nhập email mới")
+      .email("Email không hợp lệ"),
+  });
+
+  type EmailFormValues = z.infer<typeof emailValidationSchema>;
 
   if (!initialProfile) {
     return (
@@ -419,6 +479,67 @@ export function ESSProfileClient({ initialProfile }: ESSProfileClientProps) {
       setIsSubmitting(false);
     }
   };
+
+  // Xử lý đổi mật khẩu sử dụng Better Auth client
+  const handleChangePassword = async (data: PasswordFormValues) => {
+    setIsChangingPassword(true);
+    try {
+      // Sử dụng authClient.changePassword() của Better Auth
+      const result = await authClient.changePassword({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+        revokeOtherSessions: true,
+      });
+
+      if (result.error) {
+        toast.error(result.error.message || "Không thể đổi mật khẩu");
+        return;
+      }
+
+      toast.success("Đổi mật khẩu thành công");
+      setPasswordDialogOpen(false);
+      passwordForm.reset();
+    } catch {
+      toast.error("Đã xảy ra lỗi khi đổi mật khẩu");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  // Xử lý đổi email sử dụng Better Auth client
+  const handleChangeEmail = async (data: EmailFormValues) => {
+    setIsChangingEmail(true);
+    try {
+      // Sử dụng authClient.changeEmail() của Better Auth
+      const result = await authClient.changeEmail({
+        newEmail: data.newEmail,
+        callbackURL: "/ess/profile",
+      });
+
+      if (result.error) {
+        toast.error(result.error.message || "Không thể đổi email");
+        return;
+      }
+
+      toast.success(
+        "Đã gửi yêu cầu đổi email. Vui lòng kiểm tra email mới để xác nhận.",
+      );
+      setEmailDialogOpen(false);
+      emailForm.reset();
+    } catch {
+      toast.error("Đã xảy ra lỗi khi đổi email");
+    } finally {
+      setIsChangingEmail(false);
+    }
+  };
+
+  if (!initialProfile) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Không thể tải thông tin hồ sơ</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
@@ -594,35 +715,39 @@ export function ESSProfileClient({ initialProfile }: ESSProfileClientProps) {
               }
             />
           </InfoCard>
-        </div>
 
-        {/* Request Update Hint */}
-        <Card className="bg-muted/30 border-dashed">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          {/* Security */}
+          <InfoCard title="Bảo mật">
+            <div className="py-2.5 space-y-3">
               <div>
-                <h3 className="font-medium text-sm">Cần cập nhật thông tin?</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Nhấn biểu tượng chỉnh sửa bên cạnh từng mục hoặc liên hệ bộ
-                  phận HCNS.
+                <p className="text-xs text-muted-foreground mb-2">
+                  Quản lý mật khẩu và bảo mật tài khoản của bạn
                 </p>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 justify-start"
+                    onClick={() => setEmailDialogOpen(true)}
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    Đổi email
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 justify-start"
+                    onClick={() => setPasswordDialogOpen(true)}
+                  >
+                    <KeyRound className="h-3.5 w-3.5" />
+                    Đổi mật khẩu
+                  </Button>
+                </div>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  handleEditField("phone", initialProfile.phone || "")
-                }
-              >
-                <Edit className="h-3.5 w-3.5 mr-1.5" />
-                Cập nhật nhanh
-              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </InfoCard>
+        </div>
       </div>
-
-      {/* Edit Dialog */}
       <Dialog
         open={editDialogOpen}
         onOpenChange={(open) => {
@@ -687,6 +812,254 @@ export function ESSProfileClient({ initialProfile }: ESSProfileClientProps) {
                     <>
                       <Loader2 className="animate-spin" />
                       Đang gửi...
+                    </>
+                  ) : (
+                    <>Gửi yêu cầu</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog
+        open={passwordDialogOpen}
+        onOpenChange={(open) => {
+          setPasswordDialogOpen(open);
+          if (!open) {
+            passwordForm.reset();
+            setShowCurrentPassword(false);
+            setShowNewPassword(false);
+            setShowConfirmPassword(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Đổi mật khẩu
+            </DialogTitle>
+            <DialogDescription>
+              Nhập mật khẩu hiện tại và mật khẩu mới để thay đổi. Mật khẩu mới
+              phải có ít nhất 6 ký tự.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...passwordForm}>
+            <form
+              onSubmit={passwordForm.handleSubmit(handleChangePassword)}
+              className="space-y-4"
+            >
+              {/* Mật khẩu hiện tại */}
+              <FormField
+                control={passwordForm.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mật khẩu hiện tại</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          type={showCurrentPassword ? "text" : "password"}
+                          placeholder="Nhập mật khẩu hiện tại"
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() =>
+                            setShowCurrentPassword(!showCurrentPassword)
+                          }
+                        >
+                          {showCurrentPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Mật khẩu mới */}
+              <FormField
+                control={passwordForm.control}
+                name="newPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mật khẩu mới</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          type={showNewPassword ? "text" : "password"}
+                          placeholder="Nhập mật khẩu mới"
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                        >
+                          {showNewPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Xác nhận mật khẩu mới */}
+              <FormField
+                control={passwordForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Xác nhận mật khẩu mới</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Nhập lại mật khẩu mới"
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPasswordDialogOpen(false)}
+                >
+                  Hủy
+                </Button>
+                <Button type="submit" disabled={isChangingPassword}>
+                  {isChangingPassword ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>Đổi mật khẩu</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Email Dialog */}
+      <Dialog
+        open={emailDialogOpen}
+        onOpenChange={(open) => {
+          setEmailDialogOpen(open);
+          if (!open) {
+            emailForm.reset();
+            setShowCurrentEmail(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Đổi email
+            </DialogTitle>
+            <DialogDescription>
+              Nhập địa chỉ email mới để thay đổi. Email mới phải chưa được sử
+              dụng bởi tài khoản khác trong hệ thống.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...emailForm}>
+            <form
+              onSubmit={emailForm.handleSubmit(handleChangeEmail)}
+              className="space-y-4"
+            >
+              {/* Email hiện tại (chỉ hiển thị, không cho sửa) */}
+              <FormItem>
+                <FormLabel>Email hiện tại</FormLabel>
+                <FormControl>
+                  <Input
+                    value={initialProfile.email}
+                    disabled
+                    className="bg-muted"
+                  />
+                </FormControl>
+              </FormItem>
+
+              {/* Email mới */}
+              <FormField
+                control={emailForm.control}
+                name="newEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email mới</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder="Nhập email mới"
+                        className="pr-10"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEmailDialogOpen(false)}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isChangingEmail || !emailForm.formState.isValid}
+                >
+                  {isChangingEmail ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Đang xử lý...
                     </>
                   ) : (
                     <>Gửi yêu cầu</>

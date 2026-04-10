@@ -272,6 +272,17 @@ export interface AssetReturnedEvent {
     condition: "GOOD" | "DAMAGED" | "LOST";
 }
 
+// === Holiday Events ===
+
+export interface HolidayUpdatedEvent {
+    holidayId: string;
+    holidayName: string;
+    date: string;
+    action: "created" | "updated" | "deleted";
+    calendarId?: string;
+    calendarYear?: number;
+}
+
 // === Server → Client Events ===
 export interface ServerToClientEvents {
     "employee:created": (data: EmployeeCreatedEvent) => void;
@@ -334,6 +345,7 @@ export interface ServerToClientEvents {
     "company:updated": (data: CompanyUpdatedEvent) => void;
     "company:logo-updated": (data: CompanyLogoUpdatedEvent) => void;
     "data:updated": (data: { entity: string; userId?: string; action?: string; data?: unknown }) => void;
+    "holiday:updated": (data: HolidayUpdatedEvent) => void;
 }
 
 // === Client → Server Events ===
@@ -381,4 +393,5 @@ export const SOCKET_EVENTS = {
     COMPANY_LOGO_UPDATED: "company:logo-updated",
     // Leave management
     DATA_UPDATED: "data:updated",
+    HOLIDAY_UPDATED: "holiday:updated",
 } as const;

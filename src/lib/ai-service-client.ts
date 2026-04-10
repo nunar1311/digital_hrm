@@ -25,6 +25,15 @@ export interface AIRequestOptions {
   cache?: boolean;
 }
 
+/**
+ * User context được forward tới AI Service để phân quyền truy cập database.
+ * Next.js lấy từ session và truyền xuống đây.
+ */
+export interface AIUserContext {
+  userId: string;
+  userRole: string;  // SUPER_ADMIN, DIRECTOR, HR_MANAGER, EMPLOYEE, v.v.
+}
+
 class AIServiceClient {
   private baseUrl: string;
   private apiKey: string;
@@ -38,13 +47,17 @@ class AIServiceClient {
 
   private async fetch<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    userContext?: AIUserContext
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(this.apiKey ? { "X-Internal-API-Key": this.apiKey } : {}),
+      // Forward user context cho Python AI Service phân quyền DB access
+      ...(userContext?.userId ? { "X-User-Id": userContext.userId } : {}),
+      ...(userContext?.userRole ? { "X-User-Role": userContext.userRole } : {}),
       ...options.headers as Record<string, string>,
     };
 
@@ -83,12 +96,13 @@ class AIServiceClient {
 
   async chat(
     messages: Array<{ role: string; content: string }>,
-    options?: AIRequestOptions
+    options?: AIRequestOptions,
+    userContext?: AIUserContext
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/chat", {
       method: "POST",
       body: JSON.stringify({ messages, ...options }),
-    });
+    }, userContext);
   }
 
   async hrQuestion(
@@ -477,7 +491,8 @@ class AIServiceClient {
   async getDashboardInsights(
     dashboardData: Record<string, unknown>,
     period?: string,
-    focusAreas?: string[]
+    focusAreas?: string[],
+    userContext?: AIUserContext
   ): Promise<{
     success: boolean;
     insights?: Array<{
@@ -496,22 +511,24 @@ class AIServiceClient {
         period,
         focus_areas: focusAreas,
       }),
-    });
+    }, userContext);
   }
 
   async generateDashboardSummary(
     metrics: Record<string, unknown>,
-    period: string
+    period: string,
+    userContext?: AIUserContext
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/dashboard/summary", {
       method: "POST",
       body: JSON.stringify({ metrics, period }),
-    });
+    }, userContext);
   }
 
   async queryNaturalLanguage(
     query: string,
-    dashboardData?: Record<string, unknown>
+    dashboardData?: Record<string, unknown>,
+    userContext?: AIUserContext
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/dashboard/query", {
       method: "POST",
@@ -519,12 +536,13 @@ class AIServiceClient {
         query,
         dashboard_data: dashboardData,
       }),
-    });
+    }, userContext);
   }
 
   async detectAnomalies(
     metrics: Record<string, unknown>,
-    historicalData?: Record<string, unknown>
+    historicalData?: Record<string, unknown>,
+    userContext?: AIUserContext
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/dashboard/anomaly-alert", {
       method: "POST",
@@ -532,13 +550,14 @@ class AIServiceClient {
         metrics,
         historical_data: historicalData,
       }),
-    });
+    }, userContext);
   }
 
   async getPredictiveAnalytics(
     historicalData: Record<string, unknown>,
     predictionType: "headcount" | "turnover" | "payroll" | "attendance",
-    forecastPeriods: number = 3
+    forecastPeriods: number = 3,
+    userContext?: AIUserContext
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/dashboard/predictive", {
       method: "POST",
@@ -547,7 +566,7 @@ class AIServiceClient {
         prediction_type: predictionType,
         forecast_periods: forecastPeriods,
       }),
-    });
+    }, userContext);
   }
 
   // =====================
@@ -557,7 +576,8 @@ class AIServiceClient {
   async smartChat(
     message: string,
     history?: Array<{ role: string; content: string }>,
-    options?: { provider?: string; model?: string; language?: string }
+    options?: { provider?: string; model?: string; language?: string },
+    userContext?: AIUserContext
   ): Promise<{
     success: boolean;
     content?: string;
@@ -574,7 +594,7 @@ class AIServiceClient {
         history,
         ...options,
       }),
-    });
+    }, userContext);
   }
 
   // =====================
@@ -584,7 +604,8 @@ class AIServiceClient {
   async getAutoInsights(
     focusAreas?: string[],
     month?: number,
-    year?: number
+    year?: number,
+    userContext?: AIUserContext
   ): Promise<{
     success: boolean;
     insights?: Array<{
@@ -608,7 +629,7 @@ class AIServiceClient {
         month,
         year,
       }),
-    });
+    }, userContext);
   }
 
   // =====================
@@ -617,7 +638,8 @@ class AIServiceClient {
 
   async getAutoSummary(
     language: string = "vi",
-    detailLevel: "brief" | "standard" | "detailed" = "standard"
+    detailLevel: "brief" | "standard" | "detailed" = "standard",
+    userContext?: AIUserContext
   ): Promise<AIResponse> {
     return this.fetch("/api/ai/dashboard/auto-summary", {
       method: "POST",
@@ -625,17 +647,17 @@ class AIServiceClient {
         language,
         detail_level: detailLevel,
       }),
-    });
+    }, userContext);
   }
 
   // =====================
   // WORKFORCE ANALYSIS - Phân tích lực lượng lao động từ DB
   // =====================
 
-  async analyzeWorkforce(): Promise<AIResponse> {
+  async analyzeWorkforce(userContext?: AIUserContext): Promise<AIResponse> {
     return this.fetch("/api/ai/analyze/workforce", {
       method: "POST",
-    });
+    }, userContext);
   }
 
   // =====================
@@ -662,10 +684,10 @@ class AIServiceClient {
   // WORKFORCE ANALYSIS (Dashboard) - Phân tích từ Dashboard
   // =====================
 
-  async getWorkforceAnalysis(): Promise<AIResponse> {
+  async getWorkforceAnalysis(userContext?: AIUserContext): Promise<AIResponse> {
     return this.fetch("/api/ai/dashboard/workforce-analysis", {
       method: "POST",
-    });
+    }, userContext);
   }
 
   // =====================

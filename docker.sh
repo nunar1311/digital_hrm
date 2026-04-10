@@ -90,6 +90,7 @@ prod_logs() {
 }
 
 prod_rebuild() {
+    prod_down
     log_info "Rebuilding Docker images..."
     docker compose build --no-cache
 }

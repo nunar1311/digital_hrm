@@ -63,7 +63,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
             {items.map((item) => (
               <Card key={item.name} className="lg:gap-1 lg:p-0">
                 <CardContent className="flex flex-col items-start gap-2 lg:p-2">
-                  <div className="size-10 lg:size-8 rounded-lg border-primary border-2 flex items-center justify-center">
+                  <div className="size-10 lg:size-8 rounded-lg border-primary border-1 flex items-center justify-center">
                     <item.icon className="lg:size-4 size-5 text-primary" />
                   </div>
 
@@ -82,8 +82,8 @@ const Layout = ({ children }: { children: ReactNode }) => {
             </div>
             <p className="-mt-1 text-sm">
               Báo cáo lỗi, góp ý:{" "}
-              <Link href={"mailto:contact@breadflow.com"} className="underline">
-                support@digitalhrm.com
+              <Link href={"mailto:quqn100dd@gmail.com"} className="underline">
+                quqn100dd@gmail.com
               </Link>
             </p>
           </div>

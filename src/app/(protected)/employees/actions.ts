@@ -5,7 +5,7 @@ import { requirePermission } from "@/lib/auth-session";
 import { Permission } from "@/lib/rbac/permissions";
 import { revalidatePath } from "next/cache";
 import { getIO, emitToAll } from "@/lib/socket/server";
-import { auth } from "@/lib/auth";
+import bcrypt from "bcryptjs";
 
 // Types
 export interface GetEmployeesParams {
@@ -262,6 +262,18 @@ export async function checkNationalIdExists(
 }
 
 /**
+ * Tạo mật khẩu ngẫu nhiên an toàn cho nhân viên mới
+ */
+function generateRandomPassword(length: number = 12): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
+
+/**
  * Tạo mới nhân viên và đồng thời tạo tài khoản better-auth
  */
 export async function createEmployee(data: {
@@ -345,7 +357,11 @@ export async function createEmployee(data: {
     }
   }
 
-  // Tạo employee user
+  // Dùng username làm mật khẩu mặc định (để nhân viên đăng nhập bằng username/username)
+  const plainPassword = data.username;
+  const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+  // Tạo employee user trước
   const employee = await prisma.user.create({
     data: {
       name: data.name,
@@ -386,23 +402,21 @@ export async function createEmployee(data: {
     },
   });
 
-  // Tạo tài khoản better-auth với mật khẩu là username
+  // Tạo Account record cho better-auth (để user có thể đăng nhập)
+  // Lưu ý: better-auth sử dụng providerId = "credential" và accountId = user.id
   try {
-    await auth.api.signUpEmail({
-      body: {
-        name: data.name,
-        email: data.email,
-        username: data.username,
-        password: data.username, // Mật khẩu mặc định là username
-        employeeCode: data.username,
-        hrmRole: "EMPLOYEE",
-        departmentId: departmentId,
+    await prisma.account.create({
+      data: {
+        userId: employee.id,
+        accountId: employee.id, // accountId phải là user.id cho credential provider
+        providerId: "credential", // Provider ID cho email/password authentication
+        password: hashedPassword,
       },
     });
-  } catch (authError) {
-    // Nếu tạo tài khoản better-auth thất bại, xóa user đã tạo
+  } catch (accountError) {
+    // Nếu tạo Account thất bại, xóa user đã tạo
     await prisma.user.delete({ where: { id: employee.id } });
-    throw new Error(`Tạo tài khoản thất bại: ${authError instanceof Error ? authError.message : "Lỗi không xác định"}`);
+    throw new Error(`Tạo tài khoản thất bại: ${accountError instanceof Error ? accountError.message : "Lỗi không xác định"}`);
   }
 
   revalidatePath("/employees");
@@ -418,7 +432,11 @@ export async function createEmployee(data: {
     });
   }
 
-  return employee;
+  // Trả về plainPassword để frontend hiển thị cho admin sau khi tạo
+  return {
+    employee,
+    plainPassword,
+  };
 }
 
 /**
@@ -763,40 +781,58 @@ export async function importEmployeesBatch(
       const statusRaw = String(row["Trạng thái"] || "").trim();
       const employeeStatus = statusMap[statusRaw] || statusRaw || "ACTIVE";
 
-      await prisma.user.create({
-        data: {
-          name: fullName,
-          email,
-          username,
-          fullName,
-          nationalId: nationalId || undefined,
-          dateOfBirth,
-          gender,
-          nationalIdDate,
-          nationalIdPlace:
-            String(row["Nơi cấp CCCD"] || "").trim() || undefined,
-          phone: String(row["Số điện thoại"] || "").trim() || undefined,
-          personalEmail: String(row["Email cá nhân"] || "").trim() || undefined,
-          address: String(row["Địa chỉ"] || "").trim() || undefined,
-          nationality:
-            String(row["Quốc tịch"] || "Việt Nam").trim() || "Việt Nam",
-          ethnicity: String(row["Dân tộc"] || "Kinh").trim() || "Kinh",
-          religion: String(row["Tôn giáo"] || "").trim() || undefined,
-          maritalStatus:
-            String(row["Tình trạng hôn nhân"] || "").trim() || undefined,
-          departmentId: String(row["Phòng ban"] || "").trim() || undefined,
-          positionId: String(row["Chức vụ"] || "").trim() || undefined,
-          employmentType,
-          employeeStatus,
-          hireDate,
-          educationLevel,
-          major: String(row["Chuyên ngành"] || "").trim() || undefined,
-          university: String(row["Trường"] || "").trim() || undefined,
-          bankName: String(row["Ngân hàng"] || "").trim() || undefined,
-          bankAccount: String(row["Số tài khoản"] || "").trim() || undefined,
-          taxCode: String(row["Mã số thuế"] || "").trim() || undefined,
-        },
+      // Dùng username làm mật khẩu mặc định (nhân viên đăng nhập bằng username/username)
+      const plainPassword = username;
+      const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+      // Tạo employee user và account trong một transaction
+      await prisma.$transaction(async (tx) => {
+        const employee = await tx.user.create({
+          data: {
+            name: fullName,
+            email,
+            username,
+            fullName,
+            nationalId: nationalId || undefined,
+            dateOfBirth,
+            gender,
+            nationalIdDate,
+            nationalIdPlace:
+              String(row["Nơi cấp CCCD"] || "").trim() || undefined,
+            phone: String(row["Số điện thoại"] || "").trim() || undefined,
+            personalEmail: String(row["Email cá nhân"] || "").trim() || undefined,
+            address: String(row["Địa chỉ"] || "").trim() || undefined,
+            nationality:
+              String(row["Quốc tịch"] || "Việt Nam").trim() || "Việt Nam",
+            ethnicity: String(row["Dân tộc"] || "Kinh").trim() || "Kinh",
+            religion: String(row["Tôn giáo"] || "").trim() || undefined,
+            maritalStatus:
+              String(row["Tình trạng hôn nhân"] || "").trim() || undefined,
+            departmentId: String(row["Phòng ban"] || "").trim() || undefined,
+            positionId: String(row["Chức vụ"] || "").trim() || undefined,
+            employmentType,
+            employeeStatus,
+            hireDate,
+            educationLevel,
+            major: String(row["Chuyên ngành"] || "").trim() || undefined,
+            university: String(row["Trường"] || "").trim() || undefined,
+            bankName: String(row["Ngân hàng"] || "").trim() || undefined,
+            bankAccount: String(row["Số tài khoản"] || "").trim() || undefined,
+            taxCode: String(row["Mã số thuế"] || "").trim() || undefined,
+          },
+        });
+
+        // Tạo Account record cho better-auth
+        await tx.account.create({
+          data: {
+            userId: employee.id,
+            accountId: employee.id,
+            providerId: "credential",
+            password: hashedPassword,
+          },
+        });
       });
+
       success++;
     } catch (err) {
       failed++;

@@ -87,6 +87,12 @@ export const auth = betterAuth({
                 defaultValue: "EMPLOYEE",
             },
         },
+        // Bật chức năng đổi email cho người dùng
+        changeEmail: {
+            enabled: true,
+            // Không cần xác nhận email cũ - cho phép đổi trực tiếp
+            updateEmailWithoutVerification: true,
+        },
     },
 
     // ─── Rate limiting ───

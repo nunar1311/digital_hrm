@@ -423,6 +423,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.ESS_VIEW,
         Permission.ESS_UPDATE_PROFILE,
         Permission.ESS_SEND_REQUEST,
+        Permission.SETTINGS_VIEW,
     ],
 
     [Role.EMPLOYEE]: [

@@ -1,19 +1,18 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import {
-  AlertCircle,
-  CalendarIcon,
-  CheckCircle2,
-  Loader2,
-  Sparkles,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { CalendarIcon, CheckCircle2, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -31,12 +30,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -190,6 +183,21 @@ function calcDays(start: Date, end: Date): number {
   return count;
 }
 
+/** Given a start date, add `days` working days and return the end date */
+function calcWorkingEndDate(start: Date, days: number): Date {
+  let added = 0;
+  const current = new Date(start);
+  current.setHours(0, 0, 0, 0);
+
+  if (!isWeekendOrHoliday(current)) added++;
+
+  while (added < days) {
+    current.setDate(current.getDate() + 1);
+    if (!isWeekendOrHoliday(current)) added++;
+  }
+  return new Date(current);
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function LeaveTypeOption({ type }: { type: LeaveType }) {
@@ -337,6 +345,8 @@ export function LeaveRequestDialog({
   const endDate = watch("endDate");
   const leaveTypeId = watch("leaveTypeId");
 
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
   const selectedLeaveType = useMemo(
     () => leaveTypes.find((t) => t.id === leaveTypeId) ?? null,
     [leaveTypes, leaveTypeId],
@@ -363,6 +373,9 @@ export function LeaveRequestDialog({
   const handleLeaveTypeChange = useCallback(
     (typeId: string) => {
       setValue("leaveTypeId", typeId);
+      // Reset dates when leave type changes
+      setValue("startDate", undefined as unknown as Date);
+      setValue("endDate", undefined as unknown as Date);
     },
     [setValue],
   );
@@ -394,8 +407,13 @@ export function LeaveRequestDialog({
     [submitMutation],
   );
 
+  const handleClose = () => {
+    form.reset();
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -457,99 +475,74 @@ export function LeaveRequestDialog({
             )} */}
 
             {/* Date Range */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Ngày bắt đầu *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground",
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "dd/MM/yyyy")
-                            ) : (
-                              <span>Chọn ngày</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < new Date() || isWeekendOrHoliday(date)
-                          }
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormItem className="flex flex-col">
+              <FormLabel>Khoảng thời gian nghỉ *</FormLabel>
+              {selectedLeaveType && (
+                <p className="text-xs text-muted-foreground -mt-1">
+                  Chọn ngày bắt đầu — hệ thống tự tính ngày kết thúc dựa trên{" "}
+                  <strong>{selectedLeaveType.defaultDays} ngày</strong> làm
+                  việc.
+                </p>
+              )}
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate && endDate ? (
+                      <>
+                        {format(startDate, "dd/MM/yyyy")}
+                        <span className="mx-1 text-muted-foreground">–</span>
+                        {format(endDate, "dd/MM/yyyy")}
+                      </>
+                    ) : (
+                      <span>Chọn ngày bắt đầu</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => {
+                      if (!date) return;
+                      setValue("startDate", date);
+                      setCalendarOpen(false);
+                      if (selectedLeaveType?.defaultDays) {
+                        setValue(
+                          "endDate",
+                          calcWorkingEndDate(date, selectedLeaveType.defaultDays),
+                        );
+                      } else {
+                        setValue("endDate", date);
+                      }
+                    }}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return date < today || isWeekendOrHoliday(date);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              {form.formState.errors.startDate && (
+                <p className="text-sm font-medium text-destructive">
+                  {form.formState.errors.startDate.message}
+                </p>
+              )}
+              {form.formState.errors.endDate && (
+                <p className="text-sm font-medium text-destructive">
+                  {form.formState.errors.endDate.message}
+                </p>
+              )}
+            </FormItem>
 
-              <FormField
-                control={form.control}
-                name="endDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Ngày kết thúc *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground",
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "dd/MM/yyyy")
-                            ) : (
-                              <span>Chọn ngày</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < (startDate || new Date()) ||
-                            isWeekendOrHoliday(date)
-                          }
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Days Preview */}
-            {/* {calculatedDays > 0 && selectedLeaveType && (
-              <DaysPreview
-                days={calculatedDays}
-                balance={selectedLeaveType.balance}
-                isEnough={isBalanceEnough}
-              />
-            )} */}
             {selectedLeaveType && calculatedDays > 0 && isBalanceEnough && (
               <RequestSummary
                 leaveType={selectedLeaveType.name}

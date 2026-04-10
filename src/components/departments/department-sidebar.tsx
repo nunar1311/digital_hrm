@@ -112,7 +112,7 @@ const DepartmentSidebar = ({ departmentTree }: DepartmentSidebarProps) => {
         collapsible="offcanvas"
         className="absolute h-full! group/sidebar"
       >
-        <SidebarHeader className="flex-row h-[44px] items-center justify-between">
+        <SidebarHeader className="flex-row h-11 items-center justify-between px-4">
           <div className="group-data-[collapsible=icon]:hidden px-2 font-bold">
             Phòng ban
           </div>

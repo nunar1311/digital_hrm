@@ -102,6 +102,16 @@ export function MonthlyClient({
     });
   });
 
+  // Real-time update khi ngày lễ thay đổi
+  useSocketEvent("holiday:updated", () => {
+    queryClient.invalidateQueries({
+      queryKey: ["attendance", "monthly"],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["attendance", "summaries"],
+    });
+  });
+
   // ─── Mutations ───
   const calculateMutation = useMutation({
     mutationFn: () => calculateMonthlySummary({ month, year }),

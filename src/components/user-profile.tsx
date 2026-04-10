@@ -5,7 +5,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -15,6 +14,7 @@ import {
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
+  BellIcon,
   ChevronDownIcon,
   LogOutIcon,
   PaintRollerIcon,
@@ -36,7 +36,6 @@ import { offset } from "@floating-ui/dom";
 import "shepherd.js/dist/css/shepherd.css";
 import "./shepherd.css";
 import ThemePreset from "./themes/theme-preset";
-import Link from "next/link";
 
 const UserProfile = () => {
   const router = useRouter();
@@ -177,7 +176,7 @@ const UserProfile = () => {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/ess/profile")}>
             <UserCircle2Icon />
             Hồ sơ của tôi
           </DropdownMenuItem>
@@ -188,12 +187,46 @@ const UserProfile = () => {
             <PaintRollerIcon />
             Chủ đề
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings">
+          <DropdownMenuItem onClick={() => router.push("/ess/profile")}>
+            <BellIcon />
+            Thông báo
+          </DropdownMenuItem>
+
+          {user?.hrmRole === "EMPLOYEE" ? (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <SettingsIcon />
+                Cài đặt
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem
+                  onClick={() => {
+                    router.push("/ess/settings/preferences");
+                    setIsDropdownOpen(false);
+                  }}
+                >
+                  <SettingsIcon />
+                  Cài đặt
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    router.push("/ess/settings/notifications"); 
+                    setIsDropdownOpen(false);
+                  }}
+                >
+                  <BellIcon />
+                  Thông báo
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          ) : (
+            <DropdownMenuItem
+              onClick={() => router.push("/ess/settings/preferences")}
+            >
               <SettingsIcon />
               Cài đặt
-            </Link>
-          </DropdownMenuItem>
+            </DropdownMenuItem>
+          )}
 
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut}>

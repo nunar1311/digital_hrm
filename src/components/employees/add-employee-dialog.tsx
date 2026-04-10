@@ -597,6 +597,14 @@ export function AddEmployeeDialog({
   } | null>(null);
   const [showRoleSuggestion, setShowRoleSuggestion] = useState(false);
 
+  // ── Account info dialog after create ──
+  const [createdAccountInfo, setCreatedAccountInfo] = useState<{
+    username: string;
+    password: string;
+    fullName: string;
+  } | null>(null);
+  const [showAccountInfoDialog, setShowAccountInfoDialog] = useState(false);
+
   // ── Fetch departments for select ──
   const { data: departments = [] } = useQuery({
     queryKey: ["departmentOptions"],
@@ -837,12 +845,21 @@ export function AddEmployeeDialog({
         taxCode: data.taxCode,
       });
     },
-    onSuccess: () => {
-      toast.success("Tạo nhân viên thành công");
+    onSuccess: (result) => {
+      const info = {
+        username: username,
+        password: username, // Mật khẩu mặc định = username
+        fullName: result?.employee?.name || "",
+      };
       queryClient.invalidateQueries({
         queryKey: ["employees"],
       });
       handleClose();
+      // Hiển thị dialog thông tin tài khoản sau khi đóng form
+      setTimeout(() => {
+        setCreatedAccountInfo(info);
+        setShowAccountInfoDialog(true);
+      }, 100);
     },
     onError: (err) => {
       const error = err as Error;
@@ -1795,6 +1812,71 @@ export function AddEmployeeDialog({
         open={importOpen}
         onClose={() => setImportOpen(false)}
       />
+
+      {/* Dialog thông tin tài khoản sau khi tạo nhân viên */}
+      <Dialog
+        open={showAccountInfoDialog}
+        onOpenChange={(o) => {
+          if (!o) {
+            setShowAccountInfoDialog(false);
+            setCreatedAccountInfo(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600 dark:text-green-400">
+              <CheckCircle className="h-5 w-5" />
+              Tạo nhân viên thành công
+            </DialogTitle>
+            <DialogDescription>
+              Thông tin tài khoản đăng nhập của nhân viên{" "}
+              <strong>{createdAccountInfo?.fullName}</strong>
+            </DialogDescription>
+          </DialogHeader>
+
+          {createdAccountInfo && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    Tên đăng nhập (Mã NV):
+                  </span>
+                  <span className="font-mono font-semibold text-sm bg-background border rounded px-2 py-1 select-all">
+                    {createdAccountInfo.username}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    Mật khẩu mặc định:
+                  </span>
+                  <span className="font-mono font-semibold text-sm bg-background border rounded px-2 py-1 select-all">
+                    {createdAccountInfo.password}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  Mật khẩu mặc định trùng với mã nhân viên. Hãy thông báo cho
+                  nhân viên đổi mật khẩu sau khi đăng nhập lần đầu.
+                </p>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => {
+                    setShowAccountInfoDialog(false);
+                    setCreatedAccountInfo(null);
+                    toast.success("Đã tạo nhân viên thành công");
+                  }}
+                >
+                  Đã hiểu
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

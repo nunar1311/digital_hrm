@@ -26,6 +26,30 @@ const DEFAULT_SETTINGS: Record<string, { value: string; group: string }> = {
     "system.standardWorkDays": { value: "22", group: "general" },
 };
 
+/**
+ * Lấy settings cho tất cả người dùng (không yêu cầu SETTINGS_VIEW)
+ * Dùng cho ESS settings page - chỉ cần đăng nhập
+ */
+export async function getSettingsForAllUsers() {
+    // Chỉ cần đăng nhập, không cần quyền cụ thể
+    const { requireAuth } = await import("@/lib/auth-session");
+    await requireAuth();
+
+    const settings = await prisma.systemSetting.findMany();
+    const map: Record<string, string> = {};
+
+    // Fill defaults
+    for (const [key, def] of Object.entries(DEFAULT_SETTINGS)) {
+        map[key] = def.value;
+    }
+    // Override with DB values
+    for (const s of settings) {
+        map[s.key] = s.value;
+    }
+
+    return map;
+}
+
 export async function getSystemSettings() {
     await requirePermission(Permission.SETTINGS_VIEW);
 

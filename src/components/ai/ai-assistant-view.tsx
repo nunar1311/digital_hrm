@@ -22,6 +22,9 @@ import {
   History,
   MessageSquarePlus,
   Trash2,
+  Copy,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 import {
   Dialog,
@@ -41,9 +44,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { chatWithAI } from "@/lib/ai/actions";
+import { smartChatWithAI } from "@/lib/ai/actions";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Badge } from "../ui/badge";
 
 interface Attachment {
   name: string;
@@ -136,6 +140,55 @@ const MarkdownComponents = {
   ),
 };
 
+// Component nút sao chép nội dung tin nhắn AI
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Không thể sao chép nội dung.");
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      title="Sao chép nội dung"
+      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+    >
+      {copied ? (
+        <>
+          <Check className="h-3 w-3 text-green-500" />
+          <span className="text-green-500">Đã sao chép</span>
+        </>
+      ) : (
+        <>
+          <Copy className="h-3 w-3" />
+          <span>Sao chép</span>
+        </>
+      )}
+    </button>
+  );
+}
+
+// Component nút thử lại (retry) cho tin nhắn AI
+function RetryButton({ onRetry }: { onRetry: () => void }) {
+  return (
+    <button
+      onClick={onRetry}
+      title="Thử lại"
+      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+    >
+      <RotateCcw className="h-3 w-3" />
+      <span>Thử lại</span>
+    </button>
+  );
+}
+
 function TypewriterText({
   content,
   speed = 15,
@@ -165,7 +218,7 @@ function TypewriterText({
       }
     }, speed);
     return () => clearInterval(interval);
-  }, [content, speed]);
+  }, [content, onComplete, onTyping, speed]);
 
   return (
     <>
@@ -363,13 +416,13 @@ export function AIAssistantView() {
       // Build enriched content for AI (file text included)
       const enrichedContent = text + fileContext;
 
-      // Setup payload for API
-      const apiMessages = [
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
-        { role: userMessage.role, content: enrichedContent },
-      ];
+      // Build history for smart chat (không tính message cuối vừa gửi)
+      const chatHistory = messages
+        .filter((m) => m.role !== "system")
+        .map((m) => ({ role: m.role, content: m.content }));
 
-      const result = await chatWithAI(apiMessages);
+      // Gọi smartChatWithAI — tự động truy vấn DB theo role của user
+      const result = await smartChatWithAI(enrichedContent, chatHistory, "vi");
 
       if (result.success && result.content) {
         setMessages((prev) => [
@@ -419,26 +472,30 @@ export function AIAssistantView() {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-background relative">
+    <div className="flex flex-col h-full bg-background relative overflow-hidden">
       {/* Top bar with History + New Chat buttons */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b bg-background/80 backdrop-blur-sm">
+      <div className="flex items-center justify-end px-3 py-1.5 border-b bg-background/80 backdrop-blur-sm">
         <Button
           variant="ghost"
-          size="sm"
+          size="xs"
           onClick={() => setShowHistory(!showHistory)}
+          tooltip={"Lịch sử"}
         >
           <History className="h-3.5 w-3.5" />
-          Lịch sử ({sessions.length})
         </Button>
-        <Button variant="ghost" size="sm" onClick={startNewChat}>
-          <MessageSquarePlus className="h-3.5 w-3.5" />
-          Mới
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={startNewChat}
+          tooltip={"Mới"}
+        >
+          <Plus className="h-3.5 w-3.5" />
         </Button>
       </div>
 
       {/* History Panel */}
       {showHistory && (
-        <div className="absolute top-10 left-0 right-0 bottom-0 z-20 bg-background flex flex-col animate-in slide-in-from-left-2 duration-200">
+        <div className="absolute top-10 left-0 right-0 bottom-0 z-20 bg-background flex flex-col">
           <div className="p-3 border-b">
             <h4 className="text-sm font-semibold">Lịch sử cuộc trò chuyện</h4>
           </div>
@@ -490,9 +547,12 @@ export function AIAssistantView() {
         </div>
       )}
 
-      <ScrollArea className="w-full relative p-4 h-full" ref={scrollRef}>
+      <ScrollArea
+        className="w-full relative p-4 flex-1 min-h-0"
+        ref={scrollRef}
+      >
         {messages.length === 0 ? (
-          <div className="flex flex-col h-full items-center justify-center pt-8 pb-12 text-center text-muted-foreground animate-in fade-in zoom-in duration-500">
+          <div className="flex flex-col h-full items-center justify-center pt-8 pb-12 text-center text-muted-foreground">
             <div className="bg-primary/10 p-4 rounded-full mb-4">
               <Sparkles className="w-8 h-8 text-primary" />
             </div>
@@ -540,7 +600,9 @@ export function AIAssistantView() {
 
                   <div
                     className={`relative px-4 py-1 text-sm max-w-[85%] rounded-2xl ${
-                      message.role === "user" ? "bg-primary rounded-br-sm" : ""
+                      message.role === "user"
+                        ? "bg-primary text-white rounded-br-sm"
+                        : ""
                     }`}
                   >
                     {message.role === "assistant" && message.isTyping ? (
@@ -587,6 +649,28 @@ export function AIAssistantView() {
                     ))}
                   </div>
                 )}
+
+                {/* Action buttons: Retry & Copy - chỉ hiện khi AI đã render xong */}
+                {message.role === "assistant" &&
+                  !message.isTyping &&
+                  message.content && (
+                    <div className="flex items-center gap-2 mt-1 pl-1">
+                      <CopyButton text={message.content} />
+                      <RetryButton
+                        onRetry={() => {
+                          // Tìm tin nhắn user trước đó gần nhất để retry
+                          const userMsgs = messages.filter(
+                            (m) => m.role === "user",
+                          );
+                          const lastUserMsg =
+                            userMsgs[userMsgs.length - 1];
+                          if (lastUserMsg) {
+                            handleSend(lastUserMsg.content);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
               </div>
             ))}
 

@@ -6,10 +6,31 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 
 type AIServicePayload = Record<string, unknown>;
 
-async function callAIService(endpoint: string, data: AIServicePayload): Promise<Record<string, unknown>> {
+/** Lấy user context từ session hiện tại */
+async function getUserContext(): Promise<{ "X-User-Id"?: string; "X-User-Role"?: string }> {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) return {};
+    return {
+      "X-User-Id": session.user.id,
+      "X-User-Role":
+        ((session.user as Record<string, unknown>).hrmRole as string) ?? "EMPLOYEE",
+    };
+  } catch {
+    return {};
+  }
+}
+
+async function callAIService(
+  endpoint: string,
+  data: AIServicePayload,
+  userCtx?: Record<string, string>
+): Promise<Record<string, unknown>> {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
   const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY || "";
 
@@ -18,12 +39,18 @@ async function callAIService(endpoint: string, data: AIServicePayload): Promise<
     headers: {
       "Content-Type": "application/json",
       ...(AI_SERVICE_KEY ? { "X-Internal-API-Key": AI_SERVICE_KEY } : {}),
+      // Forward user context để Python service phân quyền DB access
+      ...(userCtx ?? {}),
     },
     body: JSON.stringify(data),
   });
 
   if (!response.ok) {
-    throw new Error(`AI Service error: ${response.status}`);
+    const errBody = await response.json().catch(() => ({}));
+    throw new Error(
+      (errBody as Record<string, Record<string,string>>)?.detail?.message ||
+      `AI Service error: ${response.status}`
+    );
   }
 
   return response.json();
@@ -315,9 +342,10 @@ export async function compareMetricsWithTargets(data: {
  */
 export async function getAutoAIInsights(focusAreas?: string[]) {
   try {
+    const userCtx = await getUserContext();
     const result = await callAIService("/api/ai/dashboard/auto-insights", {
       focus_areas: focusAreas,
-    });
+    }, userCtx);
 
     return {
       success: true,
@@ -366,10 +394,12 @@ export async function getAutoAISummary(
       }
     }
 
+    // Lấy user context để forward role SUPERADMIN/DIRECTOR/HR_MANAGER
+    const userCtx = await getUserContext();
     const result = await callAIService("/api/ai/dashboard/auto-summary", {
       language: "vi",
       detail_level: detailLevel,
-    });
+    }, userCtx);
 
     if (result.content) {
       const content = String(result.content);
@@ -409,9 +439,11 @@ export async function getAutoAISummary(
  */
 export async function getWorkforceAnalysis() {
   try {
+    const userCtx = await getUserContext();
     const result = await callAIService(
       "/api/ai/dashboard/workforce-analysis",
-      {}
+      {},
+      userCtx
     );
 
     return {
@@ -435,11 +467,12 @@ export async function smartChatWithAI(
   history?: Array<{ role: string; content: string }>
 ) {
   try {
+    const userCtx = await getUserContext();
     const result = await callAIService("/api/ai/smart-chat", {
       message,
       history,
       language: "vi",
-    });
+    }, userCtx);
 
     return {
       success: true,

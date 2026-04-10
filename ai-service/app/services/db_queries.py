@@ -688,3 +688,319 @@ class HRDataQueries:
             result = await HRDataQueries.get_full_hr_snapshot()
 
         return result
+
+
+class EmployeePersonalQueries:
+    """
+    Truy van du lieu CA NHAN cua mot nhan vien cu the.
+    Su dung cho cac role khong co quyen xem toan bo (EMPLOYEE, DEPT_MANAGER, TEAM_LEADER, v.v.)
+    Tat ca queries deu filter theo user_id.
+    """
+
+    @staticmethod
+    async def get_personal_profile(user_id: str) -> Optional[Dict[str, Any]]:
+        """Thong tin ca nhan cua nhan vien"""
+        pool = get_db_pool()
+        if not pool:
+            return None
+
+        try:
+            async with pool.acquire() as conn:
+                employee = await conn.fetchrow(
+                    """
+                    SELECT u.id, u.name, u."employeeCode", u.email, u.gender,
+                           u."dateOfBirth", u."hireDate", u."employmentType",
+                           u."employeeStatus", u."educationLevel", u.university,
+                           u.major, u.phone, u."maritalStatus",
+                           d.name as department_name,
+                           p.name as position_name,
+                           m.name as manager_name
+                    FROM users u
+                    LEFT JOIN departments d ON u."departmentId" = d.id
+                    LEFT JOIN positions p ON u."positionId" = p.id
+                    LEFT JOIN users m ON u."managerId" = m.id
+                    WHERE u.id = $1
+                    """,
+                    user_id,
+                )
+
+                if not employee:
+                    return None
+
+                return {"profile": _serialize_row(dict(employee))}
+        except Exception as e:
+            logger.error(f"Error fetching personal profile for {user_id}: {e}")
+            return None
+
+    @staticmethod
+    async def get_personal_attendance(
+        user_id: str,
+        month: Optional[int] = None,
+        year: Optional[int] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Du lieu cham cong ca nhan (3 thang gan nhat)"""
+        pool = get_db_pool()
+        if not pool:
+            return None
+
+        now = datetime.now()
+        target_month = month or now.month
+        target_year = year or now.year
+
+        try:
+            async with pool.acquire() as conn:
+                # Thang hien tai
+                current = await conn.fetchrow(
+                    """
+                    SELECT month, year, "totalWorkDays", "standardDays",
+                           "lateDays", "earlyLeaveDays", "absentDays",
+                           "leaveDays", "totalOtHours", "totalWorkHours"
+                    FROM attendance_summaries
+                    WHERE "userId" = $1 AND month = $2 AND year = $3
+                    """,
+                    user_id, target_month, target_year,
+                )
+
+                # Lich su 3 thang gan nhat
+                history = await conn.fetch(
+                    """
+                    SELECT month, year, "totalWorkDays", "standardDays",
+                           "lateDays", "earlyLeaveDays", "absentDays",
+                           "leaveDays", "totalOtHours", "totalWorkHours"
+                    FROM attendance_summaries
+                    WHERE "userId" = $1
+                    ORDER BY year DESC, month DESC
+                    LIMIT 3
+                    """,
+                    user_id,
+                )
+
+                # Chi tiet cham cong thang nay (10 ban ghi gan nhat)
+                records = await conn.fetch(
+                    """
+                    SELECT date, "checkIn", "checkOut", "workHours",
+                           "isLate", "isEarlyLeave", "isAbsent", status
+                    FROM attendances
+                    WHERE "userId" = $1
+                    AND EXTRACT(MONTH FROM date) = $2
+                    AND EXTRACT(YEAR FROM date) = $3
+                    ORDER BY date DESC
+                    LIMIT 10
+                    """,
+                    user_id, target_month, target_year,
+                )
+
+                return {
+                    "current_month": _serialize_row(dict(current)) if current else {},
+                    "history_3_months": _serialize_rows(history),
+                    "recent_records": _serialize_rows(records),
+                    "month": target_month,
+                    "year": target_year,
+                }
+        except Exception as e:
+            logger.error(f"Error fetching personal attendance for {user_id}: {e}")
+            return None
+
+    @staticmethod
+    async def get_personal_leave(user_id: str) -> Optional[Dict[str, Any]]:
+        """Du lieu nghi phep ca nhan"""
+        pool = get_db_pool()
+        if not pool:
+            return None
+
+        try:
+            async with pool.acquire() as conn:
+                # So du phep
+                balances = await conn.fetch(
+                    """
+                    SELECT lt.name as leave_type,
+                           lb."totalDays", lb."usedDays",
+                           lb."pendingDays",
+                           (lb."totalDays" - lb."usedDays" - COALESCE(lb."pendingDays", 0)) as remaining_days
+                    FROM leave_balances lb
+                    JOIN leave_types lt ON lb."leaveTypeId" = lt.id
+                    WHERE lb."userId" = $1
+                    AND lb."policyYear" = EXTRACT(YEAR FROM CURRENT_DATE)
+                    """,
+                    user_id,
+                )
+
+                # Lich su don nghi (10 don gan nhat)
+                requests = await conn.fetch(
+                    """
+                    SELECT lr.id, lt.name as leave_type, lr."startDate", lr."endDate",
+                           lr."totalDays", lr.reason, lr.status, lr."createdAt"
+                    FROM leave_requests lr
+                    JOIN leave_types lt ON lr."leaveTypeId" = lt.id
+                    WHERE lr."userId" = $1
+                    ORDER BY lr."createdAt" DESC
+                    LIMIT 10
+                    """,
+                    user_id,
+                )
+
+                # Don dang cho duyet
+                pending = await conn.fetchval(
+                    "SELECT COUNT(*) FROM leave_requests WHERE \"userId\" = $1 AND status = 'PENDING'",
+                    user_id,
+                )
+
+                return {
+                    "leave_balances": _serialize_rows(balances),
+                    "recent_requests": _serialize_rows(requests),
+                    "pending_requests": pending or 0,
+                }
+        except Exception as e:
+            logger.error(f"Error fetching personal leave for {user_id}: {e}")
+            return None
+
+    @staticmethod
+    async def get_personal_salary(user_id: str) -> Optional[Dict[str, Any]]:
+        """Thong tin luong ca nhan"""
+        pool = get_db_pool()
+        if not pool:
+            return None
+
+        try:
+            async with pool.acquire() as conn:
+                # Luong hien tai
+                salary = await conn.fetchrow(
+                    """
+                    SELECT "baseSalary", "allowances", "effectiveDate"
+                    FROM salaries
+                    WHERE "userId" = $1
+                    ORDER BY "effectiveDate" DESC
+                    LIMIT 1
+                    """,
+                    user_id,
+                )
+
+                # Payslip gan nhat (3 thang)
+                payslips = await conn.fetch(
+                    """
+                    SELECT pe.month, pe.year, pe."grossSalary", pe."netSalary",
+                           pe."totalTax", pe."totalInsurance", pe."totalDeductions",
+                           pe."totalAllowances", pe.status
+                    FROM payroll_entries pe
+                    WHERE pe."userId" = $1
+                    ORDER BY pe.year DESC, pe.month DESC
+                    LIMIT 3
+                    """,
+                    user_id,
+                )
+
+                return {
+                    "current_salary": _serialize_row(dict(salary)) if salary else None,
+                    "recent_payslips": _serialize_rows(payslips),
+                }
+        except Exception as e:
+            logger.error(f"Error fetching personal salary for {user_id}: {e}")
+            return None
+
+    @staticmethod
+    async def get_personal_contract(user_id: str) -> Optional[Dict[str, Any]]:
+        """Thong tin hop dong ca nhan"""
+        pool = get_db_pool()
+        if not pool:
+            return None
+
+        try:
+            async with pool.acquire() as conn:
+                contract = await conn.fetchrow(
+                    """
+                    SELECT "contractNumber", title, "startDate", "endDate",
+                           status, salary as contract_salary
+                    FROM contracts
+                    WHERE "userId" = $1
+                    ORDER BY "startDate" DESC
+                    LIMIT 1
+                    """,
+                    user_id,
+                )
+
+                return {
+                    "current_contract": _serialize_row(dict(contract)) if contract else None,
+                }
+        except Exception as e:
+            logger.error(f"Error fetching personal contract for {user_id}: {e}")
+            return None
+
+    @staticmethod
+    async def get_personal_rewards(user_id: str) -> Optional[Dict[str, Any]]:
+        """Khen thuong / ky luat ca nhan"""
+        pool = get_db_pool()
+        if not pool:
+            return None
+
+        try:
+            async with pool.acquire() as conn:
+                rewards = await conn.fetch(
+                    """
+                    SELECT type, title, description, amount, "decisionDate", status
+                    FROM rewards
+                    WHERE "userId" = $1
+                    ORDER BY "decisionDate" DESC
+                    LIMIT 10
+                    """,
+                    user_id,
+                )
+
+                return {"rewards": _serialize_rows(rewards)}
+        except Exception as e:
+            logger.error(f"Error fetching personal rewards for {user_id}: {e}")
+            return None
+
+    @staticmethod
+    async def get_personal_full_data(user_id: str) -> Dict[str, Any]:
+        """Lay toan bo du lieu ca nhan cho AI phan tich (tuong duong employee 360)"""
+        profile = await EmployeePersonalQueries.get_personal_profile(user_id)
+        attendance = await EmployeePersonalQueries.get_personal_attendance(user_id)
+        leave = await EmployeePersonalQueries.get_personal_leave(user_id)
+        salary = await EmployeePersonalQueries.get_personal_salary(user_id)
+        contract = await EmployeePersonalQueries.get_personal_contract(user_id)
+        rewards = await EmployeePersonalQueries.get_personal_rewards(user_id)
+
+        return {
+            "profile": profile,
+            "attendance": attendance,
+            "leave": leave,
+            "salary": salary,
+            "contract": contract,
+            "rewards": rewards,
+            "generated_at": datetime.now().isoformat(),
+        }
+
+    @staticmethod
+    async def search_personal_data_for_query(user_id: str, query: str) -> Dict[str, Any]:
+        """
+        Tim kiem du lieu CA NHAN phu hop voi cau hoi.
+        Chi lay nhung data can thiet de tiet kiem query.
+        """
+        query_lower = query.lower()
+        result = {}
+
+        # Profile luon duoc lay
+        result["profile"] = await EmployeePersonalQueries.get_personal_profile(user_id)
+
+        attendance_keywords = ["chấm công", "cham cong", "đi muộn", "di muon", "vắng", "attendance", "late", "absent", "làm việc", "ot", "overtime"]
+        payroll_keywords = ["lương", "luong", "salary", "payroll", "thu nhập", "payslip", "bảng lương"]
+        leave_keywords = ["nghỉ phép", "nghi phep", "leave", "nghỉ", "phép", "ngày nghỉ"]
+        contract_keywords = ["hợp đồng", "hop dong", "contract"]
+        reward_keywords = ["khen thưởng", "khen thuong", "reward", "kỷ luật", "ky luat"]
+
+        if any(k in query_lower for k in attendance_keywords):
+            result["attendance"] = await EmployeePersonalQueries.get_personal_attendance(user_id)
+
+        if any(k in query_lower for k in payroll_keywords):
+            result["salary"] = await EmployeePersonalQueries.get_personal_salary(user_id)
+
+        if any(k in query_lower for k in leave_keywords):
+            result["leave"] = await EmployeePersonalQueries.get_personal_leave(user_id)
+
+        if any(k in query_lower for k in contract_keywords):
+            result["contract"] = await EmployeePersonalQueries.get_personal_contract(user_id)
+
+        if any(k in query_lower for k in reward_keywords):
+            result["rewards"] = await EmployeePersonalQueries.get_personal_rewards(user_id)
+
+        return result

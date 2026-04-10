@@ -13,6 +13,7 @@ import {
     removeNotification,
     fetchPreferences,
     savePreferences,
+    sendTestEmail,
 } from "./actions";
 import { toast } from "sonner";
 
@@ -118,23 +119,28 @@ export function useUpdatePreferences() {
     });
 }
 
-// export function useSendTestEmail() {
-//     const queryClient = useQueryClient();
-//     return useMutation({
-//         mutationFn: () => sendTestNotificationEmail(),
-//         onSuccess: (result) => {
-//             if (result.success) {
-//                 toast.success(
-//                     "Đã gửi thông báo thử nghiệm đến email của bạn",
-//                 );
-//             } else {
-//                 toast.error(
-//                     result.error || "Không thể gửi email thử nghiệm",
-//                 );
-//             }
-//         },
-//         onError: () => {
-//             toast.error("Không thể gửi email thử nghiệm");
-//         },
-//     });
-// }
+/**
+ * Hook để gửi email thử nghiệm
+ * Sử dụng để kiểm tra cài đặt thông báo email có hoạt động không
+ */
+export function useSendTestEmail() {
+    return useMutation({
+        mutationFn: () => sendTestEmail(),
+        onSuccess: (result) => {
+            if (result.success) {
+                toast.success(
+                    "Đã gửi thông báo thử nghiệm đến email của bạn",
+                );
+            } else {
+                toast.error(result.error || "Không thể gửi email thử nghiệm");
+            }
+        },
+        onError: (error) => {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Không thể gửi email thử nghiệm",
+            );
+        },
+    });
+}

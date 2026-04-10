@@ -1,18 +1,20 @@
 """
 Chat Router - HR Chatbot endpoint
 Bao gom Smart Chat ket hop du lieu tu database
+Co phan quyen theo role: SUPER_ADMIN/admin xem toan bo, EMPLOYEE chi xem ca nhan
 """
 
 import logging
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app.services.provider_router import get_provider_router
 from app.prompts.registry import get_prompt_registry
 from app.utils.response_formatter import ResponseFormatter
-from app.services.db_queries import HRDataQueries
+from app.services.db_queries import HRDataQueries, EmployeePersonalQueries
+from app.middleware.rbac import extract_user_context
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -125,29 +127,49 @@ class SmartChatResponse(BaseModel):
 
 
 @router.post("/smart-chat", response_model=SmartChatResponse)
-async def smart_chat(request: SmartChatRequest):
+async def smart_chat(request: SmartChatRequest, raw_request: Request):
     """
     Smart Chat - AI Chatbot thông minh kết hợp dữ liệu thực từ Database
 
+    Phân quyền theo role:
+    - SUPER_ADMIN / Admin roles (DIRECTOR, HR_MANAGER, HR_STAFF, ACCOUNTANT):
+      → Truy cập toàn bộ dữ liệu HR để trả lời câu hỏi
+    - EMPLOYEE / DEPT_MANAGER / TEAM_LEADER / IT_ADMIN:
+      → Chỉ truy cập dữ liệu CÁ NHÂN của chính họ
+
     AI tự động:
-    1. Phân tích câu hỏi của người dùng
-    2. Truy vấn database để lấy dữ liệu phù hợp
+    1. Đọc role của user từ header
+    2. Truy vấn database phù hợp với quyền
     3. Kết hợp dữ liệu thực vào context
     4. Trả lời chính xác dựa trên dữ liệu thật
-
-    Ví dụ câu hỏi:
-    - "Công ty hiện có bao nhiêu nhân viên?"
-    - "Tỷ lệ đi muộn tháng này là bao nhiêu?"
-    - "Phòng ban nào có nhiều nhân viên nhất?"
-    - "Tổng chi phí lương tháng này?"
     """
     try:
-        # Step 1: Query relevant data from database
+        # Đọc user context từ headers (được forward bởi Next.js)
+        user_ctx = extract_user_context(raw_request)
+
+        # Step 1: Query data dựa theo role
         data_sources = []
         db_context = ""
+        access_note = ""
 
         try:
-            relevant_data = await HRDataQueries.search_data_for_query(request.message)
+            if user_ctx.has_full_access:
+                # ADMIN ROLES: Lấy toàn bộ dữ liệu HR
+                relevant_data = await HRDataQueries.search_data_for_query(request.message)
+                access_note = "Bạn có quyền xem toàn bộ dữ liệu tổ chức."
+                logger.info(f"Full HR data access for role={user_ctx.user_role}")
+            elif user_ctx.is_identified:
+                # PERSONAL ROLES: Chỉ lấy dữ liệu cá nhân
+                relevant_data = await EmployeePersonalQueries.search_personal_data_for_query(
+                    user_ctx.user_id, request.message
+                )
+                access_note = "Dữ liệu được cung cấp chỉ bao gồm thông tin CÁ NHÂN của bạn."
+                logger.info(f"Personal data access for user={user_ctx.user_id}, role={user_ctx.user_role}")
+            else:
+                # Không xác định được user → giới hạn không có data DB
+                relevant_data = {}
+                access_note = "Không thể xác định danh tính người dùng."
+                logger.warning("Smart chat request without user context")
 
             if relevant_data:
                 for key in relevant_data:
@@ -155,7 +177,7 @@ async def smart_chat(request: SmartChatRequest):
                         data_sources.append(key)
 
                 db_context = f"""
-DỮ LIỆU THỰC TỪ HỆ THỐNG HR (Database):
+DỮ LIỆU THỰC TỪ HỆ THỐNG HR:
 ==========================================
 {relevant_data}
 ==========================================
@@ -167,7 +189,20 @@ DỮ LIỆU THỰC TỪ HỆ THỐNG HR (Database):
         # Step 2: Build smart messages with DB context
         language_instruction = "Trả lời bằng tiếng Việt." if request.language == "vi" else "Respond in English."
 
+        # System prompt khác nhau theo role
+        if user_ctx.has_full_access:
+            role_context = """Bạn đang hỗ trợ một quản trị viên/ban lãnh đạo.
+Có thể cung cấp dữ liệu tổng quan toàn tổ chức, thống kê, so sánh phòng ban."""
+        else:
+            role_context = """Bạn đang hỗ trợ một nhân viên.
+CHỈ trả lời về thông tin CÁ NHÂN của người dùng này.
+KHÔNG đưa ra thông tin của nhân viên khác, phòng ban khác, hay số liệu tổng quan tổ chức.
+Nếu người dùng hỏi về dữ liệu tổng thể (ví dụ: lương toàn công ty, số nhân viên...),
+hãy lịch sự giải thích rằng bạn chỉ có thể cung cấp thông tin cá nhân của họ."""
+
         system_prompt = f"""Bạn là trợ lý AI thông minh cho hệ thống Quản lý Nhân sự (Digital HRM).
+
+{role_context}
 
 QUAN TRỌNG:
 - Ưu tiên sử dụng DỮ LIỆU THỰC từ database được cung cấp bên dưới

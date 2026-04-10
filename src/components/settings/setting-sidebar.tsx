@@ -1,222 +1,278 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+/**
+ * SettingsSidebar Component
+ *
+ * Sidebar cho trang cài đặt hệ thống HRM.
+ * Sử dụng shadcn/ui sidebar pattern, tích hợp RBAC để kiểm soát quyền truy cập.
+ *
+ * @component
+ * @example
+ * <SettingsSidebar />
+ */
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   UserCircle2,
   Bell,
   Building2,
-  Package,
-  UserCog2,
-  Settings,
+  Users,
   Shield,
-  Activity,
-  Clock,
-  Globe,
-  Type,
   Palette,
-  FileText,
-  CreditCard,
+  Plug,
   KeyRound,
+  ScrollText,
+  type LucideIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { useAuth } from "@/hooks/use-auth";
+import { Permission } from "@/lib/rbac/permissions";
 
+/** Interface định nghĩa cấu trúc một mục menu cài đặt */
 interface SettingsNavItem {
+  /** ID duy nhất cho mục menu */
   id: string;
-  icon: React.ElementType;
+  /** Icon component từ lucide-react */
+  icon: LucideIcon;
+  /** Nhãn hiển thị cho mục menu */
   label: string;
-  description: string;
+  /** URL đường dẫn của mục menu */
   url: string;
+  /** Nhóm category của mục menu */
   category: "personal" | "company" | "system";
+  /** Danh sách permissions cần thiết để hiển thị mục này */
+  permissions: Permission[];
 }
 
-const NAV_ITEMS: SettingsNavItem[] = [
-  // Personal
+/** Danh sách tất cả các mục menu cài đặt với permissions tương ứng */
+const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
+  // === Personal Section - Cài đặt cá nhân ===
   {
     id: "preferences",
     icon: UserCircle2,
     label: "Sở thích",
-    description: "Giao diện, ngôn ngữ",
     url: "/settings/preferences",
     category: "personal",
+    permissions: [Permission.SETTINGS_VIEW],
   },
   {
     id: "notifications",
     icon: Bell,
     label: "Thông báo",
-    description: "Cài đặt thông báo",
     url: "/settings/notifications",
     category: "personal",
+    permissions: [Permission.SETTINGS_VIEW],
   },
-  // Company
+
+  // === Company Section - Cài đặt công ty ===
   {
     id: "company",
     icon: Building2,
     label: "Công ty",
-    description: "Thông tin công ty",
     url: "/settings/company",
     category: "company",
+    permissions: [Permission.SETTINGS_VIEW],
   },
   {
     id: "roles",
-    icon: UserCog2,
+    icon: Users,
     label: "Phân quyền",
-    description: "Vai trò & quyền hạn",
     url: "/settings/roles",
     category: "company",
+    permissions: [Permission.SETTINGS_ROLES_MANAGE],
+  },
+  {
+    id: "audit-log",
+    icon: ScrollText,
+    label: "Nhật ký hệ thống",
+    url: "/settings/audit-log",
+    category: "company",
+    permissions: [Permission.SETTINGS_AUDIT_LOG],
+  },
+
+  // === System Section - Cài đặt hệ thống ===
+  {
+    id: "security",
+    icon: Shield,
+    label: "Bảo mật",
+    url: "/settings/security",
+    category: "system",
+    permissions: [Permission.SETTINGS_SYSTEM],
+  },
+  {
+    id: "appearance",
+    icon: Palette,
+    label: "Giao diện",
+    url: "/settings/appearance",
+    category: "system",
+    permissions: [Permission.SETTINGS_VIEW],
+  },
+  {
+    id: "integrations",
+    icon: Plug,
+    label: "Tích hợp",
+    url: "/settings/integrations",
+    category: "system",
+    permissions: [Permission.SETTINGS_VIEW],
+  },
+  {
+    id: "api-keys",
+    icon: KeyRound,
+    label: "API Keys",
+    url: "/settings/api-keys",
+    category: "system",
+    permissions: [Permission.SETTINGS_SYSTEM],
   },
 ];
 
-interface SettingsSidebarProps {
-  className?: string;
-}
-
-export default function SettingsSidebar({ className }: SettingsSidebarProps) {
+/** Component chính SettingsSidebar */
+export default function SettingsSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { canAny } = useAuth();
+  const { setOpenMobile } = useSidebar();
 
-  const personalItems = NAV_ITEMS.filter((item) => item.category === "personal");
-  const companyItems = NAV_ITEMS.filter((item) => item.category === "company");
+  /**
+   * Lọc các mục menu theo category và permissions
+   * @param category - Category cần lọc
+   * @returns Mảng các mục menu hợp lệ
+   */
+  const getFilteredItems = (category: SettingsNavItem["category"]) => {
+    return SETTINGS_NAV_ITEMS.filter(
+      (item) => item.category === category && canAny(item.permissions),
+    );
+  };
 
-  const isActive = (url: string) => pathname === url;
+  /**
+   * Kiểm tra xem URL hiện tại có đang active không
+   * @param url - URL cần kiểm tra
+   * @returns true nếu URL active
+   */
+  const isActive = (url: string) => {
+    if (url === "/settings") {
+      return pathname === "/settings" || pathname === "/settings/";
+    }
+    return pathname === url || pathname.startsWith(`${url}/`);
+  };
+
+  /**
+   * Xử lý khi click vào mục menu - đóng mobile sidebar
+   */
+  const handleMenuItemClick = () => {
+    setOpenMobile(false);
+  };
+
+  const personalItems = getFilteredItems("personal");
+  const companyItems = getFilteredItems("company");
+  const systemItems = getFilteredItems("system");
 
   return (
-    <aside
-      className={cn(
-        "flex flex-col h-full w-64 shrink-0 border-r bg-linear-to-b from-muted/30 to-background overflow-y-auto",
-        className,
-      )}
-    >
-      {/* Header */}
-      <div className="px-4 py-5 border-b">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Settings className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-sm leading-tight">Cài đặt</h2>
-            <p className="text-[10px] text-muted-foreground">Quản lý hệ thống</p>
-          </div>
+    <Sidebar collapsible="offcanvas" className="absolute h-full! group/sidebar">
+      {/* Header - Tiêu đề sidebar */}
+      <SidebarHeader className="flex-row h-11 items-center justify-between px-4">
+        <div className="group-data-[collapsible=icon]:hidden font-bold">
+          Cài đặt
         </div>
-      </div>
+      </SidebarHeader>
 
-      {/* Navigation */}
-      <nav className="flex-1 py-3 px-3 space-y-5">
-        {/* Personal section */}
-        <div>
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-2">
-            Cá nhân
-          </p>
-          <div className="space-y-0.5">
-            {personalItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.url);
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => router.push(item.url)}
-                  className={cn(
-                    "w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-150 group",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "hover:bg-muted/70 text-foreground",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                      active
-                        ? "bg-primary/15 text-primary"
-                        : "bg-muted group-hover:bg-muted/80 text-muted-foreground group-hover:text-foreground",
-                    )}
+      <SidebarContent>
+        {/* Personal Section - Cài đặt cá nhân */}
+        {personalItems.length > 0 && (
+          <SidebarGroup className="gap-1 px-2">
+            <SidebarGroupLabel className="px-2 mb-1">Cá nhân</SidebarGroupLabel>
+            <SidebarMenu>
+              {personalItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    tooltip={item.label}
                   >
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={cn(
-                        "text-xs font-semibold leading-tight",
-                        active && "text-primary",
-                      )}
-                    >
-                      {item.label}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                      {item.description}
-                    </p>
-                  </div>
-                  {active && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                    <Link href={item.url} onClick={handleMenuItemClick}>
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
 
-        {/* Company section */}
-        <div>
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-2">
-            Công ty
-          </p>
-          <div className="space-y-0.5">
-            {companyItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.url);
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => router.push(item.url)}
-                  className={cn(
-                    "w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-150 group",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "hover:bg-muted/70 text-foreground",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                      active
-                        ? "bg-primary/15 text-primary"
-                        : "bg-muted group-hover:bg-muted/80 text-muted-foreground group-hover:text-foreground",
-                    )}
+        {/* Company Section - Cài đặt công ty */}
+        {companyItems.length > 0 && (
+          <SidebarGroup className="gap-1 px-2">
+            <SidebarGroupLabel className="px-2 mb-1">Công ty</SidebarGroupLabel>
+            <SidebarMenu>
+              {companyItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    tooltip={item.label}
                   >
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={cn(
-                        "text-xs font-semibold leading-tight",
-                        active && "text-primary",
-                      )}
-                    >
-                      {item.label}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                      {item.description}
-                    </p>
-                  </div>
-                  {active && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
+                    <Link href={item.url} onClick={handleMenuItemClick}>
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
 
-      {/* Footer */}
-      <div className="px-4 py-4 border-t">
-        <div className="rounded-lg bg-muted/50 p-3">
-          <p className="text-[10px] font-medium text-muted-foreground mb-1">
+        {/* System Section - Cài đặt hệ thống */}
+        {systemItems.length > 0 && (
+          <SidebarGroup className="gap-1 px-2">
+            <SidebarGroupLabel className="px-2 mb-1">
+              Hệ thống
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              {systemItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    tooltip={item.label}
+                  >
+                    <Link href={item.url} onClick={handleMenuItemClick}>
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
+      </SidebarContent>
+
+      {/* Footer - Thông tin hỗ trợ */}
+      <SidebarFooter className="p-2 border-t mb-12">
+        <div className="rounded-lg bg-muted/50 p-2">
+          <p className="text-xs font-medium text-muted-foreground mb-1">
             Cần hỗ trợ?
           </p>
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Liên hệ quản trị viên hoặc xem tài liệu hướng dẫn
+            Liên hệ quản trị viên hoặc xem tài liệu hướng dẫn.
           </p>
         </div>
-      </div>
-    </aside>
+      </SidebarFooter>
+
+      <SidebarRail />
+    </Sidebar>
   );
 }
