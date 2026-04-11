@@ -6,7 +6,7 @@ from app.services.openrouter_service import OpenRouterService
 
 
 async def main():
-    svc = OpenRouterService(api_key="cpa_b389cc299de1ccd0b6bb8c5c64a0a445f903b713f939fbccb839eb017697771e")
+    svc = OpenRouterService(api_key="")
     print("Service enabled:", svc.enabled)
     print("Base URL:", svc.base_url)
 
