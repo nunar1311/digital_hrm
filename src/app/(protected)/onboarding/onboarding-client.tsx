@@ -515,7 +515,7 @@ export function OnboardingClient({
               <div className="min-w-0">
                 <div className="font-semibold text-sm truncate">{name}</div>
                 <div className="text-xs text-muted-foreground truncate">
-                  {user.employeeCode || user.email}
+                  {user.username || user.email}
                 </div>
               </div>
             </div>

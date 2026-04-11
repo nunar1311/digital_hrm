@@ -171,7 +171,7 @@ export function CreateOnboardingDialog({
                               <User className="h-4 w-4" />
                               <span>{emp.name}</span>
                               <span className="text-muted-foreground text-xs">
-                                {emp.employeeCode} • {emp.department?.name}
+                                {emp.username} • {emp.department?.name}
                               </span>
                             </div>
                           </SelectItem>

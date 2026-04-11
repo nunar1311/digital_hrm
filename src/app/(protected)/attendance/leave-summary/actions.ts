@@ -31,7 +31,7 @@ export async function getLeaveBalances(params: LeaveBalanceQueryParams = {}) {
                 fullName?: { contains: string; mode: "insensitive" };
                 name?: { contains: string; mode: "insensitive" };
                 email?: { contains: string; mode: "insensitive" };
-                employeeCode?: { contains: string; mode: "insensitive" };
+                username?: { contains: string; mode: "insensitive" };
             }>;
             departmentId?: string;
             employeeStatus?: string;
@@ -51,7 +51,7 @@ export async function getLeaveBalances(params: LeaveBalanceQueryParams = {}) {
                     { fullName: { contains: search, mode: "insensitive" } },
                     { name: { contains: search, mode: "insensitive" } },
                     { email: { contains: search, mode: "insensitive" } },
-                    { employeeCode: { contains: search, mode: "insensitive" } },
+                    { username: { contains: search, mode: "insensitive" } },
                 ],
             }),
             ...(departmentId && { departmentId }),
@@ -229,7 +229,7 @@ export async function exportLeaveBalances(params: LeaveBalanceQueryParams = {}) 
                 fullName?: { contains: string; mode: "insensitive" };
                 name?: { contains: string; mode: "insensitive" };
                 email?: { contains: string; mode: "insensitive" };
-                employeeCode?: { contains: string; mode: "insensitive" };
+                username?: { contains: string; mode: "insensitive" };
             }>;
             departmentId?: string;
         };
@@ -248,7 +248,7 @@ export async function exportLeaveBalances(params: LeaveBalanceQueryParams = {}) 
                     { fullName: { contains: search, mode: "insensitive" } },
                     { name: { contains: search, mode: "insensitive" } },
                     { email: { contains: search, mode: "insensitive" } },
-                    { employeeCode: { contains: search, mode: "insensitive" } },
+                    { username: { contains: search, mode: "insensitive" } },
                 ],
             }),
             ...(departmentId && { departmentId }),
@@ -263,7 +263,7 @@ export async function exportLeaveBalances(params: LeaveBalanceQueryParams = {}) 
                     id: true,
                     fullName: true,
                     name: true,
-                    employeeCode: true,
+                    username: true,
                     email: true,
                     department: {
                         select: { id: true, name: true },
@@ -284,4 +284,300 @@ export async function exportLeaveBalances(params: LeaveBalanceQueryParams = {}) 
     });
 
     return data;
+}
+
+// ============================================================
+// KHỞI TẠO PHÉP NĂM - Tính thâm niên tự động
+// ============================================================
+
+export async function initializeLeaveBalances(year: number): Promise<{
+    initialized: number;
+    skipped: number;
+    errors: string[];
+}> {
+    await requirePermission(Permission.LEAVE_POLICY_MANAGE);
+
+    // Lấy các loại phép có tính thâm niên hoặc tất cả loại đang active
+    const leaveTypes = await prisma.leaveType.findMany({
+        where: { isActive: true },
+        select: {
+            id: true,
+            name: true,
+            defaultDays: true,
+            applySeniorityBonus: true,
+        },
+    });
+
+    // Lấy quy tắc thâm niên đang active, sort theo minYears DESC
+    const seniorityRules = await prisma.leaveSeniorityRule.findMany({
+        where: { isActive: true },
+        orderBy: { minYears: "desc" },
+    });
+
+    // Lấy tất cả nhân viên đang active có ngày vào làm
+    const employees = await prisma.user.findMany({
+        where: {
+            employeeStatus: "ACTIVE",
+            hireDate: { not: null },
+        },
+        select: { id: true, fullName: true, hireDate: true },
+    });
+
+    const results = { initialized: 0, skipped: 0, errors: [] as string[] };
+    const referenceDate = new Date(year, 0, 1); // 01/01 của năm đang xét
+
+    for (const emp of employees) {
+        for (const lt of leaveTypes) {
+            try {
+                // Tính thâm niên (số năm công tác tính đến 01/01 của năm đang xét)
+                let seniorityDays = 0;
+                if (lt.applySeniorityBonus && emp.hireDate) {
+                    const yearsWorked = Math.floor(
+                        (referenceDate.getTime() - new Date(emp.hireDate).getTime()) /
+                            (365.25 * 24 * 60 * 60 * 1000)
+                    );
+
+                    // Tìm quy tắc phù hợp nhất (ưu tiên minYears lớn nhất mà yearsWorked >= minYears)
+                    const matchedRule = seniorityRules.find(
+                        (r) =>
+                            yearsWorked >= r.minYears &&
+                            (r.maxYears === null || yearsWorked <= r.maxYears)
+                    );
+                    if (matchedRule) {
+                        seniorityDays = matchedRule.bonusDays;
+                    }
+                }
+
+                const totalDays = lt.defaultDays + seniorityDays;
+
+                // Upsert LeaveBalance (bảo toàn usedDays và pendingDays nếu đã tồn tại)
+                await prisma.leaveBalance.upsert({
+                    where: {
+                        userId_leaveTypeId_policyYear: {
+                            userId: emp.id,
+                            leaveTypeId: lt.id,
+                            policyYear: year,
+                        },
+                    },
+                    update: {
+                        totalDays,
+                        seniorityDays,
+                    },
+                    create: {
+                        userId: emp.id,
+                        leaveTypeId: lt.id,
+                        policyYear: year,
+                        totalDays,
+                        seniorityDays,
+                        usedDays: 0,
+                        pendingDays: 0,
+                        carryOverDays: 0,
+                    },
+                });
+
+                results.initialized++;
+            } catch (err) {
+                results.errors.push(
+                    `${emp.fullName ?? emp.id} / ${lt.name}: ${(err as Error).message}`
+                );
+            }
+        }
+    }
+
+    revalidatePath("/attendance/leave-summary");
+    return results;
+}
+
+// ============================================================
+// CHỐT PHÉP CUỐI NĂM - Carry-over sang năm mới
+// ============================================================
+
+export async function runYearEndCarryOver(
+    fromYear: number,
+    toYear: number
+): Promise<{
+    processed: number;
+    skipped: number;
+    totalCarriedOver: number;
+    errors: string[];
+}> {
+    await requirePermission(Permission.LEAVE_POLICY_MANAGE);
+
+    // Lấy loại phép có cấu hình carry-over (maxCarryOverDays != null)
+    const leaveTypesWithCarryOver = await prisma.leaveType.findMany({
+        where: {
+            isActive: true,
+            maxCarryOverDays: { not: null },
+        },
+        select: { id: true, name: true, defaultDays: true, maxCarryOverDays: true },
+    });
+
+    if (leaveTypesWithCarryOver.length === 0) {
+        return { processed: 0, skipped: 0, totalCarriedOver: 0, errors: [] };
+    }
+
+    const results = {
+        processed: 0,
+        skipped: 0,
+        totalCarriedOver: 0,
+        errors: [] as string[],
+    };
+
+    for (const lt of leaveTypesWithCarryOver) {
+        // Lấy tất cả balance của năm fromYear cho loại phép này
+        const balances = await prisma.leaveBalance.findMany({
+            where: {
+                leaveTypeId: lt.id,
+                policyYear: fromYear,
+            },
+            include: {
+                user: { select: { id: true, hireDate: true } },
+            },
+        });
+
+        for (const bal of balances) {
+            try {
+                const remaining = Math.max(
+                    0,
+                    bal.totalDays - bal.usedDays - bal.pendingDays
+                );
+
+                // Tính số ngày được chuyển (tối đa maxCarryOverDays)
+                const carryOver =
+                    lt.maxCarryOverDays === 0
+                        ? remaining
+                        : Math.min(remaining, lt.maxCarryOverDays!);
+
+                if (carryOver <= 0) {
+                    results.skipped++;
+                    continue;
+                }
+
+                // Upsert LeaveBalance cho năm toYear với carryOverDays
+                await prisma.leaveBalance.upsert({
+                    where: {
+                        userId_leaveTypeId_policyYear: {
+                            userId: bal.userId,
+                            leaveTypeId: lt.id,
+                            policyYear: toYear,
+                        },
+                    },
+                    update: {
+                        carryOverDays: carryOver,
+                        totalDays: { increment: carryOver },
+                    },
+                    create: {
+                        userId: bal.userId,
+                        leaveTypeId: lt.id,
+                        policyYear: toYear,
+                        totalDays: lt.defaultDays + carryOver,
+                        carryOverDays: carryOver,
+                        seniorityDays: 0,
+                        usedDays: 0,
+                        pendingDays: 0,
+                    },
+                });
+
+                results.processed++;
+                results.totalCarriedOver += carryOver;
+            } catch (err) {
+                results.errors.push(
+                    `userId ${bal.userId} / ${lt.name}: ${(err as Error).message}`
+                );
+            }
+        }
+    }
+
+    revalidatePath("/attendance/leave-summary");
+    return results;
+}
+
+// ============================================================
+// SENIORITY RULES - CRUD
+// ============================================================
+
+export async function getSeniorityRules() {
+    await requirePermission(Permission.LEAVE_VIEW_ALL);
+
+    return prisma.leaveSeniorityRule.findMany({
+        orderBy: { minYears: "asc" },
+    });
+}
+
+export async function upsertSeniorityRule(data: {
+    id?: string;
+    minYears: number;
+    maxYears?: number | null;
+    bonusDays: number;
+    isActive?: boolean;
+}) {
+    await requirePermission(Permission.LEAVE_POLICY_MANAGE);
+
+    if (data.id) {
+        return prisma.leaveSeniorityRule.update({
+            where: { id: data.id },
+            data: {
+                minYears: data.minYears,
+                maxYears: data.maxYears ?? null,
+                bonusDays: data.bonusDays,
+                isActive: data.isActive ?? true,
+            },
+        });
+    }
+
+    return prisma.leaveSeniorityRule.create({
+        data: {
+            minYears: data.minYears,
+            maxYears: data.maxYears ?? null,
+            bonusDays: data.bonusDays,
+            isActive: data.isActive ?? true,
+        },
+    });
+}
+
+export async function deleteSeniorityRule(id: string) {
+    await requirePermission(Permission.LEAVE_POLICY_MANAGE);
+    return prisma.leaveSeniorityRule.delete({ where: { id } });
+}
+
+// ============================================================
+// LEAVE TYPE - Cập nhật cấu hình thâm niên và carry-over
+// ============================================================
+
+export async function updateLeaveTypeConfig(
+    leaveTypeId: string,
+    data: {
+        applySeniorityBonus?: boolean;
+        maxCarryOverDays?: number | null;
+    }
+) {
+    await requirePermission(Permission.LEAVE_POLICY_MANAGE);
+
+    await prisma.leaveType.update({
+        where: { id: leaveTypeId },
+        data: {
+            applySeniorityBonus: data.applySeniorityBonus,
+            maxCarryOverDays: data.maxCarryOverDays,
+        },
+    });
+
+    revalidatePath("/attendance/leave-summary");
+    return { success: true };
+}
+
+export async function getAllLeaveTypesWithConfig() {
+    await requirePermission(Permission.LEAVE_VIEW_ALL);
+
+    return prisma.leaveType.findMany({
+        where: { isActive: true },
+        select: {
+            id: true,
+            name: true,
+            defaultDays: true,
+            isPaidLeave: true,
+            applySeniorityBonus: true,
+            maxCarryOverDays: true,
+        },
+        orderBy: { sortOrder: "asc" },
+    });
 }

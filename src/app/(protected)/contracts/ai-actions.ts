@@ -102,7 +102,7 @@ export async function suggestContractTerms(data: {
       select: {
         id: true,
         name: true,
-        employeeCode: true,
+        username: true,
         hireDate: true,
         nationalId: true,
         address: true,
@@ -120,7 +120,7 @@ export async function suggestContractTerms(data: {
       prompt: "Gợi ý điều khoản hợp đồng",
       context: {
         employee_name: employee.name,
-        employee_code: employee.employeeCode,
+        username: employee.username,
         position: employee.position?.name,
         department: employee.department?.name,
         contract_type: data.contractType,
@@ -337,6 +337,70 @@ export async function summarizeContractChanges(data: {
   } catch (err) {
     const message = getErrorMessage(err);
     console.error("Contract Changes Summary error:", err);
+    return { success: false, error: message };
+  }
+}
+
+import { buildContractDocxBuffer } from "@/lib/contracts/document-export";
+
+/**
+ * AI-powered contract DOCX generation
+ */
+export async function exportContractWithAI(data: { contractId: string }) {
+  try {
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const contract = await prisma.contract.findUnique({
+      where: { id: data.contractId },
+      include: {
+        user: {
+          include: {
+            position: { select: { name: true } },
+            department: { select: { name: true } },
+          },
+        },
+        contractType: { select: { name: true } },
+      },
+    });
+
+    if (!contract) {
+      return { success: false, error: "Contract not found" };
+    }
+
+    const result = await callAIService("/api/ai/generate/contract", {
+      prompt: "Tạo dự thảo hợp đồng lao động chuẩn xác nhất dưới dạng plain text chuyên nghiệp. Không sử dụng markdown (**), (#) vì nó sẽ được ghi thẳng vào docx.",
+      context: {
+        contract_number: contract.contractNumber,
+        employee_name: contract.user.name,
+        date_of_birth: contract.user.dateOfBirth?.toLocaleDateString("vi-VN"),
+        id_card: contract.user.nationalId,
+        address: contract.user.address,
+        position: contract.user.position?.name,
+        department: contract.user.department?.name,
+        contract_type: contract.contractType?.name,
+        start_date: contract.startDate.toLocaleDateString("vi-VN"),
+        end_date: contract.endDate?.toLocaleDateString("vi-VN"),
+        salary: contract.salary,
+      },
+    });
+
+    const fileBuffer = await buildContractDocxBuffer({
+      title: `${contract.title} (${contract.contractNumber})`,
+      mergedContent: typeof result.content === "string" ? result.content : String(result.content || ""),
+    });
+    
+    return {
+      success: true,
+      base64Content: fileBuffer.toString("base64"),
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      fileName: `AI_Contract_${contract.contractNumber}.docx`,
+    };
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("AI Export DOCX error:", err);
     return { success: false, error: message };
   }
 }

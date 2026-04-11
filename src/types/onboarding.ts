@@ -122,7 +122,7 @@ export interface OnboardingUserInfo {
   id: string;
   name: string;
   email: string;
-  employeeCode?: string | null;
+  username?: string | null;
   department?: {
     id: string;
     name: string;

@@ -1420,7 +1420,7 @@ export async function getShiftAssignmentsForRange(
                 select: {
                     id: true,
                     name: true,
-                    employeeCode: true,
+                    username: true,
                     departmentId: true,
                     image: true,
                 },
@@ -1725,7 +1725,7 @@ export async function getOvertimeRequests(params?: {
                 select: {
                     id: true,
                     name: true,
-                    employeeCode: true,
+                    username: true,
                     image: true,
                     departmentId: true,
                 },
@@ -2268,7 +2268,7 @@ export async function getMonthlyAttendance(params: {
         select: {
             id: true,
             name: true,
-            employeeCode: true,
+            username: true,
             departmentId: true,
         },
         orderBy: { name: "asc" },
@@ -2578,7 +2578,7 @@ export async function getAttendanceSummaries(params: {
         },
         include: {
             user: {
-                select: { id: true, name: true, employeeCode: true },
+                select: { id: true, name: true, username: true },
             },
         },
         orderBy: { user: { name: "asc" } },
@@ -2685,7 +2685,7 @@ export async function exportMonthlyAttendance(
 
         const row: string[] = [
             String(i + 1),
-            user.employeeCode || "",
+            user.username || "",
             user.name,
         ];
 
@@ -2901,7 +2901,7 @@ export async function getUsers(departmentId?: string) {
         select: {
             id: true,
             name: true,
-            employeeCode: true,
+            username: true,
             departmentId: true,
             position: {
                 select: {
@@ -2916,7 +2916,7 @@ export async function getUsers(departmentId?: string) {
     const mappedUsers = users.map((user) => ({
         id: user.id,
         name: user.name,
-        employeeCode: user.employeeCode,
+        username: user.username,
         departmentId:
             user.departmentId ?? user.position?.departmentId ?? null,
     }));
@@ -2962,7 +2962,7 @@ export async function getUsersPaginated({
                 },
             },
             {
-                employeeCode: {
+                username: {
                     contains: search.trim(),
                     mode: "insensitive",
                 },
@@ -2979,7 +2979,7 @@ export async function getUsersPaginated({
             select: {
                 id: true,
                 name: true,
-                employeeCode: true,
+                username: true,
                 departmentId: true,
                 image: true,
                 position: {
@@ -2996,7 +2996,7 @@ export async function getUsersPaginated({
     const mappedUsers = users.map((user) => ({
         id: user.id,
         name: user.name,
-        employeeCode: user.employeeCode,
+        username: user.username,
         departmentId: user.departmentId ?? user.position?.departmentId ?? null,
         image: user.image,
     }));
@@ -3043,7 +3043,7 @@ export async function getUsersWithAssignmentsPaginated({
                 },
             },
             {
-                employeeCode: {
+                username: {
                     contains: search.trim(),
                     mode: "insensitive",
                 },
@@ -3061,7 +3061,7 @@ export async function getUsersWithAssignmentsPaginated({
             select: {
                 id: true,
                 name: true,
-                employeeCode: true,
+                username: true,
                 departmentId: true,
                 image: true,
                 position: {
@@ -3077,7 +3077,7 @@ export async function getUsersWithAssignmentsPaginated({
     const mappedUsers = users.map((user) => ({
         id: user.id,
         name: user.name,
-        employeeCode: user.employeeCode,
+        username: user.username,
         departmentId: user.departmentId ?? user.position?.departmentId ?? null,
         image: user.image,
     }));
@@ -3102,7 +3102,7 @@ export async function getUsersWithAssignmentsPaginated({
                       select: {
                           id: true,
                           name: true,
-                          employeeCode: true,
+                          username: true,
                           departmentId: true,
                           image: true,
                       },
@@ -3154,7 +3154,7 @@ export async function searchUsersForApproval(params: {
     users: Array<{
         id: string;
         name: string;
-        employeeCode: string | null;
+        username: string | null;
         image: string | null;
     }>;
     totalCount: number;
@@ -3177,7 +3177,7 @@ export async function searchUsersForApproval(params: {
                 },
             },
             {
-                employeeCode: {
+                username: {
                     contains: search.trim(),
                     mode: "insensitive",
                 },
@@ -3200,7 +3200,7 @@ export async function searchUsersForApproval(params: {
             select: {
                 id: true,
                 name: true,
-                employeeCode: true,
+                username: true,
                 image: true,
             },
         }),
@@ -3211,7 +3211,7 @@ export async function searchUsersForApproval(params: {
         users: users.map((u) => ({
             id: u.id,
             name: u.name,
-            employeeCode: u.employeeCode,
+            username: u.username,
             image: u.image,
         })),
         totalCount,
@@ -3459,7 +3459,7 @@ export async function getAttendanceRecords(params: {
                     select: {
                         id: true,
                         name: true,
-                        employeeCode: true,
+                        username: true,
                         image: true,
                     },
                 },

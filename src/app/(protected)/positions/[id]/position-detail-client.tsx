@@ -301,7 +301,7 @@ export function PositionDetailClient({ position }: PositionDetailClientProps) {
                           {user.name}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {user.employeeCode || "—"} •{" "}
+                          {user.username || "—"} •{" "}
                           {user.departmentName || "Chưa có phòng ban"}
                         </p>
                       </div>

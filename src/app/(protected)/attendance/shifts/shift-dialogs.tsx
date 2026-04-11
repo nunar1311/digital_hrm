@@ -629,8 +629,8 @@ export function AssignCycleDialog({
                     <Combobox
                       options={users.map((u) => ({
                         value: u.id,
-                        label: u.employeeCode
-                          ? `${u.name} (${u.employeeCode})`
+                        label: u.username
+                          ? `${u.name} (${u.username})`
                           : u.name,
                       }))}
                       value={field.value ? [field.value] : []}

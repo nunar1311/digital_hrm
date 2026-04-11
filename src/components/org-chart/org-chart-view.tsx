@@ -260,7 +260,7 @@ export function OrgChartView({
                 const empMatch = node.employees?.some(
                     (e) =>
                         e.name.toLowerCase().includes(query) ||
-                        e.employeeCode?.toLowerCase().includes(query),
+                        e.username?.toLowerCase().includes(query),
                 );
 
                 if (

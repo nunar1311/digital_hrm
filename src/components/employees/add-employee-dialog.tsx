@@ -18,12 +18,13 @@ import {
   createEmployee,
   updateEmployee,
   checkNationalIdExists,
-  generateEmployeeCode,
+  generateUsername,
   importEmployeesBatch,
   getDepartmentOptions,
   suggestRoleForPositionChange,
   updateUserRoleFromPosition,
 } from "@/app/(protected)/employees/actions";
+import { cleanEmployeeImportWithAI } from "@/app/(protected)/employees/ai-actions";
 import { toast } from "sonner";
 import {
   Form,
@@ -205,6 +206,30 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
   const [isImporting, setIsImporting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [isCleaningWithAI, setIsCleaningWithAI] = useState(false);
+
+  const handleCleanWithAI = useCallback(async () => {
+    if (!importResult || importResult.rows.length === 0) return;
+    setIsCleaningWithAI(true);
+    try {
+      const res = await cleanEmployeeImportWithAI({ rows: importResult.rows });
+      if (res.success && res.data) {
+        setImportResult({
+          headers: Object.keys(res.data[0] || {}),
+          rows: res.data as Record<string, unknown>[],
+        });
+        setImportPreview(res.data.slice(0, 5) as Record<string, unknown>[]);
+        setImportErrors([]);
+        toast.success("Đã chuẩn hoá dữ liệu bằng AI thành công");
+      } else {
+        toast.error(res.error || "Lỗi khi chuẩn hoá dữ liệu");
+      }
+    } catch (e) {
+      toast.error("Lỗi kết nối AI");
+    } finally {
+      setIsCleaningWithAI(false);
+    }
+  }, [importResult]);
 
   const importMutation = useMutation({
     mutationFn: async (rows: Record<string, unknown>[]) => {
@@ -542,13 +567,36 @@ function ImportEmployeeSheet({ open, onClose }: ImportEmployeeSheetProps) {
                 <Button
                   variant="outline"
                   onClick={handleClear}
-                  disabled={isImporting}
+                  disabled={isImporting || isCleaningWithAI}
                 >
                   Chọn file khác
                 </Button>
+
+                <Button
+                  variant="secondary"
+                  className="gap-2 text-primary hover:bg-primary/10 transition-colors"
+                  onClick={handleCleanWithAI}
+                  disabled={
+                    isImporting ||
+                    isCleaningWithAI ||
+                    importResult.rows.length === 0
+                  }
+                >
+                  {isCleaningWithAI ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  Làm sạch bằng AI
+                </Button>
+
                 <Button
                   onClick={handleConfirm}
-                  disabled={isImporting || importResult.rows.length === 0}
+                  disabled={
+                    isImporting ||
+                    isCleaningWithAI ||
+                    importResult.rows.length === 0
+                  }
                 >
                   {isImporting ? (
                     <>
@@ -617,7 +665,7 @@ export function AddEmployeeDialog({
 
   useEffect(() => {
     if (open && !isEditMode) {
-      generateEmployeeCode().then(setUsername);
+      generateUsername().then(setUsername);
     } else if (open && isEditMode && employee?.username) {
       setUsername(employee.username);
     }
@@ -696,7 +744,7 @@ export function AddEmployeeDialog({
         });
       } else {
         form.reset();
-        generateEmployeeCode().then(setUsername);
+        generateUsername().then(setUsername);
       }
       // Reset role suggestion when dialog opens
       setRoleSuggestion(null);
@@ -979,7 +1027,7 @@ export function AddEmployeeDialog({
         open={open}
         onOpenChange={(o) => !o && !isPending && handleClose()}
       >
-        <DialogContent className="sm:max-w-3xl h-[75vh] max-h-[75vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-3xl h-[80vh] max-h-[80vh] flex flex-col p-0 gap-0">
           {/* Header */}
           <div className="px-6 pt-6 pb-4 border-b shrink-0">
             <div className="flex items-center justify-between">
@@ -1049,7 +1097,7 @@ export function AddEmployeeDialog({
                   className="flex flex-col flex-1 min-h-0"
                 >
                   {/* Scrollable content */}
-                  <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
+                  <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4 no-scrollbar">
                     {/* ── Section 1: Thông tin cơ bản ── */}
                     {activeSection === "basic" && (
                       <div className="space-y-4">
@@ -1826,7 +1874,6 @@ export function AddEmployeeDialog({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-green-600 dark:text-green-400">
-              <CheckCircle className="h-5 w-5" />
               Tạo nhân viên thành công
             </DialogTitle>
             <DialogDescription>

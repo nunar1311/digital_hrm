@@ -23,7 +23,7 @@ import type { DepartmentListItem } from "@/app/(protected)/departments/types";
 interface Employee {
     id: string;
     name: string;
-    employeeCode: string | null;
+    username: string | null;
     position: string | null;
     image: string | null;
     departmentName: string | null;
@@ -338,12 +338,12 @@ function EmployeeCheckboxItem({
             <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{employee.name}</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {employee.employeeCode && (
-                        <span className="font-mono">{employee.employeeCode}</span>
+                    {employee.username && (
+                        <span className="font-mono">{employee.username}</span>
                     )}
                     {employee.position && (
                         <>
-                            {employee.employeeCode && <span>•</span>}
+                            {employee.username && <span>•</span>}
                             <span>{employee.position}</span>
                         </>
                     )}

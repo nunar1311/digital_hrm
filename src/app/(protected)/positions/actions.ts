@@ -134,7 +134,7 @@ export async function getPositionById(id: string): Promise<PositionDetail | null
                 select: {
                     id: true,
                     name: true,
-                    employeeCode: true,
+                    username: true,
                     image: true,
                     department: { select: { id: true, name: true } },
                 },
@@ -168,7 +168,7 @@ export async function getPositionById(id: string): Promise<PositionDetail | null
         users: position.users.map((u) => ({
             id: u.id,
             name: u.name,
-            employeeCode: u.employeeCode,
+            username: u.username,
             image: u.image,
             departmentName: u.department?.name ?? null,
         })),

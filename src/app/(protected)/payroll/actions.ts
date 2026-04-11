@@ -161,7 +161,7 @@ export async function getAllEmployeeSalaryComponents(params?: {
             OR: [
                 { name: { contains: params.search, mode: "insensitive" } },
                 {
-                    employeeCode: {
+                    username: {
                         contains: params.search,
                         mode: "insensitive",
                     },
@@ -177,7 +177,7 @@ export async function getAllEmployeeSalaryComponents(params?: {
                 select: {
                     id: true,
                     name: true,
-                    employeeCode: true,
+                    username: true,
                     department: { select: { name: true } },
                 },
             },
@@ -363,7 +363,7 @@ export async function getAllSalaries(params?: {
             OR: [
                 { name: { contains: params.search, mode: "insensitive" } },
                 {
-                    employeeCode: {
+                    username: {
                         contains: params.search,
                         mode: "insensitive",
                     },
@@ -379,7 +379,7 @@ export async function getAllSalaries(params?: {
                 select: {
                     id: true,
                     name: true,
-                    employeeCode: true,
+                    username: true,
                     department: { select: { name: true } },
                 },
             },
@@ -1474,7 +1474,12 @@ export async function getPayslips(params: {
         orderBy: [{ year: "desc" }, { month: "desc" }],
     });
 
-    return JSON.parse(JSON.stringify(payslips));
+    const sanitizedPayslips = payslips.map((p: any) => {
+        const { passwordHash, ...rest } = p;
+        return rest;
+    });
+
+    return JSON.parse(JSON.stringify(sanitizedPayslips));
 }
 
 export async function getPayslipStats(): Promise<{
@@ -1560,7 +1565,12 @@ export async function getMyPayslips() {
         orderBy: [{ year: "desc" }, { month: "desc" }],
     });
 
-    return JSON.parse(JSON.stringify(payslips));
+    const sanitizedPayslips = payslips.map((p: any) => {
+        const { passwordHash, ...rest } = p;
+        return rest;
+    });
+
+    return JSON.parse(JSON.stringify(sanitizedPayslips));
 }
 
 // ─── EXPORT ───
@@ -1576,7 +1586,7 @@ export async function exportPayrollRecord(recordId: string) {
                     user: {
                         select: {
                             name: true,
-                            employeeCode: true,
+                            username: true,
                             bankAccount: true,
                             bankName: true,
                         },
@@ -1614,7 +1624,7 @@ export async function exportPayrollRecord(recordId: string) {
 
     const rows = record.details.map((detail, index) => [
         index + 1,
-        detail.user.employeeCode || "",
+        detail.user.username || "",
         detail.user.name,
         detail.baseSalary,
         detail.allowanceAmount,
@@ -1658,7 +1668,7 @@ export async function exportManyPayrollRecords(recordIds: string[]) {
                     user: {
                         select: {
                             name: true,
-                            employeeCode: true,
+                            username: true,
                             bankAccount: true,
                             bankName: true,
                         },
@@ -1700,7 +1710,7 @@ export async function exportManyPayrollRecords(recordIds: string[]) {
         for (const detail of record.details) {
             allRows.push([
                 `Tháng ${record.month}/${record.year}`,
-                detail.user.employeeCode || "",
+                detail.user.username || "",
                 detail.user.name,
                 String(detail.baseSalary),
                 String(detail.allowanceAmount),
@@ -2302,7 +2312,98 @@ export async function getPayslipDetail(payslipId: string) {
         return { success: false, message: "Bạn không có quyền xem phiếu lương này" };
     }
 
-    return payslip;
+    const { passwordHash, ...sanitizedPayslip } = payslip;
+    return sanitizedPayslip;
+}
+
+// ─── SPECIFIC PAYSLIP EMAILS ───
+
+export async function sendSpecificPayslipEmails(payslipIds: string[]) {
+    await requirePermission(Permission.PAYROLL_VIEW_ALL);
+
+    const payslips = await prisma.payslip.findMany({
+        where: { id: { in: payslipIds } },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                },
+            },
+        },
+    });
+
+    if (payslips.length === 0) {
+        return { success: false, message: "Không tìm thấy phiếu lương nào" };
+    }
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const payslip of payslips) {
+        const user = payslip.user;
+        if (!user?.email) {
+            failed++;
+            continue;
+        }
+
+        try {
+            await prisma.payslip.update({
+                where: { id: payslip.id },
+                data: { sentEmailAt: new Date() },
+            });
+            sent++;
+
+            // Log email
+            await prisma.emailLog.create({
+                data: {
+                    userId: user.id,
+                    recipient: user.email,
+                    subject: `Phiếu lương tháng ${payslip.month}/${payslip.year}`,
+                    body: `Xin chào ${user.name},\n\nPhiếu lương tháng ${payslip.month}/${payslip.year} của bạn đã sẵn sàng.\n\nVui lòng đăng nhập hệ thống HRM để xem chi tiết.\n\nTrân trọng,\nPhòng Nhân sự`,
+                    status: "SENT",
+                    templateCode: "PAYSLIP_READY",
+                    sentAt: new Date(),
+                },
+            });
+        } catch {
+            failed++;
+        }
+    }
+
+    return { success: true, sent, failed, total: payslips.length };
+}
+
+export async function bulkUpdatePayslipPasswordByIds(payslipIds: string[], password?: string) {
+    await requirePermission(Permission.PAYROLL_CALCULATE);
+
+    if (!password) {
+        // Reset passwords
+        const result = await prisma.payslip.updateMany({
+            where: { id: { in: payslipIds } },
+            data: {
+                isSecure: false,
+                passwordHash: null,
+            },
+        });
+        revalidatePath("/payroll/payslips");
+        return { success: true, updated: result.count };
+    }
+
+    // Set passwords
+    const passwordHash = password; // await bcrypt.hash(password, 10) in production
+
+    const result = await prisma.payslip.updateMany({
+        where: { id: { in: payslipIds } },
+        data: {
+            isSecure: true,
+            passwordHash,
+        },
+    });
+
+    revalidatePath("/payroll/payslips");
+    return { success: true, updated: result.count };
 }
 
 // ─── PAYROLL CALCULATION UTILITIES ───

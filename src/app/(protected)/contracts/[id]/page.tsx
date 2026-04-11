@@ -20,9 +20,24 @@ export default async function ContractDetailPage({
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Hợp đồng #{id}</h1>
-      <ContractDetailClient contractId={id} initialData={contract} />
+    <div className="w-full min-h-0 h-full grow flex flex-col">
+      <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative bg-background">
+        <div className="flex flex-col gap-0 border-b shrink-0">
+          <section>
+            <header className="p-2 sm:px-4 flex items-center h-10 border-b">
+              <h1 className="font-bold text-sm sm:text-base">
+                {contract.title}
+              </h1>
+            </header>
+          </section>
+        </div>
+
+        <section className="flex-1 relative h-full min-h-0 overflow-hidden bg-muted/10 p-3">
+          <div className="h-full overflow-y-auto no-scrollbar">
+            <ContractDetailClient contractId={id} initialData={contract} />
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

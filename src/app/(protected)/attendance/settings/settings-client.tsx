@@ -106,59 +106,72 @@ export function SettingsClient({
   });
 
   return (
-    <div className="w-full min-h-0 max-w-7xl mx-auto h-full grow flex flex-col bg-background">
-      <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative">
-        {/* Header */}
-        <section className="max-w-3xl w-full mx-auto">
-          <header className="p-2 flex items-center">
-            <h1 className="text-2xl font-bold truncate">Cài đặt</h1>
-          </header>
+    <div className="w-full min-h-0 h-full grow flex flex-col">
+      <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative bg-background">
+        <div className="flex flex-col gap-0 border-b shrink-0">
+          <section>
+            <header className="p-2 sm:px-4 flex items-center h-10 border-b">
+              <h1 className="font-bold text-sm sm:text-base">Cài đặt</h1>
+            </header>
+          </section>
+        </div>
+
+        <section className="flex-1 relative h-full min-h-0 overflow-hidden bg-muted/10">
+          <Tabs
+            defaultValue="general"
+            orientation="vertical"
+            className="w-full h-full flex flex-col sm:flex-row gap-0"
+          >
+            <div className="w-full sm:w-56 md:w-64 border-b sm:border-b-0 sm:border-r bg-background shrink-0 p-2 sm:p-4 overflow-y-auto">
+              <h2 className="text-[10px] sm:text-xs font-semibold uppercase text-muted-foreground mb-2 sm:mb-4 tracking-wider hidden sm:block">
+                Cấu hình hệ thống
+              </h2>
+              <TabsList
+                variant={"line"}
+                className="w-full flex-row sm:flex-col h-auto justify-start items-stretch gap-1 p-0 bg-transparent overflow-x-auto sm:overflow-visible no-scrollbar"
+              >
+                <TabsTrigger value="general" className={TAB_TRIGGER_CLASS}>
+                  <Settings className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="hidden sm:inline">Cài đặt chung</span>
+                  <span className="sm:hidden text-xs">Chung</span>
+                </TabsTrigger>
+                <TabsTrigger value="method" className={TAB_TRIGGER_CLASS}>
+                  <MapPin className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="hidden sm:inline">Phương thức</span>
+                  <span className="sm:hidden text-xs">Ph.thức</span>
+                </TabsTrigger>
+                <TabsTrigger value="leaveTypes" className={TAB_TRIGGER_CLASS}>
+                  <CalendarDays className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="hidden sm:inline">Loại nghỉ phép</span>
+                  <span className="sm:hidden text-xs">Nghỉ phép</span>
+                </TabsTrigger>
+                <TabsTrigger value="devices" className={TAB_TRIGGER_CLASS}>
+                  <Monitor className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="hidden sm:inline">Thiết bị</span>
+                  <span className="sm:hidden text-xs">Thiết bị</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <div className="flex-1 h-full overflow-y-auto p-3 sm:p-6 lg:p-8 no-scrollbar bg-background">
+              <TabsContent value="general" className="mt-0 border-0 p-0 h-full">
+                <GeneralSettingsTab config={config} queryClient={queryClient} />
+              </TabsContent>
+
+              <TabsContent value="method" className="mt-0 border-0 p-0 h-full">
+                <MethodSettingsTab config={config} queryClient={queryClient} />
+              </TabsContent>
+
+              <TabsContent value="devices" className="mt-0 border-0 p-0 h-full">
+                <DevicesTab devices={devices} queryClient={queryClient} />
+              </TabsContent>
+
+              <TabsContent value="leaveTypes" className="mt-0 border-0 p-0 h-full">
+                {leaveTypes && <LeaveTypesTab leaveTypes={leaveTypes} />}
+              </TabsContent>
+            </div>
+          </Tabs>
         </section>
-
-        <Tabs
-          defaultValue="general"
-          orientation="vertical"
-          className="w-full gap-2 flex"
-        >
-          <TabsList variant={"line"} className="w-60">
-            <TabsTrigger value="general" className={TAB_TRIGGER_CLASS}>
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Cài đặt chung</span>
-              <span className="sm:hidden">Chung</span>
-            </TabsTrigger>
-            <TabsTrigger value="method" className={TAB_TRIGGER_CLASS}>
-              <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">Phương thức</span>
-              <span className="sm:hidden">PT</span>
-            </TabsTrigger>
-            <TabsTrigger value="leaveTypes" className={TAB_TRIGGER_CLASS}>
-              <CalendarDays className="h-4 w-4" />
-              <span className="hidden sm:inline">Loại nghỉ phép</span>
-              <span className="sm:hidden">N.Phép</span>
-            </TabsTrigger>
-            <TabsTrigger value="devices" className={TAB_TRIGGER_CLASS}>
-              <Monitor className="h-4 w-4" />
-              <span className="hidden sm:inline">Thiết bị</span>
-              <span className="sm:hidden">TB</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="general">
-            <GeneralSettingsTab config={config} queryClient={queryClient} />
-          </TabsContent>
-
-          <TabsContent value="method">
-            <MethodSettingsTab config={config} queryClient={queryClient} />
-          </TabsContent>
-
-          <TabsContent value="devices">
-            <DevicesTab devices={devices} queryClient={queryClient} />
-          </TabsContent>
-
-          <TabsContent value="leaveTypes">
-            {leaveTypes && <LeaveTypesTab leaveTypes={leaveTypes} />}
-          </TabsContent>
-        </Tabs>
       </div>
     </div>
   );

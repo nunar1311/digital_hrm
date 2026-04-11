@@ -6,6 +6,8 @@ import { Permission } from "@/lib/rbac/permissions";
 import { revalidatePath } from "next/cache";
 import { getIO, emitToAll } from "@/lib/socket/server";
 import bcrypt from "bcryptjs";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 // Types
 export interface GetEmployeesParams {
@@ -105,7 +107,7 @@ export async function getEmployees(
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
       { fullName: { contains: search, mode: "insensitive" } },
-      { employeeCode: { contains: search, mode: "insensitive" } },
+      { username: { contains: search, mode: "insensitive" } },
       {
         username: {
           contains: search,
@@ -201,7 +203,7 @@ export async function getEmployeeById(id: string) {
         select: {
           id: true,
           name: true,
-          employeeCode: true,
+          username: true,
           image: true,
           position: { select: { id: true, name: true } },
         },
@@ -227,7 +229,7 @@ export async function getEmployeeById(id: string) {
     select: {
       id: true,
       name: true,
-      employeeCode: true,
+      username: true,
       image: true,
       position: { select: { id: true, name: true } },
     },
@@ -440,6 +442,29 @@ export async function createEmployee(data: {
 }
 
 /**
+ * Cập nhật mật khẩu nhân viên
+ */
+export async function updateEmployeePassword(
+  employeeId: string,
+  newPassword?: string,
+) {
+  await requirePermission(Permission.EMPLOYEE_UPDATE);
+
+  const passwordToSet = newPassword || generateRandomPassword();
+
+  // Sử dụng better-auth API để thay đổi mật khẩu
+  await auth.api.setUserPassword({
+    body: {
+      userId: employeeId,
+      newPassword: passwordToSet,
+    },
+    headers: await headers(),
+  });
+
+  return passwordToSet;
+}
+
+/**
  * Cập nhật nhân viên
  */
 export async function updateEmployee(
@@ -617,7 +642,6 @@ export async function getAssignableEmployees(search?: string) {
       id: true,
       name: true,
       fullName: true,
-      employeeCode: true,
       username: true,
       image: true,
       position: { select: { id: true, name: true } },
@@ -654,7 +678,7 @@ export async function getDepartmentOptions() {
 /**
  * Tạo mã nhân viên tự động theo format EMP-xxx
  */
-export async function generateEmployeeCode(): Promise<string> {
+export async function generateUsername(): Promise<string> {
   const today = new Date();
   const yy = String(today.getFullYear()).slice(-2);
   const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -720,7 +744,7 @@ export async function importEmployeesBatch(
       }
 
       // Generate employee code
-      const username = await generateEmployeeCode();
+      const username = await generateUsername();
 
       // Generate email from name if not provided
       let email = String(row["Email"] || "").trim();

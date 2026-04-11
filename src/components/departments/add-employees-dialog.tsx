@@ -354,7 +354,7 @@ export function AddEmployeesToDepartmentDialog({
                                                     </div>
                                                     <div className="text-xs text-muted-foreground flex items-center gap-1.5">
                                                         <span className="font-medium">
-                                                            {emp.employeeCode ||
+                                                            {emp.username ||
                                                                 "---"}
                                                         </span>
                                                         <span>·</span>
@@ -460,7 +460,7 @@ function EmployeeDetail({
     }[] = [
         {
             label: "Mã nhân viên",
-            value: employee.employeeCode,
+            value: employee.username,
             icon: ShieldCheck,
         },
         {
@@ -601,7 +601,7 @@ function MultipleEmployeesList({
                                         {displayName}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        {emp.employeeCode || "---"} ·{" "}
+                                        {emp.username || "---"} ·{" "}
                                         {(emp.position as { name?: string } | null)?.name ||
                                             "Chưa rõ"}
                                     </p>

@@ -5,7 +5,7 @@ export interface UserRow {
     name: string;
     email: string;
     image: string | null;
-    employeeCode: string | null;
+    username: string | null;
     hrmRole: string;
     departmentId: string | null;
     position: string | null;

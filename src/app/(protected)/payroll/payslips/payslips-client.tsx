@@ -17,7 +17,11 @@ import {
   Download,
   Send,
 } from "lucide-react";
-import { getPayslips } from "../actions";
+import {
+  getPayslips,
+  sendSpecificPayslipEmails,
+  bulkUpdatePayslipPasswordByIds,
+} from "../actions";
 import {
   type Payslip,
   type PayslipStatus,
@@ -60,6 +64,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -304,7 +316,7 @@ export default function PayslipsClient({
     Record<string, boolean>
   >({
     period: true,
-    employeeCode: true,
+    username: true,
     employeeName: true,
     department: true,
     grossSalary: true,
@@ -315,6 +327,12 @@ export default function PayslipsClient({
 
   // ─── Selection ───
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // ─── State for batch actions ───
+  const [isSending, setIsSending] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordValue, setPasswordValue] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // ─── Click outside to close search ───
   const clickOutsideRef = useClickOutside(() => {
@@ -699,10 +717,50 @@ export default function PayslipsClient({
   });
 
   // ─── Batch send handler ───
-  const handleBatchSend = useCallback(() => {
-    toast.success(`Đã gửi ${selectedIds.size} phiếu lương qua email`);
-    setSelectedIds(new Set());
+  const handleBatchSend = useCallback(async () => {
+    setIsSending(true);
+    const idArray = Array.from(selectedIds);
+    try {
+      const res = await sendSpecificPayslipEmails(idArray);
+      if (res.success) {
+        toast.success(`Đã gửi thành công ${res.sent} phiếu lương qua email`);
+        setSelectedIds(new Set());
+      } else {
+        toast.error(res.message || "Lỗi khi gửi email");
+      }
+    } catch (e) {
+      toast.error("Lỗi khi gửi email");
+    } finally {
+      setIsSending(false);
+    }
   }, [selectedIds]);
+
+  // ─── Batch set password handler ───
+  const handleBatchPasswordSubmit = async () => {
+    setIsUpdatingPassword(true);
+    const idArray = Array.from(selectedIds);
+    try {
+      const res = await bulkUpdatePayslipPasswordByIds(
+        idArray,
+        passwordValue || undefined,
+      );
+      if (res.success) {
+        toast.success(
+          passwordValue
+            ? `Đã cài mật khẩu cho ${res.updated} phiếu lương`
+            : `Đã xóa mật khẩu cho ${res.updated} phiếu lương`,
+        );
+        setShowPasswordDialog(false);
+        queryClient.invalidateQueries({ queryKey: ["payslips"] });
+      } else {
+        toast.error("Thiết lập mật khẩu thất bại");
+      }
+    } catch (e) {
+      toast.error("Lỗi server khi thiết lập mật khẩu");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
 
   // ─── Batch download handler ───
   const handleBatchDownload = useCallback(() => {
@@ -758,10 +816,25 @@ export default function PayslipsClient({
                 variant="outline"
                 size="xs"
                 onClick={handleBatchSend}
+                disabled={selectedIds.size === 0 || isSending}
+              >
+                <Mail className="mr-1 h-3.5 w-3.5" />
+                {isSending ? "Đang gửi..." : "Gửi email"}{" "}
+                {selectedIds.size > 0 ? `(${selectedIds.size})` : ""}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => {
+                  setPasswordValue("");
+                  setShowPasswordDialog(true);
+                }}
                 disabled={selectedIds.size === 0}
               >
-                <Send />
-                Gửi email {selectedIds.size > 0 ? `(${selectedIds.size})` : ""}
+                <Settings className="mr-1 h-3.5 w-3.5" />
+                Cài mật khẩu{" "}
+                {selectedIds.size > 0 ? `(${selectedIds.size})` : ""}
               </Button>
 
               <Button
@@ -1021,6 +1094,53 @@ export default function PayslipsClient({
           )}
         </div>
       )}
+
+      {/* ─── Password Setup Dialog ─── */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cài đặt bảo mật phiếu lương</DialogTitle>
+            <DialogDescription>
+              Thiết lập mật khẩu chung cho {selectedIds.size} phiếu lương đã
+              chọn. Nhân viên sẽ cần nhập mật khẩu này để xem chi tiết.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="password">
+                Mật khẩu (Bỏ trống để xóa bảo mật)
+              </Label>
+              <Input
+                id="password"
+                type="text" // Show as text so HR can see the generated pin
+                placeholder="Ví dụ: CMND/Mã NV/Ký tự tự chọn..."
+                value={passwordValue}
+                onChange={(e) => setPasswordValue(e.target.value)}
+              />
+              {!passwordValue && (
+                <p className="text-xs text-amber-600">
+                  Cảnh báo: Nếu để trống, bạn đang thao tác HỦY BỎ bảo vệ mật
+                  khẩu trên các phiếu lương này.
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowPasswordDialog(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleBatchPasswordSubmit}
+              disabled={isUpdatingPassword}
+            >
+              {isUpdatingPassword ? "Đang xử lý..." : "Lưu thay đổi"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

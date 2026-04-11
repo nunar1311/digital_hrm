@@ -24,6 +24,7 @@ import {
   CircleDot,
   VenusAndMars,
   IdCard,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useClickOutside, useMergedRef } from "@mantine/hooks";
@@ -77,8 +78,9 @@ export function EmployeesToolbar({
 
   const clickOutsideRef = useClickOutside(() => {
     if (searchExpanded) {
+      // Nếu có văn bản tìm kiếm, bỏ qua không làm gì cả để giữ lại kết quả
       if (search.trim()) {
-        onSearchChange("");
+        return;
       }
       setSearchExpanded(false);
     }
@@ -110,8 +112,14 @@ export function EmployeesToolbar({
   return (
     <>
       <div className="flex items-center justify-between gap-2 px-2 py-2">
-        <Button variant={"outline"} size={"xs"} onClick={onExport}>
-          Xuất file Excel
+        <Button 
+          variant={"outline"} 
+          size={"xs"} 
+          onClick={onExport}
+          className="border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+        >
+          <Sparkles className="size-3.5 mr-1" />
+          Xuất file Excel (AI)
         </Button>
 
         <div className="flex items-center gap-2">

@@ -264,30 +264,30 @@ export default function TaxInsuranceClient({
   };
 
   return (
-    <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
-      {/* Header */}
-      <div className="shrink-0 border-b bg-gradient-to-r from-rose-500/5 via-primary/5 to-amber-500/5">
-        <div className="px-4 md:px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-rose-100">
-              <Scale className="h-6 w-6 text-rose-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">
+    <div className="w-full min-h-0 h-full grow flex flex-col">
+      <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative bg-background">
+        <div className="flex flex-col gap-0 border-b shrink-0">
+          <section>
+            <header className="p-2 sm:px-4 flex items-center h-10 border-b">
+              <h1 className="font-bold text-sm sm:text-base flex items-center gap-2">
+                <Scale className="h-4 w-4 text-rose-600" />
                 Thuế & Bảo hiểm
               </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Cấu hình các thông số thuế TNCN và bảo hiểm bắt buộc
+            </header>
+          </section>
+        </div>
+
+        {/* Content */}
+        <section className="flex-1 relative h-full min-h-0 overflow-hidden bg-muted/10">
+          <div className="h-full flex-1 overflow-auto p-4 md:p-6 space-y-6">
+            <div className="mb-2">
+              <p className="text-sm text-muted-foreground">
+                Cấu hình các thông số thuế TNCN và bảo hiểm bắt buộc theo hệ thống:
               </p>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
-        {/* Insurance Info Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+            {/* Insurance Info Cards */}
+            <div className="grid gap-4 md:grid-cols-3">
           <Card className="group hover:shadow-md transition-all duration-200 overflow-hidden">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
@@ -518,6 +518,8 @@ export default function TaxInsuranceClient({
             )}
           </CardContent>
         </Card>
+          </div>
+        </section>
       </div>
     </div>
   );

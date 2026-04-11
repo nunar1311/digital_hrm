@@ -8,7 +8,7 @@ export interface ContractExpiryCardItem {
   contractId: string;
   contractNumber: string;
   employeeName: string;
-  employeeCode: string | null;
+  username: string | null;
   endDate: string;
   daysUntilExpiry: number;
 }
@@ -44,7 +44,7 @@ export default function CardContractExpiryList({ items }: Props) {
               className="block rounded-md border p-2 hover:bg-muted"
             >
               <p className="text-xs font-medium">
-                {item.employeeName} ({item.employeeCode || "N/A"})
+                {item.employeeName} ({item.username || "N/A"})
               </p>
               <p className="text-xs text-muted-foreground">
                 {item.contractNumber}

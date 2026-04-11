@@ -55,7 +55,7 @@ export async function analyzeSalaryFairness(data: {
     });
 
     const payrollData = salaries.map((s) => ({
-      employee_id: s.user.employeeCode,
+      employee_id: s.user.username,
       employee_name: s.user.name,
       department: s.user.department?.name,
       position: s.user.position?.name,
@@ -229,7 +229,7 @@ export async function detectPayrollAnomalies(data: {
         payroll_record: record,
         details: details,
       },
-      employee_id: details[0]?.user.employeeCode,
+      employee_id: details[0]?.user.username,
       analysis_type: "anomaly",
     });
 

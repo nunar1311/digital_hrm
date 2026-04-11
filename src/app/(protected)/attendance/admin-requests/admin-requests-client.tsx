@@ -164,7 +164,7 @@ function RequestDetailDialog({
                         <div className="flex-1">
                             <div className="font-semibold">{request.user.name}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                <span>{request.user.employeeCode || request.user.email}</span>
+                                <span>{request.user.username || request.user.email}</span>
                                 {request.user.department && (
                                     <>
                                         <span>•</span>
@@ -377,7 +377,7 @@ export function AdminRequestsClient({
               (r) =>
                   r.user.name?.toLowerCase().includes(search.toLowerCase()) ||
                   r.user.email.toLowerCase().includes(search.toLowerCase()) ||
-                  r.user.employeeCode?.toLowerCase().includes(search.toLowerCase()) ||
+                  r.user.username?.toLowerCase().includes(search.toLowerCase()) ||
                   r.description.toLowerCase().includes(search.toLowerCase())
           )
         : requests;
@@ -608,7 +608,7 @@ export function AdminRequestsClient({
                                                                 </div>
                                                                 <div className="text-sm text-muted-foreground flex items-center gap-2">
                                                                     <span>
-                                                                        {request.user.employeeCode ||
+                                                                        {request.user.username ||
                                                                             request.user.email}
                                                                     </span>
                                                                     {request.user.department && (

@@ -83,6 +83,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
+import { useRouter } from "next/navigation";
 
 type EmployeeStatus = "ALL" | "ACTIVE" | "ON_LEAVE" | "RESIGNED" | "TERMINATED";
 
@@ -104,6 +105,7 @@ export function DepartmentEmployeesClient({
   departmentName,
 }: DepartmentEmployeesClientProps) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   // Search state
   const [search, setSearch] = useState("");
@@ -142,9 +144,9 @@ export function DepartmentEmployeesClient({
   const [wrapText, setWrapText] = useState(false);
 
   // View toggle state
-  const [activeView, setActiveView] = useState<"employees" | "positions" | "salaries">(
-    "employees",
-  );
+  const [activeView, setActiveView] = useState<
+    "employees" | "positions" | "salaries"
+  >("employees");
 
   // Position dialog state (shared between inline section and parent)
   const [positionFormOpen, setPositionFormOpen] = useState(false);
@@ -526,8 +528,15 @@ export function DepartmentEmployeesClient({
       <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative">
         {/* Header */}
         <section>
-          <header className="p-2 flex items-center h-10">
+          <header className="p-2 flex items-center h-10 justify-between">
             <h1 className="font-bold truncate">{departmentName}</h1>
+            <Button
+              variant={"outline"}
+              size={"xs"}
+              onClick={() => router.push("/org-chart")}
+            >
+              Sơ đồ tổ chức
+            </Button>
           </header>
         </section>
 

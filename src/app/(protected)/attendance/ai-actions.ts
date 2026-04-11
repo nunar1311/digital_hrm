@@ -86,7 +86,7 @@ export async function detectAttendanceAnomalies(data: {
     });
 
     const attendanceData = attendances.map((a) => ({
-      employee_id: a.user.employeeCode,
+      employee_id: a.user.username,
       employee_name: a.user.name,
       department: a.user.department?.name,
       date: a.date.toISOString().split("T")[0],
@@ -148,7 +148,7 @@ export async function analyzeCheckInPatterns(data: {
     });
 
     const attendanceData = attendances.map((a) => ({
-      employee_id: a.user.employeeCode,
+      employee_id: a.user.username,
       employee_name: a.user.name,
       department: a.user.department?.name,
       date: a.date.toISOString().split("T")[0],
@@ -218,7 +218,7 @@ export async function predictOvertimeNeeds(data: {
     });
 
     const overtimeData = overtimeRequests.map((r) => ({
-      employee_id: r.user.employeeCode,
+      employee_id: r.user.username,
       employee_name: r.user.name,
       department: r.user.department?.name,
       date: r.date.toISOString().split("T")[0],
@@ -266,7 +266,7 @@ export async function suggestOptimalShift(data: {
               select: {
                 id: true,
                 name: true,
-                employeeCode: true,
+                username: true,
                 image: true,
               },
             },
@@ -290,7 +290,7 @@ export async function suggestOptimalShift(data: {
         users: pos.users.map((u) => ({
           id: u.id,
           name: u.name,
-          employeeCode: u.employeeCode,
+          username: u.username,
           image: u.image,
         })),
       })),
@@ -391,7 +391,7 @@ export async function generateAttendanceReport(data: {
     });
 
     const attendanceData = attendances.map((a) => ({
-      employee_id: a.user.employeeCode,
+      employee_id: a.user.username,
       employee_name: a.user.name,
       department: a.user.department?.name,
       date: a.date.toISOString().split("T")[0],
@@ -455,7 +455,7 @@ export async function getAttendanceComplianceAnalysis(data: {
     });
 
     const attendanceData = attendances.map((a) => ({
-      employee_id: a.user.employeeCode,
+      employee_id: a.user.username,
       employee_name: a.user.name,
       department: a.user.department?.name,
       date: a.date.toISOString().split("T")[0],

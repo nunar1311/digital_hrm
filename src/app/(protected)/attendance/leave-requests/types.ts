@@ -40,7 +40,7 @@ export interface LeaveRequestUser {
     name: string;
     email: string;
     avatar: string | null;
-    employeeCode: string | null;
+    username: string | null;
     department: { id: string; name: string; logo: string | null } | null;
     position: { id: string; name: string } | null;
 }
@@ -61,6 +61,10 @@ export interface LeaveRequestItem {
     approvedByUser: { id: string; fullName: string | null; name: string } | null;
     approvedAt: string | null;
     rejectionReason: string | null;
+    // Multi-step approval
+    approvalChain: unknown | null;
+    currentStep: number;
+    leaveApprovalProcessId: string | null;
     createdAt: string;
     updatedAt: string;
 }

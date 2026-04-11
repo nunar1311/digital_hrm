@@ -199,7 +199,7 @@ export function HireCandidateDialog({
         <div className="space-y-1">
           <p className="font-medium">Tuyển dụng thành công!</p>
           <p className="text-xs opacity-80">
-            Mã nhân viên: {result.employeeCode}
+            Mã nhân viên: {result.username}
           </p>
         </div>,
       );

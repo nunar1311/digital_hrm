@@ -20,13 +20,13 @@ import {
   ListFilter,
   FileCheck,
   Download,
+  GitBranch,
 } from "lucide-react";
 import {
   getLeaveRequestsForApproval,
   approveLeaveRequest,
   rejectLeaveRequest,
   getLeaveRequestStats,
-  getLeaveTypesForFilter,
 } from "./actions";
 import {
   LeaveRequestItem,
@@ -88,6 +88,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTimezone } from "@/hooks/use-timezone";
 import DynamicIcon from "@/components/DynamicIcon";
+import { ApprovalChainTimeline } from "./components/approval-chain-timeline";
+import { ApprovalStepRecord } from "../leave-approval-setup/actions";
 
 // ============================================================
 // TYPES
@@ -379,8 +381,8 @@ function RequestDetailDialog({
             <div className="flex-1 min-w-0">
               <div className="font-semibold truncate">{userName}</div>
               <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
-                {request.user.employeeCode && (
-                  <span>{request.user.employeeCode}</span>
+                {request.user.username && (
+                  <span>{request.user.username}</span>
                 )}
                 {request.user.department && (
                   <>
@@ -469,30 +471,46 @@ function RequestDetailDialog({
             </div>
           )}
 
-          {/* Approved By */}
-          {request.approvedByUser && (
-            <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Người duyệt</div>
-              <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage
-                    src={request.approvedByUser.fullName || undefined}
-                  />
-                  <AvatarFallback className="text-[10px]">
-                    {getInitials(request.approvedByUser.fullName)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium">
-                  {request.approvedByUser.fullName ||
-                    request.approvedByUser.name}
-                </span>
-                {request.approvedAt && (
-                  <span className="text-xs text-muted-foreground">
-                    ({formatDateTime(request.approvedAt, timezone)})
-                  </span>
-                )}
+          {/* Multi-step Approval Chain */}
+          {request.approvalChain &&
+          Array.isArray(request.approvalChain) &&
+          request.approvalChain.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                <GitBranch className="size-3.5" />
+                Luồng duyệt đa cấp
               </div>
+              <ApprovalChainTimeline
+                chain={request.approvalChain as ApprovalStepRecord[]}
+                currentStep={request.currentStep}
+              />
             </div>
+          ) : (
+            /* Fallback: simple approved by */
+            request.approvedByUser && (
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground">Người duyệt</div>
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage
+                      src={request.approvedByUser.fullName || undefined}
+                    />
+                    <AvatarFallback className="text-[10px]">
+                      {getInitials(request.approvedByUser.fullName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium">
+                    {request.approvedByUser.fullName ||
+                      request.approvedByUser.name}
+                  </span>
+                  {request.approvedAt && (
+                    <span className="text-xs text-muted-foreground">
+                      ({formatDateTime(request.approvedAt, timezone)})
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
           )}
 
           {/* Rejection Reason */}
@@ -817,7 +835,7 @@ export function LeaveRequestsClient({
               <div className="min-w-0">
                 <div className="font-semibold text-sm truncate">{name}</div>
                 <div className="text-xs text-muted-foreground truncate">
-                  {user.employeeCode || user.email}
+                  {user.username || user.email}
                 </div>
               </div>
             </div>
@@ -1026,10 +1044,7 @@ export function LeaveRequestsClient({
       <div className="flex flex-col gap-0">
         <section>
           <header className="p-2 flex items-center h-10 border-b">
-            <h1 className="font-bold flex items-center gap-2">
-              <FileCheck className="h-4 w-4 text-blue-600" />
-              Duyệt đơn nghỉ phép
-            </h1>
+            <h1 className="font-bold">Duyệt đơn nghỉ phép</h1>
           </header>
         </section>
 

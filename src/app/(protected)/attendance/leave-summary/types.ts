@@ -27,6 +27,8 @@ export interface LeaveBalanceWithRelations {
     totalDays: number;
     usedDays: number;
     pendingDays: number;
+    seniorityDays: number;
+    carryOverDays: number;
     policyYear: number;
     createdAt: Date;
     updatedAt: Date;

@@ -235,7 +235,7 @@ export default function SettingsSidebar() {
         )}
 
         {/* System Section - Cài đặt hệ thống */}
-        {systemItems.length > 0 && (
+        {/* {systemItems.length > 0 && (
           <SidebarGroup className="gap-1 px-2">
             <SidebarGroupLabel className="px-2 mb-1">
               Hệ thống
@@ -257,7 +257,7 @@ export default function SettingsSidebar() {
               ))}
             </SidebarMenu>
           </SidebarGroup>
-        )}
+        )} */}
       </SidebarContent>
 
       {/* Footer - Thông tin hỗ trợ */}

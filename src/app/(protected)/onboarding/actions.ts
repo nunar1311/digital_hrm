@@ -23,7 +23,7 @@ import { Prisma } from "../../../../generated/prisma/client";
 
 // ─── Utility ────────────────────────────────────────────────────────────────
 
-function generateEmployeeCode(): string {
+function generateUsername(): string {
   const year = new Date().getFullYear();
   const random = Math.floor(Math.random() * 9000) + 1000;
   return `EMP-${year}${random}`;
@@ -61,7 +61,7 @@ export async function getOnboardings(
     where.user = {
       OR: [
         { name: { contains: search, mode: "insensitive" } },
-        { employeeCode: { contains: search, mode: "insensitive" } },
+        { username: { contains: search, mode: "insensitive" } },
       ],
     };
   }
@@ -98,7 +98,7 @@ export async function getOnboardings(
             name: true,
             email: true,
             image: true,
-            employeeCode: true,
+            username: true,
             department: { select: { id: true, name: true } },
             position: { select: { id: true, name: true } },
           },
@@ -254,7 +254,7 @@ export async function createOnboarding(data: CreateOnboardingData) {
     },
     include: {
       user: {
-        select: { id: true, name: true, email: true, employeeCode: true },
+        select: { id: true, name: true, email: true, username: true },
       },
       checklist: true,
     },
@@ -277,7 +277,7 @@ export async function createOnboarding(data: CreateOnboardingData) {
     await createNotificationsForUsers(users.map((u) => u.id), {
       type: NOTIFICATION_TYPES.ONBOARDING,
       title: "Có nhân viên mới cần tiếp nhận",
-      content: `${onboarding.user?.name} (${onboarding.user?.employeeCode}) vừa được thêm vào onboarding. Có ${count} việc cần làm cho vai trò ${role}.`,
+      content: `${onboarding.user?.name} (${onboarding.user?.username}) vừa được thêm vào onboarding. Có ${count} việc cần làm cho vai trò ${role}.`,
       link: `/onboarding`,
       priority: "NORMAL",
     });
@@ -414,9 +414,8 @@ export async function hireCandidate(data: HireCandidateData) {
   }
 
   // Generate credentials
-  const employeeCode = generateEmployeeCode();
+  const username = generateUsername();
   const tempPassword = generateSecurePassword();
-  const username = `EMP${Date.now().toString().slice(-6)}`;
 
   // Get department & position info
   const [department, position] = await Promise.all([
@@ -432,11 +431,10 @@ export async function hireCandidate(data: HireCandidateData) {
         name: candidate.name,
         email: candidate.email,
         password: tempPassword,
-        employeeCode,
+        username,
         departmentId: data.departmentId,
         position: position?.name,
         hrmRole: "EMPLOYEE",
-        username,
       },
     });
     newUserId = userResult.user.id;
@@ -523,7 +521,7 @@ export async function hireCandidate(data: HireCandidateData) {
       password: tempPassword,
       loginUrl: `${appUrl}/login`,
       startDate: new Date(data.hireDate).toLocaleDateString("vi-VN"),
-      employeeCode,
+      username,
       department: department?.name || "",
       position: position?.name || "",
     };
@@ -544,7 +542,7 @@ export async function hireCandidate(data: HireCandidateData) {
   await createNotificationsForUsers(hrUsers.map((u) => u.id), {
     type: NOTIFICATION_TYPES.RECRUITMENT,
     title: "Ứng viên được tuyển",
-    content: `${candidate.name} đã được tuyển vào vị trí ${position?.name || "N/A"} tại ${department?.name || "N/A"}. Mã nhân viên: ${employeeCode}.`,
+    content: `${candidate.name} đã được tuyển vào vị trí ${position?.name || "N/A"} tại ${department?.name || "N/A"}. Mã nhân viên: ${username}.`,
     link: onboardingId ? `/onboarding` : `/employees/${newUserId}`,
     priority: "HIGH",
   });
@@ -572,7 +570,7 @@ export async function hireCandidate(data: HireCandidateData) {
   return {
     success: true,
     userId: newUserId,
-    employeeCode,
+    username,
     onboardingId,
     tempPassword,
   };
@@ -856,7 +854,7 @@ export async function getWelcomePortalData(onboardingId: string) {
           name: true,
           email: true,
           image: true,
-          employeeCode: true,
+          username: true,
           hireDate: true,
           department: { select: { id: true, name: true } },
           position: { select: { id: true, name: true } },
@@ -934,7 +932,7 @@ export async function getEmployeesForOnboarding() {
       name: true,
       email: true,
       image: true,
-      employeeCode: true,
+      username: true,
       hireDate: true,
       department: { select: { id: true, name: true } },
       position: { select: { id: true, name: true } },

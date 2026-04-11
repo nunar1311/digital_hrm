@@ -29,7 +29,7 @@ export async function getDepartmentTree(): Promise<DepartmentNode[]> {
                     name: true,
                     image: true,
                     position: { select: { name: true } },
-                    employeeCode: true,
+                    username: true,
                 },
             },
             _count: {
@@ -48,7 +48,7 @@ export async function getDepartmentTree(): Promise<DepartmentNode[]> {
             username: true,
             image: true,
             position: { select: { name: true, authority: true } },
-            employeeCode: true,
+          
             departmentId: true,
         },
     });
@@ -66,7 +66,7 @@ export async function getDepartmentTree(): Promise<DepartmentNode[]> {
             username: user.username,
             image: user.image,
             position: user.position?.name ?? null,
-            employeeCode: user.employeeCode,
+           
         });
     }
 

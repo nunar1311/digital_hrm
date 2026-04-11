@@ -55,7 +55,7 @@ export interface DepartmentPosition {
         id: string;
         name: string;
         image: string | null;
-        employeeCode: string | null;
+        username: string | null;
     } | null;
 }
 

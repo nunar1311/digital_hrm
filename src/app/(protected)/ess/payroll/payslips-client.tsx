@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Wallet,
   Download,
@@ -17,7 +18,9 @@ import {
   ChevronRight as ChevronRightIcon,
   Info,
   ListFilter,
+  Lock,
 } from "lucide-react";
+import { verifyPayslipPassword } from "@/app/(protected)/payroll/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +72,7 @@ interface Payslip {
   otherDeductions: number;
   netSalary: number;
   status: string;
+  isSecure?: boolean;
   paidAt: string | null;
   createdAt: string;
 }
@@ -129,6 +133,17 @@ function formatCurrency(amount: number | null) {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+function secureFormat(amount: number | null, isSecure?: boolean) {
+  if (isSecure) {
+    return (
+      <span className="blur-[4px] opacity-40 select-none pointer-events-none tracking-widest text-[0.95em]">
+        {formatCurrency(12345678)}
+      </span>
+    );
+  }
+  return formatCurrency(amount);
 }
 
 function formatDate(dateStr: string | null) {
@@ -582,7 +597,7 @@ function MobilePayslipCard({
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Thực nhận</span>
             <span className="text-sm font-bold text-green-700">
-              {formatCurrency(payslip.netSalary)}
+              {secureFormat(payslip.netSalary, payslip.isSecure)}
             </span>
           </div>
         </div>
@@ -605,7 +620,7 @@ function PayslipCard({
 
   return (
     <Card
-      className="hover:shadow-md transition-all cursor-pointer"
+      className="hover:shadow-md transition-all cursor-pointer p-3"
       onClick={onClick}
     >
       <CardContent className="p-3">
@@ -637,30 +652,31 @@ function PayslipCard({
           <div className="flex justify-between">
             <span className="text-muted-foreground">Lương cơ bản</span>
             <span className="font-medium">
-              {formatCurrency(payslip.baseSalary)}
+              {secureFormat(payslip.baseSalary, payslip.isSecure)}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Phụ cấp + OT + Thưởng</span>
             <span className="font-medium text-emerald-600">
               +
-              {formatCurrency(
+              {secureFormat(
                 payslip.allowances + payslip.overtimePay + payslip.bonuses,
+                payslip.isSecure,
               )}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Thuế + BHXH</span>
             <span className="font-medium text-red-600">
-              -{formatCurrency(payslip.tax + payslip.insurance)}
+              -{secureFormat(payslip.tax + payslip.insurance, payslip.isSecure)}
             </span>
           </div>
           <div className="flex justify-between pt-2 mt-1 border-t bg-green-50 -mx-3 px-3 py-2">
-            <span className="text-xs font-semibold text-green-800">
+            <span className="text-sm font-semibold text-green-800">
               Thực nhận
             </span>
             <span className="text-base font-bold text-green-700">
-              {formatCurrency(payslip.netSalary)}
+              {secureFormat(payslip.netSalary, payslip.isSecure)}
             </span>
           </div>
         </div>
@@ -683,6 +699,12 @@ export function ESSPayslipsClient({ initialPayslips }: ESSPayslipsClientProps) {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // ─── Password Prompt State ───
+  const [promptAuthFor, setPromptAuthFor] = useState<Payslip | null>(null);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -750,8 +772,41 @@ export function ESSPayslipsClient({ initialPayslips }: ESSPayslipsClientProps) {
   }, []);
 
   const handleViewPayslip = useCallback((payslip: Payslip) => {
-    setSelectedPayslip(payslip);
+    if (payslip.isSecure) {
+      setPromptAuthFor(payslip);
+    } else {
+      setSelectedPayslip(payslip);
+    }
   }, []);
+
+  const handleVerifyPassword = async () => {
+    if (!promptAuthFor) return;
+    if (!passwordInput) {
+      toast.error("Vui lòng nhập mật khẩu");
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const res = await verifyPayslipPassword(promptAuthFor.id, passwordInput);
+      if (res.success) {
+        setPasswordInput("");
+        setSelectedPayslip(promptAuthFor);
+        setPromptAuthFor(null);
+      } else {
+        toast.error(res.message || "Mật khẩu không chính xác");
+      }
+    } catch {
+      toast.error("Lỗi xác minh. Vui lòng thử lại");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleClosePrompt = () => {
+    setPromptAuthFor(null);
+    setPasswordInput("");
+  };
 
   const handleCloseDetail = useCallback(() => {
     setSelectedPayslip(null);
@@ -953,18 +1008,6 @@ export function ESSPayslipsClient({ initialPayslips }: ESSPayslipsClientProps) {
               <Settings className="h-3 w-3" />
             </Button>
           </div>
-
-          <TableSettingsPanel
-            className="top-10"
-            open={settingsOpen}
-            onClose={setSettingsOpen}
-            columnVisibility={{}}
-            setColumnVisibility={() => {}}
-            defaultVisibleColumns={{}}
-            columnOptions={[]}
-            disabledColumnIndices={[]}
-            hiddenColumnIndices={[]}
-          />
         </section>
 
         {/* Content */}
@@ -1163,33 +1206,44 @@ export function ESSPayslipsClient({ initialPayslips }: ESSPayslipsClientProps) {
                             </TableCell>
                             <TableCell className="px-3 py-2">
                               <span className="text-sm">
-                                {formatCurrency(payslip.baseSalary)}
+                                {secureFormat(
+                                  payslip.baseSalary,
+                                  payslip.isSecure,
+                                )}
                               </span>
                             </TableCell>
                             <TableCell className="px-3 py-2">
                               <span className="text-sm">
-                                {formatCurrency(payslip.allowances)}
+                                {secureFormat(
+                                  payslip.allowances,
+                                  payslip.isSecure,
+                                )}
                               </span>
                             </TableCell>
                             <TableCell className="px-3 py-2">
                               <span className="text-sm text-emerald-600">
                                 +
-                                {formatCurrency(
+                                {secureFormat(
                                   payslip.overtimePay + payslip.bonuses,
+                                  payslip.isSecure,
                                 )}
                               </span>
                             </TableCell>
                             <TableCell className="px-3 py-2">
                               <span className="text-sm text-red-600">
                                 -
-                                {formatCurrency(
+                                {secureFormat(
                                   payslip.tax + payslip.insurance,
+                                  payslip.isSecure,
                                 )}
                               </span>
                             </TableCell>
                             <TableCell className="px-3 py-2">
                               <span className="text-sm font-bold text-green-700">
-                                {formatCurrency(payslip.netSalary)}
+                                {secureFormat(
+                                  payslip.netSalary,
+                                  payslip.isSecure,
+                                )}
                               </span>
                             </TableCell>
                             <TableCell className="px-3 py-2">
@@ -1246,6 +1300,55 @@ export function ESSPayslipsClient({ initialPayslips }: ESSPayslipsClientProps) {
           isDownloading={isDownloading}
         />
       )}
+
+      {/* Password Prompt Dialog */}
+      <Dialog
+        open={!!promptAuthFor}
+        onOpenChange={(v) => !v && handleClosePrompt()}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex justify-center mb-2">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Lock className="h-6 w-6 text-primary" />
+              </div>
+            </DialogTitle>
+            <DialogTitle className="text-center">
+              Phiếu lương được bảo mật
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4 px-2 text-center text-sm text-muted-foreground">
+            Vui lòng nhập mật khẩu do HR cung cấp để xem chi tiết phiếu lương
+            tháng {promptAuthFor?.month}/{promptAuthFor?.year}.
+            <Input
+              type="password"
+              placeholder="Nhập mật khẩu..."
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleVerifyPassword();
+              }}
+              className="text-center mt-2"
+            />
+          </div>
+          <div className="flex gap-2 w-full mt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleClosePrompt}
+            >
+              Hủy bỏ
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleVerifyPassword}
+              disabled={isVerifying}
+            >
+              {isVerifying ? "Đang xác thực..." : "Xác nhận"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

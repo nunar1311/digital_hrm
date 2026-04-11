@@ -142,8 +142,8 @@ export default function PayrollClient({
     <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
       {/* Header */}
       <div className="shrink-0 border-b h-10 p-2">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-lg font-bold">Bảng lương</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="font-bold">Bảng lương</h1>
           <CreatePayrollDialog />
         </div>
       </div>

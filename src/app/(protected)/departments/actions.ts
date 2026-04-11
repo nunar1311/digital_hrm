@@ -314,7 +314,7 @@ export async function getDepartmentById(
                     name: true,
                     image: true,
                     position: true,
-                    employeeCode: true,
+                    username: true,
                 },
             },
             parent: {
@@ -386,7 +386,7 @@ export async function getDepartmentEmployees(
         where.OR = [
             { name: { contains: search, mode: "insensitive" } },
             {
-                employeeCode: {
+                username: {
                     contains: search,
                     mode: "insensitive",
                 },
@@ -406,7 +406,7 @@ export async function getDepartmentEmployees(
                 name: true,
                 email: true,
                 image: true,
-                employeeCode: true,
+                username: true,
                 position: true,
                 hrmRole: true,
                 departmentRole: true,
@@ -432,7 +432,7 @@ export async function getPotentialManagers(): Promise<
     {
         id: string;
         name: string;
-        employeeCode: string | null;
+        username: string | null;
         position: string | null;
         image: string | null;
     }[]
@@ -441,12 +441,12 @@ export async function getPotentialManagers(): Promise<
 
     const employees = await prisma.user.findMany({
         where: {
-            employeeCode: { not: null },
+            username: { not: null },
         },
         select: {
             id: true,
             name: true,
-            employeeCode: true,
+            username: true,
             position: { select: { name: true } },
             image: true,
         },
@@ -456,7 +456,7 @@ export async function getPotentialManagers(): Promise<
     return employees.map((e) => ({
         id: e.id,
         name: e.name,
-        employeeCode: e.employeeCode,
+        username: e.username,
         position: e.position?.name ?? null,
         image: e.image,
     }));
@@ -693,7 +693,7 @@ export async function getDepartmentPositions(
             id: true,
             name: true,
             image: true,
-            employeeCode: true,
+            username: true,
             positionId: true,
         },
     });

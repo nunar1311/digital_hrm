@@ -126,7 +126,7 @@ export function AssignDialog({
                     <SelectContent>
                       {users.map((u) => (
                         <SelectItem key={u.id} value={u.id}>
-                          {u.name} {u.employeeCode ? `(${u.employeeCode})` : ""}
+                          {u.name} {u.username ? `(${u.username})` : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>

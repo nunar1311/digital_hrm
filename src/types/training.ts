@@ -28,7 +28,7 @@ export interface TrainingParticipant {
     feedback: string | null;
     // Resolved
     employeeName?: string;
-    employeeCode?: string;
+    username?: string;
     courseName?: string;
 }
 
@@ -57,7 +57,7 @@ export interface PerformanceReview {
     createdAt: string;
     // Resolved
     employeeName?: string;
-    employeeCode?: string;
+    username?: string;
     reviewerName?: string;
     cycleName?: string;
 }

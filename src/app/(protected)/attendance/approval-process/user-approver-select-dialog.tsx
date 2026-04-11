@@ -196,9 +196,9 @@ export function UserApproverSelectDialog({
                                             <p className="font-medium text-sm truncate">
                                                 {user.name}
                                             </p>
-                                            {user.employeeCode && (
+                                            {user.username && (
                                                 <p className="text-xs text-muted-foreground">
-                                                    {user.employeeCode}
+                                                    {user.username}
                                                 </p>
                                             )}
                                         </div>

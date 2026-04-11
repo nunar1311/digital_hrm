@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
  *
  * Payload:
  * {
- *   "employeeCode": "NV001",
+ *   "username": "NV001",
  *   "timestamp": "2026-03-06T08:00:00Z",
  *   "deviceId": "DEVICE_01",
  *   "apiKey": "device-secret-key"   // optional if device auth enabled
@@ -27,11 +27,11 @@ function minutesDiff(a: Date, b: Date) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { employeeCode, timestamp, deviceId, apiKey } = body;
+        const { username, timestamp, deviceId, apiKey } = body;
 
-        if (!employeeCode || !timestamp) {
+        if (!username || !timestamp) {
             return NextResponse.json(
-                { error: "Missing employeeCode or timestamp" },
+                { error: "Missing username or timestamp" },
                 { status: 400 },
             );
         }
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
         // ── Find user ──
         const user = await prisma.user.findUnique({
-            where: { employeeCode },
+            where: { username },
         });
 
         if (!user) {

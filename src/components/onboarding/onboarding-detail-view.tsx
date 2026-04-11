@@ -55,7 +55,7 @@ interface OnboardingDetailData {
     name: string;
     email: string;
     image?: string | null;
-    employeeCode?: string;
+    username?: string | null;
     department?: { id: string; name: string } | null;
     position?: { id: string; name: string } | null;
     manager?: { id: string; name: string } | null;
@@ -146,7 +146,7 @@ export function OnboardingDetailView({
               {data.user?.name || "—"}
             </h3>
             <p className="text-xs text-muted-foreground leading-tight mt-0.5">
-              {data.user?.employeeCode || "—"} •{" "}
+              {data.user?.username || "—"} •{" "}
               {data.user?.department?.name || "—"} •{" "}
               {data.user?.position?.name || "—"}
             </p>

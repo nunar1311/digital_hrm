@@ -122,7 +122,7 @@ export async function predictTurnoverRisk(data: {
 
     const result = await callAIService("/api/ai/analyze/turnover", {
       employee_data: {
-        employee_id: employee.employeeCode,
+        employee_id: employee.username,
         name: employee.name,
         department: employee.department?.name,
         position: employee.position?.name,
@@ -134,7 +134,7 @@ export async function predictTurnoverRisk(data: {
         recent_leave_requests: employee.leaveRequests.length,
         work_history: employee.workHistories,
       },
-      employee_id: employee.employeeCode,
+      employee_id: employee.username,
     });
 
     return {
@@ -309,7 +309,7 @@ export async function generateEmployeeProfileSummary(data: {
           role: "user",
           content: `Tạo tóm tắt hồ sơ nhân viên:
 - Tên: ${employee.name}
-- Mã NV: ${employee.employeeCode}
+- Mã NV: ${employee.username}
 - Phòng ban: ${employee.department?.name}
 - Vị trí: ${employee.position?.name}
 - Ngày vào làm: ${employee.hireDate?.toISOString().split("T")[0]}
@@ -373,6 +373,70 @@ Kiểm tra:
     };
   } catch (error: unknown) {
     console.error("Import Validation error:", error);
+    return {
+      success: false,
+      error: getErrorMessage(error),
+    };
+  }
+}
+
+/**
+ * Standardize employee import data using AI
+ */
+export async function cleanEmployeeImportWithAI(data: {
+  rows: Record<string, unknown>[];
+}) {
+  try {
+    const result = await callAIService("/api/ai/chat", {
+      messages: [
+        {
+          role: "system",
+          content: `Bạn là hệ thống AI chuẩn hoá dữ liệu nhân sự. Bạn nhận đầu vào là mảng JSON các dòng dữ liệu từ file Excel (chứa tên cột sai, định dạng ngày sai, lỗi typo) và TRẢ VỀ ĐÚNG 1 MẢNG JSON chuẩn xác. 
+Không kèm giải thích, không kèm markdown \`\`\`json.
+Các cột chuẩn cần có trong mỗi object JSON (nếu có dữ liệu tương đối):
+- "Họ và tên" (Bắt buộc)
+- "CCCD" (Bắt buộc, lưu ý chuỗi số)
+- "Ngày sinh" (Định dạng dd/MM/yyyy)
+- "Giới tính" (Chỉ chọn: Nam, Nữ, Khác)
+- "Số điện thoại"
+- "Email"
+- "Địa chỉ"
+- "Phòng ban"
+- "Chức vụ"
+- "Ngày vào làm" (Định dạng dd/MM/yyyy)
+- "Trạng thái" (Chỉ chọn: Đang làm, Nghỉ phép, Đã nghỉ)
+- "Loại hình" (Chỉ chọn: Toàn thời gian, Bán thời gian, Hợp đồng, Thực tập)
+- "Trình độ" (Chỉ chọn: THPT, Cao đẳng, Đại học, Thạc sĩ, Tiến sĩ)
+- "Trường"
+- "Ngân hàng"
+- "Số tài khoản"
+
+Nhiệm vụ: Cố gắng map dữ liệu đầu vào sang các cột chuẩn trên môt cách thông minh nhất. Dữ liệu rác hoặc không xác định có thể bỏ qua.`,
+        },
+        {
+          role: "user",
+          content: JSON.stringify(data.rows),
+        },
+      ],
+    });
+
+    let cleanedData = [];
+    const content = result.content as string;
+    try {
+      // Remove markdown formatting if any
+      const str = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      cleanedData = JSON.parse(str);
+    } catch (e) {
+      console.error("Failed to parse AI output:", content);
+      throw new Error("AI trả về định dạng không hợp lệ");
+    }
+
+    return {
+      success: true,
+      data: cleanedData,
+    };
+  } catch (error: unknown) {
+    console.error("Clean Employee Import DB error:", error);
     return {
       success: false,
       error: getErrorMessage(error),

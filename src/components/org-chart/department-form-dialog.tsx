@@ -451,7 +451,7 @@ export function DepartmentFormDialog({
                                         {potentialManagers.map((manager) => (
                                           <CommandItem
                                             key={manager.id}
-                                            value={`${manager.name} ${manager.position || ""} ${manager.employeeCode || ""}`}
+                                            value={`${manager.name} ${manager.position || ""} ${manager.username || ""}`}
                                             onSelect={() => {
                                               field.onChange(manager.id);
                                             }}

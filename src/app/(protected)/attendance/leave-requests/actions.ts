@@ -5,6 +5,10 @@ import { Permission } from "@/lib/rbac/permissions";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { LeaveRequestQueryInput } from "./types";
+import { 
+  approveLeaveRequestMultiStep,
+  rejectLeaveRequestMultiStep 
+} from "../leave-approval-setup/actions";
 
 
 // ============================================================
@@ -67,7 +71,7 @@ export async function getLeaveRequestsForApproval(
                 { fullName: { contains: search, mode: "insensitive" } },
                 { name: { contains: search, mode: "insensitive" } },
                 { email: { contains: search, mode: "insensitive" } },
-                { employeeCode: { contains: search, mode: "insensitive" } },
+                { username: { contains: search, mode: "insensitive" } },
             ],
         };
     }
@@ -103,7 +107,7 @@ export async function getLeaveRequestsForApproval(
                         name: true,
                         email: true,
                         avatar: true,
-                        employeeCode: true,
+                        username: true,
                         department: {
                             select: { id: true, name: true, logo: true },
                         },
@@ -159,6 +163,10 @@ export async function getLeaveRequestsForApproval(
         approvedByUser: req.approvedBy ? approvers.get(req.approvedBy) ?? null : null,
         approvedAt: req.approvedAt?.toISOString() ?? null,
         rejectionReason: req.rejectionReason,
+        // Multi-step approval
+        approvalChain: req.approvalChain ?? null,
+        currentStep: req.currentStep,
+        leaveApprovalProcessId: req.leaveApprovalProcessId,
         createdAt: req.createdAt.toISOString(),
         updatedAt: req.updatedAt.toISOString(),
     }));
@@ -230,180 +238,15 @@ export async function getLeaveRequestStats(year = new Date().getFullYear(), mont
 // ============================================================
 
 export async function approveLeaveRequest(requestId: string) {
-    const session = await requireAuth();
-    const userRole = session.user.hrmRole;
-
-    // Check permission
-    if (
-        userRole === "DEPT_MANAGER" ||
-        userRole === "TEAM_LEADER"
-    ) {
-        await requirePermission(Permission.LEAVE_APPROVE_TEAM);
-    } else if (
-        userRole === "HR_MANAGER" ||
-        userRole === "HR_STAFF" ||
-        userRole === "SUPER_ADMIN" ||
-        userRole === "DIRECTOR"
-    ) {
-        await requirePermission(Permission.LEAVE_APPROVE_ALL);
-    } else {
-        throw new Error("Bạn không có quyền duyệt đơn nghỉ phép");
-    }
-
-    const request = await prisma.leaveRequest.findUnique({
-        where: { id: requestId },
-        include: {
-            user: { select: { departmentId: true, id: true } },
-            leaveBalance: true,
-        },
-    });
-
-    if (!request) {
-        throw new Error("Không tìm thấy đơn nghỉ phép");
-    }
-
-    if (request.status !== "PENDING") {
-        throw new Error("Đơn nghỉ phép không ở trạng thái chờ duyệt");
-    }
-
-    // Role-based: dept_manager chỉ duyệt được đơn trong phòng mình
-    if (
-        userRole === "DEPT_MANAGER" ||
-        userRole === "TEAM_LEADER"
-    ) {
-        const managerDeptId = (session.user as { departmentId?: string }).departmentId;
-        if (request.user.departmentId !== managerDeptId) {
-            throw new Error("Bạn không có quyền duyệt đơn này");
-        }
-    }
-
-    // Update balance: chuyển pendingDays → usedDays
-    await prisma.$transaction(async (tx) => {
-        if (request.leaveBalanceId && request.leaveBalance) {
-            // Kiểm tra số dư trước khi duyệt
-            if (request.leaveBalance.pendingDays < request.totalDays) {
-                throw new Error(
-                    "Số ngày chờ duyệt không đủ để duyệt. Đơn có thể đã bị chỉnh sửa thủ công."
-                );
-            }
-
-            await tx.leaveBalance.update({
-                where: { id: request.leaveBalanceId },
-                data: {
-                    pendingDays: { decrement: request.totalDays },
-                    usedDays: { increment: request.totalDays },
-                },
-            });
-        }
-
-        await tx.leaveRequest.update({
-            where: { id: requestId },
-            data: {
-                status: "APPROVED",
-                approvedBy: session.user.id,
-                approvedAt: new Date(),
-            },
-        });
-    });
-
-    revalidatePath("/attendance/leave-requests");
-    revalidatePath("/ess/leave");
-    revalidatePath("/attendance/leave-summary");
-
-    return { success: true, message: "Đã duyệt đơn nghỉ phép" };
+    return approveLeaveRequestMultiStep(requestId);
 }
 
 // ============================================================
 // ACTION — Từ chối đơn nghỉ phép
 // ============================================================
 
-export async function rejectLeaveRequest(
-    requestId: string,
-    data: { reason: string }
-) {
-    if (!data.reason?.trim()) {
-        throw new Error("Phải nhập lý do từ chối");
-    }
-
-    const session = await requireAuth();
-    const userRole = session.user.hrmRole;
-
-    // Check permission
-    if (
-        userRole === "DEPT_MANAGER" ||
-        userRole === "TEAM_LEADER"
-    ) {
-        await requirePermission(Permission.LEAVE_APPROVE_TEAM);
-    } else if (
-        userRole === "HR_MANAGER" ||
-        userRole === "HR_STAFF" ||
-        userRole === "SUPER_ADMIN" ||
-        userRole === "DIRECTOR"
-    ) {
-        await requirePermission(Permission.LEAVE_APPROVE_ALL);
-    } else {
-        throw new Error("Bạn không có quyền từ chối đơn nghỉ phép");
-    }
-
-    const request = await prisma.leaveRequest.findUnique({
-        where: { id: requestId },
-        include: { user: { select: { departmentId: true } } },
-    });
-
-    if (!request) {
-        throw new Error("Không tìm thấy đơn nghỉ phép");
-    }
-
-    if (request.status !== "PENDING") {
-        throw new Error("Đơn nghỉ phép không ở trạng thái chờ duyệt");
-    }
-
-    // Role-based
-    if (
-        userRole === "DEPT_MANAGER" ||
-        userRole === "TEAM_LEADER"
-    ) {
-        const managerDeptId = (session.user as { departmentId?: string }).departmentId;
-        if (request.user.departmentId !== managerDeptId) {
-            throw new Error("Bạn không có quyền từ chối đơn này");
-        }
-    }
-
-    const currentYear = new Date().getFullYear();
-
-    // Hoàn lại pendingDays và cập nhật trạng thái
-    await prisma.$transaction(async (tx) => {
-        if (request.leaveBalanceId) {
-            await tx.leaveBalance.update({
-                where: {
-                    userId_leaveTypeId_policyYear: {
-                        userId: request.userId,
-                        leaveTypeId: request.leaveTypeId,
-                        policyYear: currentYear,
-                    },
-                },
-                data: {
-                    pendingDays: { decrement: request.totalDays },
-                },
-            });
-        }
-
-        await tx.leaveRequest.update({
-            where: { id: requestId },
-            data: {
-                status: "REJECTED",
-                approvedBy: session.user.id,
-                approvedAt: new Date(),
-                rejectionReason: data.reason,
-            },
-        });
-    });
-
-    revalidatePath("/attendance/leave-requests");
-    revalidatePath("/ess/leave");
-    revalidatePath("/attendance/leave-summary");
-
-    return { success: true, message: "Đã từ chối đơn nghỉ phép" };
+export async function rejectLeaveRequest(requestId: string, data: { reason: string }) {
+    return rejectLeaveRequestMultiStep(requestId, data);
 }
 
 // ============================================================

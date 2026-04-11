@@ -49,7 +49,7 @@ interface ExportField {
 const EXPORT_FIELDS: ExportField[] = [
     // Thông tin cơ bản
     {
-        key: "employeeCode",
+        key: "username",
         label: "Mã nhân viên",
         group: "Thông tin cơ bản",
         defaultChecked: true,
@@ -285,7 +285,7 @@ async function exportToExcel(
     const XLSX = await import("xlsx");
 
     const displayLabels: Record<string, string> = {
-        employeeCode: "Mã NV",
+        username: "Mã NV",
         fullName: "Họ và tên",
         name: "Tên",
         gender: "Giới tính",

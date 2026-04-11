@@ -120,7 +120,7 @@ export function AssignShiftDialog({
                 user: users.find((u) => u.id === values.userId) || {
                     id: values.userId,
                     name: "...",
-                    employeeCode: "...",
+                    username: "...",
                 },
             };
 
@@ -262,8 +262,8 @@ export function AssignShiftDialog({
                                                                         {
                                                                             u.name
                                                                         }
-                                                                        {u.employeeCode
-                                                                            ? ` (${u.employeeCode})`
+                                                                        {u.username
+                                                                            ? ` (${u.username})`
                                                                             : ""}
                                                                         {field.value ===
                                                                             u.id && (

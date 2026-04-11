@@ -528,7 +528,7 @@ const EmployeeRowMemo = memo(function EmployeeRowMemo({
           <p className="truncate text-sm font-medium leading-tight">
             {user.name}{" "}
             <Badge variant="secondary" className="text-[9px] h-5">
-              {user.employeeCode}
+              {user.username}
             </Badge>
           </p>
           <p className="text-[10px] text-muted-foreground">

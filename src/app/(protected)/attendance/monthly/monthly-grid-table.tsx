@@ -117,7 +117,7 @@ export function MonthlyGridTable({
                   <TableCell className="bg-background font-medium shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-r">
                     <div>{row.user.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {row.user.employeeCode}
+                      {row.user.username}
                     </div>
                   </TableCell>
                   {visibleDays.map((d) => {

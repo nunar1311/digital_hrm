@@ -93,7 +93,7 @@ export function MonthlySummaryTable({
                 <TableCell className="font-medium">
                   <div>{s.user?.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    {s.user?.employeeCode}
+                    {s.user?.username}
                   </div>
                 </TableCell>
                 <TableCell className="text-center font-bold">

@@ -91,7 +91,7 @@ export async function recommendOnboardingBuddy(data: {
     if (!newEmployee) return { success: false, error: "Employee not found" };
 
     const result = await callAIService("/api/ai/recommend/onboarding-buddy", {
-      new_employee_id: newEmployee.employeeCode,
+      new_employee_id: newEmployee.username,
       new_employee_skills: [],
       new_employee_interests: [],
       department_id: data.departmentId,
@@ -159,7 +159,7 @@ export async function recommendTrainingPath(data: {
     if (!onboarding) return { success: false, error: "Onboarding not found" };
 
     const result = await callAIService("/api/ai/recommend/training", {
-      employee_id: onboarding.user.employeeCode,
+      employee_id: onboarding.user.username,
       position: onboarding.user.position?.name || "",
       experience_years: 0,
     });

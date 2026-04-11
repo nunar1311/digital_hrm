@@ -66,6 +66,7 @@ export default async function ESSPayrollPage() {
       otherDeductions,
       netSalary,
       status: p.status,
+      isSecure: p.isSecure,
       paidAt: p.downloadedAt?.toISOString() || null,
       createdAt: p.createdAt.toISOString(),
     };

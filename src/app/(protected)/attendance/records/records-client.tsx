@@ -317,8 +317,8 @@ export function RecordsClient({
                                             value={u.id}
                                         >
                                             {u.name}{" "}
-                                            {u.employeeCode
-                                                ? `(${u.employeeCode})`
+                                            {u.username
+                                                ? `(${u.username})`
                                                 : ""}
                                         </SelectItem>
                                     ))}
@@ -490,7 +490,7 @@ export function RecordsClient({
                                                             <p className="text-xs text-muted-foreground">
                                                                 {rec
                                                                     .user
-                                                                    .employeeCode ??
+                                                                    .username ??
                                                                     "—"}
                                                             </p>
                                                         </div>

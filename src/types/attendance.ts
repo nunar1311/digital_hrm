@@ -41,7 +41,7 @@ export interface Attendance {
     createdAt: string;
     // Resolved
     employeeName?: string;
-    employeeCode?: string;
+    username?: string;
     shiftName?: string;
 }
 
@@ -73,5 +73,5 @@ export interface OvertimeRequest {
     createdAt: string;
     // Resolved
     employeeName?: string;
-    employeeCode?: string;
+    username?: string;
 }

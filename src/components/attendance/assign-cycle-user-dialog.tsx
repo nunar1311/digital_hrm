@@ -65,7 +65,7 @@ interface AssignCycleUserDialogProps {
     users: Array<{
         id: string;
         name: string;
-        employeeCode: string | null;
+        username: string | null;
     }>;
     workCycles: WorkCycle[];
     defaultUserId?: string;
@@ -228,8 +228,8 @@ export function AssignCycleUserDialog({
                                                                         {
                                                                             u.name
                                                                         }
-                                                                        {u.employeeCode
-                                                                            ? ` (${u.employeeCode})`
+                                                                        {u.username
+                                                                            ? ` (${u.username})`
                                                                             : ""}
                                                                         {field.value ===
                                                                             u.id && (

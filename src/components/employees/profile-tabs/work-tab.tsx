@@ -27,14 +27,14 @@ interface EmployeeData {
     id: string;
     fullName?: string;
     name: string;
-    employeeCode: string | null;
+    username: string | null;
     image: string | null;
     position?: { name: string } | null;
   } | null;
   directReports?: {
     id: string;
     name: string;
-    employeeCode: string | null;
+    username: string | null;
     image: string | null;
     position?: { name: string } | null;
   }[];
@@ -130,7 +130,7 @@ export function WorkTab({ employee }: Props) {
                   <span className="flex flex-col">
                     <span>
                       {employee.manager.fullName || employee.manager.name} -{" "}
-                      {employee.manager.employeeCode}
+                      {employee.manager.username}
                     </span>
                     <span className="text-[10px] text-muted-foreground font-normal">
                       (Người có chức cao nhất trong phòng ban)
@@ -363,7 +363,7 @@ export function WorkTab({ employee }: Props) {
                       {report.name}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      {report.employeeCode}
+                      {report.username}
                     </div>
                   </div>
                 </Link>

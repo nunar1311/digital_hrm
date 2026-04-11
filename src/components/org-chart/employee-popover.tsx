@@ -13,7 +13,7 @@ import { EmployeeListItem } from "./employee-list-item";
 interface Employee {
     id: string;
     name: string;
-    employeeCode?: string | null;
+    username?: string | null;
     position?: string | null;
     image?: string | null;
     email?: string | null;
@@ -39,7 +39,7 @@ export function EmployeePopover({
         const query = searchQuery.toLowerCase();
         return (
             emp.name.toLowerCase().includes(query) ||
-            emp.employeeCode?.toLowerCase().includes(query) ||
+            emp.username?.toLowerCase().includes(query) ||
             emp.position?.toLowerCase().includes(query)
         );
     });

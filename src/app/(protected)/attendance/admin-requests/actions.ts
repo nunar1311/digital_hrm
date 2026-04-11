@@ -70,7 +70,7 @@ export async function getAdminRequests(
             OR: [
                 { name: { contains: filters.search, mode: "insensitive" } },
                 { email: { contains: filters.search, mode: "insensitive" } },
-                { employeeCode: { contains: filters.search, mode: "insensitive" } },
+                { username: { contains: filters.search, mode: "insensitive" } },
             ],
         };
     }
@@ -97,7 +97,7 @@ export async function getAdminRequests(
                     id: true,
                     name: true,
                     email: true,
-                    employeeCode: true,
+                    username: true,
                     image: true,
                     department: { select: { id: true, name: true } },
                     position: { select: { id: true, name: true } },
@@ -126,7 +126,7 @@ export async function getAdminRequestById(
                     id: true,
                     name: true,
                     email: true,
-                    employeeCode: true,
+                    username: true,
                     image: true,
                     department: { select: { id: true, name: true } },
                     position: { select: { id: true, name: true } },

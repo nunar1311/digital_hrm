@@ -882,132 +882,175 @@ export function ESSAttendanceClient({
       : 0;
 
   return (
-    <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
-      <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative">
-        {/* Header */}
-        <section>
-          <header className="px-2 sm:px-4 flex items-center h-10 border-b">
-            <h1 className="font-bold flex items-center gap-1.5 text-sm sm:text-base">
-              Chấm công
-            </h1>
-          </header>
+    <div className="w-full min-h-0 h-full grow flex flex-col">
+      <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative bg-background">
+        <div className="flex flex-col gap-0 border-b">
+          <section>
+            <header className="p-2 flex items-center h-10 border-b justify-between">
+              <h1 className="font-bold">Chấm công</h1>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="xs" className="hidden md:flex">
+                  <Download className="mr-1.5 h-3.5 w-3.5" />
+                  Xuất Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon-xs"
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </header>
+          </section>
 
-          <div className="flex items-center justify-between gap-2 px-2 py-2">
-            {/* Month Navigator */}
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon-xs"
-                onClick={() => changeMonth(-1)}
-              >
-                <ChevronLeft />
-              </Button>
-              <span className="text-xs sm:text-sm font-medium px-1">
-                {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
-              </span>
-              <Button
-                variant="outline"
-                size="icon-xs"
-                onClick={() => changeMonth(1)}
-              >
-                <ChevronRight />
-              </Button>
+          {/* Stats Row */}
+          <section className="p-2 grid grid-cols-2 lg:grid-cols-4 gap-2 border-b bg-muted/10">
+            <StatCard
+              label="Ngày công"
+              icon={CheckCircle2}
+              color="text-emerald-500"
+              value={`${summary.totalWorkDays} / ${summary.standardDays}`}
+              progress={
+                summary.standardDays > 0
+                  ? (summary.totalWorkDays / summary.standardDays) * 100
+                  : 0
+              }
+            />
+            <StatCard
+              label="Tỷ lệ đúng giờ"
+              icon={Timer}
+              color="text-blue-500"
+              value={`${onTimeRate}%`}
+              progress={onTimeRate}
+            />
+            <StatCard
+              label="Đi trễ"
+              icon={Clock}
+              color="text-amber-500"
+              value={`${summary.lateDays}`}
+              badge={summary.lateDays > 0 ? "Cần cải thiện" : undefined}
+              badgeClass="bg-amber-100 text-amber-800"
+              subValue={isMobile ? undefined : "ngày"}
+            />
+            <StatCard
+              label="Tăng ca (OT)"
+              icon={Clock}
+              color="text-purple-500"
+              value={`${summary.totalOtHours}h`}
+              subValue={
+                isMobile
+                  ? `${summary.earlyLeaveDays} về sớm`
+                  : `Về sớm: ${summary.earlyLeaveDays} ngày`
+              }
+            />
+          </section>
+
+          {/* Controls Bar */}
+          <div className="px-2 py-2 flex items-center justify-between bg-muted/10 shrink-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto min-w-0">
+              {/* Month Navigator */}
+              <div className="flex items-center gap-0.5 border rounded-md bg-background shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => changeMonth(-1)}
+                  className="rounded-r-none"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
+                <span className="text-xs sm:text-sm font-medium px-2 whitespace-nowrap hidden sm:inline">
+                  {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+                </span>
+                <span className="text-xs font-medium px-1 sm:hidden">
+                  T{selectedMonth}/{selectedYear.toString().slice(-2)}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => changeMonth(1)}
+                  className="rounded-l-none"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
               {!isMobile && (
                 <Button
                   variant="outline"
                   size="xs"
                   title="Tháng hiện tại"
+                  className="bg-background shrink-0 ml-1"
                   onClick={() => {
                     const today = new Date();
                     setSelectedMonth(today.getMonth() + 1);
                     setSelectedYear(today.getFullYear());
                   }}
                 >
-                  Tháng hiện tại
+                  Hiện tại
                 </Button>
               )}
-            </div>
 
-            <div className="flex items-center gap-1 sm:gap-2">
+              <Separator
+                orientation="vertical"
+                className="h-4 hidden sm:block mx-1"
+              />
+
               {/* View Mode Toggle */}
-              <div className="hidden sm:flex items-center border rounded-md overflow-hidden">
+              <div className="flex items-center border rounded-md overflow-hidden bg-background shrink-0">
                 <Button
                   variant={viewMode === "table" ? "secondary" : "ghost"}
                   size="xs"
                   className={cn(
-                    "rounded-none px-2 text-xs",
-                    viewMode === "table" && "bg-primary/10 text-primary",
+                    "rounded-none px-2.5",
+                    viewMode === "table" && "bg-primary/10 text-primary hover:bg-primary/20",
                   )}
                   onClick={() => setViewMode("table")}
                 >
-                  <TableIcon />
-                  <span className="hidden lg:inline">Bảng</span>
+                  <TableIcon className="h-3.5 w-3.5" />
+                  <span className="hidden lg:inline ml-1.5">Bảng</span>
                 </Button>
                 <Button
                   variant={viewMode === "calendar" ? "secondary" : "ghost"}
                   size="xs"
                   className={cn(
-                    "rounded-none px-2 text-xs border-l",
-                    viewMode === "calendar" && "bg-primary/10 text-primary",
+                    "rounded-none px-2.5 border-l",
+                    viewMode === "calendar" && "bg-primary/10 text-primary hover:bg-primary/20",
                   )}
                   onClick={() => setViewMode("calendar")}
                 >
-                  <Calendar />
-                  <span className="hidden lg:inline">Lịch</span>
-                </Button>
-              </div>
-              {/* Mobile View Toggle */}
-              <div className="flex sm:hidden items-center border rounded-md overflow-hidden">
-                <Button
-                  variant={viewMode === "table" ? "secondary" : "ghost"}
-                  size="icon-xs"
-                  className={cn(
-                    "rounded-none",
-                    viewMode === "table" && "bg-primary/10 text-primary",
-                  )}
-                  onClick={() => setViewMode("table")}
-                >
-                  <TableIcon />
-                </Button>
-                <Button
-                  variant={viewMode === "calendar" ? "secondary" : "ghost"}
-                  size="icon-xs"
-                  className={cn(
-                    "rounded-none border-l",
-                    viewMode === "calendar" && "bg-primary/10 text-primary",
-                  )}
-                  onClick={() => setViewMode("calendar")}
-                >
-                  <Calendar />
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span className="hidden lg:inline ml-1.5">Lịch</span>
                 </Button>
               </div>
 
               <Separator
                 orientation="vertical"
-                className="h-4 hidden sm:block"
+                className="h-4 hidden sm:block mx-1"
               />
 
               {/* Status Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant={statusFilter !== "ALL" ? "outline" : "ghost"}
+                    variant={statusFilter !== "ALL" ? "outline" : "outline"}
                     size="xs"
                     className={cn(
-                      "px-1 sm:px-2",
+                      "px-2 bg-background shrink-0",
                       statusFilter !== "ALL" &&
                         "bg-primary/10 border-primary text-primary hover:text-primary",
                     )}
                   >
-                    <ListFilter className="h-3 w-3" />
+                    <ListFilter className="h-3.5 w-3.5 mr-1.5" />
                     <span className="hidden sm:inline">
                       {STATUS_OPTIONS.find((s) => s.value === statusFilter)
                         ?.label ?? "Trạng thái"}
                     </span>
-                    <ChevronDown className="h-3 w-3" />
+                    <span className="sm:hidden">Lọc</span>
+                    <ChevronDown className="h-3 w-3 ml-1.5 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="start" className="w-48">
                   <DropdownMenuLabel className="text-xs text-muted-foreground">
                     Trạng thái
                   </DropdownMenuLabel>
@@ -1032,7 +1075,9 @@ export function ESSAttendanceClient({
                   </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
 
+            <div className="flex items-center gap-2 ml-2 shrink-0">
               {/* Search */}
               <div className="relative flex items-center" ref={mergedSearchRef}>
                 <Input
@@ -1042,122 +1087,63 @@ export function ESSAttendanceClient({
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Tìm kiếm..."
                   className={cn(
-                    "h-6 sm:h-8 text-xs transition-all duration-300 ease-in-out pr-6",
+                    "h-7 text-xs transition-all duration-300 ease-in-out pr-7 bg-background",
                     searchExpanded
-                      ? "w-32 sm:w-48 opacity-100 pl-3"
-                      : "w-0 opacity-0 pl-0",
+                      ? "w-32 sm:w-48 opacity-100 pl-2.5 border-input"
+                      : "w-0 opacity-0 pl-0 border-transparent",
                   )}
                 />
                 <Button
                   size="icon-xs"
-                  variant="ghost"
+                  variant={searchExpanded ? "ghost" : "outline"}
                   onClick={handleSearchToggle}
                   className={cn(
-                    "absolute right-0.5 z-10",
-                    searchExpanded && "[&_svg]:text-primary",
+                    "absolute right-0 z-10",
+                    !searchExpanded && "bg-background relative right-auto",
+                    searchExpanded && "[&_svg]:text-primary hover:bg-transparent",
                   )}
                 >
-                  <Search className="h-3 w-3" />
+                  <Search className="h-3.5 w-3.5" />
                 </Button>
               </div>
-
-              <Separator
-                orientation="vertical"
-                className="h-4 hidden sm:block"
-              />
-
-              <Button
-                variant="outline"
-                size="icon-xs"
-                className="hidden sm:flex"
-                onClick={() => setSettingsOpen(true)}
-              >
-                <Settings className="h-3 w-3" />
-              </Button>
-              <Button variant="outline" size="xs" className="hidden md:flex">
-                <Download className="h-3 w-3" />
-                <span className="hidden lg:inline">Xuất Excel</span>
-              </Button>
             </div>
           </div>
+        </div>
 
-          <TableSettingsPanel
-            className="top-10"
-            open={settingsOpen}
-            onClose={setSettingsOpen}
-            columnVisibility={columnVisibility}
-            setColumnVisibility={setColumnVisibility}
-            defaultVisibleColumns={{
-              date: true,
-              dayOfWeek: false,
-              checkIn: true,
-              checkOut: true,
-              shift: false,
-              status: true,
-              lateMinutes: false,
-              earlyMinutes: false,
-              totalHours: false,
-            }}
-            columnOptions={[
-              { key: "date", label: "Ngày", icon: Calendar },
-              { key: "dayOfWeek", label: "Thứ", icon: Calendar },
-              { key: "checkIn", label: "Giờ vào", icon: Sun },
-              { key: "checkOut", label: "Giờ ra", icon: Moon },
-              { key: "shift", label: "Ca làm", icon: Clock },
-              { key: "status", label: "Trạng thái", icon: AlertCircle },
-              { key: "lateMinutes", label: "Trễ (phút)", icon: Timer },
-              { key: "earlyMinutes", label: "Sớm (phút)", icon: Timer },
-              { key: "totalHours", label: "Tổng giờ", icon: Clock },
-            ]}
-            disabledColumnIndices={[]}
-            hiddenColumnIndices={[]}
-          />
-        </section>
-
-        {/* Stats Row */}
-        <section className="px-2 py-2 grid grid-cols-2 lg:grid-cols-4 gap-2 border-b">
-          <StatCard
-            label="Ngày công"
-            icon={CheckCircle2}
-            color="text-emerald-500"
-            value={`${summary.totalWorkDays} / ${summary.standardDays}`}
-            progress={
-              summary.standardDays > 0
-                ? (summary.totalWorkDays / summary.standardDays) * 100
-                : 0
-            }
-          />
-          <StatCard
-            label="Tỷ lệ đúng giờ"
-            icon={Timer}
-            color="text-blue-500"
-            value={`${onTimeRate}%`}
-            progress={onTimeRate}
-          />
-          <StatCard
-            label="Đi trễ"
-            icon={Clock}
-            color="text-amber-500"
-            value={`${summary.lateDays}`}
-            badge={summary.lateDays > 0 ? "Cần cải thiện" : undefined}
-            badgeClass="bg-amber-100 text-amber-800"
-            subValue={isMobile ? undefined : "ngày"}
-          />
-          <StatCard
-            label="Tăng ca (OT)"
-            icon={Clock}
-            color="text-purple-500"
-            value={`${summary.totalOtHours}h`}
-            subValue={
-              isMobile
-                ? `${summary.earlyLeaveDays} về sớm`
-                : `Về sớm: ${summary.earlyLeaveDays} ngày`
-            }
-          />
-        </section>
+        <TableSettingsPanel
+          className="top-12 z-50 shadow-md"
+          open={settingsOpen}
+          onClose={setSettingsOpen}
+          columnVisibility={columnVisibility}
+          setColumnVisibility={setColumnVisibility}
+          defaultVisibleColumns={{
+            date: true,
+            dayOfWeek: false,
+            checkIn: true,
+            checkOut: true,
+            shift: false,
+            status: true,
+            lateMinutes: false,
+            earlyMinutes: false,
+            totalHours: false,
+          }}
+          columnOptions={[
+            { key: "date", label: "Ngày", icon: Calendar },
+            { key: "dayOfWeek", label: "Thứ", icon: Calendar },
+            { key: "checkIn", label: "Giờ vào", icon: Sun },
+            { key: "checkOut", label: "Giờ ra", icon: Moon },
+            { key: "shift", label: "Ca làm", icon: Clock },
+            { key: "status", label: "Trạng thái", icon: AlertCircle },
+            { key: "lateMinutes", label: "Trễ (phút)", icon: Timer },
+            { key: "earlyMinutes", label: "Sớm (phút)", icon: Timer },
+            { key: "totalHours", label: "Tổng giờ", icon: Clock },
+          ]}
+          disabledColumnIndices={[]}
+          hiddenColumnIndices={[]}
+        />
 
         {/* Content */}
-        <section className="flex-1 relative h-full min-h-0 overflow-hidden">
+        <section className="flex-1 relative h-full min-h-0 overflow-hidden bg-muted/10">
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-2 px-2 py-1.5 bg-primary/5 border-b border-primary/20">
               <span className="text-xs text-muted-foreground mr-1">

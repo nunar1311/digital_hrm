@@ -30,6 +30,7 @@ import {
 import { MoveEmployeesDialog } from "@/components/departments/move-employees-dialog";
 import { AddEmployeeDialog } from "@/components/employees/add-employee-dialog";
 import { ExportEmployeesDialog } from "@/components/employees/import-export/export-employees-dialog";
+import { ManagePasswordDialog } from "@/components/employees/manage-password-dialog";
 import type { EmployeeStatus } from "@/app/(protected)/employees/types";
 
 export function EmployeesClient() {
@@ -41,6 +42,7 @@ export function EmployeesClient() {
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [addEmployeesOpen, setAddEmployeesOpen] = useState(false);
   const [batchDeleteTarget, setBatchDeleteTarget] = useState<string[] | null>(null);
+  const [managePasswordEmployee, setManagePasswordEmployee] = useState<EmployeeListItem | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<EmployeeStatus>("ALL");
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
@@ -128,6 +130,7 @@ export function EmployeesClient() {
     onToggleAll: toggleAll,
     onToggleOne: toggleOne,
     totalRows: employees.length,
+    onManagePassword: setManagePasswordEmployee,
   });
 
   const table = useReactTable({
@@ -294,6 +297,13 @@ export function EmployeesClient() {
       <AddEmployeeDialog open={addEmployeesOpen} onClose={() => setAddEmployeesOpen(false)} />
 
       <ExportEmployeesDialog open={exportOpen} onOpenChange={setExportOpen} search={search} status={statusFilter} />
+
+      <ManagePasswordDialog
+        open={managePasswordEmployee !== null}
+        onOpenChange={(open) => !open && setManagePasswordEmployee(null)}
+        employeeId={managePasswordEmployee?.id || ""}
+        employeeName={managePasswordEmployee?.fullName || managePasswordEmployee?.name || ""}
+      />
     </div>
   );
 }

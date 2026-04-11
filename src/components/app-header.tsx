@@ -137,17 +137,10 @@ export function AppHeader() {
           size="xs"
           onClick={() => openRightSidebar("ai_assistant", {})}
         >
-          <Sparkles className="h-3.5 w-3.5" />
+          <Sparkles />
           <span>Ask AI</span>
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => openRightSidebar("ai_assistant", {})}
-          className="h-8 w-8 text-primary sm:hidden"
-        >
-          <Sparkles className="h-4 w-4" />
-        </Button>
+
         <UserProfile />
       </div>
     </header>

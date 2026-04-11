@@ -21,7 +21,7 @@ export interface Reward {
     createdAt: string;
     // Resolved
     employeeName?: string;
-    employeeCode?: string;
+    username?: string;
 }
 
 // ─── Tài sản ─────────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ export interface AssetAssignment {
     assetName?: string;
     assetCode?: string;
     employeeName?: string;
-    employeeCode?: string;
+    username?: string;
 }
 
 
@@ -65,7 +65,7 @@ export interface Offboarding {
     checklist: OffboardingChecklist[];
     // Resolved
     employeeName?: string;
-    employeeCode?: string;
+    username?: string;
     progress?: number;
 }
 

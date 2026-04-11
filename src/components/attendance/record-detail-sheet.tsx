@@ -201,7 +201,7 @@ export function RecordDetailSheet({
                                     {record.user.name}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                    {record.user.employeeCode ?? "—"}
+                                    {record.user.username ?? "—"}
                                 </p>
                             </div>
                             <div className="ml-auto">

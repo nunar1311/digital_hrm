@@ -43,7 +43,7 @@ export interface LeaveRequest {
     updatedAt: string;
     // Resolved
     employeeName?: string;
-    employeeCode?: string;
+    username?: string;
     departmentName?: string;
     leaveTypeName?: string;
     approverName?: string;

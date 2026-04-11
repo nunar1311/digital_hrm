@@ -63,7 +63,7 @@ function getErrorMessage(error: unknown): string {
 interface EmployeeDashboardRecord {
   id?: string;
   name?: string;
-  employeeCode?: string;
+  username?: string;
   [key: string]: unknown;
 }
 

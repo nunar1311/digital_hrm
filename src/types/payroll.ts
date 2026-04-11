@@ -38,7 +38,7 @@ export interface PayrollRecord {
     notes: string | null;
     // Resolved
     employeeName?: string;
-    employeeCode?: string;
+    username?: string;
     departmentName?: string;
 }
 

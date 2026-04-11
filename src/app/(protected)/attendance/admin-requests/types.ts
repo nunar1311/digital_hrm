@@ -17,7 +17,7 @@ export interface AdminRequestUser {
     id: string;
     name: string | null;
     email: string;
-    employeeCode: string | null;
+    username: string | null;
     department: { id: string; name: string } | null;
     position: { id: string; name: string } | null;
     image: string | null;

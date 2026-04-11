@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 interface Employee {
     id: string;
     name: string;
-    employeeCode?: string | null;
+    username?: string | null;
     position?: string | null;
     image?: string | null;
     email?: string | null;
@@ -55,10 +55,10 @@ export function EmployeeListItem({
                 <p className="font-semibold text-sm truncate text-foreground group-hover:text-primary transition-colors">{employee.name}</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                     <span className="truncate">{employee.position || "Chưa có vị trí"}</span>
-                    {employee.employeeCode && (
+                    {employee.username && (
                         <>
                             <span>•</span>
-                            <span className="font-mono text-[10px] bg-muted/50 px-1.5 py-0.5 rounded">{employee.employeeCode}</span>
+                            <span className="font-mono text-[10px] bg-muted/50 px-1.5 py-0.5 rounded">{employee.username}</span>
                         </>
                     )}
                 </div>

@@ -47,7 +47,7 @@ export interface EmployeeSalaryComponent {
     user?: {
         id: string;
         name: string;
-        employeeCode: string | null;
+        username: string | null;
     };
 }
 

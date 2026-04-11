@@ -125,6 +125,6 @@ export interface AssetStats {
 export interface UserOption {
     id: string;
     name: string;
-    employeeCode: string | null;
+    username: string | null;
     departmentName: string | null;
 }

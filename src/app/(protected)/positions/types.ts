@@ -26,7 +26,7 @@ export interface PositionDetail extends PositionListItem {
     users: {
         id: string;
         name: string;
-        employeeCode: string | null;
+        username: string | null;
         image: string | null;
         departmentName: string | null;
     }[];

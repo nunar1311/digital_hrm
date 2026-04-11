@@ -326,6 +326,34 @@ export async function createLeaveRequest(data: LeaveRequestInput) {
 
     const currentYear = new Date().getFullYear();
 
+    // Kiểm tra quy định "Phép năm" - Mỗi tháng chỉ được nghỉ tối đa 1 ngày
+    if (leaveType.name.toLowerCase().includes("phép năm")) {
+        if (totalDays > 1) {
+            throw new Error("Phép năm: Mỗi tháng bắt buộc chỉ được nghỉ 1 ngày.");
+        }
+
+        const requestMonth = startDateObj.getMonth();
+        const requestYear = startDateObj.getFullYear();
+        const firstDayOfMonth = new Date(requestYear, requestMonth, 1);
+        const lastDayOfMonth = new Date(requestYear, requestMonth + 1, 0, 23, 59, 59, 999);
+
+        const leavesInMonth = await prisma.leaveRequest.aggregate({
+            _sum: { totalDays: true },
+            where: {
+                userId: session.user.id,
+                leaveTypeId: validated.leaveTypeId,
+                status: { in: ["PENDING", "APPROVED"] },
+                startDate: { lte: lastDayOfMonth },
+                endDate: { gte: firstDayOfMonth },
+            }
+        });
+
+        const takenDaysInMonth = leavesInMonth._sum.totalDays || 0;
+        if (takenDaysInMonth + totalDays > 1) {
+            throw new Error(`Phép năm: Mỗi tháng bắt buộc chỉ được nghỉ 1 ngày. Tháng ${requestMonth + 1} bạn đã nghỉ/chờ duyệt ${takenDaysInMonth} ngày.`);
+        }
+    }
+
     // Sử dụng transaction để tránh race condition
     const result = await prisma.$transaction(async (tx) => {
         let balance = await tx.leaveBalance.findUnique({

@@ -29,7 +29,7 @@ export interface ExpiringContractItem {
     endDate: Date;
     employeeId: string;
     employeeName: string;
-    employeeCode: string | null;
+    username: string | null;
     daysUntilExpiry: number;
 }
 
@@ -53,7 +53,7 @@ export async function findExpiringContracts(daysUntilExpiry: number): Promise<
                 select: {
                     id: true,
                     name: true,
-                    employeeCode: true,
+                    username: true,
                 },
             },
         },
@@ -69,7 +69,7 @@ export async function findExpiringContracts(daysUntilExpiry: number): Promise<
             endDate: contract.endDate as Date,
             employeeId: contract.user.id,
             employeeName: contract.user.name,
-            employeeCode: contract.user.employeeCode,
+            username: contract.user.username,
             daysUntilExpiry,
         }));
 }
@@ -147,7 +147,7 @@ export async function dispatchContractExpiryReminders(params?: {
                 }
 
                 const title = `Cảnh báo hợp đồng sắp hết hạn (${dayMark} ngày)`;
-                const content = `${contract.employeeName} (${contract.employeeCode || "N/A"}) có hợp đồng ${contract.contractNumber} sẽ hết hạn vào ${formatDate(contract.endDate)}.`;
+                const content = `${contract.employeeName} (${contract.username || "N/A"}) có hợp đồng ${contract.contractNumber} sẽ hết hạn vào ${formatDate(contract.endDate)}.`;
                 const link = `/contracts/${contract.contractId}`;
 
                 await createNotification({

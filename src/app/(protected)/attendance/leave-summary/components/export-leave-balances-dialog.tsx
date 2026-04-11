@@ -46,7 +46,7 @@ interface ExportField {
 const EXPORT_FIELDS: ExportField[] = [
     // Thông tin nhân viên
     {
-        key: "employeeCode",
+        key: "username",
         label: "Mã nhân viên",
         group: "Thông tin nhân viên",
         defaultChecked: true,
@@ -118,7 +118,7 @@ async function exportToExcel(
     const XLSX = await import("xlsx");
 
     const displayLabels: Record<string, string> = {
-        employeeCode: "Mã NV",
+        username: "Mã NV",
         fullName: "Họ và tên",
         email: "Email",
         departmentName: "Phòng ban",
@@ -139,9 +139,9 @@ async function exportToExcel(
             if (field === "fullName") {
                 const user = balance.user as Record<string, unknown> | undefined;
                 value = user?.fullName || user?.name || "";
-            } else if (field === "employeeCode") {
+            } else if (field === "username") {
                 const user = balance.user as Record<string, unknown> | undefined;
-                value = user?.employeeCode || "";
+                value = user?.username || "";
             } else if (field === "email") {
                 const user = balance.user as Record<string, unknown> | undefined;
                 value = user?.email || "";

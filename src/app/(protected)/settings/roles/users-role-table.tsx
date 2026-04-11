@@ -222,7 +222,7 @@ export function UsersRoleTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-muted-foreground">
-                                        {user.employeeCode ?? "—"}
+                                        {user.username ?? "—"}
                                     </TableCell>
                                     <TableCell>
                                         <Badge

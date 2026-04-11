@@ -73,7 +73,7 @@ export function DepartmentDetailPanel({
       const query = employeeSearchQuery.toLowerCase();
       return (
         emp.name.toLowerCase().includes(query) ||
-        emp.employeeCode?.toLowerCase().includes(query) ||
+        emp.username?.toLowerCase().includes(query) ||
         emp.position?.toLowerCase().includes(query)
       );
     }) ?? [];

@@ -70,7 +70,7 @@ export const auth = betterAuth({
     // ─── Callbacks ───
     user: {
         additionalFields: {
-            employeeCode: {
+            username: {
                 type: "string",
                 required: false,
             },

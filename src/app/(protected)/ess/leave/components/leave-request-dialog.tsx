@@ -480,8 +480,12 @@ export function LeaveRequestDialog({
               {selectedLeaveType && (
                 <p className="text-xs text-muted-foreground -mt-1">
                   Chọn ngày bắt đầu — hệ thống tự tính ngày kết thúc dựa trên{" "}
-                  <strong>{selectedLeaveType.defaultDays} ngày</strong> làm
-                  việc.
+                  <strong>
+                    {selectedLeaveType.name.toLowerCase().includes("phép năm") 
+                      ? "1 ngày" 
+                      : `${selectedLeaveType.defaultDays} ngày`
+                    }
+                  </strong> làm việc.
                 </p>
               )}
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -513,7 +517,12 @@ export function LeaveRequestDialog({
                       if (!date) return;
                       setValue("startDate", date);
                       setCalendarOpen(false);
-                      if (selectedLeaveType?.defaultDays) {
+                      if (selectedLeaveType?.name.toLowerCase().includes("phép năm")) {
+                        setValue(
+                          "endDate",
+                          calcWorkingEndDate(date, 1),
+                        );
+                      } else if (selectedLeaveType?.defaultDays) {
                         setValue(
                           "endDate",
                           calcWorkingEndDate(date, selectedLeaveType.defaultDays),

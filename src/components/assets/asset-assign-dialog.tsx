@@ -146,7 +146,7 @@ export function AssetAssignDialog({
                                                     )}
                                                 >
                                                     {selectedUser
-                                                        ? `${selectedUser.name}${selectedUser.employeeCode ? ` (${selectedUser.employeeCode})` : ""}`
+                                                        ? `${selectedUser.name}${selectedUser.username ? ` (${selectedUser.username})` : ""}`
                                                         : "Chọn nhân viên..."}
                                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
@@ -167,7 +167,7 @@ export function AssetAssignDialog({
                                                                     key={
                                                                         user.id
                                                                     }
-                                                                    value={`${user.name} ${user.employeeCode || ""}`}
+                                                                    value={`${user.name} ${user.username || ""}`}
                                                                     onSelect={() => {
                                                                         field.onChange(
                                                                             user.id,
@@ -192,10 +192,10 @@ export function AssetAssignDialog({
                                                                                 user.name
                                                                             }
                                                                         </p>
-                                                                        {user.employeeCode && (
+                                                                        {user.username && (
                                                                             <p className="text-xs text-muted-foreground">
                                                                                 {
-                                                                                    user.employeeCode
+                                                                                    user.username
                                                                                 }
                                                                             </p>
                                                                         )}

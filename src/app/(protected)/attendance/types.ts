@@ -113,7 +113,7 @@ export interface ShiftAssignment {
 export interface UserBasic {
     id: string;
     name: string;
-    employeeCode: string | null;
+    username: string | null;
     departmentId?: string | null;
     image?: string | null;
 }
@@ -330,7 +330,7 @@ export interface AttendanceSummary {
     user: {
         id: string;
         name: string;
-        employeeCode: string | null;
+        username: string | null;
     };
 }
 

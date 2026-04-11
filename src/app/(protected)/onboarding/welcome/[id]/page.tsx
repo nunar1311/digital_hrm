@@ -84,7 +84,7 @@ export default function WelcomePortalPage() {
                 Chào mừng, {onboarding.user?.name}!
               </h1>
               <p className="text-muted-foreground">
-                {onboarding.user?.employeeCode} • {onboarding.user?.department?.name} •{" "}
+                {onboarding.user?.username} • {onboarding.user?.department?.name} •{" "}
                 {onboarding.user?.position?.name}
               </p>
             </div>

@@ -909,7 +909,7 @@ export async function getContractTemplatePreview(params: {
     const fallbackContent = [
         "HỢP ĐỒNG LAO ĐỘNG",
         "Số hợp đồng: {{contractNumber}}",
-        "Nhân viên: {{employeeName}} ({{employeeCode}})",
+        "Nhân viên: {{employeeName}} ({{username}})",
         "Loại hợp đồng: {{contractType}}",
         "Ngày hiệu lực: {{startDate}}",
         "Ngày hết hạn: {{endDate}}",

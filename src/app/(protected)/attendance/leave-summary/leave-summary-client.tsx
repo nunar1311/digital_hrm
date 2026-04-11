@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Upload,
@@ -23,7 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TableSettingsPanel } from "@/components/ui/table-settings-panel";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { useClickOutside, useMergedRef } from "@mantine/hooks";
+import { useClickOutside, useMergedRef, useIntersection } from "@mantine/hooks";
 import {
   flexRender,
   getCoreRowModel,
@@ -76,10 +80,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  getLeaveBalances,
-  updateLeaveBalance,
-} from "./actions";
+import { getLeaveBalances, updateLeaveBalance } from "./actions";
 import type {
   LeaveBalanceListResponse,
   LeaveBalanceWithRelations,
@@ -162,8 +163,15 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
   });
   const mergedSearchRef = useMergedRef(searchContainerRef, clickOutsideRef);
 
-  // Fetch data (year and search still server-side, department/leaveType client-side via React Table)
-  const { data, isLoading, isFetching } = useQuery({
+  // Fetch data with infinite query
+  const {
+    data,
+    isLoading,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: [
       "leave-balances",
       filters.year,
@@ -172,17 +180,46 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
       filters.employeeStatus,
       filters.search,
     ],
-    queryFn: async () =>
+    queryFn: async ({ pageParam = 1 }) =>
       getLeaveBalances({
         year: filters.year,
         search: filters.search || undefined,
-      }) as Promise<LeaveBalanceListResponse>,
-    initialData,
+        departmentId:
+          filters.departmentId !== "all" ? filters.departmentId : undefined,
+        leaveTypeId:
+          filters.leaveTypeId !== "all" ? filters.leaveTypeId : undefined,
+        employeeStatus:
+          filters.employeeStatus !== "all" ? filters.employeeStatus : undefined,
+        page: pageParam as number,
+        pageSize: 20,
+      }) as unknown as Promise<LeaveBalanceListResponse>,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+    initialPageParam: 1,
+    initialData: initialData
+      ? { pages: [initialData], pageParams: [1] }
+      : undefined,
   });
+
+  const flatData = useMemo(() => {
+    if (!data) return initialData?.data || [];
+    return data.pages.flatMap((page) => page.data);
+  }, [data, initialData]);
+
+  const { ref: loadMoreRef, entry } = useIntersection({
+    root: null,
+    threshold: 0.1,
+  });
+
+  useEffect(() => {
+    if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [entry, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Extract unique departments and leave types from data for filter options
   const departments = useMemo(() => {
-    const sourceData = data?.data || initialData?.data || [];
+    const sourceData = flatData;
     const deptMap = new Map<string, { id: string; name: string }>();
     sourceData.forEach((item: LeaveBalanceWithRelations) => {
       if (item.user?.department) {
@@ -195,10 +232,10 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
     return Array.from(deptMap.values()).sort((a, b) =>
       a.name.localeCompare(b.name),
     );
-  }, [data?.data, initialData?.data]);
+  }, [flatData]);
 
   const leaveTypesFromData = useMemo(() => {
-    const sourceData = data?.data || initialData?.data || [];
+    const sourceData = flatData;
     const ltMap = new Map<string, { id: string; name: string }>();
     sourceData.forEach((item: LeaveBalanceWithRelations) => {
       if (item.leaveType) {
@@ -211,7 +248,7 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
     return Array.from(ltMap.values()).sort((a, b) =>
       a.name.localeCompare(b.name),
     );
-  }, [data?.data, initialData?.data]);
+  }, [flatData]);
 
   // Edit form
   const editForm = useForm<UpdateBalanceFormData>({
@@ -239,8 +276,6 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
     },
   });
 
-
-
   // Handlers
   const handleEdit = useCallback(
     (balance: LeaveBalanceWithRelations) => {
@@ -255,8 +290,6 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
     [editForm],
   );
 
-
-
   const years = Array.from(
     { length: 5 },
     (_, i) => new Date().getFullYear() - 2 + i,
@@ -264,13 +297,13 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
 
   // Selection handlers (must be before columns)
   const toggleAll = useCallback(() => {
-    if (!data?.data) return;
-    if (selectedIds.size === data.data.length) {
+    if (!flatData) return;
+    if (selectedIds.size === flatData.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(data.data.map((e) => e.id)));
+      setSelectedIds(new Set(flatData.map((e) => e.id)));
     }
-  }, [selectedIds.size, data?.data]);
+  }, [selectedIds.size, flatData]);
 
   const toggleOne = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -292,9 +325,7 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
         header: () => (
           <Checkbox
             checked={
-              data?.data &&
-              data.data.length > 0 &&
-              selectedIds.size === data.data.length
+              flatData.length > 0 && selectedIds.size === flatData.length
                 ? true
                 : selectedIds.size > 0
                   ? "indeterminate"
@@ -427,24 +458,16 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
               </TooltipTrigger>
               <TooltipContent>Chỉnh sửa</TooltipContent>
             </Tooltip>
-
           </div>
         ),
         size: 100,
       },
     ],
-    [
-      data?.data,
-      selectedIds,
-      toggleAll,
-      toggleOne,
-      handleEdit,
-      year,
-    ],
+    [flatData, selectedIds, toggleAll, toggleOne, handleEdit, year],
   );
 
   const table = useReactTable({
-    data: data?.data || [],
+    data: flatData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -456,11 +479,11 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
     onColumnVisibilityChange: setColumnVisibility,
   });
 
-  // Get filter setters from table
+  // Use state filters for API fetching instead of client-side filtering to avoid bugs
   const setDepartmentFilter = (value: string) =>
-    table.getColumn("department")?.setFilterValue(value);
+    setFilters((f) => ({ ...f, departmentId: value }));
   const setLeaveTypeFilter = (value: string) =>
-    table.getColumn("leaveTypeName")?.setFilterValue(value);
+    setFilters((f) => ({ ...f, leaveTypeId: value }));
 
   // Search handlers
   const handleSearchChange = useCallback((value: string) => {
@@ -489,25 +512,20 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
     [],
   );
 
-  // Filter handlers using React Table
+  // Filter handlers
   const handleClearFilters = useCallback(() => {
-    setFilters((f) => ({
-      ...f,
+    setFilters({
       year: new Date().getFullYear(),
       leaveTypeId: "all",
       departmentId: "all",
       employeeStatus: "all",
       search: "",
-    }));
-    table.getColumn("department")?.setFilterValue("all");
-    table.getColumn("leaveTypeName")?.setFilterValue("all");
-  }, [table]);
+    });
+  }, []);
 
-  // Get current filter values from table
-  const departmentFilter =
-    (table.getColumn("department")?.getFilterValue() as string) || "all";
-  const leaveTypeFilter =
-    (table.getColumn("leaveTypeName")?.getFilterValue() as string) || "all";
+  // Pass current filter state directly
+  const departmentFilter = filters.departmentId;
+  const leaveTypeFilter = filters.leaveTypeId;
 
   const clearSelection = useCallback(() => {
     setSelectedIds(new Set());
@@ -789,25 +807,28 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
                     </TableCell>
                   </TableRow>
                 )}
+                <TableRow>
+                  {/* Loading more indicator */}
+                  {isFetchingNextPage && (
+                    <div className="flex items-center justify-center py-3 border-t">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        Đang tải thêm...
+                      </span>
+                    </div>
+                  )}
+
+                  <div ref={loadMoreRef} className="h-1 shrink-0" />
+                </TableRow>
               </TableBody>
             </Table>
-
-            {/* Loading more indicator */}
-            {isFetching && !isLoading && (
-              <div className="flex items-center justify-center py-3 border-t">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-xs text-muted-foreground">
-                  Đang tải...
-                </span>
-              </div>
-            )}
 
             {/* Summary */}
             {!isLoading && data && (
               <div className="absolute bottom-0 left-0 right-0 bg-background flex items-center justify-between px-2 py-2 border-t shrink-0">
                 <p className="text-xs text-muted-foreground">
-                  Hiển thị <strong>{data.data.length}</strong> /{" "}
-                  <strong>{data.total}</strong> bản ghi
+                  Hiển thị <strong>{flatData.length}</strong> /{" "}
+                  <strong>{data.pages[0]?.total || 0}</strong> bản ghi
                 </p>
               </div>
             )}
@@ -932,7 +953,6 @@ export function LeaveSummaryClient({ initialData }: LeaveSummaryClientProps) {
                     </FormItem>
                   )}
                 />
-
               </div>
               <DialogFooter>
                 <Button

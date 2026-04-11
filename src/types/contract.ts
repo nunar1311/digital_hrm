@@ -12,7 +12,6 @@ export type ContractExportFormat = "DOCX" | "PDF";
 export interface ContractEmployeeRef {
     id: string;
     name: string;
-    employeeCode?: string | null;
     username: string | null;
 }
 

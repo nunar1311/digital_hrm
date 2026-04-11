@@ -33,7 +33,7 @@ export interface ContractExpiryDashboardItem {
     contractId: string;
     contractNumber: string;
     employeeName: string;
-    employeeCode: string | null;
+    username: string | null;
     endDate: string;
     daysUntilExpiry: number;
 }
@@ -55,8 +55,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         1,
     );
 
-    // Base condition: only employees (who have employeeCode)
-    const baseWhere = { employeeCode: { not: null } } as const;
+    // Base condition: only employees (who have username)
+    const baseWhere = { username: { not: null } } as const;
 
     const [
         totalEmployees,
@@ -258,7 +258,7 @@ export async function getTodayAttendanceSummary(): Promise<TodayAttendanceSummar
             where: { date: { gte: today, lt: tomorrow }, status: { in: ["LEAVE", "UNPAID_LEAVE"] } },
         }),
         prisma.user.count({
-            where: { employeeCode: { not: null }, employeeStatus: "ACTIVE" },
+            where: { username: { not: null }, employeeStatus: "ACTIVE" },
         }),
     ]);
 
@@ -296,7 +296,7 @@ export async function getContractExpiryWarnings(): Promise<ContractExpiryDashboa
             user: {
                 select: {
                     name: true,
-                    employeeCode: true,
+                    username: true,
                 },
             },
         },
@@ -316,7 +316,7 @@ export async function getContractExpiryWarnings(): Promise<ContractExpiryDashboa
                 contractId: contract.id,
                 contractNumber: contract.contractNumber,
                 employeeName: contract.user.name,
-                employeeCode: contract.user.employeeCode,
+                username: contract.user.username,
                 endDate: (contract.endDate as Date).toISOString(),
                 daysUntilExpiry,
             };
@@ -348,7 +348,7 @@ export async function getDepartmentDistribution(): Promise<
                 select: {
                     users: {
                         where: {
-                            employeeCode: { not: null },
+                            username: { not: null },
                             employeeStatus: { not: "TERMINATED" },
                         },
                     },
@@ -361,7 +361,7 @@ export async function getDepartmentDistribution(): Promise<
     // Also count employees without department
     const noDeptCount = await prisma.user.count({
         where: {
-            employeeCode: { not: null },
+            username: { not: null },
             employeeStatus: { not: "TERMINATED" },
             departmentId: null,
         },
@@ -405,7 +405,7 @@ export async function getTurnoverRateTrend(): Promise<TurnoverTrendItem[]> {
         });
     }
 
-    const baseWhere = { employeeCode: { not: null } } as const;
+    const baseWhere = { username: { not: null } } as const;
 
     const results = await Promise.all(
         months.map(async ({ start, end, label }) => {
@@ -464,7 +464,7 @@ export async function getGenderDistribution(): Promise<GenderDistributionItem[]>
     await requirePermission(Permission.DASHBOARD_VIEW);
 
     const baseWhere = {
-        employeeCode: { not: null },
+        username: { not: null },
         employeeStatus: { not: "TERMINATED" },
     } as const;
 

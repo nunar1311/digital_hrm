@@ -346,7 +346,7 @@ Chào mừng bạn đến với {{companyName}}!
 Chúng tôi rất vui được chào đón bạn gia nhập đội ngũ tại {{department}} với vị trí {{position}}.
 
 📋 Thông tin đăng nhập hệ thống:
-- Mã nhân viên: {{employeeCode}}
+- Mã nhân viên: {{username}}
 - Email đăng nhập: {{email}}
 - Mật khẩu tạm: {{password}}
 
@@ -368,7 +368,7 @@ Ban Quản lý HR`,
 
 <h3>📋 Thông tin đăng nhập hệ thống:</h3>
 <ul>
-<li><strong>Mã nhân viên:</strong> {{employeeCode}}</li>
+<li><strong>Mã nhân viên:</strong> {{username}}</li>
 <li><strong>Email đăng nhập:</strong> {{email}}</li>
 <li><strong>Mật khẩu tạm:</strong> {{password}}</li>
 </ul>
@@ -385,7 +385,7 @@ Ban Quản lý HR`,
 
 <p>Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ HR qua email: <a href="mailto:hr@company.vn">hr@company.vn</a></p>
 <p>Trân trọng,<br>Ban Quản lý HR</p>`,
-    variables: ["employeeName", "companyName", "email", "password", "employeeCode", "department", "position", "startDate", "loginUrl", "welcomeGuideUrl"],
+    variables: ["employeeName", "companyName", "email", "password", "username", "department", "position", "startDate", "loginUrl", "welcomeGuideUrl"],
   },
   {
     code: "SYSTEM_ANNOUNCEMENT",

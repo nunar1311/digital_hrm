@@ -42,7 +42,7 @@ interface HRContext {
   employee_name?: string;
   department?: string | null;
   position?: string | null;
-  employee_code?: string;
+  username?: string;
   [key: string]: string | null | undefined;
 }
 
@@ -122,7 +122,7 @@ export async function askHRQuestion(data: {
         context.employee_name = user.name;
         context.department = user.department?.name;
         context.position = user.position?.name;
-        context.employee_code = user.employeeCode ?? undefined;
+        context.username = user.username ?? undefined;
       }
     }
 
@@ -297,7 +297,7 @@ export async function getPersonalDevelopmentPlan(userId: string) {
     }
 
     const result = await callAIService("/api/ai/recommend/training", {
-      employee_id: user.employeeCode,
+      employee_id: user.username,
       position: user.position?.name || "",
       experience_years: user.hireDate
         ? Math.floor(
@@ -542,7 +542,7 @@ export async function getAttendanceSummaryAI(userId: string) {
 
     const result = await callAIService("/api/ai/analyze/attendance", {
       attendance_data: attendanceData,
-      employee_id: user.employeeCode,
+      employee_id: user.username,
       analysis_type: "pattern",
     });
 

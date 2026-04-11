@@ -1529,6 +1529,12 @@ model LeaveType {
   defaultDays Float   @default(12) // Số ngày phép mặc định/năm
   isActive    Boolean @default(true)
 
+  // Thâm niên
+  applySeniorityBonus Boolean @default(false) // Có tính cộng thêm ngày theo thâm niên không
+
+  // Carry-over cuối năm
+  maxCarryOverDays Float? // null = không cho carry-over; 0 = chuyển tất; n = tối đa n ngày
+
   leaveBalances LeaveBalance[]
   leaveRequests LeaveRequest[]
 
@@ -1545,10 +1551,12 @@ model LeaveBalance {
   userId      String
   leaveTypeId String
 
-  totalDays   Float @default(0) // Tổng số ngày được cấp trong kỳ
-  usedDays    Float @default(0) // Số ngày đã dùng
-  pendingDays Float @default(0) // Số ngày đang chờ duyệt
-  policyYear  Int // Năm
+  totalDays    Float @default(0) // Tổng số ngày được cấp trong kỳ
+  usedDays     Float @default(0) // Số ngày đã dùng
+  pendingDays  Float @default(0) // Số ngày đang chờ duyệt
+  seniorityDays Float @default(0) // Ngày cộng thêm do thâm niên
+  carryOverDays Float @default(0) // Ngày phép chuyển từ năm trước
+  policyYear   Int   // Năm
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   leaveType     LeaveType      @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
@@ -1579,7 +1587,13 @@ model LeaveRequest {
   approvedAt      DateTime?
   rejectionReason String?
 
-  leaveBalance LeaveBalance? @relation(fields: [leaveBalanceId], references: [id], onDelete: SetNull)
+  // ── Luồng duyệt đa cấp ──
+  approvalChain   Json?   // Array<ApprovalStepRecord> - lưu trạng thái từng bước
+  currentStep     Int     @default(0) // Bước duyệt hiện tại (0 = chưa có luồng)
+  leaveApprovalProcessId String? // Quy trình duyệt được áp dụng
+
+  leaveBalance         LeaveBalance?         @relation(fields: [leaveBalanceId], references: [id], onDelete: SetNull)
+  leaveApprovalProcess LeaveApprovalProcess? @relation(fields: [leaveApprovalProcessId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1591,6 +1605,45 @@ model LeaveRequest {
   @@index([leaveTypeId])
   @@index([status])
   @@map("leave_requests")
+}
+
+// Quy tắc cộng phép theo thâm niên
+
+model LeaveSeniorityRule {
+  id        String   @id @default(cuid())
+  minYears  Int // Số năm thâm niên tối thiểu (vd: 5 = từ 5 năm trở lên)
+  maxYears  Int? // Số năm tối đa (null = không giới hạn)
+  bonusDays Float // Số ngày cộng thêm
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("leave_seniority_rules")
+}
+
+// Quy trình duyệt nghỉ phép đa cấp
+
+model LeaveApprovalProcess {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+  isDefault   Boolean @default(false) // Quy trình mặc định cho tất cả đơn
+
+  // Cài đặt nâng cao
+  skipDuplicateApprover Boolean @default(true)
+  skipSelfApprover      Boolean @default(true)
+  sendEmailReminder     Boolean @default(false)
+
+  // Các bước duyệt (JSON - tương tự AttendanceApprovalProcess)
+  steps Json? // Array<ApprovalStep>
+
+  leaveRequests LeaveRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("leave_approval_processes")
 }
 
 // Bảng trung gian: Position <-> Role (mỗi Position có một Role mặc định)

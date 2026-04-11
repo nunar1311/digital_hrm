@@ -9,7 +9,7 @@ export interface OnboardingUserInfo {
   name: string;
   email: string;
   image?: string | null;
-  employeeCode?: string | null;
+  username?: string | null;
   department?: { id: string; name: string } | null;
   position?: { id: string; name: string } | null;
 }

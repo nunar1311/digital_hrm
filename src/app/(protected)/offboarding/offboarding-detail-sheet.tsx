@@ -172,7 +172,7 @@ export function OffboardingDetailSheet({
                                         <div>
                                             <h3 className="font-semibold">{detail.user.name}</h3>
                                             <p className="text-sm text-muted-foreground">
-                                                {detail.user.employeeCode || detail.user.email}
+                                                {detail.user.username || detail.user.email}
                                             </p>
                                         </div>
                                     </div>

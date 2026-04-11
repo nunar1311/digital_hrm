@@ -191,7 +191,7 @@ export async function downloadEmployeeImportTemplate() {
 
     const templateRows = [
         {
-            'Mã nhân viên': 'NV001',
+            'Mã nhân viên': '260411001',
             'Họ và tên': 'Nguyễn Văn A',
             'Ngày sinh': '01/01/1995',
             'Giới tính': 'Nam',
@@ -209,7 +209,7 @@ export async function downloadEmployeeImportTemplate() {
             'Trường': 'ĐH Bách Khoa TP.HCM',
         },
         {
-            'Mã nhân viên': 'NV002',
+            'Mã nhân viên': '260411001',
             'Họ và tên': 'Trần Thị B',
             'Ngày sinh': '15/05/1998',
             'Giới tính': 'Nữ',

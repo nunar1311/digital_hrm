@@ -226,8 +226,15 @@ export function DepartmentsClient() {
       <div className="w-full min-h-0 h-full min-w-0 flex flex-col relative">
         {/* Header */}
         <section>
-          <header className="p-2 flex items-center h-10 border-b">
+          <header className="p-2 flex items-center h-10 border-b justify-between">
             <h1 className="font-bold">Tất cả phòng ban</h1>
+            <Button
+              variant={"outline"}
+              size={"xs"}
+              onClick={() => router.push("/org-chart")}
+            >
+              Sơ đồ tổ chức
+            </Button>
           </header>
           <div className="flex items-center justify-end gap-2 px-2 py-2">
             <DropdownMenu>
@@ -331,6 +338,7 @@ export function DepartmentsClient() {
 
           {/* Settings Panel */}
           <TableSettingsPanel
+            className="top-10"
             open={settingsOpen}
             onClose={setSettingsOpen}
             columnVisibility={columnVisibility}

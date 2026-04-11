@@ -640,7 +640,7 @@ export async function getUsersList() {
         select: {
             id: true,
             name: true,
-            employeeCode: true,
+            username: true,
         },
         orderBy: { name: "asc" },
         take: 200,
@@ -649,7 +649,7 @@ export async function getUsersList() {
     return users.map((u) => ({
         id: u.id,
         name: u.name,
-        employeeCode: u.employeeCode,
+        username: u.username,
         departmentName: null as string | null,
     }));
 }

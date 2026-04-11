@@ -383,6 +383,10 @@ const AttendanceSidebar = () => {
           title: "Tổng hợp ngày nghỉ",
           url: "/attendance/leave-summary",
         },
+        {
+          title: "Lịch nghỉ phép team",
+          url: "/attendance/team-calendar",
+        },
       ],
     },
     {
@@ -393,6 +397,14 @@ const AttendanceSidebar = () => {
         {
           title: "Hệ thống chấm công",
           url: "/attendance/settings",
+        },
+        {
+          title: "Chính sách nghỉ phép",
+          url: "/attendance/leave-policy",
+        },
+        {
+          title: "Quy trình duyệt nghỉ phép",
+          url: "/attendance/leave-approval-setup",
         },
       ],
     },
@@ -719,7 +731,7 @@ const AttendanceSidebar = () => {
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton tooltip={item.title}>
-                          <Calendar className="size-4" />
+                          <item.icon />
                           <span>{item.title}</span>
                           <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                         </SidebarMenuButton>
