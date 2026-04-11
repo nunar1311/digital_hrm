@@ -2,7 +2,7 @@
 import httpx
 import asyncio
 
-API_KEY = "cpa_b389cc299de1ccd0b6bb8c5c64a0a445f903b713f939fbccb839eb017697771e"
+API_KEY = ""
 BASE_URL = "https://gate.vitexa.app/v1"
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
