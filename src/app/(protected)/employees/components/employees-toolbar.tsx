@@ -112,14 +112,9 @@ export function EmployeesToolbar({
   return (
     <>
       <div className="flex items-center justify-between gap-2 px-2 py-2">
-        <Button 
-          variant={"outline"} 
-          size={"xs"} 
-          onClick={onExport}
-          className="border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
-        >
-          <Sparkles className="size-3.5 mr-1" />
-          Xuất file Excel (AI)
+        <Button variant={"outline"} size={"xs"} onClick={onExport}>
+          <Sparkles className="size-3.5 text-primary" />
+          Xuất file Excel
         </Button>
 
         <div className="flex items-center gap-2">

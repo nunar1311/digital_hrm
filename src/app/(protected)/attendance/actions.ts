@@ -3136,9 +3136,27 @@ export async function getUsersWithAssignmentsPaginated({
           })
         : [];
 
+    const leaveRequests = userIds.length > 0
+        ? await prisma.leaveRequest.findMany({
+              where: {
+                  status: "APPROVED",
+                  startDate: { lte: end },
+                  endDate: { gte: start },
+                  userId: { in: userIds },
+              },
+              select: {
+                  id: true,
+                  userId: true,
+                  startDate: true,
+                  endDate: true,
+              },
+          })
+        : [];
+
     return {
         users: mappedUsers,
         assignments: JSON.parse(JSON.stringify(assignments)),
+        leaveRequests: JSON.parse(JSON.stringify(leaveRequests)),
         totalCount,
         page,
         pageSize,

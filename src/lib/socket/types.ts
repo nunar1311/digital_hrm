@@ -354,6 +354,8 @@ export interface ClientToServerEvents {
     "join:user": (userId: string) => void;
     "leave:organization": (orgId: string) => void;
     "leave:user": (userId: string) => void;
+    // Allow client to manually trigger data refresh events for other clients
+    "data:updated": (data: { entity: string; userId?: string; action?: string; data?: unknown }) => void;
 }
 
 // === Event Names (for convenience) ===

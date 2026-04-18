@@ -31,16 +31,26 @@ from app.routers import (
     summarize_router,
     recommend_router,
     dashboard_router,
+    approval_router,
+    copilot_router,
+    ws_chat_router,
+    data_analyst_router,
 )
 from app.middleware.rate_limiter import get_rate_limiter
 from app.services.provider_router import get_provider_router
 from app.database import init_db_pool, close_db_pool, check_db_health
+from app.services.redis_service import init_redis, close_redis, check_redis_health, get_active_sessions_count
+from app.services.queue_manager import get_ai_queue
 
 # Configure logging
 settings = get_settings()
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper()),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("ai-service.log")
+    ]
 )
 logger = logging.getLogger(__name__)
 
@@ -62,6 +72,16 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize provider router: {e}")
 
+    # Initialize Redis
+    try:
+        redis_ok = await init_redis()
+        if redis_ok:
+            logger.info("Redis cache layer initialized")
+        else:
+            logger.warning("Redis not available - running without cache (in-memory fallback)")
+    except Exception as e:
+        logger.error(f"Failed to initialize Redis: {e}")
+
     # Initialize Database connection pool
     try:
         pool = await init_db_pool()
@@ -72,10 +92,18 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize database pool: {e}")
 
+    # Initialize AI Request Queue
+    try:
+        queue = get_ai_queue()
+        logger.info(f"AI Request Queue initialized (max_concurrent={settings.max_concurrent_ai_calls})")
+    except Exception as e:
+        logger.error(f"Failed to initialize AI queue: {e}")
+
     yield
 
     # Shutdown
     logger.info("Shutting down Digital HRM AI Service...")
+    await close_redis()
     await close_db_pool()
     logger.info("Cleanup complete")
 
@@ -129,27 +157,37 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 # Include routers
 app.include_router(chat_router, prefix="/api/ai", tags=["AI Chat"])
+app.include_router(data_analyst_router, prefix="/api/ai/data-analyst", tags=["AI Data Analyst"])
 app.include_router(analyze_router, prefix="/api/ai/analyze", tags=["AI Analysis"])
 app.include_router(extract_router, prefix="/api/ai/extract", tags=["AI Extraction"])
 app.include_router(generate_router, prefix="/api/ai/generate", tags=["AI Generation"])
 app.include_router(summarize_router, prefix="/api/ai/summarize", tags=["AI Summarization"])
 app.include_router(recommend_router, prefix="/api/ai/recommend", tags=["AI Recommendations"])
 app.include_router(dashboard_router, prefix="/api/ai/dashboard", tags=["AI Dashboard"])
+app.include_router(approval_router, prefix="/api/ai/approval", tags=["AI Approval"])
+app.include_router(copilot_router, prefix="/api/ai/copilot", tags=["AI Copilot"])
+app.include_router(ws_chat_router, prefix="/ws/ai", tags=["AI WebSocket"])
 
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with Redis and queue status"""
     db_health = await check_db_health()
+    redis_health = await check_redis_health()
+    ai_queue = get_ai_queue()
+    active_sessions = await get_active_sessions_count()
 
     return {
         "status": "healthy",
         "service": "digital-hrm-ai",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "default_provider": settings.default_provider,
         "default_model": settings.default_model,
         "database": db_health,
+        "redis": redis_health,
+        "ai_queue": ai_queue.get_status(),
+        "active_sessions": active_sessions,
     }
 
 
@@ -193,10 +231,20 @@ async def get_cost_stats():
 
 if __name__ == "__main__":
     import uvicorn
+    
+    # Windows + Python 3.14 + multiprocessing = crash with --reload
+    # Force disable reload on Windows
+    is_windows = sys.platform == "win32"
+    should_reload = False  # Always disable reload
+    
+    print(f"Starting AI Service on {settings.service_host}:{settings.service_port}")
+    if is_windows:
+        print("Windows detected - reload disabled to avoid multiprocessing crash")
+    
     uvicorn.run(
         "app.main:app",
         host=settings.service_host,
         port=settings.service_port,
-        reload=False,  # Disable reload on Windows to avoid multiprocessing issues
+        reload=should_reload,
         log_level=settings.log_level.lower(),
     )

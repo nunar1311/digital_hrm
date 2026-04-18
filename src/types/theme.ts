@@ -20,6 +20,10 @@ export type ThemeStyleProps = {
     "chart-4": string;
     "chart-5": string;
     "chart-6": string;
+    "chart-7": string;
+    "chart-8": string;
+    "chart-9": string;
+    "chart-10": string;
 };
 
 export type ThemeMetadata = {

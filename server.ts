@@ -88,6 +88,13 @@ app.prepare().then(() => {
             socket.leave(`user:${userId}`);
         });
 
+        // Client manually triggers a data refresh event for other clients
+        // Used by AI action execution to refresh pages like /ess/leave
+        socket.on("data:updated", (data: { entity: string; userId?: string; action?: string; data?: unknown }) => {
+            // Broadcast to ALL connected clients (including sender for self-refresh)
+            io.emit("data:updated", data);
+        });
+
         socket.on("disconnect", (reason) => {
             console.log(
                 `[Socket.IO] Client disconnected: ${socket.id} (${reason})`,

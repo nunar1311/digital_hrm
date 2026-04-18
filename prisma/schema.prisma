@@ -17,7 +17,6 @@ model User {
   updatedAt                    DateTime                      @updatedAt
   username                     String?                       @unique
   displayUsername              String?
-  employeeCode                 String?                       @unique
   departmentId                 String?
   departmentRole               String?                       @default("MEMBER")
   hrmRole                      String                        @default("EMPLOYEE")
@@ -101,6 +100,13 @@ model User {
   invitations          Invitation[]
   onboardings          Onboarding[]
   onboardingChecklists OnboardingChecklist[]
+  aiChatSessions       AIChatSession[]
+
+  aiChatActiveSessionId String?
+
+  aiCredits         Int       @default(100)
+  aiTotalTokensUsed Int       @default(0)
+  aiLastResetAt     DateTime?
 
   @@map("users")
 }
@@ -1838,4 +1844,30 @@ model AIDashboardSummary {
   @@unique([date, detailLevel])
   @@index([date])
   @@map("ai_dashboard_summaries")
+}
+
+model AIChatSession {
+  id        String          @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  AIChatMessage[]
+
+  @@index([userId])
+  @@map("ai_chat_sessions")
+}
+
+model AIChatMessage {
+  id        String        @id @default(cuid())
+  sessionId String
+  role      String        // system | user | assistant
+  content   String
+  metadata  Json?         // To store attachments, tool calls, and actions
+  createdAt DateTime      @default(now())
+  session   AIChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("ai_chat_messages")
 }

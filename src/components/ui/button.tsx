@@ -39,51 +39,57 @@ const buttonVariants = cva(
   },
 );
 
-function Button({
-  className,
-  variant = "default",
-  size = "default",
-  isActive = false,
-  tooltip,
-  asChild = false,
-  tooltipSide = "top",
-  ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean;
-    isActive?: boolean;
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>;
-    tooltipSide?: "top" | "right" | "bottom" | "left";
-  }) {
-  const Comp = asChild ? Slot.Root : "button";
+const Button = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentProps<"button"> &
+    VariantProps<typeof buttonVariants> & {
+      asChild?: boolean;
+      isActive?: boolean;
+      tooltip?: string | React.ComponentProps<typeof TooltipContent>;
+      tooltipSide?: "top" | "right" | "bottom" | "left";
+    }
+>(
+  (
+    {
+      className,
+      variant = "default",
+      size = "default",
+      isActive = false,
+      tooltip,
+      asChild = false,
+      tooltipSide = "top",
+      ...props
+    },
+    ref
+  ) => {
+    const Comp = asChild ? Slot.Root : "button";
 
-  const button = (
-    <Comp
-      data-slot="button"
-      data-variant={variant}
-      data-size={size}
-      data-active={isActive}
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
-  );
+    const button = (
+      <Comp
+        data-slot="button"
+        data-variant={variant}
+        data-size={size}
+        data-active={isActive}
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
 
-  if (!tooltip) {
-    return button;
+    if (!tooltip) {
+      return button;
+    }
+
+    let tooltipContentProps = typeof tooltip === "string" ? { children: tooltip } : tooltip;
+
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side={tooltipSide} align="center" {...tooltipContentProps} />
+      </Tooltip>
+    );
   }
-
-  if (typeof tooltip === "string") {
-    tooltip = {
-      children: tooltip,
-    };
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side={tooltipSide} align="center" {...tooltip} />
-    </Tooltip>
-  );
-}
+);
+Button.displayName = "Button";
 
 export { Button, buttonVariants };

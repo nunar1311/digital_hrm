@@ -2,9 +2,15 @@
 Chat Router - HR Chatbot endpoint
 Bao gom Smart Chat ket hop du lieu tu database
 Co phan quyen theo role: SUPER_ADMIN/admin xem toan bo, EMPLOYEE chi xem ca nhan
+
+Production features:
+- Redis caching cho AI responses va DB queries
+- Semaphore-based queue gioi han concurrent AI calls
+- Request deduplication
 """
 
 import logging
+import uuid
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
@@ -12,11 +18,48 @@ from fastapi import APIRouter, HTTPException, Request
 
 from app.services.provider_router import get_provider_router
 from app.prompts.registry import get_prompt_registry
+from app.prompts.company_context import get_company_context
 from app.utils.response_formatter import ResponseFormatter
 from app.services.db_queries import HRDataQueries, EmployeePersonalQueries
 from app.middleware.rbac import extract_user_context
+from app.services.action_executor import (
+    HRCommandExecutor,
+    get_tools_prompt,
+    parse_tool_calls_from_response,
+    strip_action_blocks,
+    is_tool_dangerous,
+)
+from app.services.redis_service import (
+    get_ai_response_cache,
+    set_ai_response_cache,
+    check_dedup,
+    set_dedup,
+    track_active_session,
+    is_redis_available,
+)
+from app.services.queue_manager import get_ai_queue, QueueTimeoutError
+
+import os
+import functools
 
 logger = logging.getLogger(__name__)
+
+@functools.lru_cache(maxsize=1)
+def get_prisma_schema() -> str:
+    try:
+        # Path resolution from router file back to root
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        ai_service_dir = os.path.dirname(os.path.dirname(current_dir))
+        root_dir = os.path.dirname(ai_service_dir)
+        schema_path = os.path.join(root_dir, "prisma", "schema.prisma")
+        
+        if os.path.exists(schema_path):
+            with open(schema_path, "r", encoding="utf-8") as f:
+                return f.read()
+        return "Schema file not found."
+    except Exception as e:
+        logger.error(f"Failed to read schema.prisma: {e}")
+        return ""
 router = APIRouter()
 
 
@@ -50,12 +93,7 @@ class ChatResponse(BaseModel):
 async def chat(request: ChatRequest):
     """
     HR Chatbot endpoint - Chat with AI assistant
-
-    Use this endpoint for:
-    - HR policy questions
-    - Leave request inquiries
-    - General HR assistance
-    - Employee support
+    All AI calls go through the queue for concurrency control.
     """
     try:
         # Convert messages to dict format
@@ -64,24 +102,42 @@ async def chat(request: ChatRequest):
         # Add system prompt if not present
         has_system = any(m["role"] == "system" for m in messages)
         if not has_system:
-            # Use ESS system prompt from registry
-            prompt_registry = get_prompt_registry()
-            system_prompt = prompt_registry.get_system_prompt("ess")
+            system_prompt = """Bạn là một đồng nghiệp thân thiện trong công ty, có quyền truy cập dữ liệu nhân sự.
+
+CÁCH TRẢ LỜI:
+- Nói chuyện tự nhiên như đang chat với đồng nghiệp, không phải chatbot
+- Trả lời ngắn gọn, đúng trọng tâm, không dài dòng
+- Dùng số liệu cụ thể khi có, format rõ ràng (VD: lương dùng VNĐ, phần trăm dùng %)
+- KHÔNG dùng bảng Markdown, thay bằng danh sách bullet points
+- Không có dữ liệu thì nói thẳng, gợi ý cách lấy thêm nếu có
+- LUÔN LUÔN thêm mục "Follow ups:" ở cuối câu trả lời, kèm theo 2-3 câu gợi ý tiếp theo dạng danh sách. Các câu này PHẢI VIẾT DƯỚI GÓC NHÌN CỦA NGƯỜI DÙNG (dùng đại từ "tôi", "cho tôi") để họ bấm vào hỏi tiếp (Ví dụ: "Tôi muốn nghỉ 1 ngày", "Kiểm tra giúp tôi số phép còn lại", "Lọc theo phòng ban giúp tôi").
+- Khi cần hỏi thêm thông tin: HỎI BẰNG LỜI CỦA MÌNH, KHÔNG BAO GIỜ hiển thị template như [key: value], [Loại: ...], [Ngày: ...]"""
             messages.insert(0, {"role": "system", "content": system_prompt})
 
-        # Route to AI provider
+        # Route to AI provider through queue
         provider_router = get_provider_router()
-        result = await provider_router.chat(
-            messages=messages,
-            provider=request.provider,
-            model=request.model,
-            temperature=request.temperature,
-        )
+        ai_queue = get_ai_queue()
+
+        try:
+            result = await ai_queue.execute(
+                provider_router.chat(
+                    messages=messages,
+                    provider=request.provider,
+                    model=request.model,
+                    temperature=request.temperature,
+                ),
+                request_id=f"chat_{request.session_id or 'anon'}",
+            )
+        except QueueTimeoutError:
+            return ChatResponse(
+                success=False,
+                error="Hệ thống đang bận. Thử lại trong giây lát nhé.",
+            )
 
         if not result.get("success"):
             return ChatResponse(
                 success=False,
-                error=result.get("error", "AI request failed"),
+                error=result.get("error", "Có lỗi xảy ra. Thử lại sau nhé."),
                 provider=result.get("provider"),
             )
 
@@ -94,11 +150,11 @@ async def chat(request: ChatRequest):
             usage=result.get("usage"),
         )
 
-    except Exception as e:
-        logger.error(f"Chat error: {e}", exc_info=True)
+    except Exception:
+        logger.error(f"Chat error", exc_info=True)
         return ChatResponse(
             success=False,
-            error=str(e),
+            error="Có lỗi xảy ra. Thử lại sau nhé.",
         )
 
 
@@ -113,13 +169,16 @@ class SmartChatRequest(BaseModel):
     provider: Optional[str] = Field(None, description="AI provider to use")
     model: Optional[str] = Field(None, description="Model to use")
     language: str = Field("vi", description="Response language (vi/en)")
+    session_id: Optional[str] = Field(None, description="Session ID for tracking")
 
 
 class SmartChatResponse(BaseModel):
-    """Smart chat response"""
+    """Smart chat response with optional action proposals"""
     success: bool
     content: Optional[str] = None
     data_sources: Optional[List[str]] = None
+    actions: Optional[List[Dict[str, Any]]] = None
+    needs_followup: bool = False
     provider: Optional[str] = None
     model: Optional[str] = None
     usage: Optional[Dict] = None
@@ -131,21 +190,49 @@ async def smart_chat(request: SmartChatRequest, raw_request: Request):
     """
     Smart Chat - AI Chatbot thông minh kết hợp dữ liệu thực từ Database
 
-    Phân quyền theo role:
-    - SUPER_ADMIN / Admin roles (DIRECTOR, HR_MANAGER, HR_STAFF, ACCOUNTANT):
-      → Truy cập toàn bộ dữ liệu HR để trả lời câu hỏi
-    - EMPLOYEE / DEPT_MANAGER / TEAM_LEADER / IT_ADMIN:
-      → Chỉ truy cập dữ liệu CÁ NHÂN của chính họ
-
-    AI tự động:
-    1. Đọc role của user từ header
-    2. Truy vấn database phù hợp với quyền
-    3. Kết hợp dữ liệu thực vào context
-    4. Trả lời chính xác dựa trên dữ liệu thật
+    Production features:
+    - Redis caching cho AI responses (10 phút)
+    - Request deduplication (5 giây)
+    - Queue-based concurrency control (max 20 concurrent)
+    - Phân quyền theo role
     """
     try:
         # Đọc user context từ headers (được forward bởi Next.js)
         user_ctx = extract_user_context(raw_request)
+        request_id = f"smart_{user_ctx.user_id or 'anon'}_{uuid.uuid4().hex[:6]}"
+
+        # Track active session
+        if user_ctx.user_id:
+            await track_active_session(user_ctx.user_id, request.session_id or "default")
+
+        # Step 0: Request deduplication (cùng user, cùng message trong 5s → skip)
+        if user_ctx.user_id:
+            dedup_result = await check_dedup(user_ctx.user_id, request.message)
+            if dedup_result:
+                logger.info(f"[{request_id}] Dedup hit - same message within 5s")
+                # Try to return cached response
+                cached = await get_ai_response_cache(
+                    request.message,
+                    str(user_ctx.user_role.value) if user_ctx.user_role else "EMPLOYEE",
+                    user_ctx.has_full_access,
+                )
+                if cached:
+                    return SmartChatResponse(**cached)
+
+        # Mark this request for dedup
+        if user_ctx.user_id:
+            await set_dedup(user_ctx.user_id, request.message, request_id)
+
+        # Step 0.5: Check AI response cache (tạm disable - mỗi câu hỏi cần fresh response)
+        # user_role_str = str(user_ctx.user_role.value) if user_ctx.user_role else "EMPLOYEE"
+        # cached_response = await get_ai_response_cache(
+        #     request.message,
+        #     user_role_str,
+        #     user_ctx.has_full_access,
+        # )
+        # if cached_response:
+        #     logger.info(f"[{request_id}] AI response cache HIT")
+        #     return SmartChatResponse(**cached_response)
 
         # Step 1: Query data dựa theo role
         data_sources = []
@@ -200,17 +287,52 @@ KHÔNG đưa ra thông tin của nhân viên khác, phòng ban khác, hay số l
 Nếu người dùng hỏi về dữ liệu tổng thể (ví dụ: lương toàn công ty, số nhân viên...),
 hãy lịch sự giải thích rằng bạn chỉ có thể cung cấp thông tin cá nhân của họ."""
 
-        system_prompt = f"""Bạn là trợ lý AI thông minh cho hệ thống Quản lý Nhân sự (Digital HRM).
+        # Inject tool-calling prompt
+        tools_prompt = get_tools_prompt()
+
+        # Inject prisma schema
+        prisma_schema = get_prisma_schema()
+
+        # Inject company context
+        company_ctx = await get_company_context()
+        dp_context = (
+            f"\n**THÔNG TIN CÔNG TY:**\n{company_ctx}\n"
+            if company_ctx
+            else ""
+        )
+
+        system_prompt = f"""Bạn là một đồng nghiệp thân thiện trong công ty, có quyền truy cập dữ liệu nhân sự.
 
 {role_context}
 
-QUAN TRỌNG:
-- Ưu tiên sử dụng DỮ LIỆU THỰC từ database được cung cấp bên dưới
-- Trả lời CỤ THỂ với SỐ LIỆU CHÍNH XÁC từ dữ liệu
-- Khi trả lời về số liệu, hãy format đẹp (VD: lương dùng VNĐ, phần trăm dùng %)
-- Nếu không có đủ dữ liệu, hãy nói rõ và gợi ý cách lấy thêm
-- Luôn phân tích và đưa ra nhận xét/khuyến nghị kèm theo
+CÁCH TRẢ LỜI:
+- Nói chuyện tự nhiên như đang chat với đồng nghiệp, không phải chatbot
+- Trả lời ngắn gọn, đúng trọng tâm, không dài dòng
+- Dùng số liệu cụ thể khi có, format rõ ràng (VD: lương dùng VNĐ, phần trăm dùng %)
+- KHÔNG dùng bảng Markdown, thay bằng danh sách bullet points
+- Nếu cần hành động (tạo đơn, duyệt, thông báo...), thực hiện luôn qua tool
+- Không có dữ liệu thì nói thẳng, gợi ý cách lấy thêm nếu có
+- Không cần phải đưa ra khuyến nghị nếu câu hỏi chỉ cần trả lời đơn giản
+- LUÔN LUÔN thêm mục "Follow ups:" ở cuối câu trả lời, kèm theo 2-3 câu gợi ý tiếp theo dạng danh sách. Các câu này PHẢI VIẾT DƯỚI GÓC NHÌN CỦA NGƯỜI DÙNG (dùng đại từ "tôi", "cho tôi") để họ bấm vào hỏi tiếp (Ví dụ: "Tôi muốn nghỉ 1 ngày", "Kiểm tra giúp tôi số phép còn lại", "Lọc theo phòng ban giúp tôi").
+
+QUY TẮC NGHIÊM NGẶT - KHÔNG ĐƯỢC VI PHẠM:
+- Khi cần hỏi thêm thông tin từ user, HỎI BẰNG LỜI CỦA MÌNH. Ví dụ:
+  ✗ SAI: "[Loại nghỉ: ANNUAL/SICK...]"
+  ✓ ĐÚNG: "Bạn muốn nghỉ loại nào: nghỉ phép thường niên hay nghỉ ốm?"
+  ✗ SAI: "[Ngày bắt đầu: YYYY-MM-DD]"
+  ✓ ĐÚNG: "Bạn muốn bắt đầu nghỉ từ ngày nào?"
+- KHÔNG BAO GIỜ hiển thị template/placeholder như [key: value], [[key: value]], [Loại: ...], [Ngày: ...]
+- Khi hỏi thêm thông tin, chỉ hỏi ĐÚNG những thứ còn thiếu, không hỏi lại những thứ đã có
 - {language_instruction}
+
+DƯỚI ĐÂY LÀ KIẾN TRÚC DATABASE CỦA HỆ THỐNG (schema.prisma). HÃY DÙNG NÓ ĐỂ TẠO CÂU LỆNH SQL CHUẨN XÁC NẾU CẦN:
+```prisma
+{prisma_schema}
+```
+
+{tools_prompt}
+
+{dp_context}
 
 {db_context}"""
 
@@ -225,150 +347,165 @@ QUAN TRỌNG:
 
         messages.append({"role": "user", "content": request.message})
 
-        # Step 3: Call AI provider
+        # Step 3: Call AI provider through queue
         provider_router = get_provider_router()
-        result = await provider_router.chat(
-            messages=messages,
-            provider=request.provider,
-            model=request.model,
-            temperature=0.4,
-        )
+        ai_queue = get_ai_queue()
+
+        try:
+            result = await ai_queue.execute(
+                provider_router.chat(
+                    messages=messages,
+                    provider=request.provider,
+                    model=request.model,
+                    temperature=0.4,
+                ),
+                request_id=request_id,
+            )
+        except QueueTimeoutError:
+            return SmartChatResponse(
+                success=False,
+                error="Hệ thống đang bận. Thử lại trong giây lát nhé.",
+            )
 
         if not result.get("success"):
             return SmartChatResponse(
                 success=False,
-                error=result.get("error", "AI request failed"),
+                error=result.get("error", "Có lỗi xảy ra. Thử lại sau nhé."),
                 provider=result.get("provider"),
             )
 
-        return SmartChatResponse(
-            success=True,
-            content=result.get("content"),
-            data_sources=data_sources if data_sources else None,
-            provider=result.get("provider"),
-            model=result.get("model"),
-            usage=result.get("usage"),
-        )
+        # Step 4: Parse tool calls from AI response
+        ai_content = result.get("content", "")
+        tool_calls = parse_tool_calls_from_response(ai_content)
+        actions = []
+        needs_followup = False
 
-    except Exception as e:
-        logger.error(f"Smart chat error: {e}", exc_info=True)
-        return SmartChatResponse(
-            success=False,
-            error=str(e),
-        )
-
-
-class HRQuestionRequest(BaseModel):
-    """Specific HR question request"""
-    question: str = Field(..., description="User question")
-    context: Optional[Dict[str, Any]] = Field(None, description="Additional context")
-    language: str = Field("vi", description="Response language (vi/en)")
-
-
-@router.post("/hr-question")
-async def hr_question(request: HRQuestionRequest):
-    """
-    Answer specific HR questions
-
-    Provides answers to common HR questions like:
-    - Leave policies
-    - Benefits information
-    - Company policies
-    - Procedures
-    """
-    try:
-        provider_router = get_provider_router()
-
-        # Build context-aware prompt
-        context_str = ""
-        if request.context:
-            context_str = f"\n\nNgữ cảnh bổ sung:\n{request.context}"
-
-        language_instruction = "Trả lời bằng tiếng Việt." if request.language == "vi" else "Respond in English."
-
-        prompt = f"""
-{language_instruction}
-
-Câu hỏi: {request.question}
-{context_str}
-
-Hãy trả lời câu hỏi một cách chính xác, hữu ích và thân thiện.
-Nếu không chắc chắn về câu trả lời, hãy nói rõ và gợi ý liên hệ bộ phận HR để được hỗ trợ.
-"""
-
-        messages = [
-            {"role": "system", "content": "Bạn là trợ lý HR thân thiện, chuyên nghiệp. Trả lời chính xác các câu hỏi về chính sách nhân sự."},
-            {"role": "user", "content": prompt},
-        ]
-
-        result = await provider_router.chat(messages, temperature=0.5)
-
-        return ResponseFormatter.success(
-            content=result.get("content"),
-            metadata={"question": request.question},
-            provider=result.get("provider"),
-            usage=result.get("usage"),
-        )
-
-    except Exception as e:
-        logger.error(f"HR question error: {e}", exc_info=True)
-        return ResponseFormatter.error(str(e))
-
-
-class LeaveChatRequest(BaseModel):
-    """Leave-related chat request"""
-    action: str = Field(..., description="Action: ask, approve, reject, info")
-    employee_id: Optional[str] = None
-    leave_request_id: Optional[str] = None
-    message: Optional[str] = None
-    language: str = Field("vi", description="Response language")
-
-
-@router.post("/leave-chat")
-async def leave_chat(request: LeaveChatRequest):
-    """
-    Chat about leave requests
-
-    Actions:
-    - ask: Ask about leave balance or policy
-    - info: Get information about a leave request
-    - approve: Get AI analysis for approval recommendation
-    - reject: Get AI analysis for rejection reason
-    """
-    try:
-        provider_router = get_provider_router()
-
-        action_prompts = {
-            "ask": "Trả lời câu hỏi về đơn nghỉ phép, số ngày nghỉ còn lại, và chính sách nghỉ phép.",
-            "info": "Cung cấp thông tin chi tiết về đơn nghỉ được yêu cầu.",
-            "approve": "Phân tích và đưa ra khuyến nghị có nên chấp nhận đơn nghỉ này không.",
-            "reject": "Phân tích và đưa ra lý do hợp lý để từ chối đơn nghỉ này.",
+        # Tools that are read-only and should trigger a follow-up AI analysis
+        READ_ONLY_TOOLS = {
+            "query_database", "query_employee_data", "get_leave_balance",
+            "get_attendance_report", "get_team_overview", "get_risk_assessment",
+            "get_copilot_insight", "analyze_approval_request",
         }
 
-        prompt = f"""
-Hành động: {action_prompts.get(request.action, 'Trả lời câu hỏi')}
+        if tool_calls:
+            executor = HRCommandExecutor(
+                user_id=user_ctx.user_id or "",
+                user_role=str(user_ctx.user_role.value) if user_ctx.user_role else "EMPLOYEE",
+            )
 
-{'Mã nhân viên: ' + request.employee_id if request.employee_id else ''}
-{'Mã đơn nghỉ: ' + request.leave_request_id if request.leave_request_id else ''}
-{'Tin nhắn: ' + request.message if request.message else ''}
+            for tc in tool_calls:
+                tool_name = tc["tool"]
+                # Dangerous tools (SQL INSERT/UPDATE/DELETE) need explicit confirmation
+                # Safe tools are auto-confirmed inside executor.execute()
+                confirmed = not is_tool_dangerous(tool_name, tc.get("params", {}))
+                tool_result = await executor.execute(tool_name, tc.get("params", {}), confirmed=confirmed)
+                actions.append({
+                    "id": f"{tc['tool']}_{len(actions)}",
+                    "tool": tool_name,
+                    "description": tc.get("description", tool_result.display_message),
+                    "status": tool_result.status.value,
+                    "display_message": tool_result.display_message,
+                    "data": tool_result.data,
+                    "confirmation_required": tool_result.confirmation_required,
+                    "confirmation_data": tool_result.confirmation_data,
+                    "error": tool_result.error,
+                    "auto_executed": confirmed,
+                })
 
-{'Trả lời bằng tiếng Việt.' if request.language == 'vi' else 'Respond in English.'}
-"""
+                # Flag if read-only tool succeeded with data → frontend should follow up
+                if (
+                    tool_name in READ_ONLY_TOOLS
+                    and tool_result.status.value == "success"
+                    and tool_result.data
+                ):
+                    needs_followup = True
 
-        messages = [
-            {"role": "system", "content": "Bạn là trợ lý HR chuyên về nghỉ phép. Phân tích và đưa ra thông tin hữu ích."},
-            {"role": "user", "content": prompt},
-        ]
+            # Strip action blocks from display content
+            ai_content = strip_action_blocks(ai_content)
 
-        result = await provider_router.chat(messages, temperature=0.5)
+        # Build response
+        response_data = {
+            "success": True,
+            "content": ai_content,
+            "data_sources": data_sources if data_sources else None,
+            "actions": actions if actions else None,
+            "needs_followup": needs_followup,
+            "provider": result.get("provider"),
+            "model": result.get("model"),
+            "usage": result.get("usage"),
+        }
 
-        return ResponseFormatter.success(
-            content=result.get("content"),
-            metadata={"action": request.action},
-            provider=result.get("provider"),
-            usage=result.get("usage"),
+        # Cache response disabled - always return fresh response
+        # if not tool_calls:
+        #     await set_ai_response_cache(
+        #         request.message,
+        #         user_role_str,
+        #         user_ctx.has_full_access,
+        #         response_data,
+        #     )
+
+        return SmartChatResponse(**response_data)
+
+    except QueueTimeoutError:
+        return SmartChatResponse(
+            success=False,
+            error="Hệ thống đang bận. Thử lại trong giây lát nhé.",
+        )
+    except Exception:
+        logger.error(f"Smart chat error", exc_info=True)
+        return SmartChatResponse(
+            success=False,
+            error="Có lỗi xảy ra. Thử lại sau nhé.",
         )
 
-    except Exception as e:
-        logger.error(f"Leave chat error: {e}", exc_info=True)
-        return ResponseFormatter.error(str(e))
+
+# =====================
+# EXECUTE ACTION - User-confirmed action execution
+# =====================
+
+class ExecuteActionRequest(BaseModel):
+    """Request to execute a confirmed action"""
+    action_id: str = Field(..., description="Action ID from smart-chat response")
+    tool: str = Field(..., description="Tool name to execute")
+    params: Dict[str, Any] = Field(default_factory=dict, description="Tool parameters")
+    confirmed: bool = Field(True, description="User confirmation flag")
+
+
+@router.post("/execute-action")
+async def execute_action(request: ExecuteActionRequest, raw_request: Request):
+    """
+    Execute a user-confirmed action from smart-chat.
+    Only proceeds if confirmed=True.
+    """
+    try:
+        if not request.confirmed:
+            return {
+                "success": False,
+                "error": "Action requires user confirmation.",
+            }
+
+        user_ctx = extract_user_context(raw_request)
+        executor = HRCommandExecutor(
+            user_id=user_ctx.user_id or "",
+            user_role=str(user_ctx.user_role.value) if user_ctx.user_role else "EMPLOYEE",
+        )
+
+        result = await executor.execute(request.tool, request.params, confirmed=request.confirmed)
+
+        return {
+            "success": result.status.value in ("success", "pending_confirmation"),
+            "action_id": request.action_id,
+            "tool": request.tool,
+            "status": result.status.value,
+            "display_message": result.display_message,
+            "data": result.data,
+            "error": result.error,
+        }
+
+    except Exception:
+        logger.error(f"Execute action error", exc_info=True)
+        return {"success": False, "error": "Có lỗi xảy ra. Thử lại sau nhé."}
+
+
+# /hr-question and /leave-chat endpoints removed - use /smart-chat instead
+# hrQuestion() and leaveChat() in ai-service-client.ts marked as @deprecated

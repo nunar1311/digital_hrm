@@ -126,16 +126,16 @@ export default function BannerNotification() {
   }
 
   return (
-    <section className="flex items-center justify-between flex-nowrap gap-1 sm:gap-4 bg-primary dark:bg-pirmary-dark min-h-11 text-accent leading-5 py-2.5 px-2 sm:px-4">
-      <div className="grow flex items-center justify-between flex-wrap gap-1 sm:gap-2">
+    <section className="flex items-center justify-between flex-nowrap gap-1 sm:gap-4 bg-primary dark:bg-primary-muted min-h-11 text-accent leading-5 py-2.5 px-2 sm:px-4">
+      <div className="grow flex items-center justify-between flex-wrap gap-1 sm:gap-2 text-white">
         <BellIcon className="size-4" />
-        <p className="grow-500 basis-[min-content] text-xs sm:text-sm font-medium">
+        <p className="grow-500 basis-[min-content] text-xs sm:text-sm ">
           <strong>Digital HRM</strong> cần quyền truy cập để gửi thông báo.
         </p>
         <Button
           size="xs"
           variant="outline"
-          className="bg-transparent hover:text-white hover:bg-white/20"
+          className="bg-transparent! hover:text-white hover:bg-white/20 border-white!"
           onClick={handleEnable}
           disabled={isGranted || isLoadingPrefs || isPending}
         >
@@ -144,17 +144,17 @@ export default function BannerNotification() {
         <Button
           size="xs"
           variant="outline"
-          className="bg-transparent hover:text-white hover:bg-white/20"
+          className="bg-transparent! border-white!"
           onClick={handleRemindLater}
         >
           Nhắc tôi sau
         </Button>
       </div>
       <Button
-        size="icon-xs"
+        size="icon-sm"
         variant="ghost"
         tooltip={"Đóng"}
-        className="hover:text-white hover:bg-white/20"
+        className="size-6 text-white hover:text-white! hover:bg-white/20"
         onClick={handleDismiss}
       >
         <XIcon />

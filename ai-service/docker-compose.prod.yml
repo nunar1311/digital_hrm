@@ -1,0 +1,52 @@
+# Docker Compose - Production deployment cho Digital HRM AI Service
+# Redis + AI Service (multi-worker)
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: hrm-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hrm-ai-service
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_ENABLED=true
+      - REDIS_URL=redis://redis:6379/0
+      - DB_POOL_MIN_SIZE=5
+      - DB_POOL_MAX_SIZE=30
+      - MAX_CONCURRENT_AI_CALLS=20
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  redis_data:
+    driver: local

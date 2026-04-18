@@ -1,38 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 import {
-  Send,
   Sparkles,
-  User,
-  Globe,
-  Search,
-  Plus,
-  ListTodo,
-  Edit3,
-  Lightbulb,
-  Paperclip,
-  FileText,
-  Image as ImageIcon,
-  Briefcase,
-  Users,
-  FileBarChart,
-  AtSign,
-  X,
   History,
-  MessageSquarePlus,
+  Plus,
+  Settings,
+  CheckSquare,
+  Square,
   Trash2,
-  Copy,
-  Check,
-  RotateCcw,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,360 +21,759 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { smartChatWithAI } from "@/lib/ai/actions";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { Badge } from "../ui/badge";
+import { smartChatWithAI, executeHRAction } from "@/lib/ai/actions";
+import {
+  type ActionProposal,
+  type ActionStatus,
+  MANAGER_QUICK_ACTIONS,
+  EMPLOYEE_QUICK_ACTIONS,
+  parseSmartChatResponse,
+} from "@/lib/ai/hr-agent";
+import {
+  useAiChatStore,
+  type Message,
+  type ChatSession,
+} from "@/hooks/use-ai-chat-store";
+import {
+  getUserChatSessions,
+  getChatSessionMessages,
+  createChatSession,
+  saveChatMessage,
+  deleteChatSession as deleteChatSessionDb,
+} from "@/lib/ai/chat-db-actions";
+import { useAiWebSocket } from "@/hooks/use-ai-websocket";
+import { AiAgentMode, type AiAgentModeProps } from "./ai-agent-mode";
+import { getSocket } from "@/lib/socket/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSidebar } from "../ui/sidebar";
+import { toast } from "@/utils/toast";
 
-interface Attachment {
-  name: string;
-  size: number;
-}
+// =====================
+// Shared action helpers
+// =====================
 
-interface Message {
-  id: string;
-  role: "system" | "user" | "assistant";
-  content: string;
-  isTyping?: boolean;
-  attachments?: Attachment[];
-}
+/** Write actions that mutate data — always auto-execute, skip follow-up AI call */
+const WRITE_ACTIONS = new Set([
+  "approve_leave_request",
+  "reject_leave_request",
+  "create_leave_request",
+  "send_notification",
+  "query_database", // write operations (INSERT/UPDATE/DELETE)
+]);
 
-interface ChatSession {
-  id: string;
-  title: string;
-  messages: Message[];
-  createdAt: number;
-  updatedAt: number;
-}
-
-const STORAGE_KEY = "ai-chat-history";
-
-function loadSessions(): ChatSession[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveSessions(sessions: ChatSession[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-}
-
-const MarkdownComponents = {
-  p: ({ children }: any) => (
-    <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
-  ),
-  strong: ({ children }: any) => (
-    <strong className="font-semibold">{children}</strong>
-  ),
-  h1: ({ children }: any) => (
-    <h1 className="text-lg font-bold mt-4 mb-2">{children}</h1>
-  ),
-  h2: ({ children }: any) => (
-    <h2 className="text-base font-bold mt-3 mb-2">{children}</h2>
-  ),
-  h3: ({ children }: any) => (
-    <h3 className="text-sm font-bold mt-3 mb-1">{children}</h3>
-  ),
-  ul: ({ children }: any) => (
-    <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>
-  ),
-  ol: ({ children }: any) => (
-    <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>
-  ),
-  li: ({ children }: any) => <li className="leading-relaxed">{children}</li>,
-  table: ({ children }: any) => (
-    <div className="overflow-x-auto mb-2">
-      <table className="min-w-full border-collapse border border-muted">
-        {children}
-      </table>
-    </div>
-  ),
-  th: ({ children }: any) => (
-    <th className="border border-muted bg-muted/50 px-3 py-1.5 text-left font-semibold">
-      {children}
-    </th>
-  ),
-  td: ({ children }: any) => (
-    <td className="border border-muted px-3 py-1.5">{children}</td>
-  ),
-  a: ({ href, children }: any) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="text-primary underline hover:text-primary/80"
-    >
-      {children}
-    </a>
-  ),
-  code: ({ children }: any) => (
-    <code className="bg-muted px-1.5 py-0.5 rounded text-[0.85em] font-mono">
-      {children}
-    </code>
-  ),
+/** Map write action → Socket.IO event for TanStack Query cache invalidation */
+const ACTION_SOCKET_EVENT: Record<string, { entity: string; event: string }> = {
+  create_leave_request: { entity: "leave-request", event: "data:updated" },
+  approve_leave_request: { entity: "leave-request", event: "data:updated" },
+  reject_leave_request: { entity: "leave-request", event: "data:updated" },
+  send_notification: { entity: "notification", event: "data:updated" },
+  query_database: { entity: "database", event: "data:updated" },
 };
 
-// Component nút sao chép nội dung tin nhắn AI
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
+// =====================
+// Main Component
+// =====================
+interface AIAssistantViewProps {
+  context?: "page" | "sidebar";
+  initialConversationId?: string | null;
+}
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Không thể sao chép nội dung.");
+export function AIAssistantView({
+  context = "sidebar",
+  initialConversationId,
+}: AIAssistantViewProps = {}) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  const currentQuickActions =
+    session?.user?.hrmRole === "EMPLOYEE"
+      ? EMPLOYEE_QUICK_ACTIONS
+      : MANAGER_QUICK_ACTIONS;
+
+  const sessions = useAiChatStore((state) => state.sessions);
+  const pageActiveSessionId = useAiChatStore(
+    (state) => state.pageActiveSessionId,
+  );
+  const sidebarActiveSessionId = useAiChatStore(
+    (state) => state.sidebarActiveSessionId,
+  );
+  const setPageActiveSessionId = useAiChatStore(
+    (state) => state.setPageActiveSessionId,
+  );
+  const setSidebarActiveSessionId = useAiChatStore(
+    (state) => state.setSidebarActiveSessionId,
+  );
+
+  // Helper: set active session in store (URL is source of truth, no DB needed)
+  const setActiveSession = (sessionId: string | null) => {
+    if (context === "page") {
+      setPageActiveSessionId(sessionId);
+    } else {
+      setSidebarActiveSessionId(sessionId);
     }
   };
+  const addSession = useAiChatStore((state) => state.addSession);
+  const updateSession = useAiChatStore((state) => state.updateSession);
+  const deleteSessionState = useAiChatStore((state) => state.deleteSession);
 
-  return (
-    <button
-      onClick={handleCopy}
-      title="Sao chép nội dung"
-      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded transition-colors cursor-pointer"
-    >
-      {copied ? (
-        <>
-          <Check className="h-3 w-3 text-green-500" />
-          <span className="text-green-500">Đã sao chép</span>
-        </>
-      ) : (
-        <>
-          <Copy className="h-3 w-3" />
-          <span>Sao chép</span>
-        </>
-      )}
-    </button>
-  );
-}
+  const activeSessionId =
+    context === "page" ? pageActiveSessionId : sidebarActiveSessionId;
 
-// Component nút thử lại (retry) cho tin nhắn AI
-function RetryButton({ onRetry }: { onRetry: () => void }) {
-  return (
-    <button
-      onClick={onRetry}
-      title="Thử lại"
-      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded transition-colors cursor-pointer"
-    >
-      <RotateCcw className="h-3 w-3" />
-      <span>Thử lại</span>
-    </button>
-  );
-}
-
-function TypewriterText({
-  content,
-  speed = 15,
-  onComplete,
-  onTyping,
-}: {
-  content: string;
-  speed?: number;
-  onComplete?: () => void;
-  onTyping?: () => void;
-}) {
-  const [displayed, setDisplayed] = useState("");
-
-  useEffect(() => {
-    let i = 0;
-    setDisplayed("");
-    const interval = setInterval(() => {
-      if (i < content.length) {
-        // Safe closure updates
-        const nextChar = content.charAt(i);
-        setDisplayed((prev) => prev + nextChar);
-        i++;
-        onTyping?.();
-      } else {
-        clearInterval(interval);
-        onComplete?.();
-      }
-    }, speed);
-    return () => clearInterval(interval);
-  }, [content, onComplete, onTyping, speed]);
-
-  return (
-    <>
-      <ReactMarkdown
-        components={MarkdownComponents}
-        remarkPlugins={[remarkGfm]}
-      >
-        {displayed}
-      </ReactMarkdown>
-      {displayed.length < content.length && (
-        <span className="inline-block w-1.5 h-3.5 bg-primary/60 ml-0.5 animate-pulse align-middle" />
-      )}
-    </>
-  );
-}
-
-export function AIAssistantView() {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [sourceId, setSourceId] = useState("all");
   const [showHistory, setShowHistory] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [files, setFiles] = useState<File[]>([]);
-  const [isTemplateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [autoExecute, setAutoExecute] = useState(true);
+  const [isInitializingSession, setIsInitializingSession] = useState(false);
 
-  // Load sessions from localStorage on mount
+  const currentStreamingMessageIdRef = useRef<string | null>(null);
+  // Guard: prevent onToken from appending after onDone has fired
+  const isDoneFiredRef = useRef(false);
+
+  // Refs to avoid stale closure in WebSocket callbacks
+  const activeSessionIdRef = useRef<string | null>(null);
+  const messagesRef = useRef<Message[]>([]);
+
+  // Keep refs in sync with state
   useEffect(() => {
-    const loaded = loadSessions();
-    setSessions(loaded);
+    activeSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  const { sendMessage, sendStop } = useAiWebSocket({
+    onThinking: (step) => {
+      const msgId = currentStreamingMessageIdRef.current;
+      if (!msgId) return;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId
+            ? {
+                ...m,
+                thinkingSteps: [
+                  // Mark previous running steps as done
+                  ...(m.thinkingSteps || []).map((s) =>
+                    s.status === "running"
+                      ? { ...s, status: "done" as const }
+                      : s,
+                  ),
+                  step,
+                ],
+              }
+            : m,
+        ),
+      );
+    },
+    onToolStart: (step) => {
+      const msgId = currentStreamingMessageIdRef.current;
+      if (!msgId) return;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId
+            ? {
+                ...m,
+                thinkingSteps: [
+                  ...(m.thinkingSteps || []).map((s) =>
+                    s.status === "running" && !s.toolName
+                      ? { ...s, status: "done" as const }
+                      : s,
+                  ),
+                  step,
+                ],
+              }
+            : m,
+        ),
+      );
+    },
+    onToolResult: (stepId, status, detail) => {
+      const msgId = currentStreamingMessageIdRef.current;
+      if (!msgId) return;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId
+            ? {
+                ...m,
+                thinkingSteps: (m.thinkingSteps || []).map((s) =>
+                  s.id === stepId ? { ...s, status, detail } : s,
+                ),
+              }
+            : m,
+        ),
+      );
+    },
+    onToken: (token) => {
+      // Ignore tokens that arrive after onDone has fired
+      if (isDoneFiredRef.current) return;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === currentStreamingMessageIdRef.current
+            ? {
+                ...m,
+                content: (m.content || "") + token,
+                isTyping: true,
+                // Mark all thinking steps as done when tokens start arriving
+                thinkingSteps: (m.thinkingSteps || []).map((s) =>
+                  s.status === "running"
+                    ? { ...s, status: "done" as const }
+                    : s,
+                ),
+              }
+            : m,
+        ),
+      );
+    },
+    onDone: async (
+      actions,
+      dataSources,
+      needsFollowup,
+      dataAnalystResponse,
+    ) => {
+      const msgId = currentStreamingMessageIdRef.current;
+      if (!msgId) return;
+      // Mark done so onToken stops appending
+      isDoneFiredRef.current = true;
+      currentStreamingMessageIdRef.current = null;
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId
+            ? {
+                ...m,
+                isTyping: false,
+                actions: actions,
+                dataAnalystResponse: dataAnalystResponse,
+                // Always preserve streamed content — action cards render below content
+                // Mark all steps as done
+                thinkingSteps: (m.thinkingSteps || []).map((s) =>
+                  s.status === "running"
+                    ? { ...s, status: "done" as const }
+                    : s,
+                ),
+              }
+            : m,
+        ),
+      );
+
+      // Read from ref to avoid stale closure
+      const currentSessionId = activeSessionIdRef.current;
+      const currentMsgs = messagesRef.current;
+      const targetMsg = currentMsgs.find((m) => m.id === msgId);
+      if (targetMsg && currentSessionId) {
+        await saveChatMessage(
+          msgId,
+          currentSessionId,
+          "assistant",
+          targetMsg.content || "",
+          {
+            actions,
+            dataAnalystResponse:
+              dataAnalystResponse ?? targetMsg.dataAnalystResponse,
+          },
+        );
+      }
+
+      if (actions && actions.length > 0) {
+        // Actions already executed by backend (status: success) — sync UI data
+        const successActions = actions.filter((a) => a.status === "success");
+        if (successActions.length > 0) {
+          for (const a of successActions) {
+            const toolConfig = ACTION_SOCKET_EVENT[a.tool];
+            if (toolConfig) {
+              const socket = getSocket() as ReturnType<typeof getSocket> & {
+                emit: (event: string, data: unknown) => void;
+              };
+              if (socket?.connected) {
+                socket.emit(toolConfig.event, {
+                  entity: toolConfig.entity,
+                  action: a.tool,
+                  data: a.data,
+                });
+              }
+            }
+          }
+          router.refresh();
+          queryClient.invalidateQueries();
+        }
+
+        // Actions that need user confirmation — auto-execute via HTTP
+        if (autoExecute) {
+          const pendingActions = actions.filter(
+            (a) => a.status === "pending_confirmation",
+          );
+          if (pendingActions.length > 0) {
+            setTimeout(async () => {
+              for (const a of pendingActions) {
+                await handleExecuteAction(a, msgId);
+              }
+            }, 400);
+          }
+        }
+      }
+      setIsLoading(false);
+    },
+    onStopped: () => {
+      // Server acknowledged the stop — ensure UI is clean
+      console.log("[AI] Server confirmed stop");
+    },
+    onError: (error) => {
+      currentStreamingMessageIdRef.current = null;
+      const errorMsgId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      setMessages((prev) => [
+        ...prev,
+        { id: errorMsgId, role: "assistant", content: `Lỗi kết nối: ${error}` },
+      ]);
+      // Must reset loading here — WebSocket error path bypasses the finally block
+      setIsLoading(false);
+    },
+  });
+
+  // Load sessions on mount (for sidebar listing)
+  useEffect(() => {
+    getUserChatSessions().then((sessionsRes) => {
+      const store = useAiChatStore.getState();
+      if (sessionsRes.success && sessionsRes.sessions) {
+        const loadedSessions = sessionsRes.sessions.map(
+          (s: {
+            id: string;
+            title: string;
+            createdAt: Date;
+            updatedAt: Date;
+          }) => ({
+            id: s.id,
+            title: s.title,
+            messages: [],
+            createdAt: new Date(s.createdAt).getTime(),
+            updatedAt: new Date(s.updatedAt).getTime(),
+          }),
+        );
+
+        store.setSessions(loadedSessions);
+
+        // Chỉ set active session khi có conversationId trong URL
+        if (initialConversationId) {
+          setActiveSession(initialConversationId);
+        } else {
+          // Không có conversationId -> new chat, clear active session
+          setActiveSession(null);
+        }
+      } else {
+        store.clearStore();
+      }
+    });
+
+    const savedAutoExecute = localStorage.getItem("ai_auto_execute");
+    if (savedAutoExecute === "true") setAutoExecute(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [context, initialConversationId]);
+
+  // Sync messages when active session changes (driven by conversationId from URL)
+  useEffect(() => {
+    // Skip entirely while a new session is being created — handleSend manages
+    // messages directly and saves them to DB asynchronously. Loading from DB
+    // here would return empty (race: message not saved yet) and wipe the UI.
+    if (isInitializingSession) return;
+
+    // Skip if we're actively streaming a response — the in-memory messages
+    // contain the assistant placeholder and tokens that aren't in DB yet.
+    // Reloading from DB here would wipe the streaming message.
+    if (currentStreamingMessageIdRef.current) return;
+
+    if (activeSessionId) {
+      getChatSessionMessages(activeSessionId).then((res) => {
+        // Double-check: streaming may have started while the DB query was in-flight
+        if (currentStreamingMessageIdRef.current) return;
+
+        if (res.success && res.messages) {
+          const loadedMessages = res.messages.map((m) => ({
+            id: m.id,
+            role: m.role as "system" | "user" | "assistant",
+            content: m.content,
+            actions: (m.metadata as { actions?: Message["actions"] })?.actions,
+            attachments: (
+              m.metadata as { attachments?: Message["attachments"] }
+            )?.attachments,
+            dataAnalystResponse: (
+              m.metadata as {
+                dataAnalystResponse?: Message["dataAnalystResponse"];
+              }
+            )?.dataAnalystResponse,
+          }));
+          setMessages(loadedMessages);
+          updateSession(activeSessionId, loadedMessages);
+        }
+      });
+    } else {
+      setMessages([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSessionId, isInitializingSession]);
+
+  const toggleAutoExecute = () => {
+    setAutoExecute((prev) => {
+      const next = !prev;
+      localStorage.setItem("ai_auto_execute", String(next));
+      return next;
+    });
+  };
+
+  const scrollToBottom = useCallback((smooth = true) => {
+    bottomRef.current?.scrollIntoView({
+      behavior: smooth ? "smooth" : "auto",
+      block: "end",
+    });
   }, []);
 
-  const TEMPLATES = [
-    "Viết email thông báo sinh nhật cho nhân viên trong tháng",
-    "Tóm tắt quy định xin phép nghỉ thai sản ở công ty",
-    "Tạo mẫu JD bài đăng tuyển dụng vị trí Lập trình viên",
-    "Lên danh sách ý tưởng team building cuối năm",
-    "Soạn thảo nội quy về bảo mật thông tin nội bộ",
-  ];
-
-  const SOURCES = [
-    {
-      id: "all",
-      label: "All sources",
-      icon: Globe,
-      color: "text-muted-foreground",
-    },
-    {
-      id: "hrm",
-      label: "Hệ thống HRM",
-      icon: Briefcase,
-      color: "text-primary",
-    },
-    {
-      id: "employees",
-      label: "Hồ sơ nhân sự",
-      icon: Users,
-      color: "text-blue-500",
-    },
-    {
-      id: "payroll",
-      label: "Bảng lương & Chấm công",
-      icon: FileBarChart,
-      color: "text-green-500",
-    },
-  ];
-  const activeSource = SOURCES.find((s) => s.id === sourceId) || SOURCES[0];
-  const ActiveSourceIcon = activeSource.icon;
-
-  const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, []);
-
-  // Auto-scroll to bottom of chat
   useEffect(() => {
-    scrollToBottom();
+    // Only smooth scroll if not currently typing to avoid animation stutter
+    const isTyping = messages.some((m) => m.isTyping);
+    scrollToBottom(!isTyping);
   }, [messages, isLoading, scrollToBottom]);
 
-  // Auto-save current conversation to localStorage whenever messages change
+  // Debounced store update ref
+  const updateSessionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (messages.length === 0 || !activeSessionId) return;
-    setSessions((prev) => {
-      const updated = prev.map((s) =>
-        s.id === activeSessionId
-          ? { ...s, messages, updatedAt: Date.now() }
-          : s,
-      );
-      saveSessions(updated);
-      return updated;
-    });
+
+    const isTyping = messages.some((m) => m.isTyping);
+    if (isTyping) {
+      if (updateSessionTimeoutRef.current)
+        clearTimeout(updateSessionTimeoutRef.current);
+      updateSessionTimeoutRef.current = setTimeout(() => {
+        updateSession(activeSessionId, messages);
+      }, 1000); // Debounce store updates while typing
+    } else {
+      if (updateSessionTimeoutRef.current)
+        clearTimeout(updateSessionTimeoutRef.current);
+      updateSession(activeSessionId, messages);
+    }
+
+    return () => {
+      if (updateSessionTimeoutRef.current)
+        clearTimeout(updateSessionTimeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, activeSessionId]);
 
   const startNewChat = () => {
+    setIsInitializingSession(false);
     setMessages([]);
-    setActiveSessionId(null);
+    setActiveSession(null);
     setShowHistory(false);
+    if (context === "page") {
+      router.replace("/ai");
+    }
   };
 
   const loadSession = (session: ChatSession) => {
-    setMessages(session.messages.map((m) => ({ ...m, isTyping: false })));
-    setActiveSessionId(session.id);
+    if (context === "page") {
+      const params = new URLSearchParams();
+      params.set("conversationId", session.id);
+      router.replace(`/ai?${params.toString()}`);
+    } else {
+      setActiveSession(session.id);
+    }
     setShowHistory(false);
   };
 
   const deleteSession = (id: string) => {
-    setSessions((prev) => {
-      const updated = prev.filter((s) => s.id !== id);
-      saveSessions(updated);
-      return updated;
-    });
-    if (activeSessionId === id) {
-      startNewChat();
-    }
+    deleteSessionState(id);
+    deleteChatSessionDb(id);
+    if (activeSessionId === id) startNewChat();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFiles((prev) => [...prev, ...Array.from(e.target.files as FileList)]);
-    }
-    // reset input so same file can be selected again
-    if (e.target) e.target.value = "";
-  };
-
-  const handleMention = () => {
-    setInput((prev) => prev + (prev.endsWith(" ") || prev === "" ? "@" : " @"));
-    // Use timeout to wait for React to flush state to real DOM input
-    setTimeout(() => inputRef.current?.focus(), 10);
-  };
-
-  const handleSend = async (text: string) => {
-    if (!text.trim() || isLoading) return;
-
-    // Capture current files before clearing
-    const currentFiles = [...files];
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: text,
-      attachments:
-        currentFiles.length > 0
-          ? currentFiles.map((f) => ({ name: f.name, size: f.size }))
-          : undefined,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setFiles([]); // Clear files after send
-    setIsLoading(true);
-
-    // Create session if this is the first message
-    if (!activeSessionId) {
-      const newId = Date.now().toString();
-      const title = text.length > 40 ? text.slice(0, 40) + "..." : text;
-      const newSession: ChatSession = {
-        id: newId,
-        title,
-        messages: [userMessage],
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-      setActiveSessionId(newId);
-      setSessions((prev) => {
-        const updated = [newSession, ...prev];
-        saveSessions(updated);
-        return updated;
-      });
-    }
+  // =====================
+  // Execute action
+  // =====================
+  const handleExecuteAction = async (
+    action: ActionProposal,
+    messageId: string,
+  ) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? {
+              ...m,
+              actions: m.actions?.map((a) =>
+                a.id === action.id
+                  ? { ...a, status: "executing" as ActionStatus }
+                  : a,
+              ),
+            }
+          : m,
+      ),
+    );
 
     try {
-      // Read file contents as text
+      const execTool =
+        (action.confirmationData?.action as string) || action.tool;
+      const execParams = (action.confirmationData ||
+        action.data ||
+        {}) as Record<string, unknown>;
+      const result = await executeHRAction(
+        action.id,
+        execTool,
+        execParams,
+        true,
+      );
+
+      // Use actual backend status to determine flow
+      const actualStatus =
+        (result.status as string) || (result.success ? "success" : "error");
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? {
+                ...m,
+                actions: m.actions?.map((a) =>
+                  a.id === action.id
+                    ? {
+                        ...a,
+                        status: actualStatus as ActionStatus,
+                        displayMessage:
+                          result.display_message || a.displayMessage,
+                        error: result.error || null,
+                        // Update confirmation data if backend returned new confirmation data
+                        confirmationData:
+                          result.status === "pending_confirmation" ||
+                          result.status === "requires_info"
+                            ? result.data
+                            : a.confirmationData,
+                        confirmationRequired:
+                          result.status === "pending_confirmation" ||
+                          result.status === "requires_info"
+                            ? true
+                            : a.confirmationRequired,
+                      }
+                    : a,
+                ),
+              }
+            : m,
+        ),
+      );
+
+      if (result.success && actualStatus === "success") {
+        // Emit socket event for cache invalidation (no toast — ActionCard shows status inline)
+        const toolConfig = ACTION_SOCKET_EVENT[execTool];
+        if (toolConfig) {
+          const socket = getSocket() as ReturnType<typeof getSocket> & {
+            emit: (event: string, data: unknown) => void;
+          };
+          if (socket?.connected) {
+            socket.emit(toolConfig.event, {
+              entity: toolConfig.entity,
+              action: execTool,
+              data: result.data,
+            });
+          }
+
+          router.refresh();
+          queryClient.invalidateQueries();
+        }
+      }
+      // pending_confirmation / requires_info / error — all handled inline by ActionCard
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? {
+                ...m,
+                actions: m.actions?.map((a) =>
+                  a.id === action.id
+                    ? {
+                        ...a,
+                        status: "error" as ActionStatus,
+                        error: "Lỗi kết nối",
+                      }
+                    : a,
+                ),
+              }
+            : m,
+        ),
+      );
+    }
+  };
+
+  const handleDismissAction = (action: ActionProposal, messageId: string) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, actions: m.actions?.filter((a) => a.id !== action.id) }
+          : m,
+      ),
+    );
+  };
+
+  // =====================
+  // Send message
+  // =====================
+  const DATA_ANALYST_KEYWORDS = [
+    "thống kê",
+    "biểu đồ",
+    "phân tích",
+    "so sánh",
+    "tổng hợp",
+    "xu hướng",
+    "tỷ lệ",
+    "số liệu",
+    "đếm",
+    "bao nhiêu",
+    "theo tháng",
+    "theo quý",
+    "theo phòng",
+    "theo năm",
+    "bao nhiêu nhân viên",
+    "nhân sự tháng",
+    "tình hình nhân sự",
+    "tuyển dụng",
+    "số lượng",
+    "báo cáo nhân sự",
+    "insight",
+    "metrics",
+    "so sánh",
+    "trend",
+    "distribution",
+    "employee count",
+    "headcount",
+    "turnover",
+    "attrition",
+    "compensation",
+  ];
+
+  const isDataAnalystQuery = (text: string) => {
+    const lower = text.toLowerCase();
+    return DATA_ANALYST_KEYWORDS.some((kw) => lower.includes(kw));
+  };
+
+  const { setOpen } = useSidebar();
+
+  const handleSend = async (
+    text: string,
+    retryOptions?: { assistantMessageId: string },
+  ) => {
+    if (context === "page") setOpen(false);
+
+    if ((!text.trim() && !retryOptions) || isLoading) return;
+
+    let queryText = text;
+    let userMsgIdxForRetry = -1;
+
+    if (retryOptions) {
+      const assistantIdx = messages.findIndex(
+        (m) => m.id === retryOptions.assistantMessageId,
+      );
+      if (assistantIdx !== -1) {
+        for (let i = assistantIdx - 1; i >= 0; i--) {
+          if (messages[i].role === "user") {
+            userMsgIdxForRetry = i;
+            break;
+          }
+        }
+        if (userMsgIdxForRetry !== -1) {
+          queryText = messages[userMsgIdxForRetry].content;
+        } else {
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    if (isDataAnalystQuery(queryText)) {
+      setIsLoading(true);
+      try {
+        if (retryOptions) {
+          const targetHistory = messages.slice(0, userMsgIdxForRetry + 1);
+          setMessages(targetHistory);
+          await handleDataAnalystQuery(queryText, true);
+        } else {
+          await handleDataAnalystQuery(queryText, false);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    let enrichedContent = queryText;
+    let chatHistory: { role: string; content: string }[] = [];
+
+    setIsLoading(true);
+    let currentActiveSession = activeSessionId;
+
+    if (retryOptions) {
+      const targetHistory = messages.slice(0, userMsgIdxForRetry + 1);
+      const chatHistoryObjs = messages.slice(0, userMsgIdxForRetry);
+      enrichedContent = messages[userMsgIdxForRetry].content;
+      setMessages(targetHistory);
+      chatHistory = chatHistoryObjs
+        .filter((m) => m.role !== "system")
+        .map((m) => ({ role: m.role, content: m.content }));
+    } else {
+      const currentFiles = [...files];
+      const userMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      const userMessage: Message = {
+        id: userMessageId,
+        role: "user",
+        content: text,
+        attachments:
+          currentFiles.length > 0
+            ? currentFiles.map((f) => ({ name: f.name, size: f.size }))
+            : undefined,
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+      setInput("");
+      setFiles([]);
+
+      if (!currentActiveSession) {
+        setIsInitializingSession(true);
+        const newId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        const title = text.length > 40 ? text.slice(0, 40) + "..." : text;
+        const newSession: ChatSession = {
+          id: newId,
+          title,
+          messages: [userMessage],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        currentActiveSession = newId;
+        setActiveSession(newId);
+        addSession(newSession);
+        await createChatSession(newId, title);
+        await saveChatMessage(
+          userMessage.id,
+          newId,
+          "user",
+          userMessage.content,
+          { attachments: userMessage.attachments },
+        );
+        setIsInitializingSession(false);
+        if (context === "page") {
+          const params = new URLSearchParams();
+          params.set("conversationId", newId);
+          router.replace(`/ai?${params.toString()}`);
+        }
+      } else {
+        await saveChatMessage(
+          userMessage.id,
+          currentActiveSession,
+          "user",
+          userMessage.content,
+          { attachments: userMessage.attachments },
+        );
+      }
+
       let fileContext = "";
       if (currentFiles.length > 0) {
         const fileTexts = await Promise.all(
@@ -413,89 +791,622 @@ export function AIAssistantView() {
           fileTexts.join("\n\n");
       }
 
-      // Build enriched content for AI (file text included)
-      const enrichedContent = text + fileContext;
-
-      // Build history for smart chat (không tính message cuối vừa gửi)
-      const chatHistory = messages
+      enrichedContent = text + fileContext;
+      // chatHistory = full conversation context before this new user message.
+      // "messages" here is the React state snapshot at the time handleSend was called,
+      // which does NOT include the new userMessage yet (setMessages is async-batched).
+      chatHistory = messages
         .filter((m) => m.role !== "system")
         .map((m) => ({ role: m.role, content: m.content }));
+    }
 
-      // Gọi smartChatWithAI — tự động truy vấn DB theo role của user
-      const result = await smartChatWithAI(enrichedContent, chatHistory, "vi");
+    try {
+      // CRITICAL: Set ref BEFORE sendMessage so WebSocket can update the right message
+      const newMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      currentStreamingMessageIdRef.current = newMessageId;
+      // Reset done guard so onToken can append tokens for this message
+      isDoneFiredRef.current = false;
 
-      if (result.success && result.content) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: result.content,
-            isTyping: true,
-          },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content:
-              "Xin lỗi, đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại sau.",
-          },
-        ]);
-      }
-    } catch (error) {
-      console.error(error);
+      // Add empty message to state BEFORE sendMessage so it's there when tokens arrive
       setMessages((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: newMessageId,
+          role: "assistant",
+          content: "",
+          isTyping: true,
+          actions: [],
+        },
+      ]);
+
+      if (
+        sendMessage(
+          enrichedContent,
+          chatHistory,
+          currentActiveSession || "ws-default",
+          "vi",
+        )
+      ) {
+        // WebSocket path — isLoading will be cleared by onDone/onError/onStopped callbacks
+        return;
+      }
+
+      // WebSocket not connected - remove the placeholder message, fall back to HTTP
+      setMessages((prev) => prev.filter((m) => m.id !== newMessageId));
+      currentStreamingMessageIdRef.current = null;
+
+      // HTTP fallback
+      const rawResult = await smartChatWithAI(
+        enrichedContent,
+        chatHistory,
+        "vi",
+      );
+
+      if (rawResult.success && rawResult.content) {
+        const parsed = parseSmartChatResponse(rawResult);
+        const httpMsgId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: httpMsgId,
+            role: "assistant",
+            content: parsed.content || "",
+            isTyping: false, // HTTP response is complete immediately — no streaming
+            actions: parsed.actions,
+          },
+        ]);
+
+        await saveChatMessage(
+          httpMsgId,
+          currentActiveSession!,
+          "assistant",
+          parsed.content || "",
+          { actions: parsed.actions },
+        );
+
+        // Refetch credits after successful message
+        queryClient.invalidateQueries({ queryKey: ["ai-credits"] });
+
+        if (autoExecute && parsed.actions && parsed.actions.length > 0) {
+          // For write actions, execute them immediately instead of sending
+          // a follow-up AI call (which would skip action execution entirely).
+          const hasWriteActions = parsed.actions.some((a) =>
+            WRITE_ACTIONS.has(a.tool),
+          );
+
+          if (!parsed.needsFollowup || hasWriteActions) {
+            // Clear pre-composed content — action card will show the result
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === httpMsgId ? { ...m, content: "", isTyping: false } : m,
+              ),
+            );
+            setTimeout(async () => {
+              for (const a of parsed.actions!) {
+                await handleExecuteAction(a, httpMsgId);
+              }
+            }, 400);
+          } else {
+            // Read-only actions with data: send follow-up AI call
+            const toolDataParts = parsed.actions
+              .filter((a) => a.status === "success" && a.data)
+              .map((a) => `[Kết quả từ ${a.tool}]:\n${JSON.stringify(a.data)}`);
+
+            if (toolDataParts.length > 0) {
+              const followupHistory = [
+                ...chatHistory,
+                { role: "assistant", content: parsed.content || "" },
+              ];
+              const followupMessage =
+                `Hệ thống đã thực thi xong và trả về kết quả thực tế:\n\n${toolDataParts.join("\n\n")}\n\n` +
+                `Hãy phân tích dữ liệu trên và trả lời câu hỏi ban đầu của người dùng một cách chi tiết, dễ hiểu bằng tiếng Việt. Dùng danh sách (bullet points) thay vì bảng.`;
+
+              try {
+                const followupResult = await smartChatWithAI(
+                  followupMessage,
+                  followupHistory,
+                  "vi",
+                );
+                if (followupResult.success && followupResult.content) {
+                  const followupParsed = parseSmartChatResponse(followupResult);
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === httpMsgId
+                        ? {
+                            ...m,
+                            content:
+                              (m.content || "") +
+                              "\n\n" +
+                              (followupParsed.content || ""),
+                            isTyping: false, // Follow-up complete
+                          }
+                        : m,
+                    ),
+                  );
+
+                  const combinedContent =
+                    (parsed.content || "") +
+                    "\n\n" +
+                    (followupParsed.content || "");
+                  await saveChatMessage(
+                    httpMsgId,
+                    currentActiveSession!,
+                    "assistant",
+                    combinedContent,
+                    { actions: parsed.actions },
+                  );
+                }
+              } catch (followupErr) {
+                console.error("Follow-up AI call failed:", followupErr);
+                // Ensure message stops typing even on follow-up failure
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === httpMsgId ? { ...m, isTyping: false } : m,
+                  ),
+                );
+              }
+            }
+          }
+        }
+      } else {
+        // Handle insufficient credits specifically
+        if ((rawResult as { code?: string }).code === "INSUFFICIENT_CREDITS") {
+          toast(
+            "warning",
+            "Bạn đã hết credits. Vui lòng liên hệ quản trị viên để nạp thêm.",
+          );
+          const errMsgId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: errMsgId,
+              role: "assistant",
+              content:
+                "Bạn đã hết credits. Vui lòng liên hệ quản trị viên để nạp thêm.",
+            },
+          ]);
+          await saveChatMessage(
+            errMsgId,
+            currentActiveSession!,
+            "assistant",
+            "Bạn đã hết credits. Vui lòng liên hệ quản trị viên để nạp thêm.",
+          );
+          queryClient.invalidateQueries({ queryKey: ["ai-credits"] });
+          return;
+        }
+
+        const errorMsgId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: errorMsgId,
+            role: "assistant",
+            content:
+              rawResult.error ||
+              "Xin lỗi, đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại sau.",
+          },
+        ]);
+        await saveChatMessage(
+          errorMsgId,
+          currentActiveSession!,
+          "assistant",
+          rawResult.error || "",
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      const throwMsgId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: throwMsgId,
           role: "assistant",
           content: "Không thể kết nối. Vui lòng kiểm tra lại dịch vụ AI.",
         },
       ]);
+      await saveChatMessage(
+        throwMsgId,
+        currentActiveSession!,
+        "assistant",
+        "Không thể kết nối. Vui lòng kiểm tra lại dịch vụ AI.",
+      ).catch(() => {});
     } finally {
+      // Always clear loading for HTTP fallback paths.
+      // For WebSocket path, this function returns early before reaching here,
+      // and isLoading is cleared by onDone/onError callbacks instead.
       setIsLoading(false);
     }
   };
 
-  const suggestions = [
-    { icon: Search, label: "Tìm kiếm thông tin", color: "text-blue-500" },
+  // =====================
+  // Data Analyst submit — integrated into unified agent flow
+  // =====================
+  const DATA_ANALYST_STEP_DEFS = [
     {
-      icon: ListTodo,
-      label: "Tóm tắt chính sách HR",
-      color: "text-purple-500",
+      id: "parse-intent",
+      label: "Phân tích ý định truy vấn",
+      toolName: "parse_intent",
     },
-    { icon: Edit3, label: "Soạn thảo thông báo", color: "text-green-500" },
-    { icon: Lightbulb, label: "Ý tưởng đãi ngộ", color: "text-yellow-500" },
+    {
+      id: "build-query",
+      label: "Xây dựng câu truy vấn SQL",
+      toolName: "build_query",
+    },
+    {
+      id: "execute-query",
+      label: "Truy vấn cơ sở dữ liệu",
+      toolName: "database",
+    },
+    {
+      id: "generate-chart",
+      label: "Tạo biểu đồ và phân tích",
+      toolName: "chart",
+    },
+    { id: "synthesize", label: "Tổng hợp kết quả", toolName: "synthesis" },
   ];
 
+  const handleDataAnalystQuery = async (
+    question: string,
+    isRetry: boolean = false,
+  ) => {
+    const userMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const loadingMessageId = `msg_${Date.now() + 1}_${Math.random().toString(36).substr(2, 5)}`;
+
+    const userMessage: Message = {
+      id: userMessageId,
+      role: "user",
+      content: question,
+    };
+
+    // Initialize ALL steps at once — only first one is running
+    const initialSteps = DATA_ANALYST_STEP_DEFS.map((def, idx) => ({
+      id: def.id,
+      label: def.label,
+      status: idx === 0 ? ("running" as const) : ("pending" as const),
+      toolName: def.toolName,
+      timestamp: Date.now(),
+    }));
+
+    const loadingMessage: Message = {
+      id: loadingMessageId,
+      role: "assistant",
+      content: "",
+      isTyping: true,
+      thinkingSteps: initialSteps,
+    };
+
+    if (isRetry) {
+      setMessages((prev) => [...prev, loadingMessage]);
+    } else {
+      setMessages((prev) => [...prev, userMessage, loadingMessage]);
+      setInput("");
+      setFiles([]);
+    }
+
+    // Create session if needed
+    let currentActive = activeSessionId;
+    let isNewSession = false;
+    if (!currentActive && !isRetry) {
+      isNewSession = true;
+      setIsInitializingSession(true);
+      const newId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      const title =
+        question.length > 40 ? question.slice(0, 40) + "..." : question;
+      const newSession: ChatSession = {
+        id: newId,
+        title,
+        messages: [userMessage, loadingMessage],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      currentActive = newId;
+      setActiveSession(newId);
+      addSession(newSession);
+      await createChatSession(newId, title);
+      await saveChatMessage(userMessageId, newId, "user", userMessage.content);
+
+      if (context === "page") {
+        const params = new URLSearchParams();
+        params.set("conversationId", newId);
+        router.replace(`/ai?${params.toString()}`);
+      }
+
+      // NOTE: do NOT call setIsInitializingSession(false) here — we keep the guard
+      // active until the full data-analyst pipeline finishes so the useEffect
+      // (activeSessionId / isInitializingSession deps) does not reload from DB and
+      // overwrite the in-progress messages with the stale snapshot.
+    } else if (!isRetry) {
+      await saveChatMessage(
+        userMessageId,
+        currentActive!,
+        "user",
+        userMessage.content,
+      );
+    }
+
+    // Helper: mark current step as done and next step as running
+    const advanceStep = async (stepIndex: number) => {
+      const nextStep = DATA_ANALYST_STEP_DEFS[stepIndex + 1];
+      if (!nextStep) return;
+
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== loadingMessageId) return m;
+          return {
+            ...m,
+            thinkingSteps: (m.thinkingSteps || []).map((s) => {
+              if (s.id === DATA_ANALYST_STEP_DEFS[stepIndex].id) {
+                return { ...s, status: "done" as const };
+              }
+              if (s.id === nextStep.id) {
+                return { ...s, status: "running" as const };
+              }
+              return s;
+            }),
+          };
+        }),
+      );
+
+      // Small delay for visual effect
+      await new Promise((r) => setTimeout(r, 350));
+    };
+
+    try {
+      // Step 0: parse-intent (already running, now complete)
+      await advanceStep(0);
+
+      // Step 1: build-query — start fetch
+      await advanceStep(1);
+
+      const response = await fetch("/api/ai/data-analyst", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, language: "vi", include_chart: true }),
+      });
+
+      // Step 2: execute-query
+      await advanceStep(2);
+
+      const result = await response.json();
+
+      // Step 3: generate-chart
+      await advanceStep(3);
+
+      // Fallback: if backend doesn't provide chart data but we have metrics or numbers in answer, try to extract them
+      let finalChartType = result.chart_type || result.chartType || "none";
+      let finalChartData = result.chart_data || result.chartData;
+      const baseChartTitle =
+        result.chart_title || result.chartTitle || "Biểu đồ tỉ lệ";
+      const baseXAxis = result.x_axis || result.xAxis;
+      const baseYAxis = result.y_axis || result.yAxis;
+
+      if (
+        (finalChartType === "none" || !finalChartData) &&
+        result.metrics &&
+        result.metrics.length > 0
+      ) {
+        finalChartType = "pie";
+        finalChartData = result.metrics.map(
+          (m: { label: string; value: unknown }) => ({
+            name: m.label,
+            value:
+              typeof m.value === "number"
+                ? m.value
+                : parseFloat(String(m.value)) || 0,
+          }),
+        );
+      } else if (
+        (finalChartType === "none" || !finalChartData) &&
+        result.answer &&
+        result.intent === "ratio_analysis"
+      ) {
+        const ratioPattern =
+          /([^\s:]+)[\s:]+(?:có|tỉ lệ|chiếm|khoảng)?\s*(\d+(?:[.,]\d+)?)\s*%?/gi;
+        const matches = [...result.answer.matchAll(ratioPattern)];
+        if (matches.length > 1) {
+          finalChartType = "pie";
+          finalChartData = matches.map((m) => ({
+            name: m[1].trim(),
+            value: parseFloat(m[2].replace(",", ".")) || 0,
+          }));
+        }
+      }
+
+      // Step 4: synthesize
+      await advanceStep(4);
+
+      // Mark last step as done
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingMessageId
+            ? {
+                ...m,
+                content: result.answer || result.error || "Không có phản hồi",
+                isTyping: false,
+                thinkingSteps: (m.thinkingSteps || []).map((s) => ({
+                  ...s,
+                  status: "done" as const,
+                })),
+                dataAnalystResponse: {
+                  chartType: finalChartType,
+                  chartData: finalChartData,
+                  chartTitle: baseChartTitle,
+                  xAxis: baseXAxis,
+                  yAxis: baseYAxis,
+                  metrics: result.metrics,
+                  insights: result.insights,
+                  intent: result.intent,
+                  confidence: result.confidence,
+                  answer: result.answer,
+                  error: result.error,
+                },
+              }
+            : m,
+        ),
+      );
+
+      await saveChatMessage(
+        loadingMessageId,
+        currentActive!,
+        "assistant",
+        result.answer || result.error || "",
+        {
+          dataAnalystResponse: {
+            chartType: finalChartType,
+            chartData: finalChartData,
+            chartTitle: baseChartTitle,
+            xAxis: baseXAxis,
+            yAxis: baseYAxis,
+            metrics: result.metrics,
+            insights: result.insights,
+            intent: result.intent,
+            confidence: result.confidence,
+            answer: result.answer,
+            error: result.error,
+          },
+        },
+      );
+
+      // Now safe to lift the initialization guard — chart data is in state and DB
+      if (isNewSession) setIsInitializingSession(false);
+    } catch (error) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingMessageId
+            ? {
+                ...m,
+                content: "Đã xảy ra lỗi khi xử lý yêu cầu.",
+                isTyping: false,
+                thinkingSteps: (m.thinkingSteps || []).map((s) => ({
+                  ...s,
+                  status: "error" as const,
+                  detail:
+                    error instanceof Error
+                      ? error.message
+                      : "Lỗi không xác định",
+                })),
+                dataAnalystResponse: {
+                  error:
+                    error instanceof Error ? error.message : "Unknown error",
+                },
+              }
+            : m,
+        ),
+      );
+      // Release guard on error path too
+      if (isNewSession) setIsInitializingSession(false);
+    }
+  };
+
+  const agentModeProps: AiAgentModeProps = {
+    messages,
+    onMessagesChange: setMessages,
+    input,
+    onInputChange: setInput,
+    isLoading,
+    onIsLoadingChange: setIsLoading,
+    files,
+    onFilesChange: setFiles,
+    currentQuickActions,
+    handleSend,
+    handleStop: () => {
+      sendStop();
+      isDoneFiredRef.current = true; // Prevent any late-arriving tokens
+      const msgId = currentStreamingMessageIdRef.current;
+      currentStreamingMessageIdRef.current = null;
+      if (msgId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msgId
+              ? {
+                  ...m,
+                  isTyping: false,
+                  thinkingSteps: (m.thinkingSteps || []).map((s) =>
+                    s.status === "running"
+                      ? {
+                          ...s,
+                          status: "error" as const,
+                          detail: "Đã dừng bởi người dùng",
+                        }
+                      : s,
+                  ),
+                }
+              : m,
+          ),
+        );
+      }
+      setIsLoading(false);
+    },
+    handleExecuteAction,
+    handleDismissAction,
+    inputRef,
+    fileInputRef,
+    bottomRef,
+  };
+
   return (
-    <div className="flex flex-col h-full bg-background relative overflow-hidden">
-      {/* Top bar with History + New Chat buttons */}
-      <div className="flex items-center justify-end px-3 py-1.5 border-b bg-background/80 backdrop-blur-sm">
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={() => setShowHistory(!showHistory)}
-          tooltip={"Lịch sử"}
-        >
-          <History className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={startNewChat}
-          tooltip={"Mới"}
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
+    <div className="flex flex-col size-full min-h-0 min-w-0 bg-background relative overflow-hidden">
+      {/* Top bar */}
+      <div className="flex items-center justify-between shrink-0 px-3 py-1.5 bg-background/80 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs font-semibold text-foreground">
+            AI Agent
+          </span>
+        </div>
+        <div className="flex items-center gap-0.5">
+          {context === "sidebar" && (
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setShowHistory(!showHistory)}
+              tooltip={"Lịch sử"}
+            >
+              <History className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="xs" tooltip={"Cài đặt"}>
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Cài đặt</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  toggleAutoExecute();
+                }}
+                className="cursor-pointer"
+              >
+                {autoExecute ? (
+                  <CheckSquare className="text-primary" />
+                ) : (
+                  <Square />
+                )}
+                <span className="flex-1">Tự động duyệt</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {context === "sidebar" && (
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={startNewChat}
+              tooltip={"Mới"}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* History Panel */}
       {showHistory && (
-        <div className="absolute top-10 left-0 right-0 bottom-0 z-20 bg-background flex flex-col">
+        <div className="absolute top-10 left-0 right-0 bottom-0 z-20 bg-background/95 backdrop-blur-sm flex flex-col border-b">
           <div className="p-3 border-b">
             <h4 className="text-sm font-semibold">Lịch sử cuộc trò chuyện</h4>
           </div>
@@ -547,305 +1458,8 @@ export function AIAssistantView() {
         </div>
       )}
 
-      <ScrollArea
-        className="w-full relative p-4 flex-1 min-h-0"
-        ref={scrollRef}
-      >
-        {messages.length === 0 ? (
-          <div className="flex flex-col h-full items-center justify-center pt-8 pb-12 text-center text-muted-foreground">
-            <div className="bg-primary/10 p-4 rounded-full mb-4">
-              <Sparkles className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              Digital HRM AI
-            </h3>
-            <p className="text-sm px-4 mb-8">
-              Tôi có thể giúp bạn giải quyết các công việc quản lý nhân sự một
-              cách thông minh.
-            </p>
-
-            <div className="w-full space-y-2 text-left">
-              <p className="text-xs font-semibold px-2 mb-2 text-muted-foreground uppercase tracking-wider">
-                Gợi ý tác vụ
-              </p>
-              {suggestions.map((s, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSend(s.label)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border bg-card hover:bg-accent hover:border-accent transition-colors text-sm"
-                >
-                  <s.icon className={`h-4 w-4 ${s.color}`} />
-                  <span className="font-medium text-foreground">{s.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div key={message.id}>
-                <div
-                  className={`flex gap-2 ${
-                    message.role === "user"
-                      ? "justify-end"
-                      : "justify-start flex flex-col"
-                  }`}
-                >
-                  {message.role === "assistant" && (
-                    <Button size={"sm"} variant={"ghost"} className="w-fit">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      <span>HRM AI</span>
-                    </Button>
-                  )}
-
-                  <div
-                    className={`relative px-4 py-1 text-sm max-w-[85%] rounded-2xl ${
-                      message.role === "user"
-                        ? "bg-primary text-white rounded-br-sm"
-                        : ""
-                    }`}
-                  >
-                    {message.role === "assistant" && message.isTyping ? (
-                      <TypewriterText
-                        content={message.content}
-                        onTyping={scrollToBottom}
-                        onComplete={() => {
-                          setMessages((prev) =>
-                            prev.map((m) =>
-                              m.id === message.id
-                                ? { ...m, isTyping: false }
-                                : m,
-                            ),
-                          );
-                        }}
-                      />
-                    ) : (
-                      <ReactMarkdown
-                        components={MarkdownComponents}
-                        remarkPlugins={[remarkGfm]}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
-                    )}
-                  </div>
-
-                  {/* {message.role === "user" && (
-                    <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 border">
-                      <User className="h-4 w-4 text-secondary-foreground" />
-                    </div>
-                  )} */}
-                </div>
-                {/* Render attachment badges below user message bubbles */}
-                {message.attachments && message.attachments.length > 0 && (
-                  <div className="flex gap-1.5 flex-wrap justify-end pr-11 mt-1">
-                    {message.attachments.map((att, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[11px] px-2 py-0.5 rounded-full"
-                      >
-                        <Paperclip className="h-3 w-3" />
-                        {att.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Action buttons: Retry & Copy - chỉ hiện khi AI đã render xong */}
-                {message.role === "assistant" &&
-                  !message.isTyping &&
-                  message.content && (
-                    <div className="flex items-center gap-2 mt-1 pl-1">
-                      <CopyButton text={message.content} />
-                      <RetryButton
-                        onRetry={() => {
-                          // Tìm tin nhắn user trước đó gần nhất để retry
-                          const userMsgs = messages.filter(
-                            (m) => m.role === "user",
-                          );
-                          const lastUserMsg =
-                            userMsgs[userMsgs.length - 1];
-                          if (lastUserMsg) {
-                            handleSend(lastUserMsg.content);
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-              </div>
-            ))}
-
-            {isLoading && (
-              <div className="flex gap-3 justify-start   ">
-                <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-
-                <p className="text-sm text-muted-foreground animate-pulse">
-                  Đang suy nghĩ...
-                </p>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-        )}
-      </ScrollArea>
-
-      <div className="p-3 space-y-2 border-t">
-        {/* Render Attachments */}
-        {files.length > 0 && (
-          <div className="flex flex-wrap gap-2 px-1 animate-in fade-in zoom-in duration-200">
-            {files.map((f, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-1.5 bg-muted/50 px-2.5 py-1 rounded-md text-xs border border-primary/10 text-foreground"
-              >
-                <Paperclip className="h-3 w-3 text-primary/70" />
-                <span className="max-w-[140px] truncate">{f.name}</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFiles((prev) => prev.filter((_, idx) => idx !== i))
-                  }
-                  className="hover:bg-destructive/10 hover:text-destructive rounded-full p-0.5 transition-colors"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="relative flex items-center rounded-xl border bg-background shadow-sm focus-within:ring-3 focus-within:ring-primary/20 focus-within:border-primary transition-all p-1 group">
-          <input
-            type="file"
-            multiple
-            ref={fileInputRef}
-            className="hidden"
-            onChange={handleFileChange}
-          />
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground rounded-lg"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-44">
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Paperclip /> Đính kèm tệp
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={handleMention}
-              >
-                <AtSign /> Mention
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => setTemplateDialogOpen(true)}
-              >
-                <FileText /> Chọn từ mẫu
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend(input);
-              }
-            }}
-            placeholder="Ask AI, create, search..."
-            className="flex-1 border-0 focus-visible:ring-0 bg-transparent! h-10 px-2 shadow-none"
-            disabled={isLoading}
-          />
-
-          <div className="flex items-center gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="hidden sm:flex h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground rounded-lg p-2"
-                >
-                  <ActiveSourceIcon
-                    className={`h-3.5 w-3.5 ${activeSource.color === "text-muted-foreground" ? "" : activeSource.color}`}
-                  />
-                  <span>{activeSource.label}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-60 text-sm">
-                <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold">
-                  Nguồn dữ liệu AI
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {SOURCES.map((source) => (
-                  <DropdownMenuItem
-                    key={source.id}
-                    className="cursor-pointer"
-                    onClick={() => setSourceId(source.id)}
-                  >
-                    <source.icon className={`h-4 w-4 mr-2 ${source.color}`} />
-                    <span>
-                      {source.label === "All sources"
-                        ? "Tất cả dữ liệu"
-                        : source.label}
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Button
-              size="icon"
-              className={`h-8 w-8 shrink-0 rounded-lg transition-all ${
-                input.trim()
-                  ? "bg-primary text-primary-foreground opacity-100 scale-100"
-                  : "bg-muted text-muted-foreground opacity-50 scale-95"
-              }`}
-              onClick={() => handleSend(input)}
-              disabled={isLoading || !input.trim()}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Templates Dialog */}
-      <Dialog open={isTemplateDialogOpen} onOpenChange={setTemplateDialogOpen}>
-        <DialogContent className="sm:max-w-md w-[95%]">
-          <DialogHeader>
-            <DialogTitle>Chọn Mẫu Yêu Cầu</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2 mt-4">
-            {TEMPLATES.map((tmpl, idx) => (
-              <Button
-                key={idx}
-                variant="outline"
-                className="justify-start font-normal h-auto py-2.5 px-4 text-left whitespace-normal hover:bg-primary/5 hover:text-primary transition-colors hover:border-primary/30"
-                onClick={() => {
-                  setInput(tmpl);
-                  setTemplateDialogOpen(false);
-                  setTimeout(() => inputRef.current?.focus(), 150);
-                }}
-              >
-                {tmpl}
-              </Button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Agent Mode — unified with Data Analyst */}
+      <AiAgentMode {...agentModeProps} />
     </div>
   );
 }

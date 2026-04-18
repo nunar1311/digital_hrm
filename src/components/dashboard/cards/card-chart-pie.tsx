@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useChartColors } from "@/hooks/use-chart-colors";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Pie, PieChart } from "recharts";
+import { Pie, PieChart, Cell, Sector } from "recharts";
 import CardToolbar from "./card-toolbar";
 import type { DepartmentDistributionItem } from "@/app/(protected)/dashboard/actions";
 
@@ -16,18 +17,21 @@ interface CardChartPieProps {
 }
 
 const CardChartPie = ({ departmentData }: CardChartPieProps) => {
+  const [activeIndex, setActiveIndex] = useState<number | undefined>();
+  const chartColors = useChartColors();
+
   const chartConfig = useMemo(() => {
     const config: ChartConfig = {
       count: { label: "Nhân viên" },
     };
-    departmentData.forEach((item) => {
+    departmentData.forEach((item, i) => {
       config[item.department] = {
         label: item.department,
-        color: item.fill,
+        color: chartColors[i % chartColors.length]!,
       };
     });
     return config;
-  }, [departmentData]);
+  }, [departmentData, chartColors]);
 
   return (
     <CardToolbar title="Phân bổ nhân viên theo phòng ban">
@@ -36,7 +40,7 @@ const CardChartPie = ({ departmentData }: CardChartPieProps) => {
           config={chartConfig}
           className="h-full w-full [&_.recharts-pie-label-text]:fill-foreground"
         >
-          <PieChart>
+          <PieChart accessibilityLayer>
             <ChartTooltip content={<ChartTooltipContent hideLabel />} />
             {/* <ChartLegend
                             content={<ChartLegendContent />}
@@ -46,8 +50,22 @@ const CardChartPie = ({ departmentData }: CardChartPieProps) => {
               dataKey="count"
               label={({ department, count }) => `${department}: ${count}`}
               nameKey="department"
-              isAnimationActive={false}
-            />
+              isAnimationActive={true}
+              activeIndex={activeIndex}
+              activeShape={({ outerRadius = 0, ...props }: any) => (
+                <Sector {...props} outerRadius={outerRadius + 10} />
+              )}
+              // onMouseEnter={(_, index) => setActiveIndex(index)}
+              // onMouseLeave={() => setActiveIndex(undefined)}
+            >
+              {departmentData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={chartColors[index % chartColors.length]}
+                  className="transition-all duration-300 hover:opacity-80 cursor-pointer"
+                />
+              ))}
+            </Pie>
           </PieChart>
         </ChartContainer>
       </div>

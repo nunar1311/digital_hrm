@@ -166,14 +166,13 @@ export function useEmployeesTableColumns({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
                 onManagePassword?.(row.original);
               }}
             >
-              <KeyRound className="mr-2 h-4 w-4" />
               <span>Quản lý mật khẩu</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

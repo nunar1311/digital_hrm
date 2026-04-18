@@ -135,7 +135,12 @@ class OpenRouterService:
         model: str = "gpt-5.3-codex",
     ) -> Dict[str, Any]:
         """Phân tích dữ liệu HR qua Vitexa Gateway"""
-        system = "Bạn là một chuyên gia phân tích nhân sự (HR Analytics Expert). Phân tích dữ liệu một cách chính xác và đưa ra insights có giá trị."
+        system = (
+            "Bạn là một Chuyên gia phân tích Nhân sự cấp cao (Senior HR Analytics Expert). "
+            "Nhiệm vụ của bạn là phân tích dữ liệu chuyên sâu một cách chính xác tuyệt đối, "
+            "KHÔNG ĐƯỢC suy diễn hay bịa đặt thông tin (no hallucination). Dựa trên dữ liệu thực tế được cung cấp, "
+            "hãy phát hiện các xu hướng, đánh giá rủi ro và đưa ra những tư vấn mang tính chiến lược, rõ ràng."
+        )
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": f"{prompt}\n\nDữ liệu:\n{data}"},
@@ -152,7 +157,7 @@ class OpenRouterService:
         """Trích xuất thông tin có cấu trúc từ văn bản"""
         schema_instruction = ""
         if schema:
-            schema_instruction = f"\n\nTrả về kết quả theo schema JSON sau:\n{schema}"
+            schema_instruction = f"\n\nBẠN PHẢI TRẢ VỀ ĐÚNG định dạng schema JSON sau, KHÔNG thêm bất kỳ văn bản thừa nào ở ngoài JSON:\n{schema}"
 
         system = f"Bạn là chuyên gia trích xuất thông tin từ tài liệu.{schema_instruction}"
         messages = [
@@ -170,9 +175,13 @@ class OpenRouterService:
         """Sinh nội dung HR qua Vitexa Gateway"""
         context_str = ""
         if context:
-            context_str = f"\n\nNgữ cảnh bổ sung:\n{context}"
+            context_str = f"\n\nNgữ cảnh bổ sung về dữ liệu hiện tại:\n{context}"
 
-        system = "Bạn là trợ lý AI chuyên về nhân sự (HR) cho doanh nghiệp Việt Nam. Tạo nội dung chất lượng cao."
+        system = (
+            "Bạn là Trợ lý AI Nhân sự cấp cao (Senior HR Assistant) chuyên nghiệp và tận tâm cho doanh nghiệp Việt Nam. "
+            "Nhiệm vụ của bạn là hỗ trợ, cung cấp các giải pháp và nội dung phản hồi chất lượng cao. "
+            "Hành văn phải lịch sự, rõ ràng, có cấu trúc chặt chẽ, luôn tuân thủ pháp luật lao động và các nguyên tắc quản trị HR."
+        )
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": f"{prompt}{context_str}"},
@@ -188,13 +197,17 @@ class OpenRouterService:
     ) -> Dict[str, Any]:
         """Tóm tắt nội dung qua Vitexa Gateway"""
         type_instructions = {
-            "brief": "Tóm tắt ngắn gọn, súc tích",
-            "detailed": "Tóm tắt chi tiết, bao gồm các điểm quan trọng",
-            "bullet_points": "Tóm tắt dạng bullet points",
+            "brief": "Tóm tắt rất ngắn gọn, súc tích nhưng đầy đủ các ý cốt lõi",
+            "detailed": "Tóm tắt chi tiết, bao gồm toàn bộ các điểm quan trọng, các nguyên nhân và kết quả",
+            "bullet_points": "Tóm tắt dưới dạng các gạch đầu dòng (bullet points) rõ ràng",
         }
-        instruction = type_instructions.get(summary_type, "Tóm tắt ngắn gọn")
+        instruction = type_instructions.get(summary_type, "Tóm tắt một cách tự nhiên và rõ ràng nhất")
 
-        system = f"Bạn là chuyên gia tóm tắt nội dung. {instruction}. Tối đa {max_length} từ."
+        system = (
+            "Bạn là Chuyên gia Tóm tắt thông tin độ chính xác cao dựa trên tài liệu. "
+            "Nhiệm vụ của bạn là chắt lọc nội dung khách quan, giữ nguyên ý nghĩa gốc và tuyệt đối không thêm thắt thông tin. "
+            f"Yêu cầu định dạng: {instruction.upper()}. Bắt buộc giới hạn nội dung trong khoản tối đa {max_length} từ."
+        )
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": f"Nội dung cần tóm tắt:\n{content}"},

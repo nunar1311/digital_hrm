@@ -71,16 +71,16 @@ NỘI DUNG CẦN TÓM TẮT:
         result = await provider_router.chat(messages, temperature=0.3)
 
         if not result.get("success"):
-            return SummarizeResponse(success=False, error=result.get("error"))
+            return SummarizeResponse(success=False, error=result.get("error") or "Có lỗi xảy ra. Thử lại sau nhé.")
 
         return SummarizeResponse(
             success=True,
             summary=result.get("content"),
         )
 
-    except Exception as e:
-        logger.error(f"Summarization error: {e}", exc_info=True)
-        return SummarizeResponse(success=False, error=str(e))
+    except Exception:
+        logger.error(f"Summarization error", exc_info=True)
+        return SummarizeResponse(success=False, error="Có lỗi xảy ra. Thử lại sau nhé.")
 
 
 class FeedbackSummarizeRequest(BaseModel):

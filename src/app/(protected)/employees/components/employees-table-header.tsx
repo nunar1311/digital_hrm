@@ -1,11 +1,7 @@
 "use client";
 
-import {
-  flexRender,
-  type HeaderGroup,
-  type ColumnDef,
-} from "@tanstack/react-table";
-import { TableHead, TableRow } from "@/components/ui/table";
+import { flexRender, type HeaderGroup } from "@tanstack/react-table";
+import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { EmployeeListItem } from "../actions";
 
@@ -17,7 +13,7 @@ export function EmployeesTableHeader({
   headerGroups,
 }: EmployeesTableHeaderProps) {
   return (
-    <thead>
+    <TableHeader>
       {headerGroups.map((headerGroup) => (
         <TableRow key={headerGroup.id} className="hover:bg-transparent">
           {headerGroup.headers.map((header) => (
@@ -38,6 +34,6 @@ export function EmployeesTableHeader({
           ))}
         </TableRow>
       ))}
-    </thead>
+    </TableHeader>
   );
 }

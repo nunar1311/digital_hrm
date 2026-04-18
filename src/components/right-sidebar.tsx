@@ -47,7 +47,7 @@ const RightSidebar = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden w-full">
         {rightType === "onboarding" && !!rightData && (
           <OnboardingDetailView
             onboardingId={(rightData as { id: string }).id}
@@ -73,7 +73,7 @@ const RightSidebar = () => {
             }
           />
         )}
-        {rightType === "ai_assistant" && <AIAssistantView />}
+        {rightType === "ai_assistant" && <AIAssistantView context="sidebar" />}
       </div>
     </div>
   );

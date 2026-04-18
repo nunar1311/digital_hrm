@@ -373,21 +373,27 @@ function RequestDetailDialog({
           </div>
 
           {/* Employee Info */}
-          <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
+          <div className="flex items-center gap-4 bg-muted/30 rounded-lg">
             <Avatar className="h-12 w-12 shrink-0">
               <AvatarImage src={request.user.avatar || undefined} />
               <AvatarFallback>{getInitials(userName)}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold truncate">{userName}</div>
-              <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+              <div className="font-semibold truncate">
+                {userName} -{" "}
                 {request.user.username && (
-                  <span>{request.user.username}</span>
+                  <span className="text-muted-foreground">
+                    {request.user.username}
+                  </span>
                 )}
+              </div>
+              <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
                 {request.user.department && (
                   <>
-                    <span>•</span>
-                    <Building2 className="h-3 w-3" />
+                    <DynamicIcon
+                      iconName={request.user.department.logo || ""}
+                      className="h-4 w-4"
+                    />
                     <span>{request.user.department.name}</span>
                   </>
                 )}
@@ -421,7 +427,7 @@ function RequestDetailDialog({
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-4 text-sm justify-between">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Số ngày:</span>
@@ -464,7 +470,7 @@ function RequestDetailDialog({
               </div>
               <Button variant="outline" size="sm" asChild>
                 <a href={request.documentUrl} target="_blank" rel="noreferrer">
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download />
                   Tải tài liệu
                 </a>
               </Button>
@@ -549,16 +555,20 @@ function RequestDetailDialog({
                 <>
                   <Button
                     variant="outline"
+                    size={"sm"}
                     onClick={() => setShowRejectForm(true)}
                   >
-                    <XCircle className="h-4 w-4 mr-2" />
                     Từ chối
                   </Button>
-                  <Button onClick={onApprove} disabled={isApproving}>
+                  <Button
+                    size={"sm"}
+                    onClick={onApprove}
+                    disabled={isApproving}
+                  >
                     {isApproving ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="animate-spin" />
                     ) : (
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      <CheckCircle2 />
                     )}
                     Duyệt đơn
                   </Button>
@@ -567,6 +577,7 @@ function RequestDetailDialog({
                 <>
                   <Button
                     variant="outline"
+                    size={"sm"}
                     onClick={() => {
                       setShowRejectForm(false);
                       setRejectReason("");
@@ -576,13 +587,14 @@ function RequestDetailDialog({
                   </Button>
                   <Button
                     variant="destructive"
+                    size={"sm"}
                     onClick={() => onReject(rejectReason)}
                     disabled={!rejectReason.trim() || isRejecting}
                   >
                     {isRejecting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="animate-spin" />
                     ) : (
-                      <XCircle className="h-4 w-4 mr-2" />
+                      <XCircle />
                     )}
                     Xác nhận từ chối
                   </Button>

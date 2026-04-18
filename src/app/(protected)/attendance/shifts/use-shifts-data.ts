@@ -380,6 +380,12 @@ export function useShiftsData({
     return all as (ShiftAssignment & { user: UserBasic & { image?: string | null } })[];
   }, [usersPages]);
 
+  const mergedLeaveRequests = useMemo(() => {
+    if (!usersPages) return [] as Array<{ id: string; userId: string; startDate: string; endDate: string; }>;
+    const all = usersPages.pages.flatMap((p) => p.leaveRequests ?? []);
+    return all as Array<{ id: string; userId: string; startDate: string; endDate: string; }>;
+  }, [usersPages]);
+
   // Total count from server (accurate, not client-side approximation)
   const totalCount = usersPages?.pages[0]?.totalCount ?? users.length;
   const loadedCount = usersPages?.pages.reduce(
@@ -474,6 +480,18 @@ export function useShiftsData({
     // Only show users that pass the current search / department filter
     const allowedUserIds = new Set(filteredUsers.map((u) => u.id));
 
+    const leaves = mergedLeaveRequests;
+    const isUserOnLeave = (userId: string, dayStart: Date) => {
+        return leaves.some((l) => {
+             if (l.userId !== userId) return false;
+             const lStart = new Date(l.startDate);
+             lStart.setHours(0,0,0,0);
+             const lEnd = new Date(l.endDate);
+             lEnd.setHours(23,59,59,999);
+             return lStart <= dayStart && lEnd >= dayStart;
+        });
+    };
+
     // Rebuild userAssignments map (needed because Map keys/values change)
     const userAssignments = userAssignmentsRef.current;
     const userMap = new Map<string, UserBasic & { image?: string | null }>();
@@ -507,6 +525,8 @@ export function useShiftsData({
         for (const day of days) {
           const dayStart = new Date(day);
           dayStart.setHours(0, 0, 0, 0);
+
+          if (isUserOnLeave(a.userId, dayStart)) continue;
 
           const assignStart = new Date(a.startDate);
           assignStart.setHours(0, 0, 0, 0);
@@ -557,13 +577,15 @@ export function useShiftsData({
 
       // ── Regular shift assignment ──
       for (const day of days) {
+        const dayStart = new Date(day);
+        dayStart.setHours(0, 0, 0, 0);
+
+        if (isUserOnLeave(a.userId, dayStart)) continue;
+
         const assignStart = new Date(a.startDate);
         assignStart.setHours(0, 0, 0, 0);
         const assignEnd = a.endDate ? new Date(a.endDate) : null;
         if (assignEnd) assignEnd.setHours(23, 59, 59, 999);
-
-        const dayStart = new Date(day);
-        dayStart.setHours(0, 0, 0, 0);
 
         const covers =
           assignStart <= dayStart &&
@@ -609,6 +631,7 @@ export function useShiftsData({
     };
   }, [
     assignments,
+    mergedLeaveRequests,
     filteredUsers,
     weekDays,
     monthDays,

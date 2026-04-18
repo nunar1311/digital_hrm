@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 _pool: Optional[asyncpg.Pool] = None
 
 
-async def init_db_pool() -> Optional[asyncpg.Pool]:
-    """Khoi tao connection pool den PostgreSQL"""
+async def init_db_pool(max_retries: int = 3) -> Optional[asyncpg.Pool]:
+    """Khoi tao connection pool den PostgreSQL voi retry logic"""
     global _pool
     settings = get_settings()
 
@@ -24,23 +24,35 @@ async def init_db_pool() -> Optional[asyncpg.Pool]:
         logger.warning("DATABASE_URL not configured - AI Service will work without direct DB access")
         return None
 
-    try:
-        _pool = await asyncpg.create_pool(
-            dsn=settings.database_url,
-            min_size=settings.db_pool_min_size,
-            max_size=settings.db_pool_max_size,
-            command_timeout=30,
-        )
-        # Test connection
-        async with _pool.acquire() as conn:
-            version = await conn.fetchval("SELECT version()")
-            logger.info(f"Database connected successfully: {version[:50]}...")
+    import asyncio
 
-        return _pool
-    except Exception as e:
-        logger.error(f"Failed to connect to database: {e}")
-        _pool = None
-        return None
+    for attempt in range(1, max_retries + 1):
+        try:
+            _pool = await asyncpg.create_pool(
+                dsn=settings.database_url,
+                min_size=settings.db_pool_min_size,
+                max_size=settings.db_pool_max_size,
+                command_timeout=30,
+            )
+            # Test connection
+            async with _pool.acquire() as conn:
+                version = await conn.fetchval("SELECT version()")
+                logger.info(
+                    f"Database connected (pool min={settings.db_pool_min_size}, "
+                    f"max={settings.db_pool_max_size}): {version[:50]}..."
+                )
+
+            return _pool
+        except Exception as e:
+            logger.error(f"DB connection attempt {attempt}/{max_retries} failed: {e}")
+            _pool = None
+            if attempt < max_retries:
+                wait = 2 ** attempt
+                logger.info(f"Retrying in {wait}s...")
+                await asyncio.sleep(wait)
+
+    logger.error(f"Failed to connect to database after {max_retries} attempts")
+    return None
 
 
 async def close_db_pool():

@@ -1,0 +1,1891 @@
+2026-04-16 01:03:49,300 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 01:03:49,301 - app.main - INFO - Default provider: openai
+2026-04-16 01:03:49,301 - app.main - INFO - Default model: gpt-4o
+2026-04-16 01:03:49,301 - app.main - INFO - Redis enabled: True
+2026-04-16 01:03:49,301 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 01:03:49,301 - app.main - INFO - AI Provider router initialized
+2026-04-16 01:03:49,404 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 01:03:49,405 - app.main - INFO - Redis cache layer initialized
+2026-04-16 01:03:49,610 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 01:03:49,611 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 01:03:49,612 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 01:03:49,612 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 01:08:20,420 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 01:08:20,421 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 01:08:20,429 - app.database - INFO - Database connection pool closed
+2026-04-16 01:08:20,430 - app.main - INFO - Cleanup complete
+2026-04-16 01:08:26,313 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 01:08:26,313 - app.main - INFO - Default provider: openai
+2026-04-16 01:08:26,314 - app.main - INFO - Default model: gpt-4o
+2026-04-16 01:08:26,314 - app.main - INFO - Redis enabled: True
+2026-04-16 01:08:26,314 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 01:08:26,314 - app.main - INFO - AI Provider router initialized
+2026-04-16 01:08:26,398 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 01:08:26,398 - app.main - INFO - Redis cache layer initialized
+2026-04-16 01:08:26,575 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 01:08:26,576 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 01:08:26,577 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 01:08:26,577 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 01:11:05,915 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 01:11:11,112 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:11:14,115 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=2737
+2026-04-16 01:11:31,544 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 01:11:46,786 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:11:53,054 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3539
+2026-04-16 01:11:57,731 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 01:12:08,255 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:12:11,124 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3151
+2026-04-16 01:12:27,863 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 01:12:35,870 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:12:38,021 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=2198
+2026-04-16 01:13:34,150 - app.routers.chat - INFO - [smart_cmnwwwhf5003tygughvql0aj1_fc1e7b] AI response cache HIT
+2026-04-16 01:13:45,280 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 01:13:47,240 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:13:48,504 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=1998
+2026-04-16 01:14:00,363 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 01:14:05,580 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:14:07,573 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=2747
+2026-04-16 01:14:36,695 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 01:14:43,247 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:14:44,869 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3002
+2026-04-16 01:14:58,083 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 01:15:11,978 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:15:12,305 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=2827
+2026-04-16 01:15:16,565 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 01:15:21,777 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:15:22,699 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=2619
+2026-04-16 01:16:12,826 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 01:16:12,828 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 01:16:12,833 - app.database - INFO - Database connection pool closed
+2026-04-16 01:16:12,833 - app.main - INFO - Cleanup complete
+2026-04-16 01:16:17,701 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 01:16:17,701 - app.main - INFO - Default provider: openai
+2026-04-16 01:16:17,701 - app.main - INFO - Default model: gpt-4o
+2026-04-16 01:16:17,701 - app.main - INFO - Redis enabled: True
+2026-04-16 01:16:17,702 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 01:16:17,702 - app.main - INFO - AI Provider router initialized
+2026-04-16 01:16:17,786 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 01:16:17,787 - app.main - INFO - Redis cache layer initialized
+2026-04-16 01:16:17,969 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 01:16:17,970 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 01:16:17,970 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 01:16:17,970 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 01:18:41,216 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 01:18:41,217 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 01:18:41,221 - app.database - INFO - Database connection pool closed
+2026-04-16 01:18:41,221 - app.main - INFO - Cleanup complete
+2026-04-16 01:18:51,767 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 01:18:51,781 - app.main - INFO - Default provider: openai
+2026-04-16 01:18:51,829 - app.main - INFO - Default model: gpt-4o
+2026-04-16 01:18:51,868 - app.main - INFO - Redis enabled: True
+2026-04-16 01:18:51,935 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 01:18:52,034 - app.main - INFO - AI Provider router initialized
+2026-04-16 01:18:52,423 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 01:18:52,423 - app.main - INFO - Redis cache layer initialized
+2026-04-16 01:18:52,917 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 01:18:52,919 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 01:18:52,920 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 01:18:52,920 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 01:18:57,039 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 01:18:57,039 - app.main - INFO - Default provider: openai
+2026-04-16 01:18:57,039 - app.main - INFO - Default model: gpt-4o
+2026-04-16 01:18:57,039 - app.main - INFO - Redis enabled: True
+2026-04-16 01:18:57,040 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 01:18:57,040 - app.main - INFO - AI Provider router initialized
+2026-04-16 01:18:57,103 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 01:18:57,103 - app.main - INFO - Redis cache layer initialized
+2026-04-16 01:18:57,290 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 01:18:57,291 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 01:18:57,292 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 01:18:57,292 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 01:19:11,562 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 01:19:11,563 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 01:19:11,567 - app.database - INFO - Database connection pool closed
+2026-04-16 01:19:11,568 - app.main - INFO - Cleanup complete
+2026-04-16 01:19:15,389 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 01:19:15,389 - app.main - INFO - Default provider: openai
+2026-04-16 01:19:15,390 - app.main - INFO - Default model: gpt-4o
+2026-04-16 01:19:15,390 - app.main - INFO - Redis enabled: True
+2026-04-16 01:19:15,390 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 01:19:15,390 - app.main - INFO - AI Provider router initialized
+2026-04-16 01:19:15,451 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 01:19:15,451 - app.main - INFO - Redis cache layer initialized
+2026-04-16 01:19:15,630 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 01:19:15,631 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 01:19:15,631 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 01:19:15,632 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 01:21:06,963 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 01:21:06,963 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 01:21:06,969 - app.database - INFO - Database connection pool closed
+2026-04-16 01:21:06,969 - app.main - INFO - Cleanup complete
+2026-04-16 01:21:10,418 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 01:21:10,418 - app.main - INFO - Default provider: openai
+2026-04-16 01:21:10,418 - app.main - INFO - Default model: gpt-4o
+2026-04-16 01:21:10,418 - app.main - INFO - Redis enabled: True
+2026-04-16 01:21:10,419 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 01:21:10,419 - app.main - INFO - AI Provider router initialized
+2026-04-16 01:21:10,485 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 01:21:10,485 - app.main - INFO - Redis cache layer initialized
+2026-04-16 01:21:10,655 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 01:21:10,656 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 01:21:10,656 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 01:21:10,657 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 01:21:22,957 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 01:21:22,957 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 01:21:22,962 - app.database - INFO - Database connection pool closed
+2026-04-16 01:21:22,962 - app.main - INFO - Cleanup complete
+2026-04-16 01:21:26,445 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 01:21:26,445 - app.main - INFO - Default provider: openai
+2026-04-16 01:21:26,445 - app.main - INFO - Default model: gpt-4o
+2026-04-16 01:21:26,445 - app.main - INFO - Redis enabled: True
+2026-04-16 01:21:26,446 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 01:21:26,446 - app.main - INFO - AI Provider router initialized
+2026-04-16 01:21:26,507 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 01:21:26,507 - app.main - INFO - Redis cache layer initialized
+2026-04-16 01:21:26,676 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 01:21:26,677 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 01:21:26,677 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 01:21:26,678 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 01:22:44,535 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 01:22:49,317 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:22:51,619 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17881
+2026-04-16 01:28:37,627 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 01:28:47,156 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:28:48,875 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17573
+2026-04-16 01:28:57,933 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 01:29:03,229 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:29:03,386 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17415
+2026-04-16 01:29:28,136 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 01:29:33,130 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:29:34,204 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17510
+2026-04-16 01:29:50,673 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 01:30:00,739 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:30:01,878 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17781
+2026-04-16 01:30:33,196 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 01:31:20,523 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:31:25,082 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18666
+2026-04-16 01:32:59,128 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 01:32:59,133 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 01:32:59,140 - app.database - INFO - Database connection pool closed
+2026-04-16 01:32:59,141 - app.main - INFO - Cleanup complete
+2026-04-16 01:33:04,614 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 01:33:04,614 - app.main - INFO - Default provider: openai
+2026-04-16 01:33:04,614 - app.main - INFO - Default model: gpt-4o
+2026-04-16 01:33:04,614 - app.main - INFO - Redis enabled: True
+2026-04-16 01:33:04,614 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 01:33:04,615 - app.main - INFO - AI Provider router initialized
+2026-04-16 01:33:04,689 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 01:33:04,689 - app.main - INFO - Redis cache layer initialized
+2026-04-16 01:33:04,884 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 01:33:04,885 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 01:33:04,885 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 01:33:04,886 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 01:59:37,266 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 01:59:45,762 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 01:59:47,597 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17593
+2026-04-16 02:05:50,342 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 02:06:01,818 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:06:03,091 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17535
+2026-04-16 02:06:26,618 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 02:06:34,924 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:06:35,308 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17566
+2026-04-16 02:06:55,714 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 02:07:02,887 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:07:04,278 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17549
+2026-04-16 02:12:00,459 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 02:12:13,856 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:12:14,159 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17682
+2026-04-16 02:12:44,283 - app.routers.chat - INFO - Personal data access for user=cmnwwwgyt0035ygugl50k92fx, role=HRMRole.EMPLOYEE
+2026-04-16 02:12:53,638 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:12:55,500 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17814
+2026-04-16 02:21:42,806 - app.routers.chat - INFO - [smart_cmnwwwgyt0035ygugl50k92fx_89b782] AI response cache HIT
+2026-04-16 02:21:55,525 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 02:22:02,608 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:22:05,509 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18183
+2026-04-16 02:23:46,062 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 02:23:55,270 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:24:02,027 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18756
+2026-04-16 02:24:24,900 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 02:24:36,082 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:24:39,609 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18926
+2026-04-16 02:25:23,893 - app.routers.chat - INFO - [smart_cmnwwwgyt0035ygugl50k92fx_0f6491] AI response cache HIT
+2026-04-16 02:25:35,538 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 02:25:44,681 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:25:46,211 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18409
+2026-04-16 02:26:16,339 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 02:26:29,774 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:26:31,504 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18874
+2026-04-16 02:26:37,853 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 02:26:56,954 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 02:27:01,136 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20692
+2026-04-16 11:43:45,562 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 11:43:45,562 - app.main - INFO - Default provider: openai
+2026-04-16 11:43:45,563 - app.main - INFO - Default model: gpt-4o
+2026-04-16 11:43:45,563 - app.main - INFO - Redis enabled: True
+2026-04-16 11:43:45,563 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 11:43:45,563 - app.main - INFO - AI Provider router initialized
+2026-04-16 11:43:53,925 - app.services.redis_service - WARNING - Redis not available, running without cache: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+2026-04-16 11:43:53,926 - app.main - WARNING - Redis not available - running without cache (in-memory fallback)
+2026-04-16 11:43:58,097 - app.database - ERROR - DB connection attempt 1/3 failed: Multiple exceptions: [Errno 10061] Connect call failed ('::1', 5432, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 5432)
+2026-04-16 11:43:58,100 - app.database - INFO - Retrying in 2s...
+2026-04-16 11:44:04,749 - app.database - ERROR - DB connection attempt 2/3 failed: Multiple exceptions: [Errno 10061] Connect call failed ('::1', 5432, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 5432)
+2026-04-16 11:44:04,749 - app.database - INFO - Retrying in 4s...
+2026-04-16 11:44:10,907 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 11:44:10,917 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 11:44:10,920 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 11:44:10,922 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 11:51:34,254 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 11:51:34,256 - app.database - INFO - Database connection pool closed
+2026-04-16 11:51:34,257 - app.main - INFO - Cleanup complete
+2026-04-16 11:51:39,233 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 11:51:39,233 - app.main - INFO - Default provider: openai
+2026-04-16 11:51:39,233 - app.main - INFO - Default model: gpt-4o
+2026-04-16 11:51:39,233 - app.main - INFO - Redis enabled: True
+2026-04-16 11:51:39,233 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 11:51:39,234 - app.main - INFO - AI Provider router initialized
+2026-04-16 11:51:39,335 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 11:51:39,336 - app.main - INFO - Redis cache layer initialized
+2026-04-16 11:51:39,545 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 11:51:39,546 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 11:51:39,547 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 11:51:39,547 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 11:52:25,932 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 11:52:25,933 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 11:52:25,939 - app.database - INFO - Database connection pool closed
+2026-04-16 11:52:25,940 - app.main - INFO - Cleanup complete
+2026-04-16 11:52:30,177 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 11:52:30,177 - app.main - INFO - Default provider: openai
+2026-04-16 11:52:30,177 - app.main - INFO - Default model: gpt-4o
+2026-04-16 11:52:30,178 - app.main - INFO - Redis enabled: True
+2026-04-16 11:52:30,178 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 11:52:30,178 - app.main - INFO - AI Provider router initialized
+2026-04-16 11:52:30,248 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 11:52:30,248 - app.main - INFO - Redis cache layer initialized
+2026-04-16 11:52:30,423 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 11:52:30,424 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 11:52:30,425 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 11:52:30,425 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 11:52:34,823 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 11:52:34,826 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 11:52:34,834 - app.database - INFO - Database connection pool closed
+2026-04-16 11:52:34,834 - app.main - INFO - Cleanup complete
+2026-04-16 11:57:12,693 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 11:57:12,694 - app.main - INFO - Default provider: openai
+2026-04-16 11:57:12,695 - app.main - INFO - Default model: gpt-4o
+2026-04-16 11:57:12,696 - app.main - INFO - Redis enabled: True
+2026-04-16 11:57:12,697 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 11:57:12,700 - app.main - INFO - AI Provider router initialized
+2026-04-16 11:57:12,919 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 11:57:12,924 - app.main - INFO - Redis cache layer initialized
+2026-04-16 11:57:13,498 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 11:57:13,504 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 11:57:13,506 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 11:57:13,507 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 11:59:33,526 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 11:59:48,428 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:00:06,371 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20669
+2026-04-16 12:02:12,296 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:02:21,835 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3855
+2026-04-16 12:02:48,235 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:02:57,775 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=1528
+2026-04-16 12:03:27,563 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:03:32,284 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3511
+2026-04-16 12:17:17,479 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 12:17:37,112 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:17:47,972 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18662
+2026-04-16 12:21:26,730 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:21:31,487 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=1075
+2026-04-16 12:25:50,160 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:25:56,371 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=1011
+2026-04-16 12:28:27,188 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:28:32,950 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3519
+2026-04-16 12:29:01,941 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:29:07,042 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3553
+2026-04-16 12:38:55,124 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:39:01,529 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3568
+2026-04-16 12:39:28,562 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:39:34,598 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3600
+2026-04-16 12:59:31,488 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 12:59:37,004 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3499
+2026-04-16 14:09:58,811 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 14:10:06,573 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 14:10:07,915 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18087
+2026-04-16 14:10:14,932 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 14:10:20,949 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 14:10:36,150 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19028
+2026-04-16 14:10:54,726 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 14:11:20,231 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 14:11:28,803 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21636
+2026-04-16 14:19:39,407 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 14:19:50,157 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 14:19:54,646 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19889
+2026-04-16 14:33:15,035 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 14:33:15,076 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 14:33:15,088 - app.database - INFO - Database connection pool closed
+2026-04-16 14:33:15,090 - app.main - INFO - Cleanup complete
+2026-04-16 14:33:28,235 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 14:33:28,235 - app.main - INFO - Default provider: openai
+2026-04-16 14:33:28,235 - app.main - INFO - Default model: gpt-4o
+2026-04-16 14:33:28,236 - app.main - INFO - Redis enabled: True
+2026-04-16 14:33:28,236 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 14:33:28,236 - app.main - INFO - AI Provider router initialized
+2026-04-16 14:33:28,455 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 14:33:28,456 - app.main - INFO - Redis cache layer initialized
+2026-04-16 14:33:28,788 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 14:33:28,790 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 14:33:28,790 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 14:33:28,791 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 14:33:39,491 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 14:33:39,492 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 14:33:39,522 - app.database - INFO - Database connection pool closed
+2026-04-16 14:33:39,523 - app.main - INFO - Cleanup complete
+2026-04-16 14:33:55,183 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 14:33:55,185 - app.main - INFO - Default provider: openai
+2026-04-16 14:33:55,185 - app.main - INFO - Default model: gpt-4o
+2026-04-16 14:33:55,185 - app.main - INFO - Redis enabled: True
+2026-04-16 14:33:55,186 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 14:33:55,186 - app.main - INFO - AI Provider router initialized
+2026-04-16 14:33:55,394 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 14:33:55,396 - app.main - INFO - Redis cache layer initialized
+2026-04-16 14:33:55,867 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 14:33:55,870 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 14:33:55,872 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 14:33:55,873 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 14:34:53,187 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 14:34:53,188 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 14:34:53,195 - app.database - INFO - Database connection pool closed
+2026-04-16 14:34:53,201 - app.main - INFO - Cleanup complete
+2026-04-16 14:35:00,839 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 14:35:00,839 - app.main - INFO - Default provider: openai
+2026-04-16 14:35:00,840 - app.main - INFO - Default model: gpt-4o
+2026-04-16 14:35:00,840 - app.main - INFO - Redis enabled: True
+2026-04-16 14:35:00,840 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 14:35:00,840 - app.main - INFO - AI Provider router initialized
+2026-04-16 14:35:00,938 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 14:35:00,939 - app.main - INFO - Redis cache layer initialized
+2026-04-16 14:35:01,200 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 14:35:01,202 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 14:35:01,202 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 14:35:01,202 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 14:35:51,698 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 14:35:51,708 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 14:35:51,723 - app.database - INFO - Database connection pool closed
+2026-04-16 14:35:51,732 - app.main - INFO - Cleanup complete
+2026-04-16 14:35:59,933 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 14:35:59,933 - app.main - INFO - Default provider: openai
+2026-04-16 14:35:59,933 - app.main - INFO - Default model: gpt-4o
+2026-04-16 14:35:59,934 - app.main - INFO - Redis enabled: True
+2026-04-16 14:35:59,934 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 14:35:59,934 - app.main - INFO - AI Provider router initialized
+2026-04-16 14:36:00,038 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 14:36:00,039 - app.main - INFO - Redis cache layer initialized
+2026-04-16 14:36:00,310 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 14:36:00,312 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 14:36:00,312 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 14:36:00,312 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 14:37:21,577 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 14:37:28,727 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 14:37:34,005 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19675
+2026-04-16 14:38:10,427 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 14:38:10,456 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 14:38:10,468 - app.database - INFO - Database connection pool closed
+2026-04-16 14:38:10,487 - app.main - INFO - Cleanup complete
+2026-04-16 14:41:19,719 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 14:41:19,720 - app.main - INFO - Default provider: openai
+2026-04-16 14:41:19,720 - app.main - INFO - Default model: gpt-4o
+2026-04-16 14:41:19,720 - app.main - INFO - Redis enabled: True
+2026-04-16 14:41:19,720 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 14:41:19,721 - app.main - INFO - AI Provider router initialized
+2026-04-16 14:41:19,831 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 14:41:19,831 - app.main - INFO - Redis cache layer initialized
+2026-04-16 14:41:20,098 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 14:41:20,101 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 14:41:20,101 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 14:41:20,102 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 14:50:13,878 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 14:50:13,879 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 14:50:13,887 - app.database - INFO - Database connection pool closed
+2026-04-16 14:50:13,888 - app.main - INFO - Cleanup complete
+2026-04-16 14:50:31,074 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 14:50:31,075 - app.main - INFO - Default provider: openai
+2026-04-16 14:50:31,076 - app.main - INFO - Default model: gpt-4o
+2026-04-16 14:50:31,077 - app.main - INFO - Redis enabled: True
+2026-04-16 14:50:31,078 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 14:50:31,079 - app.main - INFO - AI Provider router initialized
+2026-04-16 14:50:31,247 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 14:50:31,247 - app.main - INFO - Redis cache layer initialized
+2026-04-16 14:50:31,599 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 14:50:31,601 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 14:50:31,602 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 14:50:31,602 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 14:54:22,338 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 14:54:22,339 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 14:54:22,354 - app.database - INFO - Database connection pool closed
+2026-04-16 14:54:22,357 - app.main - INFO - Cleanup complete
+2026-04-16 14:59:20,989 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 14:59:20,990 - app.main - INFO - Default provider: openai
+2026-04-16 14:59:20,990 - app.main - INFO - Default model: gpt-4o
+2026-04-16 14:59:20,991 - app.main - INFO - Redis enabled: True
+2026-04-16 14:59:20,993 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 14:59:20,994 - app.main - INFO - AI Provider router initialized
+2026-04-16 14:59:21,180 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 14:59:21,181 - app.main - INFO - Redis cache layer initialized
+2026-04-16 14:59:21,550 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 14:59:21,552 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 14:59:21,553 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 14:59:21,553 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 14:59:21,556 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 14:59:21,557 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 14:59:21,565 - app.database - INFO - Database connection pool closed
+2026-04-16 14:59:21,566 - app.main - INFO - Cleanup complete
+2026-04-16 15:02:57,379 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 15:02:57,379 - app.main - INFO - Default provider: openai
+2026-04-16 15:02:57,380 - app.main - INFO - Default model: gpt-4o
+2026-04-16 15:02:57,380 - app.main - INFO - Redis enabled: True
+2026-04-16 15:02:57,380 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 15:02:57,380 - app.main - INFO - AI Provider router initialized
+2026-04-16 15:02:57,491 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 15:02:57,492 - app.main - INFO - Redis cache layer initialized
+2026-04-16 15:02:57,756 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 15:02:57,758 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 15:02:57,758 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 15:02:57,758 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 15:02:57,760 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 15:02:57,760 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 15:02:57,766 - app.database - INFO - Database connection pool closed
+2026-04-16 15:02:57,766 - app.main - INFO - Cleanup complete
+2026-04-16 15:07:52,994 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 15:07:52,994 - app.main - INFO - Default provider: openai
+2026-04-16 15:07:52,994 - app.main - INFO - Default model: gpt-4o
+2026-04-16 15:07:52,994 - app.main - INFO - Redis enabled: True
+2026-04-16 15:07:52,994 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 15:07:52,994 - app.main - INFO - AI Provider router initialized
+2026-04-16 15:07:53,103 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 15:07:53,103 - app.main - INFO - Redis cache layer initialized
+2026-04-16 15:07:53,397 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 15:07:53,398 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 15:07:53,399 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 15:07:53,399 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 15:07:53,400 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 15:07:53,400 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 15:07:53,407 - app.database - INFO - Database connection pool closed
+2026-04-16 15:07:53,408 - app.main - INFO - Cleanup complete
+2026-04-16 15:09:15,485 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 15:09:15,486 - app.main - INFO - Default provider: openai
+2026-04-16 15:09:15,486 - app.main - INFO - Default model: gpt-4o
+2026-04-16 15:09:15,486 - app.main - INFO - Redis enabled: True
+2026-04-16 15:09:15,486 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 15:09:15,486 - app.main - INFO - AI Provider router initialized
+2026-04-16 15:09:15,595 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 15:09:15,595 - app.main - INFO - Redis cache layer initialized
+2026-04-16 15:09:15,830 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 15:09:15,832 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 15:09:15,832 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 15:09:15,832 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 15:09:15,833 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 15:09:15,833 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 15:09:15,839 - app.database - INFO - Database connection pool closed
+2026-04-16 15:09:15,840 - app.main - INFO - Cleanup complete
+2026-04-16 15:11:13,790 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 15:11:13,790 - app.main - INFO - Default provider: openai
+2026-04-16 15:11:13,790 - app.main - INFO - Default model: gpt-4o
+2026-04-16 15:11:13,791 - app.main - INFO - Redis enabled: True
+2026-04-16 15:11:13,791 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 15:11:13,791 - app.main - INFO - AI Provider router initialized
+2026-04-16 15:11:13,860 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 15:11:13,860 - app.main - INFO - Redis cache layer initialized
+2026-04-16 15:11:14,037 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 15:11:14,039 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 15:11:14,039 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 15:11:14,039 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 15:11:27,167 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 15:11:34,616 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 15:11:35,053 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18182
+2026-04-16 15:12:03,566 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 15:12:09,977 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 15:12:13,917 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18350
+2026-04-16 15:18:44,010 - app.routers.chat - INFO - [smart_cmnwwwgyt0035ygugl50k92fx_90af95] AI response cache HIT
+2026-04-16 15:20:59,124 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 15:21:11,644 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 15:21:16,826 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18595
+2026-04-16 15:26:44,430 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 15:26:50,200 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 15:26:52,592 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18483
+2026-04-16 17:09:15,888 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 17:09:22,509 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 17:09:23,584 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18054
+2026-04-16 17:15:33,972 - app.routers.chat - INFO - [smart_cmnwwwgyt0035ygugl50k92fx_ed8e7c] AI response cache HIT
+2026-04-16 17:15:38,858 - app.routers.chat - INFO - [smart_cmnwwwgyt0035ygugl50k92fx_104fc3] Dedup hit - same message within 5s
+2026-04-16 17:17:31,344 - app.routers.chat - INFO - [smart_cmnwwwgyt0035ygugl50k92fx_ef4945] AI response cache HIT
+2026-04-16 17:17:39,932 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 17:17:52,807 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 17:17:52,995 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18098
+2026-04-16 17:20:09,322 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 17:20:15,434 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 17:20:16,482 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18116
+2026-04-16 17:21:46,565 - app.routers.ws_chat - ERROR - WebSocket Error: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 54, in websocket_chat
+    try:
+    
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\tasks.py", line 488, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 120, in receive_text
+    self._raise_on_disconnect(message)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 114, in _raise_on_disconnect
+    raise WebSocketDisconnect(message["code"], message.get("reason"))
+starlette.websockets.WebSocketDisconnect: (1001, '')
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 74, in websocket_chat
+    except Exception as e:
+        ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 176, in send_json
+    await self.send({"type": "websocket.send", "text": text})
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 86, in send
+    await self._send(message)
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 39, in sender
+    await send(message)
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py", line 357, in asgi_send
+    raise RuntimeError(msg % message_type)
+RuntimeError: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+2026-04-16 17:21:51,148 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 17:21:57,653 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 17:21:57,860 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18050
+2026-04-16 17:25:23,905 - app.routers.ws_chat - ERROR - WebSocket Error: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 54, in websocket_chat
+    try:
+    
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\tasks.py", line 488, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 120, in receive_text
+    self._raise_on_disconnect(message)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 114, in _raise_on_disconnect
+    raise WebSocketDisconnect(message["code"], message.get("reason"))
+starlette.websockets.WebSocketDisconnect: (1001, '')
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 74, in websocket_chat
+    except Exception as e:
+        ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 176, in send_json
+    await self.send({"type": "websocket.send", "text": text})
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 86, in send
+    await self._send(message)
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 39, in sender
+    await send(message)
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py", line 357, in asgi_send
+    raise RuntimeError(msg % message_type)
+RuntimeError: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+2026-04-16 17:25:28,605 - app.routers.chat - INFO - Personal data access for user=cmnwwwhf5003tygughvql0aj1, role=HRMRole.EMPLOYEE
+2026-04-16 17:25:43,184 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 17:25:43,678 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18159
+2026-04-16 17:27:24,775 - app.routers.chat - INFO - [smart_cmnwwwhf5003tygughvql0aj1_1d7195] AI response cache HIT
+2026-04-16 17:31:54,838 - app.routers.chat - INFO - [smart_cmnwwwhf5003tygughvql0aj1_e403bc] AI response cache HIT
+2026-04-16 17:33:44,814 - app.routers.chat - INFO - [smart_cmnwwwhf5003tygughvql0aj1_a63d37] AI response cache HIT
+2026-04-16 17:57:15,786 - app.routers.ws_chat - ERROR - WebSocket Error: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 54, in websocket_chat
+    try:
+    
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\tasks.py", line 488, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 120, in receive_text
+    self._raise_on_disconnect(message)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 114, in _raise_on_disconnect
+    raise WebSocketDisconnect(message["code"], message.get("reason"))
+starlette.websockets.WebSocketDisconnect: (1001, '')
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 74, in websocket_chat
+    except Exception as e:
+        ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 176, in send_json
+    await self.send({"type": "websocket.send", "text": text})
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 86, in send
+    await self._send(message)
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 39, in sender
+    await send(message)
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py", line 357, in asgi_send
+    raise RuntimeError(msg % message_type)
+RuntimeError: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+2026-04-16 17:57:17,589 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 17:57:23,888 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 17:57:27,198 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18179
+2026-04-16 17:59:30,209 - app.routers.ws_chat - ERROR - WebSocket Error: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 54, in websocket_chat
+    try:
+    
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\tasks.py", line 488, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 120, in receive_text
+    self._raise_on_disconnect(message)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 114, in _raise_on_disconnect
+    raise WebSocketDisconnect(message["code"], message.get("reason"))
+starlette.websockets.WebSocketDisconnect: (<CloseCode.ABNORMAL_CLOSURE: 1006>, '')
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 74, in websocket_chat
+    except Exception as e:
+        ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 176, in send_json
+    await self.send({"type": "websocket.send", "text": text})
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 86, in send
+    await self._send(message)
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 39, in sender
+    await send(message)
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py", line 357, in asgi_send
+    raise RuntimeError(msg % message_type)
+RuntimeError: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+2026-04-16 17:59:58,472 - app.routers.ws_chat - ERROR - WebSocket Error: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 54, in websocket_chat
+    try:
+    
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\tasks.py", line 488, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 120, in receive_text
+    self._raise_on_disconnect(message)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 114, in _raise_on_disconnect
+    raise WebSocketDisconnect(message["code"], message.get("reason"))
+starlette.websockets.WebSocketDisconnect: (1001, '')
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 74, in websocket_chat
+    except Exception as e:
+        ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 176, in send_json
+    await self.send({"type": "websocket.send", "text": text})
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\websockets.py", line 86, in send
+    await self._send(message)
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\starlette\_exception_handler.py", line 39, in sender
+    await send(message)
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py", line 357, in asgi_send
+    raise RuntimeError(msg % message_type)
+RuntimeError: Unexpected ASGI message 'websocket.send', after sending 'websocket.close' or response already completed.
+2026-04-16 18:00:11,427 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:00:19,322 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:00:19,459 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18060
+2026-04-16 18:03:25,783 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:03:32,375 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:03:32,615 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18045
+2026-04-16 18:03:37,801 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 18:03:37,816 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 18:03:37,824 - app.database - INFO - Database connection pool closed
+2026-04-16 18:03:37,824 - app.main - INFO - Cleanup complete
+2026-04-16 18:03:48,284 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 18:03:48,284 - app.main - INFO - Default provider: openai
+2026-04-16 18:03:48,284 - app.main - INFO - Default model: gpt-4o
+2026-04-16 18:03:48,285 - app.main - INFO - Redis enabled: True
+2026-04-16 18:03:48,285 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 18:03:48,285 - app.main - INFO - AI Provider router initialized
+2026-04-16 18:03:48,455 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 18:03:48,456 - app.main - INFO - Redis cache layer initialized
+2026-04-16 18:03:48,824 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 18:03:48,826 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 18:03:48,827 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 18:03:48,827 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 18:03:52,177 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:04:15,202 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:04:17,532 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18642
+2026-04-16 18:05:12,603 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:05:24,860 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:05:25,541 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18245
+2026-04-16 18:05:57,489 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:06:02,533 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:06:03,190 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18333
+2026-04-16 18:06:57,657 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:07:11,902 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:07:16,722 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17724
+2026-04-16 18:09:36,092 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:09:47,549 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:09:48,524 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18201
+2026-04-16 18:10:18,586 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:10:28,725 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:10:29,870 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18365
+2026-04-16 18:15:02,990 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:15:14,583 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:15:15,926 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18351
+2026-04-16 18:18:00,277 - app.routers.chat - INFO - [smart_cmnwwwhhl003xygugo3we9i9w_8bb29b] AI response cache HIT
+2026-04-16 18:36:36,544 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:36:44,293 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:36:46,097 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18057
+2026-04-16 18:36:52,358 - app.routers.chat - INFO - [smart_cmnwwwhhl003xygugo3we9i9w_235c42] AI response cache HIT
+2026-04-16 18:36:58,980 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 18:36:58,992 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 18:36:58,999 - app.database - INFO - Database connection pool closed
+2026-04-16 18:36:58,999 - app.main - INFO - Cleanup complete
+2026-04-16 18:37:09,322 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 18:37:09,322 - app.main - INFO - Default provider: openai
+2026-04-16 18:37:09,323 - app.main - INFO - Default model: gpt-4o
+2026-04-16 18:37:09,323 - app.main - INFO - Redis enabled: True
+2026-04-16 18:37:09,323 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 18:37:09,323 - app.main - INFO - AI Provider router initialized
+2026-04-16 18:37:09,455 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 18:37:09,456 - app.main - INFO - Redis cache layer initialized
+2026-04-16 18:37:09,744 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 18:37:09,746 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 18:37:09,746 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 18:37:09,746 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 18:38:03,884 - app.routers.chat - INFO - [smart_cmnwwwhhl003xygugo3we9i9w_679178] AI response cache HIT
+2026-04-16 18:41:07,219 - app.routers.chat - INFO - [smart_cmnwwwhhl003xygugo3we9i9w_1e6128] AI response cache HIT
+2026-04-16 18:41:26,058 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:42:07,920 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 18:42:07,920 - app.main - INFO - Default provider: openai
+2026-04-16 18:42:07,920 - app.main - INFO - Default model: gpt-4o
+2026-04-16 18:42:07,921 - app.main - INFO - Redis enabled: True
+2026-04-16 18:42:07,921 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 18:42:07,921 - app.main - INFO - AI Provider router initialized
+2026-04-16 18:42:08,007 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 18:42:08,007 - app.main - INFO - Redis cache layer initialized
+2026-04-16 18:42:08,280 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 18:42:08,281 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 18:42:08,282 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 18:42:08,282 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 18:42:12,780 - app.routers.chat - INFO - [smart_cmnwwwhhl003xygugo3we9i9w_49545e] AI response cache HIT
+2026-04-16 18:43:56,753 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 18:43:56,755 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 18:43:56,760 - app.database - INFO - Database connection pool closed
+2026-04-16 18:43:56,761 - app.main - INFO - Cleanup complete
+2026-04-16 18:44:01,844 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 18:44:01,844 - app.main - INFO - Default provider: openai
+2026-04-16 18:44:01,845 - app.main - INFO - Default model: gpt-4o
+2026-04-16 18:44:01,845 - app.main - INFO - Redis enabled: True
+2026-04-16 18:44:01,845 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 18:44:01,845 - app.main - INFO - AI Provider router initialized
+2026-04-16 18:44:01,921 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 18:44:01,921 - app.main - INFO - Redis cache layer initialized
+2026-04-16 18:44:02,137 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 18:44:02,138 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 18:44:02,139 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 18:44:02,139 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 18:44:04,496 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:44:11,610 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:46:35,763 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:48:18,741 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:50:27,354 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:50:34,706 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-16 18:50:34,707 - app.services.redis_service - INFO - Redis connection closed
+2026-04-16 18:50:34,714 - app.database - INFO - Database connection pool closed
+2026-04-16 18:50:34,714 - app.main - INFO - Cleanup complete
+2026-04-16 18:50:42,875 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-16 18:50:42,876 - app.main - INFO - Default provider: openai
+2026-04-16 18:50:42,876 - app.main - INFO - Default model: gpt-4o
+2026-04-16 18:50:42,876 - app.main - INFO - Redis enabled: True
+2026-04-16 18:50:42,876 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-16 18:50:42,877 - app.main - INFO - AI Provider router initialized
+2026-04-16 18:50:42,992 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-16 18:50:42,992 - app.main - INFO - Redis cache layer initialized
+2026-04-16 18:50:43,268 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-16 18:50:43,269 - app.main - INFO - Database connection pool initialized successfully
+2026-04-16 18:50:43,269 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-16 18:50:43,270 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-16 18:50:45,158 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:50:57,034 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:50:57,371 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18286
+2026-04-16 18:51:26,002 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:51:38,162 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:51:39,815 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18592
+2026-04-16 18:54:53,492 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 18:55:04,693 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 18:55:06,080 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18560
+2026-04-16 19:02:01,243 - app.routers.chat - INFO - Full HR data access for role=HRMRole.ACCOUNTANT
+2026-04-16 19:02:11,778 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 19:02:13,992 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18502
+2026-04-16 19:25:14,399 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 19:25:26,843 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 19:25:27,390 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17782
+2026-04-16 19:26:06,278 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 19:26:36,290 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 19:26:38,432 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18023
+2026-04-16 19:29:35,150 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 19:29:59,032 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 19:30:01,383 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18400
+2026-04-16 19:42:37,817 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 19:42:51,041 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 19:42:52,320 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18176
+2026-04-16 19:47:57,569 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 19:48:15,491 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 19:48:16,990 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18668
+2026-04-16 19:48:48,949 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 19:49:01,563 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 19:49:01,949 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18150
+2026-04-16 19:49:35,488 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 19:49:48,317 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 19:49:49,806 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18295
+2026-04-16 20:13:25,329 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 20:13:32,871 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:13:34,248 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18686
+2026-04-16 20:14:24,925 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 20:14:36,762 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:14:38,158 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19132
+2026-04-16 20:15:31,999 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 20:15:55,649 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:15:57,200 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19396
+2026-04-16 20:17:10,718 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 20:17:33,943 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:17:35,429 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19262
+2026-04-16 20:18:34,774 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 20:18:36,024 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 20:18:40,708 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:18:41,504 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17974
+2026-04-16 20:18:52,132 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:18:52,475 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18980
+2026-04-16 20:19:25,692 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 20:19:27,776 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 20:19:34,049 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:19:36,175 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19978
+2026-04-16 20:19:37,872 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:19:42,529 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18048
+2026-04-16 20:24:38,242 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-16 20:24:45,124 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:24:56,737 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3132
+2026-04-16 20:24:56,744 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-16 20:31:29,138 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-16 20:31:34,741 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:31:44,821 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18773
+2026-04-16 20:32:10,045 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-16 20:32:17,074 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:32:31,493 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3377
+2026-04-16 20:32:31,493 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-16 20:37:07,348 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 20:37:39,025 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:37:42,660 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19842
+2026-04-16 20:38:17,642 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 20:38:47,289 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:38:49,923 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18955
+2026-04-16 20:54:58,535 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 20:55:15,440 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 20:55:19,001 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18711
+2026-04-16 21:10:26,304 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 21:10:37,295 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 21:10:38,621 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18252
+2026-04-16 21:11:36,396 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 21:11:52,693 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 21:11:54,989 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18648
+2026-04-16 21:15:52,972 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 21:16:08,757 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 21:16:11,325 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18512
+2026-04-16 21:16:31,476 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 21:16:44,311 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 21:16:44,434 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18117
+2026-04-16 21:17:40,952 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 21:17:53,511 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 21:17:54,333 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18385
+2026-04-16 21:18:55,952 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 21:19:03,324 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 21:19:06,365 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17690
+2026-04-16 21:19:31,247 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 21:19:44,027 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 21:19:45,691 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18378
+2026-04-16 21:20:11,841 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-16 21:20:25,661 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-16 21:20:26,792 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18501
+2026-04-17 10:08:35,222 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 10:08:35,250 - app.main - INFO - Default provider: openai
+2026-04-17 10:08:35,251 - app.main - INFO - Default model: gpt-4o
+2026-04-17 10:08:35,253 - app.main - INFO - Redis enabled: True
+2026-04-17 10:08:35,255 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 10:08:35,266 - app.main - INFO - AI Provider router initialized
+2026-04-17 10:08:45,143 - app.services.redis_service - WARNING - Redis not available, running without cache: Error 22 connecting to localhost:6379. The remote computer refused the network connection.
+2026-04-17 10:08:45,194 - app.main - WARNING - Redis not available - running without cache (in-memory fallback)
+2026-04-17 10:08:50,157 - app.database - ERROR - DB connection attempt 1/3 failed: [WinError 1225] The remote computer refused the network connection
+2026-04-17 10:08:50,208 - app.database - INFO - Retrying in 2s...
+2026-04-17 10:08:56,791 - app.database - ERROR - DB connection attempt 2/3 failed: [WinError 1225] The remote computer refused the network connection
+2026-04-17 10:08:56,800 - app.database - INFO - Retrying in 4s...
+2026-04-17 10:09:05,389 - app.database - ERROR - DB connection attempt 3/3 failed: [WinError 1225] The remote computer refused the network connection
+2026-04-17 10:09:05,415 - app.database - ERROR - Failed to connect to database after 3 attempts
+2026-04-17 10:09:05,448 - app.main - WARNING - Database not configured - AI will work without direct DB access
+2026-04-17 10:09:05,451 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 10:09:05,453 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 10:16:31,862 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-17 10:16:42,486 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 10:16:43,384 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17511
+2026-04-17 10:53:01,630 - app.routers.chat - INFO - Personal data access for user=cmnwwwhke0041ygugg4b3y580, role=HRMRole.IT_ADMIN
+2026-04-17 10:53:07,557 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 10:53:08,562 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17350
+2026-04-17 12:24:07,774 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 12:24:07,775 - app.main - INFO - Cleanup complete
+2026-04-17 12:25:54,694 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 12:25:54,695 - app.main - INFO - Default provider: openai
+2026-04-17 12:25:54,695 - app.main - INFO - Default model: gpt-4o
+2026-04-17 12:25:54,695 - app.main - INFO - Redis enabled: True
+2026-04-17 12:25:54,695 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 12:25:54,695 - app.main - INFO - AI Provider router initialized
+2026-04-17 12:25:54,833 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 12:25:54,833 - app.main - INFO - Redis cache layer initialized
+2026-04-17 12:25:55,066 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 12:25:55,070 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 12:25:55,070 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 12:25:55,070 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 12:26:40,512 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:26:42,976 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18478
+2026-04-17 12:32:44,445 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:32:47,051 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19004
+2026-04-17 12:39:17,749 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:39:18,528 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18877
+2026-04-17 12:40:02,559 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:40:04,769 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19050
+2026-04-17 12:46:04,745 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:46:04,888 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21060
+2026-04-17 12:49:02,305 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:49:02,893 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19300
+2026-04-17 12:49:51,608 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:49:53,622 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19166
+2026-04-17 12:50:22,519 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:50:25,031 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20340
+2026-04-17 12:51:37,935 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:51:43,899 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20817
+2026-04-17 12:52:41,135 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:52:45,474 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20332
+2026-04-17 12:55:14,761 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:55:15,095 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17526
+2026-04-17 12:56:38,536 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 12:56:43,070 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21657
+2026-04-17 13:00:08,726 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 13:00:08,726 - app.main - INFO - Default provider: openai
+2026-04-17 13:00:08,726 - app.main - INFO - Default model: gpt-4o
+2026-04-17 13:00:08,726 - app.main - INFO - Redis enabled: True
+2026-04-17 13:00:08,726 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 13:00:08,727 - app.main - INFO - AI Provider router initialized
+2026-04-17 13:00:08,808 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 13:00:08,808 - app.main - INFO - Redis cache layer initialized
+2026-04-17 13:00:08,975 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 13:00:08,975 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 13:00:08,976 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 13:00:08,976 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 13:00:08,976 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 13:00:08,977 - app.services.redis_service - INFO - Redis connection closed
+2026-04-17 13:00:08,981 - app.database - INFO - Database connection pool closed
+2026-04-17 13:00:08,981 - app.main - INFO - Cleanup complete
+2026-04-17 13:00:57,443 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 13:00:57,444 - app.main - INFO - Default provider: openai
+2026-04-17 13:00:57,444 - app.main - INFO - Default model: gpt-4o
+2026-04-17 13:00:57,444 - app.main - INFO - Redis enabled: True
+2026-04-17 13:00:57,444 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 13:00:57,444 - app.main - INFO - AI Provider router initialized
+2026-04-17 13:00:57,511 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 13:00:57,511 - app.main - INFO - Redis cache layer initialized
+2026-04-17 13:00:57,685 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 13:00:57,688 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 13:00:57,689 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 13:00:57,689 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 13:01:03,334 - app.routers.chat - INFO - Full HR data access for role=HRMRole.HR_STAFF
+2026-04-17 13:01:35,578 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 13:01:42,070 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21946
+2026-04-17 14:07:24,661 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 14:07:24,662 - app.main - INFO - Default provider: openai
+2026-04-17 14:07:24,662 - app.main - INFO - Default model: gpt-4o
+2026-04-17 14:07:24,662 - app.main - INFO - Redis enabled: True
+2026-04-17 14:07:24,662 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 14:07:24,662 - app.main - INFO - AI Provider router initialized
+2026-04-17 14:07:24,747 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 14:07:24,747 - app.main - INFO - Redis cache layer initialized
+2026-04-17 14:07:24,977 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 14:07:24,979 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 14:07:24,979 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 14:07:24,979 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 14:08:13,458 - app.routers.chat - INFO - Full HR data access for role=HRMRole.HR_STAFF
+2026-04-17 14:08:37,842 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:08:42,802 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21362
+2026-04-17 14:11:42,843 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 14:11:42,843 - app.main - INFO - Default provider: openai
+2026-04-17 14:11:42,843 - app.main - INFO - Default model: gpt-4o
+2026-04-17 14:11:42,843 - app.main - INFO - Redis enabled: True
+2026-04-17 14:11:42,843 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 14:11:42,844 - app.main - INFO - AI Provider router initialized
+2026-04-17 14:11:42,935 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 14:11:42,935 - app.main - INFO - Redis cache layer initialized
+2026-04-17 14:11:43,125 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 14:11:43,126 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 14:11:43,126 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 14:11:43,126 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 14:11:43,129 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 14:11:43,129 - app.services.redis_service - INFO - Redis connection closed
+2026-04-17 14:11:43,134 - app.database - INFO - Database connection pool closed
+2026-04-17 14:11:43,134 - app.main - INFO - Cleanup complete
+2026-04-17 14:12:07,679 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 14:12:07,679 - app.main - INFO - Default provider: openai
+2026-04-17 14:12:07,679 - app.main - INFO - Default model: gpt-4o
+2026-04-17 14:12:07,679 - app.main - INFO - Redis enabled: True
+2026-04-17 14:12:07,679 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 14:12:07,679 - app.main - INFO - AI Provider router initialized
+2026-04-17 14:12:07,767 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 14:12:07,767 - app.main - INFO - Redis cache layer initialized
+2026-04-17 14:12:08,002 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 14:12:08,003 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 14:12:08,003 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 14:12:08,003 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 14:12:47,975 - app.routers.chat - INFO - Full HR data access for role=HRMRole.HR_STAFF
+2026-04-17 14:13:11,348 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:13:16,436 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21295
+2026-04-17 14:13:38,317 - app.routers.chat - INFO - Full HR data access for role=HRMRole.HR_STAFF
+2026-04-17 14:13:50,369 - app.services.db_queries - ERROR - Error fetching personal attendance for cmo2htn9r000144ug72slegvx: column "isLate" does not exist
+HINT:  Perhaps you meant to reference the column "attendances.date".
+2026-04-17 14:13:50,369 - app.routers.chat - INFO - Personal data access for user=cmo2htn9r000144ug72slegvx, role=HRMRole.EMPLOYEE
+2026-04-17 14:14:09,818 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:14:19,942 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=22089
+2026-04-17 14:14:20,319 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:14:26,827 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19064
+2026-04-17 14:21:07,765 - app.services.db_queries - ERROR - Error fetching personal attendance for cmo2htn9r000144ug72slegvx: column "isLate" does not exist
+HINT:  Perhaps you meant to reference the column "attendances.date".
+2026-04-17 14:21:44,523 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:21:51,465 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19613
+2026-04-17 14:22:47,165 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:22:49,575 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17881
+2026-04-17 14:25:04,880 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:25:09,493 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18866
+2026-04-17 14:34:49,097 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:34:50,347 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18318
+2026-04-17 14:35:56,551 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:35:59,947 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18620
+2026-04-17 14:52:01,808 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:52:02,723 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18312
+2026-04-17 14:58:32,664 - app.services.db_queries - ERROR - Error fetching personal attendance for cmo2htn9r000144ug72slegvx: column "isLate" does not exist
+HINT:  Perhaps you meant to reference the column "attendances.date".
+2026-04-17 14:58:58,627 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 14:59:04,178 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18783
+2026-04-17 14:59:47,511 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 14:59:47,511 - app.main - INFO - Default provider: openai
+2026-04-17 14:59:47,512 - app.main - INFO - Default model: gpt-4o
+2026-04-17 14:59:47,512 - app.main - INFO - Redis enabled: True
+2026-04-17 14:59:47,512 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 14:59:47,512 - app.main - INFO - AI Provider router initialized
+2026-04-17 14:59:47,620 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 14:59:47,620 - app.main - INFO - Redis cache layer initialized
+2026-04-17 14:59:47,836 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 14:59:47,838 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 14:59:47,838 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 14:59:47,839 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 14:59:47,842 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 14:59:47,843 - app.services.redis_service - INFO - Redis connection closed
+2026-04-17 14:59:47,850 - app.database - INFO - Database connection pool closed
+2026-04-17 14:59:47,851 - app.main - INFO - Cleanup complete
+2026-04-17 15:00:38,621 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 15:00:38,622 - app.main - INFO - Default provider: openai
+2026-04-17 15:00:38,622 - app.main - INFO - Default model: gpt-4o
+2026-04-17 15:00:38,623 - app.main - INFO - Redis enabled: True
+2026-04-17 15:00:38,623 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 15:00:38,623 - app.main - INFO - AI Provider router initialized
+2026-04-17 15:00:38,710 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 15:00:38,711 - app.main - INFO - Redis cache layer initialized
+2026-04-17 15:00:38,947 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 15:00:38,949 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 15:00:38,949 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 15:00:38,950 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 15:00:50,113 - app.services.db_queries - ERROR - Error fetching personal attendance for cmo2htn9r000144ug72slegvx: column "isLate" does not exist
+HINT:  Perhaps you meant to reference the column "attendances.date".
+2026-04-17 15:01:20,377 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:01:29,151 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19197
+2026-04-17 15:01:47,666 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:01:53,024 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18633
+2026-04-17 15:02:09,738 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:02:11,168 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18785
+2026-04-17 15:02:34,561 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:02:34,919 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18499
+2026-04-17 15:02:53,204 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:02:53,509 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18439
+2026-04-17 15:04:51,402 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 15:04:51,403 - app.main - INFO - Default provider: openai
+2026-04-17 15:04:51,403 - app.main - INFO - Default model: gpt-4o
+2026-04-17 15:04:51,403 - app.main - INFO - Redis enabled: True
+2026-04-17 15:04:51,403 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 15:04:51,403 - app.main - INFO - AI Provider router initialized
+2026-04-17 15:04:51,472 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 15:04:51,472 - app.main - INFO - Redis cache layer initialized
+2026-04-17 15:04:51,699 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 15:04:51,700 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 15:04:51,701 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 15:04:51,701 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 15:05:20,285 - app.services.db_queries - ERROR - Error fetching personal attendance for cmo2htn9r000144ug72slegvx: column "isLate" does not exist
+HINT:  Perhaps you meant to reference the column "attendances.date".
+2026-04-17 15:06:02,928 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:06:08,575 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19791
+2026-04-17 15:12:05,175 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 15:12:05,175 - app.main - INFO - Default provider: openai
+2026-04-17 15:12:05,176 - app.main - INFO - Default model: gpt-4o
+2026-04-17 15:12:05,176 - app.main - INFO - Redis enabled: True
+2026-04-17 15:12:05,176 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 15:12:05,176 - app.main - INFO - AI Provider router initialized
+2026-04-17 15:12:05,298 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 15:12:05,298 - app.main - INFO - Redis cache layer initialized
+2026-04-17 15:12:05,751 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 15:12:05,753 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 15:12:05,753 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 15:12:05,753 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 15:12:29,178 - app.services.db_queries - ERROR - Error fetching personal attendance for cmo2htn9r000144ug72slegvx: column "isLate" does not exist
+HINT:  Perhaps you meant to reference the column "attendances.date".
+2026-04-17 15:12:54,996 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:12:59,264 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18873
+2026-04-17 15:14:34,261 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:14:40,324 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19316
+2026-04-17 15:16:05,933 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:16:09,191 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20145
+2026-04-17 15:22:54,386 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 15:22:54,386 - app.main - INFO - Default provider: openai
+2026-04-17 15:22:54,386 - app.main - INFO - Default model: gpt-4o
+2026-04-17 15:22:54,386 - app.main - INFO - Redis enabled: True
+2026-04-17 15:22:54,386 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 15:22:54,386 - app.main - INFO - AI Provider router initialized
+2026-04-17 15:22:54,497 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 15:22:54,498 - app.main - INFO - Redis cache layer initialized
+2026-04-17 15:22:54,734 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 15:22:54,735 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 15:22:54,735 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 15:22:54,736 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 15:34:16,906 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:34:17,157 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19638
+2026-04-17 15:40:59,159 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:41:05,198 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21064
+2026-04-17 15:44:23,007 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 15:44:23,007 - app.main - INFO - Default provider: openai
+2026-04-17 15:44:23,007 - app.main - INFO - Default model: gpt-4o
+2026-04-17 15:44:23,007 - app.main - INFO - Redis enabled: True
+2026-04-17 15:44:23,007 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 15:44:23,007 - app.main - INFO - AI Provider router initialized
+2026-04-17 15:44:23,078 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 15:44:23,078 - app.main - INFO - Redis cache layer initialized
+2026-04-17 15:44:23,295 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 15:44:23,296 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 15:44:23,296 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 15:44:23,296 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 15:44:53,012 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:44:53,596 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20038
+2026-04-17 15:45:34,974 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:45:39,755 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21550
+2026-04-17 15:45:54,123 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:45:59,128 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21223
+2026-04-17 15:45:59,134 - app.services.risk_predictor - ERROR - Error collecting risk factors for cmnwwwgyt0035ygugl50k92fx: unsupported operand type(s) for -: 'datetime.date' and 'datetime.datetime'
+2026-04-17 15:46:07,415 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 15:46:13,426 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21296
+2026-04-17 15:46:13,429 - app.services.risk_predictor - ERROR - Error collecting risk factors for cmnwwwgyt0035ygugl50k92fx: unsupported operand type(s) for -: 'datetime.date' and 'datetime.datetime'
+2026-04-17 16:05:41,351 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 16:05:45,879 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19295
+2026-04-17 16:10:31,493 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 16:10:33,961 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19336
+2026-04-17 16:10:49,055 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 16:10:49,203 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20535
+2026-04-17 16:16:50,862 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 16:16:53,151 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19956
+2026-04-17 16:34:23,398 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 16:34:26,806 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=27102
+2026-04-17 16:40:54,075 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 16:40:54,075 - app.main - INFO - Default provider: openai
+2026-04-17 16:40:54,076 - app.main - INFO - Default model: gpt-4o
+2026-04-17 16:40:54,076 - app.main - INFO - Redis enabled: True
+2026-04-17 16:40:54,076 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 16:40:54,076 - app.main - INFO - AI Provider router initialized
+2026-04-17 16:40:54,176 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 16:40:54,176 - app.main - INFO - Redis cache layer initialized
+2026-04-17 16:40:54,406 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 16:40:54,407 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 16:40:54,407 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 16:40:54,407 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 16:40:54,410 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 16:40:54,411 - app.services.redis_service - INFO - Redis connection closed
+2026-04-17 16:40:54,416 - app.database - INFO - Database connection pool closed
+2026-04-17 16:40:54,416 - app.main - INFO - Cleanup complete
+2026-04-17 16:41:44,712 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 16:41:44,713 - app.main - INFO - Default provider: openai
+2026-04-17 16:41:44,713 - app.main - INFO - Default model: gpt-4o
+2026-04-17 16:41:44,713 - app.main - INFO - Redis enabled: True
+2026-04-17 16:41:44,714 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 16:41:44,714 - app.main - INFO - AI Provider router initialized
+2026-04-17 16:41:44,800 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 16:41:44,800 - app.main - INFO - Redis cache layer initialized
+2026-04-17 16:41:45,014 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 16:41:45,016 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 16:41:45,017 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 16:41:45,017 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 16:41:57,514 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-17 17:07:07,511 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 17:07:07,525 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18941
+2026-04-17 18:02:05,328 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 18:02:05,329 - app.main - INFO - Default provider: openai
+2026-04-17 18:02:05,329 - app.main - INFO - Default model: gpt-4o
+2026-04-17 18:02:05,329 - app.main - INFO - Redis enabled: True
+2026-04-17 18:02:05,329 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 18:02:05,329 - app.main - INFO - AI Provider router initialized
+2026-04-17 18:02:05,435 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 18:02:05,435 - app.main - INFO - Redis cache layer initialized
+2026-04-17 18:02:05,614 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 18:02:05,616 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 18:02:05,617 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 18:02:05,617 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 18:16:12,604 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-17 18:21:55,030 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:21:55,243 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19823
+2026-04-17 18:22:12,829 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:22:13,298 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19863
+2026-04-17 18:22:39,670 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 18:22:47,765 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:23:00,489 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3330
+2026-04-17 18:23:00,490 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 18:26:03,949 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 18:26:30,054 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:26:40,953 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3573
+2026-04-17 18:26:40,953 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 18:27:26,036 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 18:27:44,561 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:27:48,893 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3268
+2026-04-17 18:27:48,893 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 18:31:36,022 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 18:31:41,442 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:31:55,178 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3254
+2026-04-17 18:31:55,178 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 18:32:56,092 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 18:33:03,882 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:33:17,292 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3378
+2026-04-17 18:33:17,292 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 18:34:02,360 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 18:34:09,594 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:34:22,242 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3299
+2026-04-17 18:34:22,243 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 18:36:12,885 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 18:36:18,924 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:36:32,613 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3247
+2026-04-17 18:36:32,613 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 18:37:58,063 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:37:58,334 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20541
+2026-04-17 18:38:07,251 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:38:07,253 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20440
+2026-04-17 18:47:28,755 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:47:29,396 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18974
+2026-04-17 18:49:07,774 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:49:08,031 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18626
+2026-04-17 18:49:48,284 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 18:49:52,764 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 18:50:05,312 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3142
+2026-04-17 18:50:05,314 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 19:24:47,685 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 19:24:53,244 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18313
+2026-04-17 19:25:19,945 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 19:25:27,342 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 19:25:40,492 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3325
+2026-04-17 19:25:40,492 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 19:27:56,533 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-17 19:28:11,818 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 19:28:17,981 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 19:28:30,873 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3241
+2026-04-17 19:28:30,874 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 19:28:44,870 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 19:28:50,101 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 19:29:02,101 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3145
+2026-04-17 19:29:02,102 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 19:33:12,566 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 19:33:12,569 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19800
+2026-04-17 19:38:17,620 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 19:38:18,404 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20118
+2026-04-17 19:38:35,347 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 19:38:36,431 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20142
+2026-04-17 19:42:41,046 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 19:42:42,385 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20159
+2026-04-17 19:43:29,428 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-17 19:44:03,851 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-17 19:44:20,349 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 19:44:21,154 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19920
+2026-04-17 19:47:04,207 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-17 19:47:12,736 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 19:47:19,903 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=5123
+2026-04-17 19:47:19,904 - app.routers.data_analyst - INFO - Final chart_type=pie, chart_data_len=2
+2026-04-17 21:08:31,256 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 21:08:34,505 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 21:08:38,218 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:08:39,321 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:08:53,254 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3232
+2026-04-17 21:08:53,266 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 21:08:54,278 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3409
+2026-04-17 21:08:54,351 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 21:08:55,106 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 21:08:55,662 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-17 21:09:00,710 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:09:02,071 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:09:13,365 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3135
+2026-04-17 21:09:13,366 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 21:09:15,206 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3262
+2026-04-17 21:09:15,207 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-17 21:15:56,820 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 21:15:56,833 - app.services.redis_service - INFO - Redis connection closed
+2026-04-17 21:15:56,834 - app.database - INFO - Database connection pool closed
+2026-04-17 21:15:56,835 - app.main - INFO - Cleanup complete
+2026-04-17 21:16:03,607 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 21:16:03,607 - app.main - INFO - Default provider: openai
+2026-04-17 21:16:03,608 - app.main - INFO - Default model: gpt-4o
+2026-04-17 21:16:03,608 - app.main - INFO - Redis enabled: True
+2026-04-17 21:16:03,608 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 21:16:03,608 - app.main - INFO - AI Provider router initialized
+2026-04-17 21:16:03,828 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 21:16:03,828 - app.main - INFO - Redis cache layer initialized
+2026-04-17 21:16:04,017 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 21:16:04,018 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 21:16:04,018 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 21:16:04,019 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 21:30:36,684 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:30:38,362 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=500
+2026-04-17 21:30:39,375 - app.routers.data_analyst - INFO - DB data keys: ['leave']
+2026-04-17 21:30:46,727 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:30:55,074 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3582
+2026-04-17 21:30:55,075 - app.routers.data_analyst - INFO - Final chart_type=pie, chart_data_len=3
+2026-04-17 21:32:42,420 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:32:43,936 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=480
+2026-04-17 21:32:49,509 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:32:50,423 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20558
+2026-04-17 21:33:10,395 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-17 21:33:11,438 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:33:13,008 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=487
+2026-04-17 21:34:06,822 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:34:07,050 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:34:07,148 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=444
+2026-04-17 21:34:08,114 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20484
+2026-04-17 21:35:11,828 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-17 21:35:16,411 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:35:16,901 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=452
+2026-04-17 21:35:18,536 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 21:35:24,789 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=5013
+2026-04-17 21:35:24,790 - app.routers.data_analyst - INFO - Final chart_type=pie, chart_data_len=2
+2026-04-17 23:09:44,642 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-17 23:09:49,793 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:09:50,376 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=471
+2026-04-17 23:09:52,536 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:09:59,007 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=5109
+2026-04-17 23:09:59,007 - app.routers.data_analyst - INFO - Final chart_type=pie, chart_data_len=2
+2026-04-17 23:17:00,305 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:17:01,843 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20646
+2026-04-17 23:17:32,227 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:17:37,507 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18299
+2026-04-17 23:18:15,530 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:18:21,768 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18363
+2026-04-17 23:18:45,796 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:18:52,304 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18988
+2026-04-17 23:20:10,781 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 23:20:10,782 - app.services.redis_service - INFO - Redis connection closed
+2026-04-17 23:20:10,787 - app.database - INFO - Database connection pool closed
+2026-04-17 23:20:10,787 - app.main - INFO - Cleanup complete
+2026-04-17 23:20:16,431 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 23:20:16,432 - app.main - INFO - Default provider: openai
+2026-04-17 23:20:16,432 - app.main - INFO - Default model: gpt-4o
+2026-04-17 23:20:16,432 - app.main - INFO - Redis enabled: True
+2026-04-17 23:20:16,432 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 23:20:16,433 - app.main - INFO - AI Provider router initialized
+2026-04-17 23:20:16,550 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 23:20:16,550 - app.main - INFO - Redis cache layer initialized
+2026-04-17 23:20:16,730 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 23:20:16,731 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 23:20:16,731 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 23:20:16,732 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 23:20:29,536 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:20:35,168 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18400
+2026-04-17 23:23:35,937 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:23:40,223 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20866
+2026-04-17 23:23:45,171 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:23:52,188 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=558
+2026-04-17 23:24:29,924 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:24:38,646 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19006
+2026-04-17 23:24:47,305 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:24:57,565 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=1081
+2026-04-17 23:30:44,410 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:30:48,670 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18549
+2026-04-17 23:30:59,209 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 23:30:59,209 - app.main - INFO - Default provider: openai
+2026-04-17 23:30:59,209 - app.main - INFO - Default model: gpt-4o
+2026-04-17 23:30:59,210 - app.main - INFO - Redis enabled: True
+2026-04-17 23:30:59,210 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 23:30:59,210 - app.main - INFO - AI Provider router initialized
+2026-04-17 23:30:59,291 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 23:30:59,291 - app.main - INFO - Redis cache layer initialized
+2026-04-17 23:30:59,499 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 23:30:59,500 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 23:30:59,501 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 23:30:59,501 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 23:30:59,503 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 23:30:59,503 - app.services.redis_service - INFO - Redis connection closed
+2026-04-17 23:30:59,508 - app.database - INFO - Database connection pool closed
+2026-04-17 23:30:59,508 - app.main - INFO - Cleanup complete
+2026-04-17 23:32:08,049 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 23:32:08,050 - app.main - INFO - Default provider: openai
+2026-04-17 23:32:08,050 - app.main - INFO - Default model: gpt-4o
+2026-04-17 23:32:08,050 - app.main - INFO - Redis enabled: True
+2026-04-17 23:32:08,050 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 23:32:08,050 - app.main - INFO - AI Provider router initialized
+2026-04-17 23:32:08,115 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 23:32:08,115 - app.main - INFO - Redis cache layer initialized
+2026-04-17 23:32:08,326 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 23:32:08,327 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 23:32:08,327 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 23:32:08,327 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 23:32:08,328 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 23:32:08,328 - app.services.redis_service - INFO - Redis connection closed
+2026-04-17 23:32:08,333 - app.database - INFO - Database connection pool closed
+2026-04-17 23:32:08,333 - app.main - INFO - Cleanup complete
+2026-04-17 23:32:47,819 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 23:32:47,819 - app.main - INFO - Default provider: openai
+2026-04-17 23:32:47,819 - app.main - INFO - Default model: gpt-4o
+2026-04-17 23:32:47,820 - app.main - INFO - Redis enabled: True
+2026-04-17 23:32:47,820 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 23:32:47,820 - app.main - INFO - AI Provider router initialized
+2026-04-17 23:32:47,888 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 23:32:47,888 - app.main - INFO - Redis cache layer initialized
+2026-04-17 23:32:48,070 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 23:32:48,071 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 23:32:48,071 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 23:32:48,071 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 23:32:48,072 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 23:32:48,072 - app.services.redis_service - INFO - Redis connection closed
+2026-04-17 23:32:48,077 - app.database - INFO - Database connection pool closed
+2026-04-17 23:32:48,077 - app.main - INFO - Cleanup complete
+2026-04-17 23:34:18,308 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 23:34:18,309 - app.main - INFO - Default provider: openai
+2026-04-17 23:34:18,309 - app.main - INFO - Default model: gpt-4o
+2026-04-17 23:34:18,309 - app.main - INFO - Redis enabled: True
+2026-04-17 23:34:18,309 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 23:34:18,310 - app.main - INFO - AI Provider router initialized
+2026-04-17 23:34:18,387 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 23:34:18,387 - app.main - INFO - Redis cache layer initialized
+2026-04-17 23:34:18,587 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 23:34:18,588 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 23:34:18,589 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 23:34:18,589 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 23:34:18,590 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-17 23:34:18,591 - app.services.redis_service - INFO - Redis connection closed
+2026-04-17 23:34:18,596 - app.database - INFO - Database connection pool closed
+2026-04-17 23:34:18,596 - app.main - INFO - Cleanup complete
+2026-04-17 23:35:24,533 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-17 23:35:24,533 - app.main - INFO - Default provider: openai
+2026-04-17 23:35:24,533 - app.main - INFO - Default model: gpt-4o
+2026-04-17 23:35:24,534 - app.main - INFO - Redis enabled: True
+2026-04-17 23:35:24,534 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-17 23:35:24,534 - app.main - INFO - AI Provider router initialized
+2026-04-17 23:35:24,607 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-17 23:35:24,607 - app.main - INFO - Redis cache layer initialized
+2026-04-17 23:35:24,787 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-17 23:35:24,788 - app.main - INFO - Database connection pool initialized successfully
+2026-04-17 23:35:24,789 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-17 23:35:24,789 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-17 23:35:34,674 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-17 23:35:39,601 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:35:43,310 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18480
+2026-04-17 23:35:55,099 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-17 23:36:04,884 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:36:08,316 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18171
+2026-04-17 23:36:22,715 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:36:27,729 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18084
+2026-04-17 23:36:27,729 - app.routers.ws_chat - INFO - Data analyst: intent=COMPARISON, chart_type=bar, data_points=10
+2026-04-17 23:37:04,028 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:37:07,971 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19404
+2026-04-17 23:37:07,985 - app.routers.ws_chat - INFO - Data analyst: intent=COMPARISON, chart_type=bar, data_points=10
+2026-04-17 23:40:06,905 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:40:10,899 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19392
+2026-04-17 23:40:10,900 - app.routers.ws_chat - INFO - Data analyst: intent=COMPARISON, chart_type=bar, data_points=10
+2026-04-17 23:40:59,105 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-17 23:41:22,807 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:41:23,718 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18831
+2026-04-17 23:41:41,050 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:41:41,336 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19830
+2026-04-17 23:42:06,379 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:42:06,682 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19805
+2026-04-17 23:46:40,590 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:46:41,174 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18697
+2026-04-17 23:48:28,692 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-17 23:49:21,349 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:49:22,632 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18941
+2026-04-17 23:53:00,511 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:53:00,514 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19814
+2026-04-17 23:53:08,715 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:53:08,758 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19811
+2026-04-17 23:53:45,929 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:53:46,025 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18667
+2026-04-17 23:54:29,743 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:54:30,179 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18746
+2026-04-17 23:55:05,293 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-17 23:55:23,676 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-17 23:55:23,780 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19836
+2026-04-18 00:05:59,612 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 00:05:59,743 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18971
+2026-04-18 00:06:12,600 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-18 00:07:21,078 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 00:07:21,248 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18880
+2026-04-18 00:12:31,392 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 00:12:31,396 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18950
+2026-04-18 00:18:31,437 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-18 00:19:15,823 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-18 00:19:15,842 - app.services.redis_service - INFO - Redis connection closed
+2026-04-18 00:19:15,853 - app.database - INFO - Database connection pool closed
+2026-04-18 00:19:15,853 - app.main - INFO - Cleanup complete
+2026-04-18 00:19:38,302 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-18 00:19:38,302 - app.main - INFO - Default provider: openai
+2026-04-18 00:19:38,304 - app.main - INFO - Default model: gpt-4o
+2026-04-18 00:19:38,304 - app.main - INFO - Redis enabled: True
+2026-04-18 00:19:38,305 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-18 00:19:38,305 - app.main - INFO - AI Provider router initialized
+2026-04-18 00:19:39,313 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-18 00:19:39,316 - app.main - INFO - Redis cache layer initialized
+2026-04-18 00:19:40,047 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-18 00:19:40,073 - app.main - INFO - Database connection pool initialized successfully
+2026-04-18 00:19:40,090 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-18 00:19:40,091 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-18 00:19:58,501 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 00:19:59,090 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18956
+2026-04-18 00:22:05,862 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 00:22:06,371 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18965
+2026-04-18 00:31:23,639 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-18 00:32:19,205 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-18 00:32:19,206 - app.services.redis_service - INFO - Redis connection closed
+2026-04-18 00:32:19,211 - app.database - INFO - Database connection pool closed
+2026-04-18 00:32:19,212 - app.main - INFO - Cleanup complete
+2026-04-18 00:32:26,248 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-18 00:32:26,249 - app.main - INFO - Default provider: openai
+2026-04-18 00:32:26,250 - app.main - INFO - Default model: gpt-4o
+2026-04-18 00:32:26,250 - app.main - INFO - Redis enabled: True
+2026-04-18 00:32:26,251 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-18 00:32:26,254 - app.main - INFO - AI Provider router initialized
+2026-04-18 00:32:26,426 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-18 00:32:26,427 - app.main - INFO - Redis cache layer initialized
+2026-04-18 00:32:26,646 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-18 00:32:26,648 - app.main - INFO - Database connection pool initialized successfully
+2026-04-18 00:32:26,648 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-18 00:32:26,648 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-18 00:32:29,618 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-18 00:32:37,015 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 00:32:37,150 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18796
+2026-04-18 00:32:45,423 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-18 00:32:56,218 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 00:33:02,437 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20615
+2026-04-18 00:37:29,901 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 00:37:30,028 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18701
+2026-04-18 00:38:16,428 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 00:38:16,694 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18930
+2026-04-18 10:51:44,612 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-18 10:51:44,612 - app.main - INFO - Default provider: openai
+2026-04-18 10:51:44,613 - app.main - INFO - Default model: gpt-4o
+2026-04-18 10:51:44,613 - app.main - INFO - Redis enabled: True
+2026-04-18 10:51:44,613 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-18 10:51:44,613 - app.main - INFO - AI Provider router initialized
+2026-04-18 10:51:52,895 - app.services.redis_service - WARNING - Redis not available, running without cache: Error 22 connecting to localhost:6379. The remote computer refused the network connection.
+2026-04-18 10:51:52,895 - app.main - WARNING - Redis not available - running without cache (in-memory fallback)
+2026-04-18 10:51:56,957 - app.database - ERROR - DB connection attempt 1/3 failed: [WinError 1225] The remote computer refused the network connection
+2026-04-18 10:51:56,957 - app.database - INFO - Retrying in 2s...
+2026-04-18 10:52:03,212 - app.database - ERROR - DB connection attempt 2/3 failed: [WinError 1225] The remote computer refused the network connection
+2026-04-18 10:52:03,213 - app.database - INFO - Retrying in 4s...
+2026-04-18 10:52:11,293 - app.database - ERROR - DB connection attempt 3/3 failed: [WinError 1225] The remote computer refused the network connection
+2026-04-18 10:52:11,293 - app.database - ERROR - Failed to connect to database after 3 attempts
+2026-04-18 10:52:11,293 - app.main - WARNING - Database not configured - AI will work without direct DB access
+2026-04-18 10:52:11,294 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-18 10:52:11,294 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-18 10:54:12,639 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 10:54:13,666 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17467
+2026-04-18 10:54:20,723 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 10:54:21,358 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17409
+2026-04-18 10:54:27,977 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 10:54:27,978 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=17470
+2026-04-18 10:55:22,296 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-18 10:55:22,296 - app.main - INFO - Cleanup complete
+2026-04-18 10:55:27,993 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-18 10:55:27,994 - app.main - INFO - Default provider: openai
+2026-04-18 10:55:27,994 - app.main - INFO - Default model: gpt-4o
+2026-04-18 10:55:27,994 - app.main - INFO - Redis enabled: True
+2026-04-18 10:55:27,994 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-18 10:55:27,994 - app.main - INFO - AI Provider router initialized
+2026-04-18 10:55:28,090 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-18 10:55:28,090 - app.main - INFO - Redis cache layer initialized
+2026-04-18 10:55:28,269 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-18 10:55:28,271 - app.main - INFO - Database connection pool initialized successfully
+2026-04-18 10:55:28,272 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-18 10:55:28,272 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-18 10:55:51,980 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 10:55:52,504 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19037
+2026-04-18 10:57:51,674 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 10:57:53,208 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19056
+2026-04-18 11:04:54,826 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 11:05:11,591 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 11:05:48,483 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 11:06:11,557 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-18 11:06:12,669 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 11:07:14,102 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 11:07:15,224 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19058
+2026-04-18 11:09:40,619 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 11:09:41,724 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20454
+2026-04-18 11:10:07,611 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 11:10:08,530 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20500
+2026-04-18 11:19:46,979 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 11:19:46,990 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19825
+2026-04-18 11:21:08,209 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 11:21:24,586 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 11:21:24,826 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19802
+2026-04-18 11:22:25,196 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 11:22:25,204 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19835
+2026-04-18 11:22:42,450 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 11:22:42,452 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19864
+2026-04-18 11:24:20,729 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 11:24:21,197 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18966
+2026-04-18 11:27:15,589 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 11:27:16,979 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19061
+2026-04-18 11:27:44,510 - app.routers.data_analyst - INFO - DB data keys: ['employees']
+2026-04-18 11:27:52,373 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 11:28:03,004 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=2575
+2026-04-18 11:28:03,005 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 11:38:06,913 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 13:00:01,217 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-18 13:00:18,446 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 13:00:39,408 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=6313
+2026-04-18 13:00:39,408 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 13:02:27,419 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 13:02:28,534 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19010
+2026-04-18 13:05:08,060 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-18 13:05:14,300 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 13:05:21,235 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-18 13:05:33,841 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 13:05:34,031 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=5743
+2026-04-18 13:05:34,032 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 13:05:52,982 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=6067
+2026-04-18 13:05:52,983 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 14:06:57,452 - app.routers.data_analyst - INFO - DB data keys: ['employees']
+2026-04-18 14:07:01,709 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 14:07:13,156 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=2392
+2026-04-18 14:07:13,156 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 14:10:30,268 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 14:10:30,985 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19036
+2026-04-18 14:12:33,681 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 14:12:33,830 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18943
+2026-04-18 14:12:50,032 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-18 14:12:55,667 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 14:13:08,734 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3229
+2026-04-18 14:13:08,735 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 14:17:39,114 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-18 14:17:47,533 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 14:18:01,843 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3411
+2026-04-18 14:18:01,843 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 14:18:50,692 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 14:18:55,614 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18345
+2026-04-18 14:18:55,622 - app.routers.ws_chat - INFO - Data analyst: intent=COMPARISON, chart_type=bar, data_points=10
+2026-04-18 14:28:07,432 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-18 14:28:17,205 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 14:28:30,523 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3410
+2026-04-18 14:28:30,523 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 14:32:14,131 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-18 14:32:21,587 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 14:32:37,653 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3442
+2026-04-18 14:32:37,653 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 14:55:00,074 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-18 14:55:07,977 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 14:55:26,297 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3574
+2026-04-18 14:55:26,303 - app.routers.data_analyst - INFO - Final chart_type=scatter, chart_data_len=10
+2026-04-18 14:57:08,828 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-18 14:57:22,779 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 14:57:34,556 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=5708
+2026-04-18 14:57:34,556 - app.routers.data_analyst - INFO - Final chart_type=line, chart_data_len=10
+2026-04-18 15:03:31,122 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-18 15:03:44,453 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 15:03:54,156 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=5477
+2026-04-18 15:03:54,157 - app.routers.data_analyst - INFO - Final chart_type=line, chart_data_len=10
+2026-04-18 15:08:24,653 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-18 15:08:31,615 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 15:08:45,274 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3324
+2026-04-18 15:08:45,274 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 15:08:58,921 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-18 15:09:08,069 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 15:09:20,056 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3369
+2026-04-18 15:09:20,056 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 15:10:29,234 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-18 15:10:47,711 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 15:10:56,545 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=5671
+2026-04-18 15:10:56,545 - app.routers.data_analyst - INFO - Final chart_type=line, chart_data_len=4
+2026-04-18 15:16:01,407 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-18 15:16:24,962 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 15:16:32,621 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=5970
+2026-04-18 15:16:32,621 - app.routers.data_analyst - INFO - Final chart_type=line, chart_data_len=4
+2026-04-18 15:19:37,670 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-18 15:19:37,681 - app.services.redis_service - INFO - Redis connection closed
+2026-04-18 15:19:37,687 - app.database - INFO - Database connection pool closed
+2026-04-18 15:19:37,688 - app.main - INFO - Cleanup complete
+2026-04-18 15:19:46,979 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-18 15:19:46,980 - app.main - INFO - Default provider: openai
+2026-04-18 15:19:46,980 - app.main - INFO - Default model: gpt-4o
+2026-04-18 15:19:46,980 - app.main - INFO - Redis enabled: True
+2026-04-18 15:19:46,981 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-18 15:19:46,981 - app.main - INFO - AI Provider router initialized
+2026-04-18 15:19:47,207 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-18 15:19:47,207 - app.main - INFO - Redis cache layer initialized
+2026-04-18 15:19:47,525 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-18 15:19:47,528 - app.main - INFO - Database connection pool initialized successfully
+2026-04-18 15:19:47,529 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-18 15:19:47,529 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-18 15:20:01,399 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-18 15:20:09,982 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 15:20:17,923 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=5236
+2026-04-18 15:20:17,924 - app.routers.data_analyst - INFO - Final chart_type=none, chart_data_len=0
+2026-04-18 15:25:05,471 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-18 15:25:05,472 - app.services.redis_service - INFO - Redis connection closed
+2026-04-18 15:25:05,473 - app.database - INFO - Database connection pool closed
+2026-04-18 15:25:05,473 - app.main - INFO - Cleanup complete
+2026-04-18 15:25:10,602 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-18 15:25:10,603 - app.main - INFO - Default provider: openai
+2026-04-18 15:25:10,603 - app.main - INFO - Default model: gpt-4o
+2026-04-18 15:25:10,603 - app.main - INFO - Redis enabled: True
+2026-04-18 15:25:10,603 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-18 15:25:10,603 - app.main - INFO - AI Provider router initialized
+2026-04-18 15:25:10,671 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-18 15:25:10,671 - app.main - INFO - Redis cache layer initialized
+2026-04-18 15:25:10,842 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-18 15:25:10,843 - app.main - INFO - Database connection pool initialized successfully
+2026-04-18 15:25:10,843 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-18 15:25:10,843 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-18 15:25:17,000 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-18 15:25:17,000 - app.routers.data_analyst - INFO - Leave data: {"leave_by_status": [{"status": "APPROVED", "count": 9.0}, {"status": "CANCELLED", "count": 3.0}, {"status": "REJECTED", "count": 4.0}], "pending_requests_count": 0, "pending_requests_details": "Kh\u00f4ng c\u00f3 \u0111\u01a1n ch\u1edd duy\u1ec7t.", "recent_processed_requests": [{"id": "cmnemivnumdnf84plrh58v", "startDate": "2026-05-01T00:00:00", "endDate": "2026-05-01T00:00:00", "totalDays": 1.0, "reason": "Ngh\u1ec9 ph\u00e9p n\u0103m", "status": "APPROVED", "createdAt": "2026-04-17T07:52:02.
+2026-04-18 15:25:31,962 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 15:25:39,622 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=5544
+2026-04-18 15:25:39,622 - app.routers.data_analyst - INFO - Final chart_type=line, chart_data_len=4
+2026-04-18 15:37:02,731 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 15:37:03,189 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18675
+2026-04-18 15:42:06,996 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 15:42:20,363 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 15:42:21,463 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19063
+2026-04-18 15:48:48,202 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 15:48:48,646 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19813
+2026-04-18 16:02:15,577 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 16:02:38,627 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 16:02:39,184 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19820
+2026-04-18 16:03:19,764 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 16:03:20,370 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19886
+2026-04-18 16:08:17,133 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-18 16:08:17,136 - app.services.redis_service - INFO - Redis connection closed
+2026-04-18 16:08:17,142 - app.database - INFO - Database connection pool closed
+2026-04-18 16:08:17,142 - app.main - INFO - Cleanup complete
+2026-04-18 16:08:22,549 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-18 16:08:22,549 - app.main - INFO - Default provider: openai
+2026-04-18 16:08:22,549 - app.main - INFO - Default model: gpt-4o
+2026-04-18 16:08:22,550 - app.main - INFO - Redis enabled: True
+2026-04-18 16:08:22,550 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-18 16:08:22,550 - app.main - INFO - AI Provider router initialized
+2026-04-18 16:08:22,638 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-18 16:08:22,638 - app.main - INFO - Redis cache layer initialized
+2026-04-18 16:08:22,828 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-18 16:08:22,829 - app.main - INFO - Database connection pool initialized successfully
+2026-04-18 16:08:22,829 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-18 16:08:22,830 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-18 16:11:04,595 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 16:11:05,705 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19926
+2026-04-18 16:11:41,600 - app.routers.data_analyst - INFO - DB data keys: ['employees']
+2026-04-18 16:11:51,166 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 16:12:02,506 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=2753
+2026-04-18 16:12:02,515 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=10
+2026-04-18 16:14:04,172 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 16:14:05,896 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19935
+2026-04-18 16:14:14,392 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 16:14:16,046 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20126
+2026-04-18 16:18:22,535 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 16:18:23,585 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19921
+2026-04-18 16:26:42,691 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 16:26:50,274 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20047
+2026-04-18 16:26:50,275 - app.routers.ws_chat - INFO - Data analyst: intent=DISTRIBUTION, chart_type=pie, data_points=2
+2026-04-18 16:48:31,270 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 16:48:39,423 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 16:48:40,764 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19951
+2026-04-18 18:34:36,264 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 18:34:55,261 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 18:34:56,871 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18846
+2026-04-18 18:37:59,251 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 18:43:29,423 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 18:43:30,189 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19875
+2026-04-18 18:44:08,340 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 18:47:31,493 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 18:47:40,952 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20536
+2026-04-18 18:47:40,953 - app.routers.ws_chat - INFO - Data analyst: intent=DISTRIBUTION, chart_type=pie, data_points=2
+2026-04-18 18:53:06,549 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 18:53:07,846 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18961
+2026-04-18 18:53:24,541 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 18:53:25,867 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18931
+2026-04-18 18:57:00,306 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-18 18:57:00,306 - app.main - INFO - Default provider: openai
+2026-04-18 18:57:00,306 - app.main - INFO - Default model: gpt-4o
+2026-04-18 18:57:00,306 - app.main - INFO - Redis enabled: True
+2026-04-18 18:57:00,307 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-18 18:57:00,307 - app.main - INFO - AI Provider router initialized
+2026-04-18 18:57:00,426 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-18 18:57:00,426 - app.main - INFO - Redis cache layer initialized
+2026-04-18 18:57:00,627 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-18 18:57:00,628 - app.main - INFO - Database connection pool initialized successfully
+2026-04-18 18:57:00,628 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-18 18:57:00,628 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-18 18:57:17,601 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 18:57:21,825 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19165
+2026-04-18 18:57:39,717 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 18:57:42,800 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19480
+2026-04-18 18:57:48,912 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 18:57:50,311 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19496
+2026-04-18 18:59:45,442 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 18:59:48,441 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20159
+2026-04-18 19:01:22,551 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 19:01:25,955 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20530
+2026-04-18 19:02:38,560 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 19:02:43,018 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=22043
+2026-04-18 19:09:55,820 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 19:10:09,171 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 19:12:08,785 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 19:12:30,312 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-18 19:12:30,313 - app.routers.data_analyst - INFO - Leave data: {"leave_by_status": [{"status": "APPROVED", "count": 9.0}, {"status": "CANCELLED", "count": 4.0}, {"status": "REJECTED", "count": 4.0}], "pending_requests_count": 0, "pending_requests_details": "Kh\u00f4ng c\u00f3 \u0111\u01a1n ch\u1edd duy\u1ec7t.", "recent_processed_requests": [{"id": "cmnemivnumdnf84plrh58v", "startDate": "2026-05-01T00:00:00", "endDate": "2026-05-01T00:00:00", "totalDays": 1.0, "reason": "Ngh\u1ec9 ph\u00e9p n\u0103m", "status": "APPROVED", "createdAt": "2026-04-17T07:52:02.
+2026-04-18 19:12:55,204 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 19:13:11,251 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=6629
+2026-04-18 19:13:11,258 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=5
+2026-04-18 19:20:27,358 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 19:22:35,589 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 19:43:07,998 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-18 19:43:07,999 - app.main - INFO - Default provider: openai
+2026-04-18 19:43:08,000 - app.main - INFO - Default model: gpt-4o
+2026-04-18 19:43:08,004 - app.main - INFO - Redis enabled: True
+2026-04-18 19:43:08,005 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-18 19:43:08,008 - app.main - INFO - AI Provider router initialized
+2026-04-18 19:43:08,484 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-18 19:43:08,498 - app.main - INFO - Redis cache layer initialized
+2026-04-18 19:43:09,172 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-18 19:43:09,200 - app.main - INFO - Database connection pool initialized successfully
+2026-04-18 19:43:09,203 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-18 19:43:09,207 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-18 19:49:18,022 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 19:49:18,568 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20156
+2026-04-18 19:49:30,773 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-18 19:50:34,988 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 19:50:36,730 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19390
+2026-04-18 19:51:00,273 - app.routers.data_analyst - INFO - DB data keys: ['leave']
+2026-04-18 19:51:00,274 - app.routers.data_analyst - INFO - Leave data: {"leave_by_status": [{"status": "APPROVED", "count": 9.0}, {"status": "CANCELLED", "count": 4.0}, {"status": "REJECTED", "count": 4.0}], "pending_requests_count": 0, "pending_requests_details": "Kh\u00f4ng c\u00f3 \u0111\u01a1n ch\u1edd duy\u1ec7t.", "recent_processed_requests": [{"id": "cmnemivnumdnf84plrh58v", "startDate": "2026-05-01T00:00:00", "endDate": "2026-05-01T00:00:00", "totalDays": 1.0, "reason": "Ngh\u1ec9 ph\u00e9p n\u0103m", "status": "APPROVED", "createdAt": "2026-04-17T07:52:02.
+2026-04-18 19:51:22,155 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 19:51:32,390 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=4635
+2026-04-18 19:51:32,390 - app.routers.data_analyst - INFO - Final chart_type=line, chart_data_len=3
+2026-04-18 20:02:44,433 - app.routers.data_analyst - INFO - DB data keys: ['leave']
+2026-04-18 20:02:44,434 - app.routers.data_analyst - INFO - Leave data: {"leave_by_status": [{"status": "APPROVED", "count": 9.0}, {"status": "CANCELLED", "count": 4.0}, {"status": "REJECTED", "count": 4.0}], "pending_requests_count": 0, "pending_requests_details": "Kh\u00f4ng c\u00f3 \u0111\u01a1n ch\u1edd duy\u1ec7t.", "recent_processed_requests": [{"id": "cmnemivnumdnf84plrh58v", "startDate": "2026-05-01T00:00:00", "endDate": "2026-05-01T00:00:00", "totalDays": 1.0, "reason": "Ngh\u1ec9 ph\u00e9p n\u0103m", "status": "APPROVED", "createdAt": "2026-04-17T07:52:02.
+2026-04-18 20:03:06,327 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 20:03:16,482 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=4603
+2026-04-18 20:03:16,483 - app.routers.data_analyst - INFO - Final chart_type=line, chart_data_len=3
+2026-04-18 20:04:38,461 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:04:40,263 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:04:42,575 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:08:35,816 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:08:39,011 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:08:51,088 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 20:08:52,683 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20029
+2026-04-18 20:09:27,703 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 20:09:33,241 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20453
+2026-04-18 20:09:33,242 - app.routers.ws_chat - INFO - Data analyst: intent=DISTRIBUTION, chart_type=pie, data_points=2
+2026-04-18 20:10:58,980 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 20:11:06,317 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18146

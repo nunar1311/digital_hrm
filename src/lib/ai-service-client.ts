@@ -1,6 +1,10 @@
 /**
  * AI Service Client - Kết nối Next.js với Python AI Service
- * Sử dụng API bên thứ ba: OpenAI, Claude, Google Gemini
+ * Su dung boi API routes trong src/app/api/ai/
+ *
+ * NOTE: Hai layer goi AI service:
+ *   - src/lib/ai/actions.ts   : Server Actions, dung boi AI component (chat, websocket)
+ *   - ai-service-client.ts   : AI Service Client, dung boi Next.js API routes
  */
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
@@ -105,6 +109,7 @@ class AIServiceClient {
     }, userContext);
   }
 
+  // @deprecated - endpoint /api/ai/hr-question da xoa, dung smartChat() thay the
   async hrQuestion(
     question: string,
     context?: Record<string, unknown>,
@@ -116,6 +121,7 @@ class AIServiceClient {
     });
   }
 
+  // @deprecated - endpoint /api/ai/leave-chat khong ton tai, dung smartChat() thay the
   async leaveChat(
     action: "ask" | "approve" | "reject" | "info",
     data: {
@@ -654,26 +660,21 @@ class AIServiceClient {
   // WORKFORCE ANALYSIS - Phân tích lực lượng lao động từ DB
   // =====================
 
+  // @deprecated - endpoint /api/ai/analyze/workforce khong ton tai
   async analyzeWorkforce(userContext?: AIUserContext): Promise<AIResponse> {
     return this.fetch("/api/ai/analyze/workforce", {
       method: "POST",
     }, userContext);
   }
 
-  // =====================
-  // DEPARTMENT ANALYSIS - Phân tích phòng ban từ DB
-  // =====================
-
+  // @deprecated - endpoint /api/ai/analyze/department/{id} khong ton tai
   async analyzeDepartment(departmentId: string): Promise<AIResponse> {
     return this.fetch(`/api/ai/analyze/department/${departmentId}`, {
       method: "POST",
     });
   }
 
-  // =====================
-  // EMPLOYEE 360° ANALYSIS - Phân tích nhân viên toàn diện từ DB
-  // =====================
-
+  // @deprecated - endpoint /api/ai/analyze/employee/{userId} khong ton tai
   async analyzeEmployee360(userId: string): Promise<AIResponse> {
     return this.fetch(`/api/ai/analyze/employee/${userId}`, {
       method: "POST",
@@ -694,6 +695,7 @@ class AIServiceClient {
   // DATABASE STATUS - Kiểm tra trạng thái kết nối DB
   // =====================
 
+  // @deprecated - endpoint /api/ai/db-status khong ton tai
   async getDbStatus(): Promise<{
     success: boolean;
     database: {
@@ -719,6 +721,7 @@ class AIServiceClient {
     return this.fetch("/health", { method: "GET" });
   }
 
+  // @deprecated - endpoint /api/ai/stats khong ton tai
   async getCostStats(): Promise<{
     monthly_cost_usd: number;
     monthly_tokens: number;
@@ -726,6 +729,109 @@ class AIServiceClient {
     cache_hit_rate: number;
   }> {
     return this.fetch("/api/ai/stats", { method: "GET" });
+  }
+
+  // =====================
+  // DATA ANALYST ENDPOINTS
+  // =====================
+
+  /**
+   * Natural Language Query - Trả lời câu hỏi về dữ liệu HR
+   * Phân tích intent và gợi ý biểu đồ phù hợp
+   *
+   * @param intentOnly - Khi true, chỉ phân tích intent mà không thực thi full query
+   */
+  async dataAnalystQuery(
+    question: string,
+    options?: {
+      language?: string;
+      includeChart?: boolean;
+      intentOnly?: boolean;
+    },
+    userContext?: AIUserContext
+  ): Promise<{
+    success: boolean;
+    answer?: string;
+    chartType?: "bar" | "line" | "pie" | "scatter" | "none" | null;
+    chartData?: Array<Record<string, unknown>>;
+    chartTitle?: string;
+    xAxis?: string;
+    yAxis?: string;
+    metrics?: Array<{ label: string; value: unknown; unit?: string }>;
+    insights?: Array<{
+      title: string;
+      description: string;
+      severity?: string;
+      metric?: string;
+      recommendation?: string;
+    }>;
+    intent?: string;
+    confidence?: number;
+    dataSources?: string[];
+    error?: string;
+  }> {
+    return this.fetch("/api/ai/data-analyst/query", {
+      method: "POST",
+      body: JSON.stringify({
+        question,
+        language: options?.language ?? "vi",
+        include_chart: options?.includeChart ?? true,
+        intent_only: options?.intentOnly ?? false,
+      }),
+    }, userContext);
+  }
+
+  /**
+   * Chart Recommendation - Gợi ý loại biểu đồ phù hợp
+   * Dùng để preview trước khi gửi câu hỏi
+   */
+  async recommendChart(
+    question: string,
+    dataPreview?: Record<string, unknown>
+  ): Promise<{
+    success: boolean;
+    chart_type: string;
+    title: string;
+    x_axis: string;
+    y_axis: string;
+    reasoning: string;
+    confidence: number;
+  }> {
+    return this.fetch("/api/ai/data-analyst/chart-recommend", {
+      method: "POST",
+      body: JSON.stringify({
+        question,
+        data_preview: dataPreview,
+      }),
+    });
+  }
+
+  // @deprecated - endpoint /api/ai/data-analyst/insights khong ton tai
+  async getDeepInsights(
+    question: string,
+    options?: { language?: string },
+    userContext?: AIUserContext
+  ): Promise<{
+    success: boolean;
+    answer?: string;
+    insights?: Array<{
+      title: string;
+      description: string;
+      severity?: string;
+      metric?: string;
+      recommendation?: string;
+    }>;
+    metrics?: Array<{ label: string; value: unknown; unit?: string }>;
+    dataSources?: string[];
+    error?: string;
+  }> {
+    return this.fetch("/api/ai/data-analyst/insights", {
+      method: "POST",
+      body: JSON.stringify({
+        question,
+        language: options?.language ?? "vi",
+      }),
+    }, userContext);
   }
 }
 

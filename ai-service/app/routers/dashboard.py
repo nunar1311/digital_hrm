@@ -86,7 +86,7 @@ Format: JSON array với cấu trúc:
         result = await provider_router.chat(messages, temperature=0.3)
 
         if not result.get("success"):
-            return DashboardInsightsResponse(success=False, error=result.get("error"))
+            return DashboardInsightsResponse(success=False, error=result.get("error") or "Có lỗi xảy ra. Thử lại sau nhé.")
 
         # Try to parse JSON
         content = result.get("content", "")
@@ -127,9 +127,9 @@ Format: JSON array với cấu trúc:
             summary=content,
         )
 
-    except Exception as e:
-        logger.error(f"Dashboard insights error: {e}", exc_info=True)
-        return DashboardInsightsResponse(success=False, error=str(e))
+    except Exception:
+        logger.error(f"Dashboard insights error", exc_info=True)
+        return DashboardInsightsResponse(success=False, error="Có lỗi xảy ra. Thử lại sau nhé.")
 
 
 # =====================

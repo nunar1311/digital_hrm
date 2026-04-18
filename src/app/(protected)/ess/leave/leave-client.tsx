@@ -473,7 +473,6 @@ function LeaveDetailDialog({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
               Chi tiết yêu cầu nghỉ phép
             </DialogTitle>
           </DialogHeader>
@@ -763,51 +762,46 @@ export function ESSLeaveClient({
     staleTime: 0,
   });
 
-  const { data: requestsData, isLoading: isLoadingRequests } =
-    useQuery({
-      queryKey: ["my-leave-requests", selectedYear, statusFilter],
-      queryFn: () =>
-        getMyLeaveRequests({
-          year: selectedYear,
-          status: statusFilter as
-            | "PENDING"
-            | "APPROVED"
-            | "REJECTED"
-            | "CANCELLED"
-            | "ALL",
-          page: 1,
-          pageSize: 100,
-        }),
-      initialData:
-        selectedYear === currentYear && statusFilter === "ALL"
-          ? initialRequests
-          : undefined,
-      staleTime: 0,
-    });
+  const { data: requestsData, isLoading: isLoadingRequests } = useQuery({
+    queryKey: ["my-leave-requests", selectedYear, statusFilter],
+    queryFn: () =>
+      getMyLeaveRequests({
+        year: selectedYear,
+        status: statusFilter as
+          | "PENDING"
+          | "APPROVED"
+          | "REJECTED"
+          | "CANCELLED"
+          | "ALL",
+        page: 1,
+        pageSize: 100,
+      }),
+    initialData:
+      selectedYear === currentYear && statusFilter === "ALL"
+        ? initialRequests
+        : undefined,
+    staleTime: 0,
+  });
 
   const effectiveBalances = balances ?? [];
-  const effectiveRequestsData =
-    requestsData ??
-    {
-      items: [],
-      total: 0,
-      page: 1,
-      pageSize: 100,
-      totalPages: 0,
-    };
+  const effectiveRequestsData = requestsData ?? {
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 100,
+    totalPages: 0,
+  };
 
-  useSocketEvents(
-    [
-      "overtime:requested",
-      "overtime:approved",
-      "overtime:rejected",
-      "overtime:completed",
-    ],
-    () => {
+  useSocketEvents(["data:updated"], (_event, data) => {
+    const payload = data as { entity?: string };
+    if (
+      payload?.entity === "leave-request" ||
+      payload?.entity === "leave-balance"
+    ) {
       queryClient.invalidateQueries({ queryKey: ["my-leave-requests"] });
       queryClient.invalidateQueries({ queryKey: ["my-leave-balances"] });
-    },
-  );
+    }
+  });
 
   const filteredRequests = useMemo(() => {
     if (!search.trim()) return effectiveRequestsData.items;

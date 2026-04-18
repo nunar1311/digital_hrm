@@ -10,6 +10,7 @@ import {
   LucideIcon,
   OrbitIcon,
   Settings,
+  Sparkle,
   UserMinus,
   UserPlus,
   UsersIcon,
@@ -147,19 +148,33 @@ const SidebarMind = () => {
             </div>
           </div>
         </div>
-        {canAny([Permission.SETTINGS_VIEW]) && (
+
+        <div className="flex flex-col items-center gap-2">
           <Button
-            tooltip={"Cài đặt"}
+            tooltip={"AI"}
             tooltipSide="right"
             variant="ghost"
-            isActive={isSettings}
+            // isActive={isSettings}
             size="icon-sm"
             className="data-[active=false]:hover:bg-white/20 dark:data-[active=false]:hover:bg-white/20 data-[active=true]:bg-white data-[active=true]:[&_svg]:text-primary data-[active=false]:text-white [&_svg]:text-white [&_svg]:hover:bg-white dark:data-[active=true]:bg-white/80 dark:data-[active=true]:[&_svg]:text-primary-dark"
-            onClick={() => router.push("/settings/company")}
+            onClick={() => router.push("/ai")}
           >
-            <Settings />
+            <Sparkle />
           </Button>
-        )}
+          {canAny([Permission.SETTINGS_VIEW]) && (
+            <Button
+              tooltip={"Cài đặt"}
+              tooltipSide="right"
+              variant="ghost"
+              isActive={isSettings}
+              size="icon-sm"
+              className="data-[active=false]:hover:bg-white/20 dark:data-[active=false]:hover:bg-white/20 data-[active=true]:bg-white data-[active=true]:[&_svg]:text-primary data-[active=false]:text-white [&_svg]:text-white [&_svg]:hover:bg-white dark:data-[active=true]:bg-white/80 dark:data-[active=true]:[&_svg]:text-primary-dark"
+              onClick={() => router.push("/settings/company")}
+            >
+              <Settings />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -82,7 +82,7 @@ export async function proxy(request: NextRequest) {
 
             if (!hasAccess) {
                 return NextResponse.redirect(
-                    new URL("/403", request.url),
+                    new URL("/", request.url),
                 );
             }
         }

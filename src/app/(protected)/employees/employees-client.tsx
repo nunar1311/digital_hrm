@@ -3,7 +3,12 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getEmployees, deleteEmployee, type GetEmployeesResult, type EmployeeListItem } from "./actions";
+import {
+  getEmployees,
+  deleteEmployee,
+  type GetEmployeesResult,
+  type EmployeeListItem,
+} from "./actions";
 import { PAGE_SIZE } from "@/app/(protected)/departments/constants";
 import { useSocketEvents } from "@/hooks/use-socket-event";
 import {
@@ -37,15 +42,22 @@ export function EmployeesClient() {
   const queryClient = useQueryClient();
   // ─── State ───────────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
-  const [deleteTarget, setDeleteTarget] = useState<EmployeeListItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<EmployeeListItem | null>(
+    null,
+  );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [addEmployeesOpen, setAddEmployeesOpen] = useState(false);
-  const [batchDeleteTarget, setBatchDeleteTarget] = useState<string[] | null>(null);
-  const [managePasswordEmployee, setManagePasswordEmployee] = useState<EmployeeListItem | null>(null);
+  const [batchDeleteTarget, setBatchDeleteTarget] = useState<string[] | null>(
+    null,
+  );
+  const [managePasswordEmployee, setManagePasswordEmployee] =
+    useState<EmployeeListItem | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<EmployeeStatus>("ALL");
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
+  const [columnVisibility, setColumnVisibility] = useState<
+    Record<string, boolean>
+  >({
     username: true,
     fullName: true,
     positionName: true,
@@ -75,17 +87,33 @@ export function EmployeesClient() {
   );
 
   // ─── Data fetching ───────────────────────────────────────────────────────
-  const { data: employeesData, isLoading: isLoadingEmployees, isFetchingNextPage, hasNextPage, fetchNextPage } =
-    useInfiniteQuery<GetEmployeesResult>({
-      queryKey: ["employees", { pageSize: PAGE_SIZE, search, status: statusFilter }],
-      queryFn: ({ pageParam }) =>
-        getEmployees({ page: pageParam as number, pageSize: PAGE_SIZE, search, status: statusFilter }),
-      initialPageParam: 1,
-      getNextPageParam: (lastPage) =>
-        lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
-    });
+  const {
+    data: employeesData,
+    isLoading: isLoadingEmployees,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery<GetEmployeesResult>({
+    queryKey: [
+      "employees",
+      { pageSize: PAGE_SIZE, search, status: statusFilter },
+    ],
+    queryFn: ({ pageParam }) =>
+      getEmployees({
+        page: pageParam as number,
+        pageSize: PAGE_SIZE,
+        search,
+        status: statusFilter,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+  });
 
-  const employees = useMemo(() => employeesData?.pages.flatMap((p) => p.employees) ?? [], [employeesData]);
+  const employees = useMemo(
+    () => employeesData?.pages.flatMap((p) => p.employees) ?? [],
+    [employeesData],
+  );
   const total = employeesData?.pages[0]?.total ?? 0;
 
   // ─── Infinite scroll ──────────────────────────────────────────────────────
@@ -113,7 +141,9 @@ export function EmployeesClient() {
   // ─── Column helpers ───────────────────────────────────────────────────────
   const toggleAll = useCallback(() => {
     setSelectedIds((prev) =>
-      prev.size === employees.length ? new Set() : new Set(employees.map((e) => e.id)),
+      prev.size === employees.length
+        ? new Set()
+        : new Set(employees.map((e) => e.id)),
     );
   }, [employees]);
 
@@ -157,13 +187,21 @@ export function EmployeesClient() {
 
   const handleBatchDelete = useCallback(async () => {
     if (!batchDeleteTarget) return;
-    const results = await Promise.allSettled(batchDeleteTarget.map((id) => deleteEmployee(id)));
-    const succeeded = results.filter((r) => r.status === "fulfilled" && r.value).length;
-    const failed = results.filter((r) => r.status === "rejected" || !r.value).length;
+    const results = await Promise.allSettled(
+      batchDeleteTarget.map((id) => deleteEmployee(id)),
+    );
+    const succeeded = results.filter(
+      (r) => r.status === "fulfilled" && r.value,
+    ).length;
+    const failed = results.filter(
+      (r) => r.status === "rejected" || !r.value,
+    ).length;
     if (failed === 0) {
       toast.success(`Đã xóa ${succeeded} nhân viên`);
     } else {
-      toast.error(`Xóa thành công ${succeeded}/${batchDeleteTarget.length}, thất bại ${failed}`);
+      toast.error(
+        `Xóa thành công ${succeeded}/${batchDeleteTarget.length}, thất bại ${failed}`,
+      );
     }
     queryClient.invalidateQueries({ queryKey: ["employees"] });
     setBatchDeleteTarget(null);
@@ -240,17 +278,23 @@ export function EmployeesClient() {
       </div>
 
       {/* ── Dialogs ── */}
-      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
             <AlertDialogDescription>
               Bạn có chắc chắn muốn xóa nhân viên{" "}
-              <strong>{deleteTarget?.fullName || deleteTarget?.name}</strong> không?
+              <strong>{deleteTarget?.fullName || deleteTarget?.name}</strong>{" "}
+              không?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>Hủy</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
+              Hủy
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -261,17 +305,23 @@ export function EmployeesClient() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={batchDeleteTarget !== null} onOpenChange={(open) => !open && setBatchDeleteTarget(null)}>
+      <AlertDialog
+        open={batchDeleteTarget !== null}
+        onOpenChange={(open) => !open && setBatchDeleteTarget(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa hàng loạt</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa <strong>{batchDeleteTarget?.length ?? 0}</strong> nhân viên đã chọn?
-              Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa{" "}
+              <strong>{batchDeleteTarget?.length ?? 0}</strong> nhân viên đã
+              chọn? Hành động này không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setBatchDeleteTarget(null)}>Hủy</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setBatchDeleteTarget(null)}>
+              Hủy
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBatchDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -294,15 +344,25 @@ export function EmployeesClient() {
         }}
       />
 
-      <AddEmployeeDialog open={addEmployeesOpen} onClose={() => setAddEmployeesOpen(false)} />
+      <AddEmployeeDialog
+        open={addEmployeesOpen}
+        onClose={() => setAddEmployeesOpen(false)}
+      />
 
-      <ExportEmployeesDialog open={exportOpen} onOpenChange={setExportOpen} search={search} status={statusFilter} />
+      <ExportEmployeesDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        search={search}
+        status={statusFilter}
+      />
 
       <ManagePasswordDialog
         open={managePasswordEmployee !== null}
         onOpenChange={(open) => !open && setManagePasswordEmployee(null)}
         employeeId={managePasswordEmployee?.id || ""}
-        employeeName={managePasswordEmployee?.fullName || managePasswordEmployee?.name || ""}
+        employeeName={
+          managePasswordEmployee?.fullName || managePasswordEmployee?.name || ""
+        }
       />
     </div>
   );

@@ -27,7 +27,6 @@ export interface EmployeeBasic {
     id: string;
     name: string;
     username: string | null;
-    employeeCode?: string | null;
     image: string | null;
     position: string | null;
 }

@@ -2,14 +2,19 @@
  * AI Smart Chat API Route
  * Smart Chat kết hợp dữ liệu thực từ Database với phân quyền theo role
  * Forward user context (userId + role) tới Python AI Service
+ * Đồng thời theo dõi và trừ AI Credits của user
  */
 import { NextRequest, NextResponse } from "next/server";
 import aiService from "@/lib/ai-service-client";
 import { getServerSession } from "@/lib/auth-session";
+import { prisma } from "@/lib/prisma";
+
+const CREDIT_COST_PER_MESSAGE = 1;
 
 export async function POST(request: NextRequest) {
+  let userId: string | null = null;
+
   try {
-    // Yêu cầu đăng nhập để dùng smart chat
     const session = await getServerSession();
     if (!session) {
       return NextResponse.json(
@@ -17,6 +22,8 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    userId = session.user.id;
 
     const body = await request.json();
     const { message, history, provider, model, language } = body;
@@ -28,9 +35,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check user credits before making AI request
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { aiCredits: true, aiTotalTokensUsed: true },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    if (user.aiCredits < CREDIT_COST_PER_MESSAGE) {
+      return NextResponse.json({
+        success: false,
+        error: "Insufficient credits",
+        code: "INSUFFICIENT_CREDITS",
+      });
+    }
+
     // Extract user context từ session
     const userContext = {
-      userId: session.user.id,
+      userId: userId,
       userRole: (session.user as Record<string, unknown>).hrmRole as string ?? "EMPLOYEE",
     };
 
@@ -40,6 +68,23 @@ export async function POST(request: NextRequest) {
       { provider, model, language },
       userContext
     );
+
+    // Deduct credits and update token usage after successful AI response
+    if (result.success) {
+      const totalTokens = result.usage?.total_tokens ?? 0;
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          aiCredits: {
+            decrement: CREDIT_COST_PER_MESSAGE,
+          },
+          aiTotalTokensUsed: {
+            increment: totalTokens,
+          },
+        },
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error: unknown) {

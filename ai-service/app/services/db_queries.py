@@ -167,7 +167,7 @@ class HRDataQueries:
                 # Nhan vien di muon nhieu nhat
                 top_late = await conn.fetch(
                     """
-                    SELECT u.name, u."employeeCode", a."lateDays"
+                    SELECT u.name, a."lateDays"
                     FROM attendance_summaries a
                     JOIN users u ON a."userId" = u.id
                     WHERE a.month = $1 AND a.year = $2 AND a."lateDays" > 0
@@ -272,7 +272,7 @@ class HRDataQueries:
 
     @staticmethod
     async def get_leave_summary() -> Optional[Dict[str, Any]]:
-        """Tong hop nghi phep"""
+        """Tong hop nghi phep — bao gom chi tiet tung don PENDING de AI phan tich"""
         pool = get_db_pool()
         if not pool:
             return None
@@ -289,9 +289,98 @@ class HRDataQueries:
                     """
                 )
 
-                # Don nghi dang cho duyet
-                pending = await conn.fetchval(
-                    "SELECT COUNT(*) FROM leave_requests WHERE status = 'PENDING'"
+                # Don nghi dang cho duyet — CHI TIET TUNG DON
+                pending_details = await conn.fetch(
+                    """
+                    SELECT lr.id, lr."startDate", lr."endDate",
+                           lr."totalDays", lr.reason, lr.status,
+                           lr."createdAt",
+                           u.id as user_id, u.name as employee_name,
+                           d.name as department_name,
+                           p.name as position_name,
+                           lt.name as leave_type,
+                           m.name as manager_name
+                    FROM leave_requests lr
+                    JOIN users u ON lr."userId" = u.id
+                    JOIN leave_types lt ON lr."leaveTypeId" = lt.id
+                    LEFT JOIN departments d ON u."departmentId" = d.id
+                    LEFT JOIN positions p ON u."positionId" = p.id
+                    LEFT JOIN users m ON u."managerId" = m.id
+                    WHERE lr.status = 'PENDING'
+                    ORDER BY lr."createdAt" DESC
+                    LIMIT 20
+                    """
+                )
+
+                # Them thong tin so du phep cho tung don PENDING
+                pending_with_balance = []
+                for req in pending_details:
+                    req_dict = _serialize_row(dict(req))
+
+                    # Lay so du phep cua nhan vien cho loai nghi phep nay
+                    balance = await conn.fetchrow(
+                        """
+                        SELECT lb."totalDays", lb."usedDays",
+                               COALESCE(lb."pendingDays", 0) as "pendingDays",
+                               (lb."totalDays" - lb."usedDays" - COALESCE(lb."pendingDays", 0)) as remaining
+                        FROM leave_balances lb
+                        WHERE lb."userId" = $1
+                        AND lb."leaveTypeId" = (
+                            SELECT "leaveTypeId" FROM leave_requests WHERE id = $2
+                        )
+                        AND lb."policyYear" = EXTRACT(YEAR FROM CURRENT_DATE)
+                        """,
+                        req["user_id"],
+                        req["id"],
+                    )
+
+                    if balance:
+                        req_dict["leave_balance"] = _serialize_row(dict(balance))
+                    else:
+                        req_dict["leave_balance"] = None
+
+                    # Kiem tra xung dot team (nguoi cung phong ban nghi cung ngay)
+                    team_conflicts = await conn.fetchval(
+                        """
+                        SELECT COUNT(DISTINCT lr2."userId")
+                        FROM leave_requests lr2
+                        JOIN users u2 ON lr2."userId" = u2.id
+                        WHERE u2."departmentId" = (
+                            SELECT "departmentId" FROM users WHERE id = $1
+                        )
+                        AND lr2."userId" != $1
+                        AND lr2.id != $2
+                        AND lr2.status IN ('PENDING', 'APPROVED')
+                        AND lr2."startDate" <= $4
+                        AND lr2."endDate" >= $3
+                        """,
+                        req["user_id"],
+                        req["id"],
+                        req["startDate"],
+                        req["endDate"],
+                    )
+                    req_dict["team_conflicts"] = team_conflicts or 0
+
+                    pending_with_balance.append(req_dict)
+
+                # Don gan day da duyet/tu choi (context)
+                recent_processed = await conn.fetch(
+                    """
+                    SELECT lr.id, lr."startDate", lr."endDate",
+                           lr."totalDays", lr.reason, lr.status,
+                           lr."createdAt",
+                           u.name as employee_name,
+                           lt.name as leave_type,
+                           d.name as department_name
+                    FROM leave_requests lr
+                    JOIN users u ON lr."userId" = u.id
+                    JOIN leave_types lt ON lr."leaveTypeId" = lt.id
+                    LEFT JOIN departments d ON u."departmentId" = d.id
+                    WHERE lr.status IN ('APPROVED', 'REJECTED')
+                    AND lr."createdAt" >= CURRENT_DATE - INTERVAL '30 days'
+                    ORDER BY lr."createdAt" DESC
+                    LIMIT 10
+                    """
                 )
 
                 # Loai nghi phep pho bien
@@ -316,9 +405,30 @@ class HRDataQueries:
                     """
                 )
 
+                # Format pending details thanh text de doc
+                formatted_pending = []
+                for req in pending_with_balance:
+                    leave_type_raw = str(req.get('leave_type', ''))
+                    bal = req.get('leave_balance') or {}
+                    conflicts = req.get('team_conflicts', 0)
+
+                    line = (
+                        f"- Đơn #{req.get('id', '')[:8]}... | "
+                        f"NV: {req.get('employee_name', 'N/A')} ({req.get('position_name', '')}, {req.get('department_name', '')}) | "
+                        f"Loại: {leave_type_raw} | "
+                        f"Từ {req.get('startDate', '')} đến {req.get('endDate', '')} ({req.get('totalDays', '')} ngày) | "
+                        f"Lý do: {req.get('reason', 'Không rõ')} | "
+                        f"Số dư phép: còn {bal.get('remaining', 'N/A')}/{bal.get('totalDays', 'N/A')} ngày"
+                    )
+                    if conflicts > 0:
+                        line += f" | ⚠️ {conflicts} NV cùng phòng nghỉ trùng"
+                    formatted_pending.append(line)
+
                 return {
                     "leave_by_status": _serialize_rows(leave_by_status),
-                    "pending_requests": pending or 0,
+                    "pending_requests_count": len(pending_with_balance),
+                    "pending_requests_details": "\n".join(formatted_pending) if formatted_pending else "Không có đơn chờ duyệt.",
+                    "recent_processed_requests": _serialize_rows(recent_processed),
                     "leave_type_usage": _serialize_rows(leave_types),
                     "average_remaining_balance": float(avg_balance) if avg_balance else 0,
                 }
@@ -411,7 +521,7 @@ class HRDataQueries:
                 expiring_soon = await conn.fetch(
                     """
                     SELECT c."contractNumber", c.title, c."endDate",
-                           u.name as employee_name, u."employeeCode"
+                           u.name as employee_name
                     FROM contracts c
                     JOIN users u ON c."userId" = u.id
                     WHERE c.status = 'ACTIVE'
@@ -443,7 +553,7 @@ class HRDataQueries:
                 dept = await conn.fetchrow(
                     """
                     SELECT d.id, d.name, d.code, d.description, d.status,
-                           m.name as manager_name, m."employeeCode" as manager_code
+                           m.name as manager_name
                     FROM departments d
                     LEFT JOIN users m ON d."managerId" = m.id
                     WHERE d.id = $1
@@ -457,7 +567,7 @@ class HRDataQueries:
                 # Nhan vien trong phong ban
                 employees = await conn.fetch(
                     """
-                    SELECT u.id, u.name, u."employeeCode", u.gender,
+                    SELECT u.id, u.name, u.gender,
                            u."hireDate", u."employmentType",
                            p.name as position_name
                     FROM users u
@@ -523,7 +633,7 @@ class HRDataQueries:
                 # Thong tin co ban
                 employee = await conn.fetchrow(
                     """
-                    SELECT u.id, u.name, u."employeeCode", u.email, u.gender,
+                    SELECT u.id, u.name, u.email, u.gender,
                            u."dateOfBirth", u."hireDate", u."employmentType",
                            u."employeeStatus", u."educationLevel", u.university,
                            u.major, u.phone, u."maritalStatus",
@@ -659,7 +769,7 @@ class HRDataQueries:
         employee_keywords = ["nhân viên", "nhan vien", "employee", "người", "tổng số", "bao nhiêu người", "headcount"]
         attendance_keywords = ["chấm công", "cham cong", "đi muộn", "di muon", "vắng", "attendance", "late", "absent"]
         payroll_keywords = ["lương", "luong", "salary", "payroll", "thu nhập", "chi phí"]
-        leave_keywords = ["nghỉ phép", "nghi phep", "leave", "nghỉ", "phép"]
+        leave_keywords = ["nghỉ phép", "nghi phep", "leave", "nghỉ", "phép", "duyệt", "duyet", "pending", "chờ duyệt", "cho duyet", "phân tích đơn", "approve", "reject", "từ chối"]
         recruitment_keywords = ["tuyển dụng", "tuyen dung", "ứng viên", "ung vien", "recruitment", "candidate"]
         contract_keywords = ["hợp đồng", "hop dong", "contract"]
         department_keywords = ["phòng ban", "phong ban", "department", "bộ phận"]
@@ -708,7 +818,7 @@ class EmployeePersonalQueries:
             async with pool.acquire() as conn:
                 employee = await conn.fetchrow(
                     """
-                    SELECT u.id, u.name, u."employeeCode", u.email, u.gender,
+                    SELECT u.id, u.name, u.email, u.gender,
                            u."dateOfBirth", u."hireDate", u."employmentType",
                            u."employeeStatus", u."educationLevel", u.university,
                            u.major, u.phone, u."maritalStatus",

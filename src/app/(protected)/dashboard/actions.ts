@@ -379,7 +379,7 @@ export async function getDepartmentDistribution(): Promise<
         items.push({
             department: "Chưa phân bổ",
             count: noDeptCount,
-            fill: "var(--chart-0)",
+            fill: "var(--primary)",
         });
     }
 

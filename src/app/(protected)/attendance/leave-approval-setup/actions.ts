@@ -5,6 +5,9 @@ import { Permission } from "@/lib/rbac/permissions";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ApprovalStep } from "../approval-process/types";
+import { emitToAll } from "@/lib/socket/server";
+import { SOCKET_EVENTS } from "@/lib/socket/types";
+
 
 // ─── Types for approval chain state ───────────────────────────────────────────
 
@@ -224,6 +227,82 @@ async function resolveApprovers(
   }
 }
 
+// ─── Helper: Xoá ca làm việc vào ngày nghỉ ────────────────────────────────────
+
+async function handleOverlappingShifts(
+  tx: any, // Prisma.TransactionClient
+  userId: string,
+  leaveStartRaw: Date | string,
+  leaveEndRaw: Date | string
+) {
+  const leaveStart = new Date(leaveStartRaw);
+  leaveStart.setHours(0, 0, 0, 0);
+  const leaveEnd = new Date(leaveEndRaw);
+  leaveEnd.setHours(23, 59, 59, 999);
+
+  const overlaps = await tx.shiftAssignment.findMany({
+    where: {
+      userId,
+      startDate: { lte: leaveEnd },
+      OR: [{ endDate: null }, { endDate: { gte: leaveStart } }],
+    },
+  });
+
+  for (const a of overlaps) {
+    const aStart = new Date(a.startDate);
+    aStart.setHours(0, 0, 0, 0);
+    const aEnd = a.endDate ? new Date(a.endDate) : null;
+    if (aEnd) aEnd.setHours(23, 59, 59, 999);
+
+    // Case 1: Lịch làm việc nằm gọn TRONG khoảng nghỉ -> Xoá
+    if (aStart >= leaveStart && aEnd !== null && aEnd <= leaveEnd) {
+      await tx.shiftAssignment.delete({ where: { id: a.id } });
+    }
+    // Case 2: Lịch bao trùm cả khoảng nghỉ -> Tách thành 2 khoảng lịch
+    else if (aStart < leaveStart && (aEnd === null || aEnd > leaveEnd)) {
+      const newEnd1 = new Date(leaveStart);
+      newEnd1.setDate(newEnd1.getDate() - 1);
+      
+      await tx.shiftAssignment.update({
+        where: { id: a.id },
+        data: { endDate: newEnd1 },
+      });
+
+      const newStart2 = new Date(leaveEnd);
+      newStart2.setDate(newStart2.getDate() + 1);
+      
+      await tx.shiftAssignment.create({
+        data: {
+          userId,
+          shiftId: a.shiftId,
+          startDate: newStart2,
+          endDate: a.endDate,
+          workCycleId: a.workCycleId,
+          cycleStartDate: a.cycleStartDate,
+        },
+      });
+    }
+    // Case 3: Lịch bắt đầu TRƯỚC ngày nghỉ và kết thúc TRONG ngày nghỉ -> Rút ngắn ngày kết thúc
+    else if (aStart < leaveStart && aEnd !== null && aEnd <= leaveEnd) {
+      const newEnd1 = new Date(leaveStart);
+      newEnd1.setDate(newEnd1.getDate() - 1);
+      await tx.shiftAssignment.update({
+        where: { id: a.id },
+        data: { endDate: newEnd1 },
+      });
+    }
+    // Case 4: Lịch bắt đầu TRONG ngày nghỉ và kết thúc SAU ngày nghỉ -> Dời ngày bắt đầu
+    else if (aStart >= leaveStart && (aEnd === null || aEnd > leaveEnd)) {
+      const newStart2 = new Date(leaveEnd);
+      newStart2.setDate(newStart2.getDate() + 1);
+      await tx.shiftAssignment.update({
+        where: { id: a.id },
+        data: { startDate: newStart2 },
+      });
+    }
+  }
+}
+
 // ─── Multi-step approveLeaveRequest ──────────────────────────────────────────
 
 export async function approveLeaveRequestMultiStep(requestId: string): Promise<{
@@ -291,6 +370,9 @@ export async function approveLeaveRequestMultiStep(requestId: string): Promise<{
           },
         });
       }
+
+      await handleOverlappingShifts(tx, request.userId, request.startDate, request.endDate);
+
       await tx.leaveRequest.update({
         where: { id: requestId },
         data: {
@@ -394,6 +476,8 @@ export async function approveLeaveRequestMultiStep(requestId: string): Promise<{
         });
       }
 
+      await handleOverlappingShifts(tx, request.userId, request.startDate, request.endDate);
+
       await tx.leaveRequest.update({
         where: { id: requestId },
         data: {
@@ -419,6 +503,13 @@ export async function approveLeaveRequestMultiStep(requestId: string): Promise<{
   revalidatePath("/attendance/leave-requests");
   revalidatePath("/ess/leave");
   revalidatePath("/attendance/leave-summary");
+
+  // Phát sự kiện để cập nhật Client
+  emitToAll(SOCKET_EVENTS.DATA_UPDATED, {
+    entity: "leave-request",
+    action: isLastStep ? "approve-fully" : "approve-step",
+    data: { id: requestId },
+  });
 
   if (isLastStep) {
     return {
@@ -527,6 +618,13 @@ export async function rejectLeaveRequestMultiStep(
   revalidatePath("/attendance/leave-requests");
   revalidatePath("/ess/leave");
   revalidatePath("/attendance/leave-summary");
+
+  // Phát sự kiện để cập nhật Client
+  emitToAll(SOCKET_EVENTS.DATA_UPDATED, {
+    entity: "leave-request",
+    action: "reject",
+    data: { id: requestId },
+  });
 
   return { success: true, message: "Đã từ chối đơn nghỉ phép" };
 }

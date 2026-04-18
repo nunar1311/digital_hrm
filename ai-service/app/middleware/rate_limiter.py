@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
-    """In-memory rate limiter with Redis backend support"""
+    """Rate limiter with Redis backend support (uses shared Redis service)"""
 
     def __init__(self):
         self.requests_per_minute = settings.rate_limit_per_minute
@@ -28,27 +28,15 @@ class RateLimiter:
         self.day_counts: Dict[str, int] = defaultdict(int)
         self.day_start: Dict[str, float] = defaultdict(float)
 
-        # Redis client (optional)
-        self.redis_client = None
-        self._init_redis()
-
-    def _init_redis(self):
-        """Initialize Redis client if available"""
-        if not settings.redis_enabled:
-            return
-
+    def _get_redis_client(self):
+        """Get Redis client from shared service (lazy, always fresh)"""
         try:
-            import redis.asyncio as redis
-
-            self.redis_client = redis.from_url(
-                settings.redis_url,
-                encoding="utf-8",
-                decode_responses=True,
-            )
-            logger.info("Redis rate limiter initialized")
-        except Exception as e:
-            logger.warning(f"Redis not available, using in-memory rate limiting: {e}")
-            self.redis_client = None
+            from app.services.redis_service import get_redis, is_redis_available
+            if is_redis_available():
+                return get_redis()
+        except Exception:
+            pass
+        return None
 
     def _get_client_key(self, request: Request) -> str:
         """Get client identifier from request"""
@@ -78,33 +66,34 @@ class RateLimiter:
         current_time = time.time()
 
         # Try Redis first
-        if self.redis_client:
-            return await self._check_redis(client_key, current_time)
+        redis_client = self._get_redis_client()
+        if redis_client:
+            return await self._check_redis(redis_client, client_key, current_time)
 
         # Fallback to in-memory
         return self._check_memory(client_key, current_time)
 
-    async def _check_redis(self, client_key: str, current_time: float) -> Dict[str, Any]:
+    async def _check_redis(self, redis_client, client_key: str, current_time: float) -> Dict[str, Any]:
         """Check rate limit using Redis"""
         try:
             minute_key = f"ratelimit:{client_key}:minute"
             day_key = f"ratelimit:{client_key}:day"
 
             # Atomic check and increment for minute
-            minute_count = await self.redis_client.incr(minute_key)
+            minute_count = await redis_client.incr(minute_key)
             if minute_count == 1:
-                await self.redis_client.expire(minute_key, 60)
+                await redis_client.expire(minute_key, 60)
 
             # Atomic check and increment for day
-            day_count = await self.redis_client.incr(day_key)
+            day_count = await redis_client.incr(day_key)
             if day_count == 1:
-                await self.redis_client.expire(day_key, 86400)
+                await redis_client.expire(day_key, 86400)
 
             minute_remaining = max(0, self.requests_per_minute - minute_count)
             day_remaining = max(0, self.requests_per_day - day_count)
 
             if minute_count > self.requests_per_minute:
-                ttl = await self.redis_client.ttl(minute_key)
+                ttl = await redis_client.ttl(minute_key)
                 return {
                     "allowed": False,
                     "remaining_minute": 0,
@@ -114,7 +103,7 @@ class RateLimiter:
                 }
 
             if day_count > self.requests_per_day:
-                ttl = await self.redis_client.ttl(day_key)
+                ttl = await redis_client.ttl(day_key)
                 return {
                     "allowed": False,
                     "remaining_minute": minute_remaining,
@@ -185,9 +174,8 @@ class RateLimiter:
         }
 
     async def close(self):
-        """Close Redis connection"""
-        if self.redis_client:
-            await self.redis_client.close()
+        """No-op: Redis lifecycle managed by redis_service"""
+        pass
 
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):

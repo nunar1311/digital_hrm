@@ -432,7 +432,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
         Permission.LEAVE_VIEW_SELF,
         Permission.LEAVE_CREATE,
         Permission.LEAVE_CALENDAR_VIEW,
-        Permission.ATTENDANCE_VIEW_SELF,
         Permission.ATTENDANCE_CHECKIN,
         Permission.ATTENDANCE_EXPLANATION,
         Permission.ATTENDANCE_ADJUSTMENT_CREATE,

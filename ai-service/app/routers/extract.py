@@ -117,7 +117,7 @@ Trả lời bằng tiếng Việt, format JSON.
         result = await provider_router.chat(messages, temperature=0.1)
 
         if not result.get("success"):
-            return DocumentExtractResponse(success=False, error=result.get("error"))
+            return DocumentExtractResponse(success=False, error=result.get("error") or "Có lỗi xảy ra. Thử lại sau nhé.")
 
         # Try to parse JSON from response
         content = result.get("content", "")
@@ -147,9 +147,9 @@ Trả lời bằng tiếng Việt, format JSON.
             warnings=["Could not parse structured data, returning raw text"],
         )
 
-    except Exception as e:
-        logger.error(f"Document extraction error: {e}", exc_info=True)
-        return DocumentExtractResponse(success=False, error=str(e))
+    except Exception:
+        logger.error(f"Document extraction error", exc_info=True)
+        return DocumentExtractResponse(success=False, error="Có lỗi xảy ra. Thử lại sau nhé.")
 
 
 class IDCardExtractRequest(BaseModel):

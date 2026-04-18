@@ -105,7 +105,7 @@ Trả lời bằng tiếng Việt, format JSON như sau:
         result = await provider_router.chat(messages, temperature=0.3)
 
         if not result.get("success"):
-            return ResumeAnalysisResponse(success=False, error=result.get("error"))
+            return ResumeAnalysisResponse(success=False, error=result.get("error") or "Có lỗi xảy ra. Thử lại sau nhé.")
 
         # Parse JSON from response
         content = result.get("content", "")
@@ -136,9 +136,9 @@ Trả lời bằng tiếng Việt, format JSON như sau:
             summary=content,
         )
 
-    except Exception as e:
-        logger.error(f"Resume analysis error: {e}", exc_info=True)
-        return ResumeAnalysisResponse(success=False, error=str(e))
+    except Exception:
+        logger.error(f"Resume analysis error", exc_info=True)
+        return ResumeAnalysisResponse(success=False, error="Có lỗi xảy ra. Thử lại sau nhé.")
 
 
 # =====================
@@ -395,7 +395,6 @@ Trả lời bằng tiếng Việt.
                 "type": "employee_360",
                 "user_id": user_id,
                 "employee_name": emp_info.get("name"),
-                "employee_code": emp_info.get("employeeCode"),
                 "department": emp_info.get("department_name"),
                 "position": emp_info.get("position_name"),
             },

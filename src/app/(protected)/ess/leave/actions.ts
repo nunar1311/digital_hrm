@@ -485,6 +485,13 @@ export async function cancelLeaveRequest(requestId: string) {
         });
     });
 
+    // Thông báo qua socket
+    emitToAll(SOCKET_EVENTS.DATA_UPDATED, {
+        entity: "leave-request",
+        action: "cancel",
+        data: { id: requestId },
+    });
+
     revalidatePath("/ess/leave");
     revalidatePath("/attendance/leave-summary");
     revalidatePath("/attendance/leave-requests");
