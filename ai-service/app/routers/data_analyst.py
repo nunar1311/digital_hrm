@@ -137,6 +137,15 @@ def analyze_intent(question: str) -> Dict[str, Any]:
     """
     question_lower = question.lower()
 
+    # Detect list/enumeration questions — these should NOT generate charts
+    LIST_KEYWORDS = [
+        "danh sách", "liệt kê", "cho tôi", "cho mình", "xem", "hiển thị",
+        "show", "list", "tìm", "tra cứu", "chi tiết", "những ai", "ai là",
+        "nhân sự nào", "nhân viên nào", "người nào", "những người",
+        "gần đây", "mới nhất", "vừa mới", "gần nhất",
+    ]
+    is_list_query = any(kw in question_lower for kw in LIST_KEYWORDS)
+
     # Count keyword matches
     comparison_count = sum(1 for kw in COMPARISON_KEYWORDS if kw in question_lower)
     trend_count = sum(1 for kw in TREND_KEYWORDS if kw in question_lower)
@@ -153,27 +162,34 @@ def analyze_intent(question: str) -> Dict[str, Any]:
     # Determine primary intent
     max_count = max(counts.values())
 
-    if max_count == 0:
-        intent = "GENERAL"
+    if max_count == 0 or is_list_query:
+        # No strong analytical keywords OR it's a simple listing request — no chart
+        intent = "GENERAL" if max_count == 0 else max(counts, key=counts.get)
         chart_type = "none"
     else:
-        # Ưu tiên DISTRIBUTION cho "tỷ lệ" vì đây là câu hỏi về cơ cấu
-        has_ty_le = "tỷ lệ" in question_lower or "phần trăm" in question_lower or "%" in question_lower
-        
-        if has_ty_le and distribution_count > 0:
-            intent = "DISTRIBUTION"
-            chart_type = "pie"
-        else:
-            # Get the intent with highest count
+        # Require at least 2 keyword matches for chart generation to avoid false positives
+        if max_count < 2:
+            # Single keyword match — likely not a chart-worthy question
             intent = max(counts, key=counts.get)
-            chart_map = {
-                "COMPARISON": "bar",
-                "TREND": "line",
-                "DISTRIBUTION": "pie",
-                "CORRELATION": "scatter",
-                "GENERAL": "none"
-            }
-            chart_type = chart_map.get(intent, "none")
+            chart_type = "none"
+        else:
+            # Ưu tiên DISTRIBUTION cho "tỷ lệ" vì đây là câu hỏi về cơ cấu
+            has_ty_le = "tỷ lệ" in question_lower or "phần trăm" in question_lower or "%" in question_lower
+            
+            if has_ty_le and distribution_count > 0:
+                intent = "DISTRIBUTION"
+                chart_type = "pie"
+            else:
+                # Get the intent with highest count
+                intent = max(counts, key=counts.get)
+                chart_map = {
+                    "COMPARISON": "bar",
+                    "TREND": "line",
+                    "DISTRIBUTION": "pie",
+                    "CORRELATION": "scatter",
+                    "GENERAL": "none"
+                }
+                chart_type = chart_map.get(intent, "none")
 
     # Calculate confidence based on keyword density
     total_keywords = len(question.split())
@@ -182,12 +198,16 @@ def analyze_intent(question: str) -> Dict[str, Any]:
     # Boost confidence if we have strong keyword matches
     if max_count >= 2:
         confidence = min(confidence + 0.2, 1.0)
+    
+    # Reduce confidence for list queries
+    if is_list_query:
+        confidence = min(confidence, 0.3)
 
     return {
         "intent": intent,
         "chart_type": chart_type,
         "confidence": round(confidence, 2),
-        "reasoning": f"Kết quả phân tích từ khóa: {intent} (confidence={confidence:.2f})",
+        "reasoning": f"Kết quả phân tích từ khóa: {intent} (confidence={confidence:.2f}), list_query={is_list_query}",
         "keyword_counts": counts
     }
 
@@ -612,18 +632,23 @@ async def query_data_analyst(request: DataAnalystQueryRequest):
 Dữ liệu HR hiện có:
 {data_summary if data_summary != "{}" else "Không có dữ liệu cụ thể cho câu hỏi này."}
 
-Hãy phân tích câu hỏi và quyết định:
-1. Câu hỏi này CÓ NÊN tạo biểu đồ không? (Trả lời: CÓ nếu cần so sánh, xu hướng, hoặc hiển thị nhiều giá trị)
-2. Nếu CÓ → chọn loại biểu đồ phù hợp và trích xuất dữ liệu
-3. Nếu KHÔNG → chỉ trả lời bằng text
+PHÂN TÍCH VÀ TRẢ LỜI:
 
-QUYẾT ĐỊNH CỦA BẠN:
-- Nếu câu hỏi chứa: "bao nhiêu", "tỷ lệ", "so sánh", "theo tháng", "phân bổ", "tỉ lệ xin nghỉ", "loại nghỉ nào" → CÓ tạo chart
-- Nếu chỉ hỏi 1-2 con số đơn giản → KHÔNG cần chart
+BƯỚC 1 - Xác định loại câu hỏi:
+- Nếu câu hỏi yêu cầu DANH SÁCH (danh sách nhân viên, đơn nghỉ, ứng viên...) → trả về bảng Markdown, chart_type = "none"
+- Nếu câu hỏi yêu cầu THỐNG KÊ CÓ SO SÁNH (>=3 đối tượng) → cân nhắc tạo biểu đồ bar/line/pie
+- Nếu câu hỏi hỏi TỶ LỆ % CÓ SẴN DỮ LIỆU → tạo biểu đồ pie
+- Nếu chỉ hỏi 1-2 con số đơn giản → text thường, chart_type = "none"
+
+BƯỚC 2 - Quy tắc bắt buộc:
+- KHÔNG BAO GIỜ hiển thị: id, uuid, userId, departmentId, positionId hoặc bất kỳ trường kỹ thuật nào
+- Chỉ hiển thị: tên người, ngày tháng, phòng ban, chức vụ, trạng thái, số liệu có ý nghĩa
+- Khi liệt kê danh sách → PHẢI dùng bảng Markdown với các cột phù hợp
+- Chỉ tạo biểu đồ khi có ÍT NHẤT 3 điểm dữ liệu thực sự
 
 Định dạng trả lời JSON (BẮT BUỘC):
 {{
-  "answer": "Câu trả lời bằng tiếng Việt, có số liệu cụ thể",
+  "answer": "Câu trả lời bằng tiếng Việt. Dùng bảng Markdown cho danh sách người. Dùng bullet points cho số liệu tổng hợp.",
   "chart_type": "bar|line|pie|scatter|none",
   "chart_data": [{{"name": "...", "value": số}}],  // CHO PIE: dùng "name" và "value"
   "chart_data": [{{"label": "...", "value": số}}], // CHO BAR/LINE: dùng "label" và "value"
@@ -634,14 +659,13 @@ QUYẾT ĐỊNH CỦA BẠN:
   "insights": [{{"title": "...", "description": "...", "severity": "medium"}}]
 }}
 
-QUAN TRỌNG - ĐỌC KỸ:
-1. Giao tiếp thông minh, KHÔNG ĐƯỢC NÓI thuật ngữ khó hiểu hay giải thích rườm rà. Trao đổi như 1 người nhân sự thân thiện. Viết tóm tắt, RÕ RÀNG, format xuống dòng/in đậm đẹp mắt và DỄ HIỂU cho nhân viên.
-2. Nếu chart_type = "pie" → chart_data PHẢI là: [{{"name": "Tên loại", "value": số, "percent": số}}]
-   Ví dụ: [{{"name": "Nghỉ phép thường niên", "value": 25, "percent": 50}}, {{"name": "Nghỉ ốm", "value": 15, "percent": 30}}]
-3. Nếu chart_type = "bar" hoặc "line" → chart_data PHẢI là: [{{"label": "Nhãn", "value": số}}]
+QUAN TRỌNG:
+1. Giao tiếp thông minh, thân thiện, như đồng nghiệp HR. Format rõ ràng, dễ đọc.
+2. chart_type = "pie" → chart_data PHẢI là: [{{"name": "Tên loại", "value": số, "percent": số}}] với ít nhất 3 phần tử
+3. chart_type = "bar" hoặc "line" → chart_data PHẢI là: [{{"label": "Nhãn", "value": số}}] với ít nhất 3 phần tử
 4. Nếu chart_type = "none" → KHÔNG cần chart_data
-5. LUÔN LUÔN trả về JSON đầy đủ, không được bỏ qua chart_data nếu câu hỏi cần biểu đồ
-6. Dữ liệu phải được trích xuất TỪ DỮ LIỆU HR đã cung cấp ở trên"""
+5. Dữ liệu phải được trích xuất TỪ DỮ LIỆU HR đã cung cấp ở trên"""
+
 
         # Step 4: Call AI
         provider_router = get_provider_router()

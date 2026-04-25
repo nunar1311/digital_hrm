@@ -48,9 +48,9 @@ export default async function ProtectedLayout({
               <AppHeader />
             </div>
 
-            <div className="flex flex-1 overflow-hidden mb-1.5 transition-all duration-300 ease-in-out">
+            <div className="flex flex-1 overflow-hidden mb-1.5">
               <SidebarMindWrapper />
-              <div className="border rounded-lg flex-1 flex overflow-hidden relative mr-1.5 ml-1.5 transition-all duration-300 ease-in-out">
+              <div className="border rounded-lg flex-1 flex overflow-hidden relative mr-1.5 ml-1.5">
                 <SidebarSlot className="overflow-hidden flex-1 relative min-h-0">
                   <BannerNotification />
                   <AttendanceCheckDialog />

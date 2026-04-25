@@ -9,6 +9,7 @@ import {
   getTodayAttendanceSummary,
   getContractExpiryWarnings,
 } from "./actions";
+import { getDashboardLayout } from "./dashboard-layout-actions";
 
 const PAGE_SIZE = 20;
 
@@ -22,6 +23,7 @@ export default async function DashboardPage() {
     genderData,
     todayAttendanceData,
     contractExpiryWarnings,
+    savedGridLayout,
   ] = await Promise.all([
     getDashboardStats(),
     getDashboardEmployees({ page: 1, pageSize: PAGE_SIZE }),
@@ -31,6 +33,7 @@ export default async function DashboardPage() {
     getGenderDistribution(),
     getTodayAttendanceSummary(),
     getContractExpiryWarnings(),
+    getDashboardLayout(),
   ]);
 
   return (
@@ -43,6 +46,7 @@ export default async function DashboardPage() {
       genderData={genderData}
       todayAttendanceData={todayAttendanceData}
       contractExpiryWarnings={contractExpiryWarnings}
+      savedGridLayout={savedGridLayout}
     />
   );
 }

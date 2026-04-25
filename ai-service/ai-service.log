@@ -1889,3 +1889,413 @@ HINT:  Perhaps you meant to reference the column "attendances.date".
 2026-04-18 20:09:33,242 - app.routers.ws_chat - INFO - Data analyst: intent=DISTRIBUTION, chart_type=pie, data_points=2
 2026-04-18 20:10:58,980 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
 2026-04-18 20:11:06,317 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18146
+2026-04-18 20:37:32,981 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:38:04,087 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:38:06,321 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:39:55,680 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:39:57,292 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:39:58,080 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:39:59,057 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:39:59,730 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:40:02,424 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:40:03,698 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:40:05,761 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:40:07,355 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:40:08,581 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:40:10,909 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:40:12,255 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:42:33,794 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:42:36,975 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:42:38,877 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:42:46,083 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:42:47,477 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:44:01,077 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:44:04,076 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:44:05,463 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:44:06,439 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:44:13,326 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:44:14,829 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:45:32,442 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:45:35,742 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:45:37,706 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:46:00,131 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:48:37,442 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:48:38,800 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:48:40,132 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:49:15,318 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:49:16,718 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:49:17,590 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:49:19,720 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:50:35,108 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:51:19,963 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:51:21,271 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:51:22,475 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:51:24,251 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:51:25,615 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:54:36,745 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:54:46,706 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:55:01,698 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:55:03,142 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:55:04,473 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:55:06,307 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:55:42,816 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:55:43,649 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:55:44,689 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:55:45,762 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 20:55:46,636 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 23:05:33,247 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 23:05:44,578 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 23:05:44,998 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20017
+2026-04-18 23:06:02,759 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 23:06:06,696 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18457
+2026-04-18 23:06:16,266 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'payroll']
+2026-04-18 23:06:26,422 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 23:06:39,076 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3529
+2026-04-18 23:06:39,083 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=6
+2026-04-18 23:06:48,221 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-18 23:10:50,158 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 23:10:51,052 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20032
+2026-04-18 23:11:09,394 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 23:11:18,014 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19360
+2026-04-18 23:12:25,564 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 23:12:31,923 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20107
+2026-04-18 23:14:20,361 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-18 23:14:30,778 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=4200
+2026-04-20 09:29:17,108 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 09:29:17,108 - app.main - INFO - Default provider: openai
+2026-04-20 09:29:17,108 - app.main - INFO - Default model: gpt-4o
+2026-04-20 09:29:17,109 - app.main - INFO - Redis enabled: True
+2026-04-20 09:29:17,109 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 09:29:17,109 - app.main - INFO - AI Provider router initialized
+2026-04-20 09:29:25,348 - app.services.redis_service - WARNING - Redis not available, running without cache: Error 22 connecting to localhost:6379. The remote computer refused the network connection.
+2026-04-20 09:29:25,452 - app.main - WARNING - Redis not available - running without cache (in-memory fallback)
+2026-04-20 09:29:29,526 - app.database - ERROR - DB connection attempt 1/3 failed: [WinError 1225] The remote computer refused the network connection
+2026-04-20 09:29:29,526 - app.database - INFO - Retrying in 2s...
+2026-04-20 09:29:35,576 - app.database - ERROR - DB connection attempt 2/3 failed: [WinError 1225] The remote computer refused the network connection
+2026-04-20 09:29:35,576 - app.database - INFO - Retrying in 4s...
+2026-04-20 09:29:39,823 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 09:29:39,828 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 09:29:39,828 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 09:29:39,828 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 09:56:40,389 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 09:56:42,502 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 09:57:27,662 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 09:58:33,621 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 09:58:35,702 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 09:59:38,433 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:01:35,935 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:01:48,377 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:01:50,149 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:01:51,586 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:02:42,916 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:02:44,717 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:05:45,002 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:09:39,120 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:09:40,928 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:09:52,542 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:09:54,261 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:06,187 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:14,211 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:15,726 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:17,751 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:26,394 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:45,767 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:47,551 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:48,778 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:49,358 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:50,953 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:10:52,734 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:00,789 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:02,898 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:05,445 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:18,355 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:20,477 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:22,257 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:23,819 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:26,552 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:29,077 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:31,498 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:43,836 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:45,398 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:56,888 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:58,176 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:11:59,473 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:12:01,903 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:12:04,131 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:13:41,156 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:13:42,627 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:13:44,083 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:13:45,497 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:13:47,155 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:13:48,859 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:13:50,796 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:14:09,982 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:14:11,521 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:14:12,871 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:14:14,391 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:14:16,013 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:14:56,292 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:14:58,446 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:15:00,414 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:15:02,958 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:15:04,379 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:15:05,631 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:15:06,915 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:15:09,577 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:15:10,982 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:15:42,123 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-20 10:15:42,124 - app.routers.data_analyst - INFO - Leave data: {"leave_by_status": [{"status": "APPROVED", "count": 9.0}, {"status": "CANCELLED", "count": 4.0}, {"status": "REJECTED", "count": 4.0}], "pending_requests_count": 0, "pending_requests_details": "Kh\u00f4ng c\u00f3 \u0111\u01a1n ch\u1edd duy\u1ec7t.", "recent_processed_requests": [{"id": "cmnemivnumdnf84plrh58v", "startDate": "2026-05-01T00:00:00", "endDate": "2026-05-01T00:00:00", "totalDays": 1.0, "reason": "Ngh\u1ec9 ph\u00e9p n\u0103m", "status": "APPROVED", "createdAt": "2026-04-17T07:52:02.
+2026-04-20 10:16:09,140 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 10:16:23,694 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=6625
+2026-04-20 10:16:23,694 - app.routers.data_analyst - INFO - Final chart_type=bar, chart_data_len=5
+2026-04-20 10:16:33,623 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:16:35,449 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:16:59,354 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:19:10,894 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:19:13,773 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:19:15,331 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:19:19,026 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:21:55,896 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:24:02,916 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:30:29,125 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:30:43,625 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:30:58,553 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:34:22,220 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:36:35,713 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:37:49,296 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:39:08,215 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 10:53:10,970 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:00:02,086 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:01:33,549 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:01:56,590 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:02:36,403 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:03:27,021 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:07:57,438 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:08:04,557 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:14:24,007 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:14:25,349 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:14:27,851 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:14:29,532 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:14:31,070 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:14:32,392 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:14:33,735 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:14:34,773 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:14:36,324 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:15:07,600 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:15:59,540 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:16:28,082 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 11:16:36,834 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=4214
+2026-04-20 11:17:31,271 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:17:37,271 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:17:40,922 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:18:27,717 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:42:35,159 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 11:46:41,173 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 12:00:45,150 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:00:46,428 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20011
+2026-04-20 12:08:41,025 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:08:45,426 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20403
+2026-04-20 12:08:45,430 - app.routers.ws_chat - INFO - Data analyst: intent=DISTRIBUTION, chart_type=pie, data_points=2
+2026-04-20 12:11:37,530 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:11:42,238 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21079
+2026-04-20 12:22:46,706 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 12:22:46,707 - app.main - INFO - Default provider: openai
+2026-04-20 12:22:46,707 - app.main - INFO - Default model: gpt-4o
+2026-04-20 12:22:46,707 - app.main - INFO - Redis enabled: True
+2026-04-20 12:22:46,707 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 12:22:46,707 - app.main - INFO - AI Provider router initialized
+2026-04-20 12:22:46,830 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 12:22:46,830 - app.main - INFO - Redis cache layer initialized
+2026-04-20 12:22:47,045 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 12:22:47,046 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 12:22:47,046 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 12:22:47,047 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 12:23:03,573 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 12:23:03,574 - app.main - INFO - Default provider: openai
+2026-04-20 12:23:03,574 - app.main - INFO - Default model: gpt-4o
+2026-04-20 12:23:03,574 - app.main - INFO - Redis enabled: True
+2026-04-20 12:23:03,574 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 12:23:03,574 - app.main - INFO - AI Provider router initialized
+2026-04-20 12:23:03,659 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 12:23:03,659 - app.main - INFO - Redis cache layer initialized
+2026-04-20 12:23:03,869 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 12:23:03,870 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 12:23:03,870 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 12:23:03,870 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 12:23:03,872 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-20 12:23:03,873 - app.services.redis_service - INFO - Redis connection closed
+2026-04-20 12:23:03,878 - app.database - INFO - Database connection pool closed
+2026-04-20 12:23:03,879 - app.main - INFO - Cleanup complete
+2026-04-20 12:28:25,250 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:28:28,020 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21430
+2026-04-20 12:29:11,726 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:29:16,617 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=19128
+2026-04-20 12:43:23,425 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:43:33,085 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 12:43:33,086 - app.main - INFO - Default provider: openai
+2026-04-20 12:43:33,086 - app.main - INFO - Default model: gpt-4o
+2026-04-20 12:43:33,086 - app.main - INFO - Redis enabled: True
+2026-04-20 12:43:33,086 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 12:43:33,086 - app.main - INFO - AI Provider router initialized
+2026-04-20 12:43:33,204 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 12:43:33,205 - app.main - INFO - Redis cache layer initialized
+2026-04-20 12:43:33,449 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 12:43:33,451 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 12:43:33,451 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 12:43:33,451 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 12:43:33,624 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 12:43:33,625 - app.main - INFO - Default provider: openai
+2026-04-20 12:43:33,625 - app.main - INFO - Default model: gpt-4o
+2026-04-20 12:43:33,625 - app.main - INFO - Redis enabled: True
+2026-04-20 12:43:33,625 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 12:43:33,626 - app.main - INFO - AI Provider router initialized
+2026-04-20 12:43:33,715 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 12:43:33,715 - app.main - INFO - Redis cache layer initialized
+2026-04-20 12:43:33,916 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 12:43:33,917 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 12:43:33,918 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 12:43:33,918 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 12:43:33,919 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-20 12:43:33,920 - app.services.redis_service - INFO - Redis connection closed
+2026-04-20 12:43:33,925 - app.database - INFO - Database connection pool closed
+2026-04-20 12:43:33,925 - app.main - INFO - Cleanup complete
+2026-04-20 12:43:45,358 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 12:43:45,358 - app.main - INFO - Default provider: openai
+2026-04-20 12:43:45,358 - app.main - INFO - Default model: gpt-4o
+2026-04-20 12:43:45,359 - app.main - INFO - Redis enabled: True
+2026-04-20 12:43:45,359 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 12:43:45,359 - app.main - INFO - AI Provider router initialized
+2026-04-20 12:43:45,449 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 12:43:45,450 - app.main - INFO - Redis cache layer initialized
+2026-04-20 12:43:45,644 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 12:43:45,646 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 12:43:45,646 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 12:43:45,646 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 12:43:45,647 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-20 12:43:45,648 - app.services.redis_service - INFO - Redis connection closed
+2026-04-20 12:43:45,653 - app.database - INFO - Database connection pool closed
+2026-04-20 12:43:45,653 - app.main - INFO - Cleanup complete
+2026-04-20 12:44:03,336 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 12:44:03,337 - app.main - INFO - Default provider: openai
+2026-04-20 12:44:03,337 - app.main - INFO - Default model: gpt-4o
+2026-04-20 12:44:03,337 - app.main - INFO - Redis enabled: True
+2026-04-20 12:44:03,337 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 12:44:03,338 - app.main - INFO - AI Provider router initialized
+2026-04-20 12:44:03,447 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 12:44:03,447 - app.main - INFO - Redis cache layer initialized
+2026-04-20 12:44:03,688 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 12:44:03,690 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 12:44:03,690 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 12:44:03,691 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 12:44:03,692 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-20 12:44:03,693 - app.services.redis_service - INFO - Redis connection closed
+2026-04-20 12:44:03,700 - app.database - INFO - Database connection pool closed
+2026-04-20 12:44:03,701 - app.main - INFO - Cleanup complete
+2026-04-20 12:44:13,214 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 12:44:13,214 - app.main - INFO - Default provider: openai
+2026-04-20 12:44:13,214 - app.main - INFO - Default model: gpt-4o
+2026-04-20 12:44:13,215 - app.main - INFO - Redis enabled: True
+2026-04-20 12:44:13,215 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 12:44:13,215 - app.main - INFO - AI Provider router initialized
+2026-04-20 12:44:13,326 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 12:44:13,326 - app.main - INFO - Redis cache layer initialized
+2026-04-20 12:44:13,577 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 12:44:13,579 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 12:44:13,579 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 12:44:13,580 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 12:44:13,581 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-20 12:44:13,581 - app.services.redis_service - INFO - Redis connection closed
+2026-04-20 12:44:13,587 - app.database - INFO - Database connection pool closed
+2026-04-20 12:44:13,587 - app.main - INFO - Cleanup complete
+2026-04-20 12:45:23,160 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 12:45:23,161 - app.main - INFO - Default provider: openai
+2026-04-20 12:45:23,161 - app.main - INFO - Default model: gpt-4o
+2026-04-20 12:45:23,162 - app.main - INFO - Redis enabled: True
+2026-04-20 12:45:23,162 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 12:45:23,162 - app.main - INFO - AI Provider router initialized
+2026-04-20 12:45:23,257 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 12:45:23,258 - app.main - INFO - Redis cache layer initialized
+2026-04-20 12:45:23,496 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 12:45:23,498 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 12:45:23,499 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 12:45:23,499 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 12:45:23,500 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-20 12:45:23,501 - app.services.redis_service - INFO - Redis connection closed
+2026-04-20 12:45:23,506 - app.database - INFO - Database connection pool closed
+2026-04-20 12:45:23,507 - app.main - INFO - Cleanup complete
+2026-04-20 12:46:40,290 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 12:46:40,291 - app.main - INFO - Default provider: openai
+2026-04-20 12:46:40,291 - app.main - INFO - Default model: gpt-4o
+2026-04-20 12:46:40,292 - app.main - INFO - Redis enabled: True
+2026-04-20 12:46:40,292 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 12:46:40,292 - app.main - INFO - AI Provider router initialized
+2026-04-20 12:46:40,384 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 12:46:40,384 - app.main - INFO - Redis cache layer initialized
+2026-04-20 12:46:40,591 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 12:46:40,593 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 12:46:40,593 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 12:46:40,594 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 12:48:37,790 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:48:39,226 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20258
+2026-04-20 12:49:00,958 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:49:01,857 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20920
+2026-04-20 12:52:06,668 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:52:13,420 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21631
+2026-04-20 12:53:21,361 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 12:53:41,837 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:53:58,776 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=23493
+2026-04-20 12:54:03,899 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 12:54:07,259 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=887
+2026-04-20 12:57:38,534 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 12:59:12,606 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 12:59:18,415 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 13:02:08,469 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 13:03:03,120 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 13:03:04,105 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=20080
+2026-04-20 13:03:36,748 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 13:03:40,907 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=22355
+2026-04-20 13:05:42,214 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 13:05:48,012 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=22215
+2026-04-20 13:10:02,718 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 13:10:02,718 - app.main - INFO - Default provider: openai
+2026-04-20 13:10:02,719 - app.main - INFO - Default model: gpt-4o
+2026-04-20 13:10:02,719 - app.main - INFO - Redis enabled: True
+2026-04-20 13:10:02,719 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 13:10:02,719 - app.main - INFO - AI Provider router initialized
+2026-04-20 13:10:02,798 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 13:10:02,798 - app.main - INFO - Redis cache layer initialized
+2026-04-20 13:10:02,972 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 13:10:02,975 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 13:10:02,975 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 13:10:02,975 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 13:10:04,512 - watchfiles.main - INFO - 1 change detected
+2026-04-20 13:10:07,989 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-20 13:10:07,989 - app.main - INFO - Default provider: openai
+2026-04-20 13:10:07,989 - app.main - INFO - Default model: gpt-4o
+2026-04-20 13:10:07,989 - app.main - INFO - Redis enabled: True
+2026-04-20 13:10:07,989 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-20 13:10:07,989 - app.main - INFO - AI Provider router initialized
+2026-04-20 13:10:08,098 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-20 13:10:08,099 - app.main - INFO - Redis cache layer initialized
+2026-04-20 13:10:08,322 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-20 13:10:08,325 - app.main - INFO - Database connection pool initialized successfully
+2026-04-20 13:10:08,325 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-20 13:10:08,325 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-20 13:10:08,996 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-20 13:10:27,426 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 13:10:29,796 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21319
+2026-04-20 13:11:27,390 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 13:11:29,244 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 13:11:30,845 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 13:11:32,307 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 13:11:34,192 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 13:11:35,913 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 13:11:37,030 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 15:35:45,096 - watchfiles.main - INFO - 1 change detected
+2026-04-20 15:35:45,162 - watchfiles.main - INFO - 1 change detected
+2026-04-20 15:39:20,132 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-20 15:39:29,722 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 15:39:35,243 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=18863
+2026-04-20 15:39:59,284 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-20 15:40:08,358 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=21564
+2026-04-20 15:56:28,996 - watchfiles.main - INFO - 1 change detected

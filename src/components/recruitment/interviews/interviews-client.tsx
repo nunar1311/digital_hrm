@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef } from "react";
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,7 +57,15 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ListFilter, Plus, Search, Settings, CalendarCheck, LayoutGrid, Table2 } from "lucide-react";
+import {
+  ListFilter,
+  Plus,
+  Search,
+  Settings,
+  CalendarCheck,
+  LayoutGrid,
+  Table2,
+} from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -78,7 +91,6 @@ import type {
 } from "@/app/(protected)/recruitment/types";
 import { InterviewTable } from "./interview-table";
 import { InterviewCalendar } from "./interview-calendar";
-import { InterviewToolbar } from "./interview-toolbar";
 
 const interviewFormSchema = z.object({
   candidateId: z.string().min(1, "Ứng viên không được để trống"),
@@ -112,7 +124,13 @@ type FeedbackFormValues = z.infer<typeof feedbackFormSchema>;
 
 const PAGE_SIZE = 20;
 
-type StatusFilter = "ALL" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+type StatusFilter =
+  | "ALL"
+  | "SCHEDULED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "ALL", label: "Tất cả" },
@@ -146,7 +164,9 @@ export function InterviewsClient() {
   const [jobPostingIdFilter, setJobPostingIdFilter] = useState<string>("ALL");
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
   const [toDate, setToDate] = useState<Date | undefined>(undefined);
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
+  const [columnVisibility, setColumnVisibility] = useState<
+    Record<string, boolean>
+  >({
     select: true,
     candidate: true,
     jobPosting: true,
@@ -171,18 +191,24 @@ export function InterviewsClient() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   // Edit dialog state
-  const [editingInterview, setEditingInterview] = useState<InterviewBasic | null>(null);
+  const [editingInterview, setEditingInterview] =
+    useState<InterviewBasic | null>(null);
 
   // Feedback dialog state
-  const [feedbackInterview, setFeedbackInterview] = useState<InterviewBasic | null>(null);
+  const [feedbackInterview, setFeedbackInterview] =
+    useState<InterviewBasic | null>(null);
 
   // Build filter params
-  const filters = useMemo<InterviewFilters>(() => ({
-    status: statusFilter !== "ALL" ? statusFilter : undefined,
-    jobPostingId: jobPostingIdFilter !== "ALL" ? jobPostingIdFilter : undefined,
-    fromDate: fromDate ? fromDate.toISOString() : undefined,
-    toDate: toDate ? toDate.toISOString() : undefined,
-  }), [statusFilter, jobPostingIdFilter, fromDate, toDate]);
+  const filters = useMemo<InterviewFilters>(
+    () => ({
+      status: statusFilter !== "ALL" ? statusFilter : undefined,
+      jobPostingId:
+        jobPostingIdFilter !== "ALL" ? jobPostingIdFilter : undefined,
+      fromDate: fromDate ? fromDate.toISOString() : undefined,
+      toDate: toDate ? toDate.toISOString() : undefined,
+    }),
+    [statusFilter, jobPostingIdFilter, fromDate, toDate],
+  );
 
   // Job postings for filter & form
   const { data: jobPostings = [] } = useQuery({
@@ -234,7 +260,8 @@ export function InterviewsClient() {
         jobPostingTitle: item.jobPostingTitle,
         round: item.round,
         type: item.type as import("@/app/(protected)/recruitment/types").InterviewType,
-        method: item.method as import("@/app/(protected)/recruitment/types").InterviewMethod,
+        method:
+          item.method as import("@/app/(protected)/recruitment/types").InterviewMethod,
         scheduledDate: item.scheduledDate,
         scheduledTime: item.scheduledTime,
         endTime: item.endTime,
@@ -244,8 +271,11 @@ export function InterviewsClient() {
         meetingId: item.meetingId,
         interviewerIds: item.interviewerIds,
         interviewerNames: item.interviewerNames,
-        status: item.status as import("@/app/(protected)/recruitment/types").InterviewStatus,
-        result: item.result as import("@/app/(protected)/recruitment/types").InterviewResult | null,
+        status:
+          item.status as import("@/app/(protected)/recruitment/types").InterviewStatus,
+        result: item.result as
+          | import("@/app/(protected)/recruitment/types").InterviewResult
+          | null,
         score: item.score,
         strengths: item.strengths,
         weaknesses: item.weaknesses,
@@ -269,7 +299,9 @@ export function InterviewsClient() {
       } as CreateInterviewForm),
     onSuccess: () => {
       toast.success("Đặt lịch phỏng vấn thành công");
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
+      queryClient.invalidateQueries({
+        queryKey: ["recruitment", "interviews"],
+      });
       setIsCreateOpen(false);
     },
     onError: (error: Error) => {
@@ -281,7 +313,10 @@ export function InterviewsClient() {
     mutationFn: ({
       id,
       data,
-    }: { id: string; data: Partial<InterviewFormValues> }) =>
+    }: {
+      id: string;
+      data: Partial<InterviewFormValues>;
+    }) =>
       updateInterview(id, {
         ...data,
         scheduledDate: data.scheduledDate
@@ -290,7 +325,9 @@ export function InterviewsClient() {
       } as Partial<CreateInterviewForm>),
     onSuccess: () => {
       toast.success("Cập nhật phỏng vấn thành công");
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
+      queryClient.invalidateQueries({
+        queryKey: ["recruitment", "interviews"],
+      });
       setEditingInterview(null);
     },
     onError: (error: Error) => {
@@ -302,7 +339,9 @@ export function InterviewsClient() {
     mutationFn: (id: string) => deleteInterview(id),
     onSuccess: () => {
       toast.success("Xóa lịch phỏng vấn thành công");
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
+      queryClient.invalidateQueries({
+        queryKey: ["recruitment", "interviews"],
+      });
       setDeleteTarget(null);
     },
     onError: (error: Error) => {
@@ -321,7 +360,9 @@ export function InterviewsClient() {
     }) => submitFeedback(data),
     onSuccess: () => {
       toast.success("Gửi feedback thành công");
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] });
+      queryClient.invalidateQueries({
+        queryKey: ["recruitment", "interviews"],
+      });
       setFeedbackInterview(null);
     },
     onError: (error: Error) => {
@@ -350,17 +391,26 @@ export function InterviewsClient() {
     deleteMutation.mutate(deleteTarget.id);
   }, [deleteTarget, deleteMutation]);
 
-  const handleViewDetail = useCallback((interview: InterviewBasic) => {
-    router.push(`/recruitment/interview/${interview.id}`);
-  }, [router]);
+  const handleViewDetail = useCallback(
+    (interview: InterviewBasic) => {
+      router.push(`/recruitment/interview/${interview.id}`);
+    },
+    [router],
+  );
 
   const handleFeedback = useCallback((interview: InterviewBasic) => {
     setFeedbackInterview(interview);
   }, []);
 
-  const handleStatusChange = useCallback((id: string, status: InterviewStatus) => {
-    updateMutation.mutate({ id, data: { status } as Partial<InterviewFormValues> });
-  }, [updateMutation]);
+  const handleStatusChange = useCallback(
+    (id: string, status: InterviewStatus) => {
+      updateMutation.mutate({
+        id,
+        data: { status } as Partial<InterviewFormValues>,
+      });
+    },
+    [updateMutation],
+  );
 
   return (
     <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
@@ -376,9 +426,8 @@ export function InterviewsClient() {
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as StatusFilter)}
               options={STATUS_FILTER_OPTIONS}
-              icon={<ListFilter className="h-3 w-3" />}
+              icon={<ListFilter />}
             />
-
             {/* Search */}
             <div className="relative flex items-center" ref={mergedSearchRef}>
               <Input
@@ -410,63 +459,49 @@ export function InterviewsClient() {
                   searchExpanded && "[&_svg]:text-primary",
                 )}
               >
-                <Search className="h-3 w-3" />
+                <Search />
+              </Button>
+            </div>
+            <div className="flex items-center border rounded-md overflow-hidden">
+              <Button
+                variant={viewMode === "calendar" ? "secondary" : "ghost"}
+                size={"icon-xs"}
+                className={cn(
+                  "rounded-none",
+                  viewMode === "calendar" && "bg-primary/10 text-primary",
+                )}
+                onClick={() => setViewMode("calendar")}
+                title="Dạng lịch"
+              >
+                <LayoutGrid />
+              </Button>
+
+              <Button
+                variant={viewMode === "table" ? "secondary" : "ghost"}
+                size={"icon-xs"}
+                className={cn(
+                  "rounded-none",
+                  viewMode === "table" && "bg-primary/10 text-primary",
+                )}
+                onClick={() => setViewMode("table")}
+                title="Dạng bảng"
+              >
+                <Table2 />
               </Button>
             </div>
 
             <Separator orientation="vertical" className="h-4!" />
-
             <Button
               variant={"outline"}
               size={"xs"}
               onClick={() => setSettingsOpen(true)}
             >
-              <Settings className="h-3 w-3" />
+              <Settings />
             </Button>
-            <div className="flex items-center border rounded-md overflow-hidden h-7">
-              <Button
-                variant={viewMode === "calendar" ? "secondary" : "ghost"}
-                size={"icon-xs"}
-                className={cn("h-7 w-7 rounded-none", viewMode === "calendar" && "bg-primary/10 text-primary")}
-                onClick={() => setViewMode("calendar")}
-                title="Dạng lịch"
-              >
-                <LayoutGrid className="h-3 w-3" />
-              </Button>
-              <div className="w-px h-3 bg-border" />
-              <Button
-                variant={viewMode === "table" ? "secondary" : "ghost"}
-                size={"icon-xs"}
-                className={cn("h-7 w-7 rounded-none", viewMode === "table" && "bg-primary/10 text-primary")}
-                onClick={() => setViewMode("table")}
-                title="Dạng bảng"
-              >
-                <Table2 className="h-3 w-3" />
-              </Button>
-            </div>
             <Button size={"xs"} onClick={() => setIsCreateOpen(true)}>
-              <Plus className="h-3 w-3 mr-1" />
+              <Plus />
               Đặt lịch PV
             </Button>
-          </div>
-
-          {/* Toolbar with filters */}
-          <div className="px-2 pb-2">
-            <InterviewToolbar
-              searchValue={search}
-              onSearchChange={setSearch}
-              statusFilter={statusFilter}
-              onStatusFilterChange={(v) => setStatusFilter(v as StatusFilter)}
-              jobPostingIdFilter={jobPostingIdFilter}
-              onJobPostingIdFilterChange={setJobPostingIdFilter}
-              fromDate={fromDate}
-              onFromDateChange={setFromDate}
-              toDate={toDate}
-              onToDateChange={setToDate}
-              jobPostings={jobPostings ?? []}
-              onCreateClick={() => setIsCreateOpen(true)}
-              isLoading={isLoadingInterviews}
-            />
           </div>
 
           {/* Settings Panel */}
@@ -498,6 +533,7 @@ export function InterviewsClient() {
               status: true,
               result: true,
             }}
+            className="top-10"
           />
         </section>
 
@@ -576,7 +612,10 @@ export function InterviewsClient() {
         interview={feedbackInterview}
         onSubmit={(data) => {
           if (!feedbackInterview) return;
-          feedbackMutation.mutate({ interviewId: feedbackInterview.id, ...data });
+          feedbackMutation.mutate({
+            interviewId: feedbackInterview.id,
+            ...data,
+          });
         }}
         isLoading={feedbackMutation.isPending}
       />
@@ -631,7 +670,8 @@ function DropdownMenuFilter({
           variant={value !== "ALL" ? "outline" : "ghost"}
           size="xs"
           className={cn(
-            value !== "ALL" && "bg-primary/10 border-primary text-primary hover:text-primary",
+            value !== "ALL" &&
+              "bg-primary/10 border-primary text-primary hover:text-primary",
           )}
         >
           {icon}
@@ -713,7 +753,10 @@ function InterviewCreateDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Ứng viên *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Chọn ứng viên" />
@@ -738,7 +781,10 @@ function InterviewCreateDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Vị trí *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Chọn vị trí" />
@@ -782,7 +828,10 @@ function InterviewCreateDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Hình thức</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -804,7 +853,10 @@ function InterviewCreateDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Phương pháp</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -910,7 +962,10 @@ function InterviewCreateDialog({
                   <FormItem>
                     <FormLabel>Link meeting (ONLINE)</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://meet.google.com/..." {...field} />
+                      <Input
+                        placeholder="https://meet.google.com/..."
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -970,7 +1025,13 @@ function InterviewEditDialog({
           location: interview.location || undefined,
           meetingLink: interview.meetingLink || undefined,
           interviewerIds: interview.interviewerIds || [],
-          status: interview.status as "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | undefined,
+          status: interview.status as
+            | "SCHEDULED"
+            | "IN_PROGRESS"
+            | "COMPLETED"
+            | "CANCELLED"
+            | "NO_SHOW"
+            | undefined,
           result: interview.result as "PASS" | "FAIL" | "PENDING" | undefined,
         }
       : {
@@ -993,7 +1054,9 @@ function InterviewEditDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa lịch phỏng vấn</DialogTitle>
-          <DialogDescription>Chỉnh sửa thông tin lịch phỏng vấn</DialogDescription>
+          <DialogDescription>
+            Chỉnh sửa thông tin lịch phỏng vấn
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -1003,7 +1066,10 @@ function InterviewEditDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Ứng viên *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Chọn ứng viên" />
@@ -1028,7 +1094,10 @@ function InterviewEditDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Vị trí *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Chọn vị trí" />
@@ -1072,7 +1141,10 @@ function InterviewEditDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Hình thức</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -1094,7 +1166,10 @@ function InterviewEditDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Phương pháp</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -1200,7 +1275,10 @@ function InterviewEditDialog({
                   <FormItem>
                     <FormLabel>Link meeting (ONLINE)</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://meet.google.com/..." {...field} />
+                      <Input
+                        placeholder="https://meet.google.com/..."
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1226,7 +1304,9 @@ function InterviewEditDialog({
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="SCHEDULED">Đã lên lịch</SelectItem>
-                          <SelectItem value="IN_PROGRESS">Đang phỏng vấn</SelectItem>
+                          <SelectItem value="IN_PROGRESS">
+                            Đang phỏng vấn
+                          </SelectItem>
                           <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
                           <SelectItem value="CANCELLED">Đã hủy</SelectItem>
                           <SelectItem value="NO_SHOW">Không đến</SelectItem>
@@ -1393,7 +1473,11 @@ function FeedbackDialog({
                 <FormItem>
                   <FormLabel>Điểm cần cải thiện</FormLabel>
                   <FormControl>
-                    <Textarea rows={2} placeholder="Cần cải thiện..." {...field} />
+                    <Textarea
+                      rows={2}
+                      placeholder="Cần cải thiện..."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -1406,7 +1490,11 @@ function FeedbackDialog({
                 <FormItem>
                   <FormLabel>Ghi chú thêm</FormLabel>
                   <FormControl>
-                    <Textarea rows={2} placeholder="Ghi chú khác..." {...field} />
+                    <Textarea
+                      rows={2}
+                      placeholder="Ghi chú khác..."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

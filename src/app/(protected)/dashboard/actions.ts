@@ -151,6 +151,7 @@ export interface AttendanceTrendItem {
 }
 
 export interface DepartmentDistributionItem {
+    id: string;
     department: string;
     count: number;
     fill: string;
@@ -332,6 +333,10 @@ const CHART_COLORS = [
     "var(--chart-4)",
     "var(--chart-5)",
     "var(--chart-6)",
+    "var(--chart-7)",
+    "var(--chart-8)",
+    "var(--chart-9)",
+    "var(--chart-10)",
 ];
 
 export async function getDepartmentDistribution(): Promise<
@@ -369,6 +374,7 @@ export async function getDepartmentDistribution(): Promise<
 
     const items: DepartmentDistributionItem[] = departments
         .map((dept, i) => ({
+            id: dept.id,
             department: dept.name,
             count: dept._count.users,
             fill: CHART_COLORS[i % CHART_COLORS.length]!,
@@ -377,6 +383,7 @@ export async function getDepartmentDistribution(): Promise<
 
     if (noDeptCount > 0) {
         items.push({
+            id: "UNASSIGNED",
             department: "Chưa phân bổ",
             count: noDeptCount,
             fill: "var(--primary)",
@@ -502,7 +509,7 @@ export async function getGenderDistribution(): Promise<GenderDistributionItem[]>
         items.push({
             gender: "Chưa xác định",
             count: unknownCount,
-            fill: "var(--chart-4)",
+            fill: "var(--accent-foreground)",
         });
 
     return items;

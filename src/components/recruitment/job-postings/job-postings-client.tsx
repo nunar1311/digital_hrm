@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef } from "react";
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -51,7 +56,15 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ListFilter, Plus, Search, Settings, Briefcase, LayoutGrid, Table2 } from "lucide-react";
+import {
+  ListFilter,
+  Plus,
+  Search,
+  Settings,
+  Briefcase,
+  LayoutGrid,
+  Table2,
+} from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -133,7 +146,9 @@ export function JobPostingsClient() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("ALL");
   const [departmentIdFilter, setDepartmentIdFilter] = useState<string>("ALL");
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
+  const [columnVisibility, setColumnVisibility] = useState<
+    Record<string, boolean>
+  >({
     select: true,
     title: true,
     department: true,
@@ -149,7 +164,9 @@ export function JobPostingsClient() {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Delete confirmation state
-  const [deleteTarget, setDeleteTarget] = useState<JobPostingWithStats | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<JobPostingWithStats | null>(
+    null,
+  );
 
   // View mode: "grid" | "table"
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
@@ -158,15 +175,21 @@ export function JobPostingsClient() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   // Edit dialog state
-  const [editingPost, setEditingPost] = useState<JobPostingWithStats | null>(null);
+  const [editingPost, setEditingPost] = useState<JobPostingWithStats | null>(
+    null,
+  );
 
   // Build filter params
-  const filters = useMemo<JobPostingFilters>(() => ({
-    search: search || undefined,
-    status: statusFilter !== "ALL" ? statusFilter : undefined,
-    priority: priorityFilter !== "ALL" ? priorityFilter : undefined,
-    departmentId: departmentIdFilter !== "ALL" ? departmentIdFilter : undefined,
-  }), [search, statusFilter, priorityFilter, departmentIdFilter]);
+  const filters = useMemo<JobPostingFilters>(
+    () => ({
+      search: search || undefined,
+      status: statusFilter !== "ALL" ? statusFilter : undefined,
+      priority: priorityFilter !== "ALL" ? priorityFilter : undefined,
+      departmentId:
+        departmentIdFilter !== "ALL" ? departmentIdFilter : undefined,
+    }),
+    [search, statusFilter, priorityFilter, departmentIdFilter],
+  );
 
   // Departments & positions for filter & form
   const { data: departments = [] } = useQuery({
@@ -204,8 +227,10 @@ export function JobPostingsClient() {
         departmentId: item.departmentId ?? null,
         positionId: item.positionId ?? null,
         status: item.status as JobPostingStatus,
-        priority: item.priority as import("@/app/(protected)/recruitment/types").JobPostingPriority,
-        employmentType: item.employmentType as import("@/app/(protected)/recruitment/types").EmploymentType,
+        priority:
+          item.priority as import("@/app/(protected)/recruitment/types").JobPostingPriority,
+        employmentType:
+          item.employmentType as import("@/app/(protected)/recruitment/types").EmploymentType,
       })),
     [jobPostingsData],
   );
@@ -215,7 +240,9 @@ export function JobPostingsClient() {
     mutationFn: (data: CreateJobPostingForm) => createJobPosting(data),
     onSuccess: () => {
       toast.success("Tạo tin tuyển dụng thành công");
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
+      queryClient.invalidateQueries({
+        queryKey: ["recruitment", "job-postings"],
+      });
       setIsCreateOpen(false);
     },
     onError: (error: Error) => {
@@ -227,11 +254,15 @@ export function JobPostingsClient() {
     mutationFn: ({
       id,
       data,
-    }: { id: string; data: Partial<CreateJobPostingForm> & { status?: JobPostingStatus } }) =>
-      updateJobPosting(id, data),
+    }: {
+      id: string;
+      data: Partial<CreateJobPostingForm> & { status?: JobPostingStatus };
+    }) => updateJobPosting(id, data),
     onSuccess: () => {
       toast.success("Cập nhật tin tuyển dụng thành công");
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
+      queryClient.invalidateQueries({
+        queryKey: ["recruitment", "job-postings"],
+      });
       setEditingPost(null);
     },
     onError: (error: Error) => {
@@ -243,7 +274,9 @@ export function JobPostingsClient() {
     mutationFn: (id: string) => deleteJobPosting(id),
     onSuccess: () => {
       toast.success("Xóa tin tuyển dụng thành công");
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] });
+      queryClient.invalidateQueries({
+        queryKey: ["recruitment", "job-postings"],
+      });
       setDeleteTarget(null);
     },
     onError: (error: Error) => {
@@ -272,9 +305,12 @@ export function JobPostingsClient() {
     deleteMutation.mutate(deleteTarget.id);
   }, [deleteTarget, deleteMutation]);
 
-  const handleStatusChange = useCallback((id: string, status: JobPostingStatus) => {
-    updateMutation.mutate({ id, data: { status } });
-  }, [updateMutation]);
+  const handleStatusChange = useCallback(
+    (id: string, status: JobPostingStatus) => {
+      updateMutation.mutate({ id, data: { status } });
+    },
+    [updateMutation],
+  );
 
   return (
     <div className="w-full min-h-0 h-full grow flex flex-col bg-background">
@@ -330,6 +366,34 @@ export function JobPostingsClient() {
 
             <Separator orientation="vertical" className="h-4!" />
 
+            <div className="flex items-center border rounded-md overflow-hidden h-6">
+              <Button
+                variant={viewMode === "grid" ? "secondary" : "ghost"}
+                size={"icon-xs"}
+                className={cn(
+                  " rounded-none",
+                  viewMode === "grid" && "bg-primary/10 text-primary",
+                )}
+                onClick={() => setViewMode("grid")}
+                title="Dạng lưới"
+              >
+                <LayoutGrid className="h-3 w-3" />
+              </Button>
+
+              <Button
+                variant={viewMode === "table" ? "secondary" : "ghost"}
+                size={"icon-xs"}
+                className={cn(
+                  " rounded-none",
+                  viewMode === "table" && "bg-primary/10 text-primary",
+                )}
+                onClick={() => setViewMode("table")}
+                title="Dạng bảng"
+              >
+                <Table2 className="h-3 w-3" />
+              </Button>
+            </div>
+            <Separator orientation="vertical" className="h-4!" />
             <Button
               variant={"outline"}
               size={"xs"}
@@ -337,48 +401,10 @@ export function JobPostingsClient() {
             >
               <Settings className="h-3 w-3" />
             </Button>
-            <div className="flex items-center border rounded-md overflow-hidden h-7">
-              <Button
-                variant={viewMode === "grid" ? "secondary" : "ghost"}
-                size={"icon-xs"}
-                className={cn("h-7 w-7 rounded-none", viewMode === "grid" && "bg-primary/10 text-primary")}
-                onClick={() => setViewMode("grid")}
-                title="Dạng lưới"
-              >
-                <LayoutGrid className="h-3 w-3" />
-              </Button>
-              <div className="w-px h-3 bg-border" />
-              <Button
-                variant={viewMode === "table" ? "secondary" : "ghost"}
-                size={"icon-xs"}
-                className={cn("h-7 w-7 rounded-none", viewMode === "table" && "bg-primary/10 text-primary")}
-                onClick={() => setViewMode("table")}
-                title="Dạng bảng"
-              >
-                <Table2 className="h-3 w-3" />
-              </Button>
-            </div>
             <Button size={"xs"} onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-3 w-3 mr-1" />
               Tạo tin tuyển dụng
             </Button>
-          </div>
-
-          {/* Toolbar with filters */}
-          <div className="px-2 pb-2">
-            <JobPostingToolbar
-              searchValue={search}
-              onSearchChange={setSearch}
-              statusFilter={statusFilter}
-              onStatusFilterChange={(v) => setStatusFilter(v as StatusFilter)}
-              priorityFilter={priorityFilter}
-              onPriorityFilterChange={(v) => setPriorityFilter(v as PriorityFilter)}
-              departmentIdFilter={departmentIdFilter}
-              onDepartmentIdFilterChange={setDepartmentIdFilter}
-              departments={departments.map((d) => ({ id: d.id, name: d.name }))}
-              onCreateClick={() => setIsCreateOpen(true)}
-              isLoading={isLoadingPostings}
-            />
           </div>
 
           {/* Settings Panel */}
@@ -410,6 +436,7 @@ export function JobPostingsClient() {
               deadline: false,
               candidateCount: true,
             }}
+            className="top-10"
           />
         </section>
 
@@ -521,7 +548,8 @@ function DropdownMenuFilter({
           variant={value !== "ALL" ? "outline" : "ghost"}
           size="xs"
           className={cn(
-            value !== "ALL" && "bg-primary/10 border-primary text-primary hover:text-primary",
+            value !== "ALL" &&
+              "bg-primary/10 border-primary text-primary hover:text-primary",
           )}
         >
           {icon}
@@ -594,7 +622,9 @@ function JobPostingCreateDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Tạo tin tuyển dụng mới</DialogTitle>
-          <DialogDescription>Điền thông tin tin tuyển dụng mới</DialogDescription>
+          <DialogDescription>
+            Điền thông tin tin tuyển dụng mới
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -618,7 +648,10 @@ function JobPostingCreateDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Phòng ban</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Chọn phòng ban" />
@@ -642,7 +675,10 @@ function JobPostingCreateDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Chức vụ</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Chọn chức vụ" />
@@ -668,7 +704,11 @@ function JobPostingCreateDialog({
                 <FormItem>
                   <FormLabel>Mô tả công việc *</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Mô tả công việc..." rows={4} {...field} />
+                    <Textarea
+                      placeholder="Mô tả công việc..."
+                      rows={4}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -681,7 +721,11 @@ function JobPostingCreateDialog({
                 <FormItem>
                   <FormLabel>Yêu cầu *</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Yêu cầu ứng viên..." rows={4} {...field} />
+                    <Textarea
+                      placeholder="Yêu cầu ứng viên..."
+                      rows={4}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -758,14 +802,19 @@ function JobPostingCreateDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Loại hình</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="FULL_TIME">Toàn thời gian</SelectItem>
+                        <SelectItem value="FULL_TIME">
+                          Toàn thời gian
+                        </SelectItem>
                         <SelectItem value="PART_TIME">Bán thời gian</SelectItem>
                         <SelectItem value="INTERN">Thực tập</SelectItem>
                         <SelectItem value="CONTRACT">Hợp đồng</SelectItem>
@@ -781,7 +830,10 @@ function JobPostingCreateDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Độ ưu tiên</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -911,13 +963,22 @@ function JobPostingEditDialog({
           salaryMin: posting.salaryMin ?? undefined,
           salaryMax: posting.salaryMax ?? undefined,
           headcount: posting.headcount,
-          employmentType: posting.employmentType as "FULL_TIME" | "PART_TIME" | "INTERN" | "CONTRACT",
+          employmentType: posting.employmentType as
+            | "FULL_TIME"
+            | "PART_TIME"
+            | "INTERN"
+            | "CONTRACT",
           priority: posting.priority as "LOW" | "NORMAL" | "HIGH" | "URGENT",
           deadline: posting.deadline || undefined,
           benefits: posting.benefits || undefined,
           workLocation: posting.workLocation || undefined,
           interviewRounds: posting.interviewRounds,
-          status: posting.status as "DRAFT" | "OPEN" | "ON_HOLD" | "CLOSED" | undefined,
+          status: posting.status as
+            | "DRAFT"
+            | "OPEN"
+            | "ON_HOLD"
+            | "CLOSED"
+            | undefined,
         }
       : {
           title: "",
@@ -943,7 +1004,9 @@ function JobPostingEditDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa tin tuyển dụng</DialogTitle>
-          <DialogDescription>Chỉnh sửa thông tin tin tuyển dụng</DialogDescription>
+          <DialogDescription>
+            Chỉnh sửa thông tin tin tuyển dụng
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -967,7 +1030,10 @@ function JobPostingEditDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Phòng ban</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Chọn phòng ban" />
@@ -991,7 +1057,10 @@ function JobPostingEditDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Chức vụ</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Chọn chức vụ" />
@@ -1017,7 +1086,11 @@ function JobPostingEditDialog({
                 <FormItem>
                   <FormLabel>Mô tả công việc *</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Mô tả công việc..." rows={4} {...field} />
+                    <Textarea
+                      placeholder="Mô tả công việc..."
+                      rows={4}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -1030,7 +1103,11 @@ function JobPostingEditDialog({
                 <FormItem>
                   <FormLabel>Yêu cầu *</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Yêu cầu ứng viên..." rows={4} {...field} />
+                    <Textarea
+                      placeholder="Yêu cầu ứng viên..."
+                      rows={4}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -1107,14 +1184,19 @@ function JobPostingEditDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Loại hình</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="FULL_TIME">Toàn thời gian</SelectItem>
+                        <SelectItem value="FULL_TIME">
+                          Toàn thời gian
+                        </SelectItem>
                         <SelectItem value="PART_TIME">Bán thời gian</SelectItem>
                         <SelectItem value="INTERN">Thực tập</SelectItem>
                         <SelectItem value="CONTRACT">Hợp đồng</SelectItem>
@@ -1130,7 +1212,10 @@ function JobPostingEditDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Độ ưu tiên</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -1219,7 +1304,10 @@ function JobPostingEditDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Trạng thái</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue />

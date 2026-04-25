@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useFullscreenCardContext } from "@/contexts/fullscreen-card-context";
 import { useGridStackWidgetContext } from "@/contexts/grid-stack-widget-context";
 import { cardRegistry } from "@/contexts/fullscreen-card-registry";
+import { useRouter } from "next/navigation";
 
 interface CardWidgetCalculationProps {
   title: string;
@@ -19,6 +20,7 @@ const CardWidgetCalculation = ({
   label,
   percentage,
 }: CardWidgetCalculationProps) => {
+  const router = useRouter();
   const { openFullscreen } = useFullscreenCardContext();
   const { widget } = useGridStackWidgetContext() ?? {
     widget: null,
@@ -32,7 +34,7 @@ const CardWidgetCalculation = ({
   };
 
   return (
-    <CardToolbar title={title}>
+    <CardToolbar title={title} onRefresh={() => { router.refresh(); }}>
       <div
         className="flex flex-1 flex-col items-center justify-center gap-0.5 w-full h-full hover:bg-muted rounded-lg p-4 cursor-pointer"
         onClick={handleClick}

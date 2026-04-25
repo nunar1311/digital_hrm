@@ -35,6 +35,8 @@ import {
 import { useGridStackContext } from "@/contexts/grid-stack-context";
 import { Input } from "../ui/input";
 import { cn } from "@/lib/utils";
+import { buildWidgetContent } from "./widget-registry";
+import type { DashboardDataContext } from "./widget-registry";
 import type {
   DashboardStats,
   AttendanceTrendItem,
@@ -369,113 +371,28 @@ const AddCardDialog = ({
   const CategoryIcon = activeCategoryObj?.icon || LayoutDashboard;
 
   const handleAddCard = (templateId: string) => {
-    const id = `widget-${Date.now()}`;
+    const id = `${templateId}__${Date.now()}`;
     const template = templates.find((t) => t.id === templateId);
     if (!template) return;
 
-    let content = "";
+    // Build content using widget registry with fresh data
+    const dataContext: DashboardDataContext = {
+      stats,
+      initialEmployees,
+      attendanceTrendData,
+      departmentData,
+      turnoverTrendData,
+      genderData,
+      todayAttendanceData,
+      contractExpiryWarnings,
+    };
 
-    switch (templateId) {
-      case "total-employees":
-        content = JSON.stringify({
-          name: "totalEmployees",
-          props: {
-            title: "Tổng nhân viên",
-            total: stats.totalEmployees,
-            label: "nhân viên",
-            percentage: stats.totalPercentage,
-          },
-        });
-        break;
-      case "total-employees-working":
-        content = JSON.stringify({
-          name: "totalEmployeesWorking",
-          props: {
-            title: "Tổng nhân viên đang làm việc",
-            total: stats.totalEmployeesWorking,
-            label: "nhân viên",
-            percentage: stats.workingPercentage,
-          },
-        });
-        break;
-      case "new-employees":
-        content = JSON.stringify({
-          name: "newEmployees",
-          props: {
-            title: "Tổng nhân viên mới",
-            total: stats.newEmployees,
-            label: "nhân viên mới",
-            percentage: stats.newPercentage,
-          },
-        });
-        break;
-      case "resigned-employees":
-        content = JSON.stringify({
-          name: "resignedEmployees",
-          props: {
-            title: "Tổng nhân viên nghỉ",
-            total: stats.resignedEmployees,
-            label: "nhân viên nghỉ",
-            percentage: stats.resignedPercentage,
-          },
-        });
-        break;
-      case "area-chart":
-        content = JSON.stringify({
-          name: "cardChartAreaInteractive",
-          props: { trendData: attendanceTrendData },
-        });
-        break;
-      case "pie-chart":
-        content = JSON.stringify({
-          name: "cardChartPie",
-          props: { departmentData },
-        });
-        break;
-      case "turnover-chart":
-        content = JSON.stringify({
-          name: "cardChartTurnoverRate",
-          props: { trendData: turnoverTrendData },
-        });
-        break;
-      case "gender-chart":
-        content = JSON.stringify({
-          name: "cardChartGender",
-          props: { genderData },
-        });
-        break;
-      case "list-employees":
-        content = JSON.stringify({
-          name: "listEmployees",
-          props: { initialEmployees },
-        });
-        break;
-      case "mock-timesheet-summary":
-        content = JSON.stringify({
-          name: "cardTimesheetSummary",
-          props: { summaryData: todayAttendanceData },
-        });
-        break;
-      case "contract-expiry-list":
-        content = JSON.stringify({
-          name: "cardContractExpiryList",
-          props: { items: contractExpiryWarnings },
-        });
-        break;
-      case "ai-executive-summary":
-        content = JSON.stringify({
-          name: "cardAIExecutiveSummary",
-          props: {},
-        });
-        break;
-      default:
-        // Mock cards
-        content = JSON.stringify({
-          name: "cardComingSoon",
-          props: { title: template.name },
-        });
-        break;
-    }
+    // Map template IDs to widget registry types
+    const typeMap: Record<string, string> = {
+      "mock-timesheet-summary": "timesheet-summary",
+    };
+    const widgetType = typeMap[templateId] ?? templateId;
+    const content = buildWidgetContent(widgetType, dataContext);
 
     addWidget({
       id,

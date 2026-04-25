@@ -96,7 +96,11 @@ export async function getEmployees(
   }
 
   if (departmentId && departmentId !== "ALL") {
-    where.departmentId = departmentId;
+    if (departmentId === "UNASSIGNED") {
+      where.departmentId = null;
+    } else {
+      where.departmentId = departmentId;
+    }
   }
 
   if (employmentType && employmentType !== "ALL") {

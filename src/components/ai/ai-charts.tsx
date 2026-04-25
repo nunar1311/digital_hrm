@@ -273,7 +273,7 @@ export function PieChartComponent({
           {title}
         </p>
       )}
-      <ChartContainer config={chartConfig} className="w-full h-[320px]">
+      <ChartContainer config={chartConfig} className="w-full">
         <PieChart>
           <Pie
             data={data}
@@ -344,7 +344,7 @@ export function ScatterChartComponent({
           {title}
         </p>
       )}
-      <ChartContainer config={chartConfig} className="w-full h-[280px]">
+      <ChartContainer config={chartConfig} className="w-full">
         <ScatterChart margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
           <XAxis
@@ -422,7 +422,7 @@ export function AreaChartComponent({
           {title}
         </p>
       )}
-      <ChartContainer config={chartConfig} className="w-full h-[300px]">
+      <ChartContainer config={chartConfig} className="w-full">
         <AreaChart
           data={data}
           margin={{ top: 5, right: 20, left: 0, bottom: xAxisLabel ? 20 : 5 }}

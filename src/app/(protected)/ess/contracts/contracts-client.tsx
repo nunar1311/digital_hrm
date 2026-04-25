@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect, Suspense } from "react";
 import {
   AlertCircle,
   Briefcase,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ContractStatusBadge } from "@/components/contracts/contract-status-badge";
 import { exportContractDocument } from "@/app/(protected)/contracts/actions";
@@ -40,6 +41,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useClickOutside, useMergedRef } from "@mantine/hooks";
+import { ContractPreviewPanel } from "@/components/contracts/contract-preview-panel";
 
 interface ESSContractsClientProps {
   initialContracts: ContractListItem[];
@@ -178,20 +180,22 @@ function MobileContractCard({
 
 function ContractCard({
   contract,
-  onExport,
-  isExporting,
+  isSelected,
+  onSelect,
 }: {
   contract: ContractListItem;
-  onExport: (format: "DOCX" | "PDF") => void;
-  isExporting: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
 }) {
   const colorCfg = getContractTypeColor(contract.contractTypeName);
 
   return (
     <Card
+      onClick={onSelect}
       className={cn(
         "hover:shadow-md transition-all cursor-pointer p-2",
         contract.isExpiringIn30Days && "border-amber-300",
+        isSelected && "ring-2 ring-primary border-primary shadow-md",
       )}
     >
       <CardHeader className="pb-2 px-3 pt-3">
@@ -256,43 +260,6 @@ function ContractCard({
             </p>
           </div>
         )}
-
-        <div className="flex gap-2 pt-2 border-t">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 h-7 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              onExport("DOCX");
-            }}
-            disabled={isExporting}
-          >
-            {isExporting ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Download className="h-3 w-3" />
-            )}
-            DOCX
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 h-7 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              onExport("PDF");
-            }}
-            disabled={isExporting}
-          >
-            {isExporting ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Download className="h-3 w-3" />
-            )}
-            PDF
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );
@@ -445,11 +412,8 @@ export function ESSContractsClient({
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchExpanded, setSearchExpanded] = useState(false);
-  const [selectedContract, setSelectedContract] =
-    useState<ContractListItem | null>(null);
-  const [exportingContractId, setExportingContractId] = useState<string | null>(
-    null,
-  );
+  const [selectedContractForPreview, setSelectedContractForPreview] =
+    useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -460,6 +424,14 @@ export function ESSContractsClient({
     }
   });
   const mergedSearchRef = useMergedRef(searchContainerRef, clickOutsideRef);
+
+  const selectedContractData = useMemo(
+    () =>
+      selectedContractForPreview
+        ? initialContracts.find((c) => c.id === selectedContractForPreview) ?? null
+        : null,
+    [selectedContractForPreview, initialContracts],
+  );
 
   const exportMutation = useMutation({
     mutationFn: exportContractDocument,
@@ -473,11 +445,9 @@ export function ESSContractsClient({
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
-      setExportingContractId(null);
     },
     onError: () => {
       toast.error("Không thể xuất file hợp đồng");
-      setExportingContractId(null);
     },
   });
 
@@ -525,7 +495,6 @@ export function ESSContractsClient({
 
   const handleExport = useCallback(
     (contractId: string, format: "DOCX" | "PDF") => {
-      setExportingContractId(contractId);
       exportMutation.mutate({ contractId, format });
     },
     [exportMutation],
@@ -715,45 +684,96 @@ export function ESSContractsClient({
                       <MobileContractCard
                         key={contract.id}
                         contract={contract}
-                        onClick={() => setSelectedContract(contract)}
+                        onClick={() =>
+                          setSelectedContractForPreview(contract.id)
+                        }
                       />
                     ))}
                   </div>
                 )}
               </div>
             ) : (
-              /* ── Desktop Grid View ── */
-              <div className="overflow-auto h-full p-3">
-                {filteredContracts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-64">
-                    <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground text-center">
-                      {searchTerm || statusFilter !== "ALL"
-                        ? "Không tìm thấy hợp đồng phù hợp"
-                        : "Bạn chưa có hợp đồng nào"}
-                    </p>
-                    {(searchTerm || statusFilter !== "ALL") && (
-                      <Button
-                        variant="link"
-                        onClick={() => {
-                          setSearchTerm("");
-                          setStatusFilter("ALL");
-                        }}
-                      >
-                        Xóa bộ lọc
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-                    {filteredContracts.map((contract) => (
-                      <ContractCard
-                        key={contract.id}
-                        contract={contract}
-                        onExport={(format) => handleExport(contract.id, format)}
-                        isExporting={exportingContractId === contract.id}
+              /* ── Desktop Split View ── */
+              <div className="flex h-full overflow-hidden">
+                {/* Left: Contract grid */}
+                <div
+                  className={cn(
+                    "overflow-auto h-full p-3 transition-all duration-300",
+                    selectedContractForPreview
+                      ? "w-[400px] shrink-0 xl:w-[480px]"
+                      : "flex-1",
+                  )}
+                >
+                  {filteredContracts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-64">
+                      <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                      <p className="text-muted-foreground text-center">
+                        {searchTerm || statusFilter !== "ALL"
+                          ? "Không tìm thấy hợp đồng phù hợp"
+                          : "Bạn chưa có hợp đồng nào"}
+                      </p>
+                      {(searchTerm || statusFilter !== "ALL") && (
+                        <Button
+                          variant="link"
+                          onClick={() => {
+                            setSearchTerm("");
+                            setStatusFilter("ALL");
+                          }}
+                        >
+                          Xóa bộ lọc
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      className={cn(
+                        "grid gap-3",
+                        selectedContractForPreview
+                          ? "grid-cols-1"
+                          : "lg:grid-cols-2 xl:grid-cols-3",
+                      )}
+                    >
+                      {filteredContracts.map((contract) => (
+                        <ContractCard
+                          key={contract.id}
+                          contract={contract}
+                          isSelected={
+                            selectedContractForPreview === contract.id
+                          }
+                          onSelect={() =>
+                            setSelectedContractForPreview(contract.id)
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right: DOCX Preview panel */}
+                {selectedContractForPreview && selectedContractData && (
+                  <div className="flex-1 min-w-0 border-l overflow-hidden">
+                    <Suspense
+                      fallback={
+                        <div className="h-full flex items-center justify-center">
+                          <div className="flex flex-col items-center gap-3">
+                            <Skeleton className="h-6 w-48" />
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-4 w-full max-w-md" />
+                            <Skeleton className="h-4 w-full max-w-md" />
+                            <Skeleton className="h-4 w-3/4 max-w-md" />
+                          </div>
+                        </div>
+                      }
+                    >
+                      <ContractPreviewPanel
+                        contractId={selectedContractForPreview}
+                        contractTitle={selectedContractData.title}
+                        contractNumber={selectedContractData.contractNumber}
+                        onClose={() =>
+                          setSelectedContractForPreview(null)
+                        }
                       />
-                    ))}
+                    </Suspense>
                   </div>
                 )}
               </div>
@@ -761,7 +781,7 @@ export function ESSContractsClient({
 
             {/* Bottom bar */}
             {filteredContracts.length > 0 && (
-              <div className="absolute bottom-0 left-0 right-0 bg-background flex items-center justify-between px-3 py-2 border-t shrink-0">
+              <div className="absolute bottom-0 bg-background flex items-center justify-between px-3 py-2 border-t shrink-0">
                 <p className="text-xs text-muted-foreground">
                   Hiển thị <strong>{filteredContracts.length}</strong> /{" "}
                   <strong>{initialContracts.length}</strong> hợp đồng
@@ -781,17 +801,19 @@ export function ESSContractsClient({
         </div>
       </div>
 
-      {/* Detail Dialog */}
-      <ContractDetailDialog
-        contract={selectedContract}
-        onClose={() => setSelectedContract(null)}
-        onExport={(format) => {
-          if (selectedContract) {
-            handleExport(selectedContract.id, format);
-          }
-        }}
-        isExporting={!!exportingContractId}
-      />
+      {/* Mobile Detail Dialog */}
+      {selectedContractData && isMobile && (
+        <ContractDetailDialog
+          contract={selectedContractData}
+          onClose={() => setSelectedContractForPreview(null)}
+          onExport={(format) => {
+            if (selectedContractForPreview) {
+              handleExport(selectedContractForPreview, format);
+            }
+          }}
+          isExporting={exportMutation.isPending}
+        />
+      )}
     </div>
   );
 }

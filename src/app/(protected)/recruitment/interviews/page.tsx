@@ -1,16 +1,11 @@
-import { getInterviews, getJobPostings } from "../actions";
-import { RecruitmentCalendarClient } from "./calendar-client";
+import { InterviewsClient } from "@/components/recruitment/interviews";
+import { Metadata } from "next";
 
-export default async function RecruitmentCalendarPage() {
-    const [interviewsData, jobPostingsData] = await Promise.all([
-        getInterviews({}, { limit: 500 }),
-        getJobPostings({}, { limit: 100 }),
-    ]);
+export const metadata: Metadata = {
+  title: "Quản lý Phỏng vấn",
+  description: "Quản lý lịch phỏng vấn",
+};
 
-    return (
-        <RecruitmentCalendarClient
-            initialInterviews={interviewsData.items}
-            initialJobPostings={jobPostingsData.items}
-        />
-    );
+export default function RecruitmentInterviewsPage() {
+    return <InterviewsClient />;
 }

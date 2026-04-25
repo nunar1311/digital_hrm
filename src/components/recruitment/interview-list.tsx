@@ -292,7 +292,7 @@ export function InterviewList() {
   return (
     <div className="space-y-3">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* <div className="flex flex-wrap items-center gap-2">
         <Select
           value={filters.status || ""}
           onValueChange={(v) =>
@@ -376,7 +376,7 @@ export function InterviewList() {
             />
           </DialogContent>
         </Dialog>
-      </div>
+      </div> */}
 
       {/* Table */}
       <div className="border rounded-md">

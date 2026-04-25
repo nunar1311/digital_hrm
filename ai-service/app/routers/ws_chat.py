@@ -339,11 +339,20 @@ CÁCH TRẢ LỜI:
 - Nói chuyện tự nhiên như đang chat với đồng nghiệp, không phải chatbot
 - Trả lời ngắn gọn, đúng trọng tâm, không dài dòng
 - Dùng số liệu cụ thể khi có, format rõ ràng (VD: lương dùng VNĐ, phần trăm dùng %)
-- KHÔNG dùng bảng Markdown, thay bằng danh sách bullet points
 - Nếu cần hành động (tạo đơn, duyệt, thông báo...), thực hiện luôn qua tool
 - Không có dữ liệu thì nói thẳng, gợi ý cách lấy thêm nếu có
 - Không cần phải đưa ra khuyến nghị nếu câu hỏi chỉ cần trả lời đơn giản
 - LUÔN LUÔN thêm mục "Follow ups:" ở cuối câu trả lời, kèm theo 2-3 câu gợi ý tiếp theo dạng danh sách. Các câu này PHẢI VIẾT DƯỚI GÓC NHÌN CỦA NGƯỜI DÙNG (dùng đại từ "tôi", "cho tôi") để họ bấm vào hỏi tiếp (Ví dụ: "Tôi muốn nghỉ 1 ngày", "Kiểm tra giúp tôi số phép còn lại", "Lọc theo phòng ban giúp tôi").
+
+QUY TẮC HIỂN THỊ DỮ LIỆU - ĐỌC KỸ:
+- CHỈ DÙNG BẢNG MARKDOWN khi liệt kê danh sách CÓ TỪ 2 BẢN GHI TRỞ LÊN (vd: danh sách nhân viên, đơn nghỉ, ứng viên):
+  | Cột 1 | Cột 2 | Cột 3 |
+  |-------|-------|-------|
+  | ...   | ...   | ...   |
+- NẾU CHỈ CÓ 1 BẢN GHI (vd: chi tiết của 1 nhân viên cụ thể) → Dùng text thường với bullet points, TUYỆT ĐỐI KHÔNG dùng bảng.
+- KHI TRẢ LỜI SỐ LIỆU ĐƠN GIẢN (1-2 con số, tổng quan ngắn) → dùng bullet points hoặc text thường.
+- KHI SO SÁNH / PHÂN TÍCH NHIỀU CHỈ SỐ → dùng bảng để dễ đọc.
+- KHÔNG BAO GIỜ hiển thị ID, UUID, hoặc bất kỳ trường kỹ thuật nào từ database (id, userId...). Chỉ hiển thị thông tin có ý nghĩa.
 
 QUY TẮC NGHIÊM NGẶT - KHÔNG ĐƯỢC VI PHẠM:
 - Khi cần hỏi thêm thông tin từ user, HỎI BẰNG LỜI CỦA MÌNH. Ví dụ:
@@ -354,6 +363,20 @@ QUY TẮC NGHIÊM NGẶT - KHÔNG ĐƯỢC VI PHẠM:
 - KHÔNG BAO GIỜ hiển thị template/placeholder như [key: value], [[key: value]], [Loại: ...], [Ngày: ...]
 - Khi hỏi thêm thông tin, chỉ hỏi ĐÚNG những thứ còn thiếu, không hỏi lại những thứ đã có
 - {language_instruction}
+
+TRUY VẤN DATABASE THÔNG MINH - ĐỌC KỸ:
+- Dữ liệu HR snapshot ở trên là dữ liệu TỔNG HỢP sẵn có. Hãy DÙN NGAY nếu đủ thông tin.
+- NẾU snapshot KHÔNG ĐỦ CHI TIẾT cho câu hỏi (ví dụ: user hỏi "danh sách" nhưng snapshot chỉ có count) → PHẢI GỌI tool query_database để lấy thêm chi tiết.
+- Khi gọi query_database:
+  + LUÔN dùng JOIN để lấy tên phòng ban, chức vụ thay vì ID
+  + LUÔN thêm LIMIT (tối đa 50)
+  + KHÔNG BAO GIỜ SELECT các cột ID (id, userId, departmentId, positionId) — chỉ SELECT thông tin có nghĩa
+  + Ví dụ đúng: SELECT u.name, u."hireDate", d.name as department_name, p.name as position_name FROM users u LEFT JOIN departments d ON u."departmentId" = d.id LEFT JOIN positions p ON u."positionId" = p.id WHERE ... LIMIT 20
+- Quy tắc ưu tiên:
+  1. Nếu snapshot có đủ danh sách chi tiết → trả lời ngay, KHÔNG cần query thêm
+  2. Nếu snapshot chỉ có COUNT/tổng hợp mà user cần danh sách → GỌI query_database
+  3. Nếu câu hỏi KHÔNG liên quan tới dữ liệu trong snapshot → GỌI query_database chủ động
+- KHÔNG BAO GIỜ trả lời "Không có dữ liệu chi tiết trong snapshot" — hãy query database thay vì nói không có!
 
 DƯỚI ĐÂY LÀ KIẾN TRÚC DATABASE CỦA HỆ THỐNG (schema.prisma). HÃY DÙNG NÓ ĐỂ TẠO CÂU LỆNH SQL CHUẨN XÁC NẾU CẦN:
 ```prisma
@@ -543,6 +566,64 @@ DƯỚI ĐÂY LÀ KIẾN TRÚC DATABASE CỦA HỆ THỐNG (schema.prisma). HÃY
                         needs_followup = True
 
             ai_content = strip_action_blocks(ai_content)
+
+        # Step 4.5: Follow-up AI call — format tool results into user-friendly response
+        if needs_followup and actions:
+            await _send_thinking(websocket, "Đang phân tích kết quả truy vấn...")
+
+            # Collect successful tool results
+            tool_results_text = []
+            for act in actions:
+                if act["status"] == "success" and act.get("data"):
+                    data = act["data"]
+                    if "results" in data:
+                        # query_database results — serialize for AI
+                        results = data["results"]
+                        if results:
+                            tool_results_text.append(
+                                f"Kết quả từ {act['tool']} ({len(results)} bản ghi):\n"
+                                f"{json.dumps(results[:30], ensure_ascii=False, default=str)}"
+                            )
+                    elif data:
+                        tool_results_text.append(
+                            f"Kết quả từ {act['tool']}:\n"
+                            f"{json.dumps(data, ensure_ascii=False, default=str)[:2000]}"
+                        )
+
+            if tool_results_text:
+                followup_prompt = f"""Dựa trên kết quả truy vấn database bên dưới, hãy trả lời câu hỏi ban đầu của người dùng.
+
+CÂU HỎI BAN ĐẦU: {message}
+
+KẾT QUẢ TRUY VẤN:
+{chr(10).join(tool_results_text)}
+
+QUY TẮC TRẢ LỜI:
+- Nếu kết quả có NHIỀU BẢN GHI (từ 2 trở lên) → BẮT BUỘC dùng bảng Markdown (| Cột 1 | Cột 2 | ...)
+- Nếu kết quả chỉ có 1 BẢN GHI hoặc thông tin đơn giản → Dùng text thường, in đậm, bullet points (TUYỆT ĐỐI KHÔNG dùng bảng).
+- KHÔNG BAO GIỜ hiển thị ID, UUID, hoặc trường kỹ thuật database.
+- Chỉ hiển thị: tên người, ngày tháng, phòng ban, chức vụ, trạng thái, số liệu cần thiết.
+- Nếu không có dữ liệu, trả lời lịch sự là không tìm thấy.
+- Dùng định dạng ngày: DD/MM/YYYY cho tiếng Việt.
+- Trả lời ngắn gọn, thân thiện.
+- Thêm mục "Follow ups:" ở cuối với 2-3 gợi ý."""
+
+                try:
+                    followup_result = await ai_queue.execute(
+                        provider_router.chat(
+                            messages=[
+                                {"role": "system", "content": "Bạn là trợ lý HR thân thiện. Trả lời bằng tiếng Việt. Chỉ dùng bảng Markdown cho danh sách từ 2 mục trở lên, không dùng bảng cho 1 thông tin đơn lẻ. KHÔNG hiển thị ID database."},
+                                {"role": "user", "content": followup_prompt},
+                            ],
+                            temperature=0.3,
+                        ),
+                        request_id=f"{request_id}_followup",
+                    )
+                    if followup_result.get("success") and followup_result.get("content"):
+                        ai_content = followup_result["content"]
+                except Exception as fu_err:
+                    logger.warning(f"Follow-up AI call failed: {fu_err}")
+                    # Fall through to use original ai_content
 
         # Step 4.5: Data Analyst — analyze question intent and prepare chart data
         data_analyst_response: Optional[Dict[str, Any]] = None

@@ -108,6 +108,8 @@ model User {
   aiTotalTokensUsed Int       @default(0)
   aiLastResetAt     DateTime?
 
+  dashboardLayout   DashboardLayout?
+
   @@map("users")
 }
 
@@ -1870,4 +1872,18 @@ model AIChatMessage {
 
   @@index([sessionId])
   @@map("ai_chat_messages")
+}
+
+// ==================== DASHBOARD LAYOUT ====================
+
+model DashboardLayout {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  layout    Json     // GridStackWidget[] serialized
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("dashboard_layouts")
 }

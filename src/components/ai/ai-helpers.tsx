@@ -98,19 +98,19 @@ export const MarkdownComponents = {
   ),
   li: ({ children }: any) => <li className="leading-relaxed">{children}</li>,
   table: ({ children }: any) => (
-    <div className="w-full max-w-full overflow-x-auto mb-2">
-      <table className="min-w-full border-collapse border border-muted">
+    <div className="w-full overflow-x-auto mb-3 rounded-lg border border-border/50 bg-background custom-scrollbar">
+      <table className="w-full min-w-max border-collapse border-hidden">
         {children}
       </table>
     </div>
   ),
   th: ({ children }: any) => (
-    <th className="border border-muted bg-muted/50 px-3 py-2 text-left font-semibold text-sm whitespace-nowrap">
+    <th className="border border-muted bg-muted/60 px-3 py-2 text-left font-semibold text-sm whitespace-nowrap text-foreground">
       {children}
     </th>
   ),
   td: ({ children }: any) => (
-    <td className="border border-muted px-3 py-2 text-sm whitespace-nowrap">
+    <td className="border border-muted px-3 py-2 text-sm whitespace-nowrap text-muted-foreground align-middle">
       {children}
     </td>
   ),
@@ -294,7 +294,9 @@ export function IntentBadge({
 // =====================
 export function parseSuggestedQuestions(content: string) {
   if (!content) return { main: "", items: [] };
-  const regex = /((?:\n|^)[^\n]{0,250}?:\s*\n)((?:[-*]\s+[^\n]+(?:\n|$))+)$/;
+  // Match a header line (possibly bold) followed by a bullet list at the end
+  // Supports: - bullet, * bullet, • bullet, and numbered lists (1. 2. 3.)
+  const regex = /((?:\n|^)[^\n]{0,250}?:\s*\*{0,2}\s*\n)((?:(?:[-*•]|\d+\.)\s+[^\n]+(?:\n|$))+)$/;
   const match = content.match(regex);
   if (match) {
     const main = content.slice(0, match.index!);
@@ -302,14 +304,21 @@ export function parseSuggestedQuestions(content: string) {
     const items = listString
       .split("\n")
       .filter((s) => s.trim().length > 0)
-      .map((s) => s.replace(/^[-*]\s*/, "").trim());
+      .map((s) =>
+        s
+          .replace(/^(?:[-*•]|\d+\.)\s*/, "")
+          .replace(/^\*\*(.+)\*\*$/, "$1")
+          .replace(/^["""]|["""]$/g, "")
+          .trim(),
+      );
 
     if (
       items.length > 0 &&
       items.length <= 6 &&
       items.every((item) => item.length > 3 && item.length < 150)
     ) {
-      const header = match[1].toLowerCase();
+      // Strip markdown bold from header before checking keywords
+      const header = match[1].replace(/\*/g, "").toLowerCase();
       if (
         header.includes("nếu") ||
         header.includes("gợi ý") ||
@@ -319,7 +328,9 @@ export function parseSuggestedQuestions(content: string) {
         header.includes("tham khảo") ||
         header.includes("hỏi") ||
         header.includes("chi tiết") ||
-        header.includes("follow up")
+        header.includes("follow up") ||
+        header.includes("follow-up") ||
+        header.includes("theo dõi")
       ) {
         return { main: main.trimEnd(), items };
       }

@@ -26,6 +26,6 @@ if __name__ == "__main__":
         "app.main:app",
         host=settings.service_host,
         port=settings.service_port,
-        reload=False,
+        reload=True,
         log_level=settings.log_level.lower(),
     )

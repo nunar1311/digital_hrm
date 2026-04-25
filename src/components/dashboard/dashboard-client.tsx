@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock7, Maximize2, Minimize2, RefreshCw } from "lucide-react";
+import { Clock7, Maximize2, Minimize2, RefreshCw, RotateCcw } from "lucide-react";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 import { Button } from "../ui/button";
@@ -16,7 +16,11 @@ import { PdfExportOverlay } from "./pdf-export-overlay";
 import { GridStackProvider } from "@/providers/grid-stack-provider";
 import { GridStackRenderProvider } from "@/providers/grid-stack-render-provider";
 import { FullscreenCardProvider } from "@/contexts/fullscreen-card-context";
+import { useGridStackContext } from "@/contexts/grid-stack-context";
 import { GridStackOptions } from "gridstack";
+import type { SavedWidget } from "./widget-registry";
+import { DEFAULT_LAYOUT, buildGridStackChildren } from "./widget-registry";
+import type { DashboardDataContext } from "./widget-registry";
 import AddCardDialog from "./add-card-dialog";
 import {
   getDashboardStats,
@@ -52,6 +56,7 @@ interface DashboardClientProps {
   genderData: GenderDistributionItem[];
   todayAttendanceData: TodayAttendanceSummary;
   contractExpiryWarnings: ContractExpiryDashboardItem[];
+  savedGridLayout: SavedWidget[] | null;
 }
 
 const DashboardClient = ({
@@ -63,6 +68,7 @@ const DashboardClient = ({
   genderData: genderDataProp,
   todayAttendanceData: todayAttendanceDataProp,
   contractExpiryWarnings: contractExpiryWarningsProp,
+  savedGridLayout,
 }: DashboardClientProps) => {
   const mainRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -91,7 +97,7 @@ const DashboardClient = ({
       queryKey: ["dashboard-stats"],
       queryFn: getDashboardStats,
       initialData: initialStats,
-      staleTime: 0,
+      staleTime: 30 * 1000,
     });
 
   const {
@@ -101,7 +107,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-attendance-trend"],
     queryFn: getAttendanceTrend,
     initialData: attendanceTrendDataProp,
-    staleTime: 0,
+    staleTime: 30 * 1000,
   });
 
   const {
@@ -111,7 +117,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-department-distribution"],
     queryFn: getDepartmentDistribution,
     initialData: departmentDataProp,
-    staleTime: 0,
+    staleTime: 30 * 1000,
   });
 
   const {
@@ -121,7 +127,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-turnover-trend"],
     queryFn: getTurnoverRateTrend,
     initialData: turnoverTrendDataProp,
-    staleTime: 0,
+    staleTime: 30 * 1000,
   });
 
   const {
@@ -131,7 +137,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-gender-distribution"],
     queryFn: getGenderDistribution,
     initialData: genderDataProp,
-    staleTime: 0,
+    staleTime: 30 * 1000,
   });
 
   const {
@@ -141,7 +147,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-today-attendance"],
     queryFn: getTodayAttendanceSummary,
     initialData: todayAttendanceDataProp,
-    staleTime: 0,
+    staleTime: 30 * 1000,
   });
 
   const {
@@ -151,7 +157,7 @@ const DashboardClient = ({
     queryKey: ["dashboard-contract-expiry"],
     queryFn: getContractExpiryWarnings,
     initialData: contractExpiryWarningsProp,
-    staleTime: 0,
+    staleTime: 30 * 1000,
   });
 
   // Check if any query is refetching
@@ -188,25 +194,25 @@ const DashboardClient = ({
       return;
     }
 
-    // Export PDF
-    const exportPdf = async () => {
+    setIsExporting(true);
+    try {
       setExportProgress("Đang chuẩn bị dữ liệu...");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Temporarily expand the element to show all content
       const originalOverflow = element.style.overflow;
       const originalHeight = element.style.height;
       const originalMinHeight = element.style.minHeight;
+      const originalDisplay = (element as HTMLElement).style.display;
 
       element.style.overflow = "visible";
       element.style.height = "auto";
       element.style.minHeight = "auto";
+      (element as HTMLElement).style.display = "block";
 
-      // Force layout recalculation
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
 
       setExportProgress("Đang chuyển đổi sang hình ảnh...");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -221,87 +227,75 @@ const DashboardClient = ({
           if (clonedElement) {
             clonedElement.style.overflow = "visible";
             clonedElement.style.height = "auto";
+            (clonedElement as HTMLElement).style.display = "block";
           }
           const style = clonedDoc.createElement("style");
           style.textContent = `
-                        * {
-                            color: #333333 !important;
-                            background-color: #ffffff !important;
-                            border-color: #e5e7eb !important;
-                        }
-                    `;
+            * {
+              color: #333333 !important;
+              background-color: #ffffff !important;
+              border-color: #e5e7eb !important;
+            }
+          `;
           clonedDoc.head.appendChild(style);
         },
       });
 
       setExportProgress("Đang tạo file PDF...");
-      setTimeout(() => {
-        // Restore original styles
-        element.style.overflow = originalOverflow;
-        element.style.height = originalHeight;
-        element.style.minHeight = originalMinHeight;
 
-        const pageWidth = canvas.width;
-        const pageHeight = canvas.height;
-        const headerHeight = 100;
-        const footerHeight = 50;
+      element.style.overflow = originalOverflow;
+      element.style.height = originalHeight;
+      element.style.minHeight = originalMinHeight;
+      (element as HTMLElement).style.display = originalDisplay;
 
-        const pdf = new jsPDF({
-          orientation: pageWidth > pageHeight ? "landscape" : "portrait",
-          unit: "px",
-          format: [pageWidth, pageHeight],
-        });
+      const pageWidth = canvas.width;
+      const pageHeight = canvas.height;
+      const headerHeight = 100;
+      const footerHeight = 50;
 
-        // Header background - light blue
-        pdf.setFillColor(240, 248, 255);
-        pdf.rect(0, 0, pageWidth, headerHeight, "F");
+      const pdf = new jsPDF({
+        orientation: pageWidth > pageHeight ? "landscape" : "portrait",
+        unit: "px",
+        format: [pageWidth, pageHeight],
+      });
 
-        // Left side - Company info
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFontSize(24);
-        pdf.setFont("geist", "normal");
-        pdf.text("Dashboard", 20, 50);
+      pdf.setFillColor(240, 248, 255);
+      pdf.rect(0, 0, pageWidth, headerHeight, "F");
 
-        // Right side - Report title
-        pdf.setFontSize(20);
-        pdf.setFont("geist", "normal");
-        const today = new Date();
-        const dateStr = `${today.toLocaleDateString("en-US")}`;
-        pdf.text(dateStr, pageWidth - 20, 50, {
-          align: "right",
-        });
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(24);
+      pdf.setFont("geist", "normal");
+      pdf.text("Dashboard", 20, 50);
 
-        // Content
-        const imgData = canvas.toDataURL("image/png");
-        pdf.addImage(
-          imgData,
-          "PNG",
-          0,
-          headerHeight,
-          pageWidth,
-          pageHeight - headerHeight - footerHeight,
-        );
+      pdf.setFontSize(20);
+      const today = new Date();
+      const dateStr = today.toLocaleDateString("vi-VN");
+      pdf.text(dateStr, pageWidth - 20, 50, { align: "right" });
 
-        // Footer
-        pdf.setFillColor(248, 250, 252);
-        pdf.rect(0, pageHeight - footerHeight, pageWidth, footerHeight, "F");
+      const imgData = canvas.toDataURL("image/png");
+      pdf.addImage(
+        imgData,
+        "PNG",
+        0,
+        headerHeight,
+        pageWidth,
+        pageHeight - headerHeight - footerHeight,
+      );
 
-        pdf.setTextColor(100, 100, 100);
-        pdf.setFontSize(10);
-        pdf.text("Digital HRM - Hệ thống quản lý nhân sự", 20, pageHeight - 25);
+      pdf.setFillColor(248, 250, 252);
+      pdf.rect(0, pageHeight - footerHeight, pageWidth, footerHeight, "F");
 
-        pdf.save(`dashboard-${new Date().toISOString().split("T")[0]}.pdf`);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFontSize(10);
+      pdf.text("Digital HRM - He thong quan ly nhan su", 20, pageHeight - 25);
 
-        return true;
-      }, 3000);
-    };
+      const filename = `dashboard-${new Date().toISOString().split("T")[0]}.pdf`;
+      pdf.save(filename);
 
-    setIsExporting(true);
-    try {
-      await exportPdf();
+      toast.success(`Da xuat PDF thanh cong: ${filename}`);
     } catch (error) {
       toast.error(
-        `Lỗi: ${error instanceof Error ? error.message : "Không thể xuất PDF"}`,
+        `Loi: ${error instanceof Error ? error.message : "Khong the xuat PDF"}`,
       );
     } finally {
       setIsExporting(false);
@@ -352,10 +346,44 @@ const DashboardClient = ({
     };
   }, []);
 
+  // ─── Build dashboard data context for widget registry ──────────
+  const dataContext: DashboardDataContext = useMemo(
+    () => ({
+      stats,
+      initialEmployees,
+      attendanceTrendData,
+      departmentData,
+      turnoverTrendData,
+      genderData,
+      todayAttendanceData,
+      contractExpiryWarnings,
+    }),
+    [
+      stats,
+      initialEmployees,
+      attendanceTrendData,
+      departmentData,
+      turnoverTrendData,
+      genderData,
+      todayAttendanceData,
+      contractExpiryWarnings,
+    ],
+  );
+
+  // ─── Build GridStack children from saved/default layout + fresh data ──
+  const gridChildren = useMemo(
+    () =>
+      buildGridStackChildren(
+        savedGridLayout ?? DEFAULT_LAYOUT,
+        dataContext,
+      ),
+    [savedGridLayout, dataContext],
+  );
+
   const gridOptions: GridStackOptions = useMemo(
     () => ({
       acceptWidgets: true,
-      row: 24,
+      row: 0,
       cellHeight: 53,
       margin: 8,
       animate: true,
@@ -366,159 +394,10 @@ const DashboardClient = ({
       draggable: {
         handle: ".dragging",
       },
-      children: [
-        {
-          id: "ai-executive-summary",
-          x: 0,
-          w: 6,
-          h: 6,
-          minW: 3,
-          minH: 4,
-          content: JSON.stringify({
-            name: "cardAIExecutiveSummary",
-            props: {},
-          }),
-        },
-        {
-          id: "total-employees",
-          w: 3,
-          h: 3,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "totalEmployees",
-            props: {
-              title: "Tổng nhân viên",
-              total: stats.totalEmployees,
-              label: "nhân viên",
-              percentage: stats.totalPercentage,
-            },
-          }),
-        },
-        {
-          id: "new-employees",
-          w: 3,
-          h: 3,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "newEmployees",
-            props: {
-              title: "Tổng nhân viên mới",
-              total: stats.newEmployees,
-              label: "nhân viên mới",
-              percentage: stats.newPercentage,
-            },
-          }),
-        },
-        {
-          id: "total-employees-working",
-          w: 3,
-          h: 3,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "totalEmployeesWorking",
-            props: {
-              title: "Tổng nhân viên đang làm việc",
-              total: stats.totalEmployeesWorking,
-              label: "nhân viên",
-              percentage: stats.workingPercentage,
-            },
-          }),
-        },
-        {
-          id: "resigned-employees",
-          w: 3,
-          h: 3,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "resignedEmployees",
-            props: {
-              title: "Tổng nhân viên nghỉ",
-              total: stats.resignedEmployees,
-              label: "nhân viên nghỉ",
-              percentage: stats.resignedPercentage,
-            },
-          }),
-        },
-        {
-          id: "pie-chart",
-          w: 5,
-          h: 8,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "cardChartPie",
-            props: { departmentData },
-          }),
-        },
-        {
-          id: "turnover-chart",
-          w: 4,
-          h: 8,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "cardChartTurnoverRate",
-            props: { trendData: turnoverTrendData },
-          }),
-        },
-        {
-          id: "gender-chart",
-          w: 3,
-          h: 8,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "cardChartGender",
-            props: { genderData: genderData },
-          }),
-        },
-        {
-          id: "list-employees",
-          w: 7,
-          h: 10,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "listEmployees",
-            props: {
-              initialEmployees,
-            },
-          }),
-        },
-        {
-          id: "area-chart",
-          w: 5,
-          h: 10,
-          minW: 2,
-          minH: 3,
-          content: JSON.stringify({
-            name: "cardChartAreaInteractive",
-            props: { trendData: attendanceTrendData },
-          }),
-        },
-      ],
+      children: gridChildren,
       lazyLoad: true,
     }),
-    [
-      attendanceTrendData,
-      departmentData,
-      turnoverTrendData,
-      genderData,
-      contractExpiryWarnings,
-      initialEmployees,
-      stats.newEmployees,
-      stats.newPercentage,
-      stats.resignedEmployees,
-      stats.resignedPercentage,
-      stats.totalEmployees,
-      stats.totalEmployeesWorking,
-      stats.totalPercentage,
-      stats.workingPercentage,
-    ],
+    [gridChildren],
   );
 
   // Auto-refresh timer (60 seconds)
@@ -561,7 +440,7 @@ const DashboardClient = ({
   }, [autoRefresh, queryClient]);
 
   return (
-    <GridStackProvider initialOptions={gridOptions} editMode={editMode}>
+    <GridStackProvider initialOptions={gridOptions} editMode={editMode} savedLayout={savedGridLayout}>
       <FullscreenCardProvider>
         <div
           className={cn(
@@ -644,7 +523,8 @@ const DashboardClient = ({
                   Tự động làm mới: {autoRefresh ? "Bật" : "Tắt"}
                 </Button>
 
-                <Separator orientation="vertical" className="h-4!" />
+
+
 
                 <AddCardDialog
                   stats={stats}
@@ -679,4 +559,35 @@ const DashboardClient = ({
   );
 };
 
+/**
+ * Reset Layout button — must be inside GridStackProvider to access context.
+ */
+const ResetLayoutButton = () => {
+  const { resetLayout, savedLayout } = useGridStackContext();
+  const [isResetting, setIsResetting] = useState(false);
+
+  if (!savedLayout) return null; // Only show when there's a custom layout
+
+  return (
+    <Button
+      variant="ghost"
+      size="xs"
+      disabled={isResetting}
+      onClick={async () => {
+        setIsResetting(true);
+        try {
+          await resetLayout();
+        } finally {
+          setIsResetting(false);
+        }
+      }}
+      tooltip="Đặt lại bố cục mặc định"
+    >
+      <RotateCcw className={cn(isResetting && "animate-spin")} />
+      Đặt lại bố cục
+    </Button>
+  );
+};
+
 export default DashboardClient;
+

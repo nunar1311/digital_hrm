@@ -81,7 +81,7 @@ class HRDataQueries:
                     """
                 )
 
-                # Nhan vien moi (30 ngay gan day)
+                # Nhan vien moi (30 ngay gan day) - COUNT
                 new_hires = await conn.fetchval(
                     """
                     SELECT COUNT(*) FROM users
@@ -90,11 +90,41 @@ class HRDataQueries:
                     """
                 )
 
-                # Nhan vien nghi viec (30 ngay gan day)
+                # Nhan vien moi - DANH SACH CHI TIET
+                new_hire_details = await conn.fetch(
+                    """
+                    SELECT u.name, u."hireDate", u."employmentType",
+                           u.email, u.gender,
+                           d.name as department_name, p.name as position_name
+                    FROM users u
+                    LEFT JOIN departments d ON u."departmentId" = d.id
+                    LEFT JOIN positions p ON u."positionId" = p.id
+                    WHERE u."hireDate" >= CURRENT_DATE - INTERVAL '30 days'
+                    AND u."employeeStatus" = 'ACTIVE'
+                    ORDER BY u."hireDate" DESC
+                    LIMIT 20
+                    """
+                )
+
+                # Nhan vien nghi viec (30 ngay gan day) - COUNT
                 resignations = await conn.fetchval(
                     """
                     SELECT COUNT(*) FROM users
                     WHERE "resignDate" >= CURRENT_DATE - INTERVAL '30 days'
+                    """
+                )
+
+                # Nhan vien nghi viec - DANH SACH CHI TIET
+                resignation_details = await conn.fetch(
+                    """
+                    SELECT u.name, u."resignDate", u."hireDate",
+                           d.name as department_name, p.name as position_name
+                    FROM users u
+                    LEFT JOIN departments d ON u."departmentId" = d.id
+                    LEFT JOIN positions p ON u."positionId" = p.id
+                    WHERE u."resignDate" >= CURRENT_DATE - INTERVAL '30 days'
+                    ORDER BY u."resignDate" DESC
+                    LIMIT 20
                     """
                 )
 
@@ -122,7 +152,9 @@ class HRDataQueries:
                     "department_distribution": _serialize_rows(dept_dist),
                     "employment_type_distribution": _serialize_rows(employment_type),
                     "new_hires_last_30_days": new_hires or 0,
+                    "new_hire_details": _serialize_rows(new_hire_details),
                     "resignations_last_30_days": resignations or 0,
+                    "resignation_details": _serialize_rows(resignation_details),
                     "average_age": float(avg_age) if avg_age else None,
                     "average_tenure_years": float(avg_tenure) if avg_tenure else None,
                     "snapshot_date": date.today().isoformat(),

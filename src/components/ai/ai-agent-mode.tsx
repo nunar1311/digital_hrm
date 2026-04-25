@@ -86,6 +86,7 @@ export interface AiAgentModeProps {
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   bottomRef: React.RefObject<HTMLDivElement | null>;
+  isLoadingSession?: boolean;
 }
 
 function getUserMessageForRetry(
@@ -173,7 +174,7 @@ const MessageItem = React.memo(
             className={`relative px-4 py-2 text-sm rounded-2xl ${
               message.role === "user"
                 ? "bg-primary text-primary-foreground rounded-br-sm max-w-full wrap-break-word whitespace-pre-wrap"
-                : "w-full min-w-0 wrap-break-word"
+                : "w-full min-w-0 overflow-hidden wrap-break-word"
             }`}
           >
             <>
@@ -393,7 +394,25 @@ const MessageItem = React.memo(
           message.actions.length > 0 && (
             <div className="mt-2 space-y-2 pl-1 overflow-hidden min-w-0">
               {message.actions
-                .filter((action) => !(action.status === "requires_info"))
+                .filter((action) => {
+                  if (action.status === "requires_info") return false;
+                  // Ẩn các ActionCard của tool chỉ đọc khi thành công (tránh spam UI)
+                  // Vì ThinkingSteps đã hiển thị quá trình và AI sẽ tự trả lời bằng text
+                  const readOnlyTools = [
+                    "query_database", 
+                    "query_employee_data", 
+                    "get_leave_balance",
+                    "get_attendance_report", 
+                    "get_team_overview", 
+                    "get_risk_assessment",
+                    "get_copilot_insight", 
+                    "analyze_approval_request"
+                  ];
+                  if (action.status === "success" && readOnlyTools.includes(action.tool)) {
+                    return false; // Ẩn ActionCard cho data fetch
+                  }
+                  return true;
+                })
                 .map((action) => (
                   <ActionCard
                     key={action.id}
@@ -455,6 +474,7 @@ export function AiAgentMode({
   input,
   onInputChange,
   isLoading,
+  isLoadingSession,
   files,
   onFilesChange,
   currentQuickActions,
@@ -484,6 +504,14 @@ export function AiAgentMode({
     );
     setTimeout(() => inputRef.current?.focus(), 10);
   };
+
+  if (isLoadingSession) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>

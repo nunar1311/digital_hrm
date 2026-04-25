@@ -11,6 +11,10 @@ import {
   CheckSquare,
   Square,
   Trash2,
+  ArrowLeft,
+  Search,
+  MoreHorizontal,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -22,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { smartChatWithAI, executeHRAction } from "@/lib/ai/actions";
 import {
   type ActionProposal,
@@ -48,6 +53,9 @@ import { getSocket } from "@/lib/socket/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSidebar } from "../ui/sidebar";
 import { toast } from "@/utils/toast";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 // =====================
 // Shared action helpers
@@ -125,6 +133,7 @@ export function AIAssistantView({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -370,24 +379,21 @@ export function AIAssistantView({
 
     const savedAutoExecute = localStorage.getItem("ai_auto_execute");
     if (savedAutoExecute === "true") setAutoExecute(true);
+    else if (savedAutoExecute === "false") setAutoExecute(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context, initialConversationId]);
 
+  const loadedSessionIdRef = useRef<string | null>(null);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
+
   // Sync messages when active session changes (driven by conversationId from URL)
   useEffect(() => {
-    // Skip entirely while a new session is being created — handleSend manages
-    // messages directly and saves them to DB asynchronously. Loading from DB
-    // here would return empty (race: message not saved yet) and wipe the UI.
     if (isInitializingSession) return;
-
-    // Skip if we're actively streaming a response — the in-memory messages
-    // contain the assistant placeholder and tokens that aren't in DB yet.
-    // Reloading from DB here would wipe the streaming message.
     if (currentStreamingMessageIdRef.current) return;
 
     if (activeSessionId) {
+      setIsLoadingSession(true);
       getChatSessionMessages(activeSessionId).then((res) => {
-        // Double-check: streaming may have started while the DB query was in-flight
         if (currentStreamingMessageIdRef.current) return;
 
         if (res.success && res.messages) {
@@ -405,11 +411,16 @@ export function AIAssistantView({
               }
             )?.dataAnalystResponse,
           }));
+          // Mark that this messages change came from a DB load (not a new message)
+          loadedSessionIdRef.current = activeSessionId;
           setMessages(loadedMessages);
-          updateSession(activeSessionId, loadedMessages);
+          updateSession(activeSessionId, loadedMessages, false);
         }
+        setIsLoadingSession(false);
       });
     } else {
+      loadedSessionIdRef.current = null;
+      setIsLoadingSession(false);
       setMessages([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -442,17 +453,25 @@ export function AIAssistantView({
   useEffect(() => {
     if (messages.length === 0 || !activeSessionId) return;
 
+    // If the messages were just loaded from DB for the current session, skip the updatedAt bump.
+    // Only clear the flag once — subsequent messages (new chats) will proceed normally.
+    const isFromLoad = loadedSessionIdRef.current === activeSessionId;
+    if (isFromLoad) {
+      loadedSessionIdRef.current = null; // consume the flag
+      return; // Do nothing — updateSession with false was already called in the load effect
+    }
+
     const isTyping = messages.some((m) => m.isTyping);
     if (isTyping) {
       if (updateSessionTimeoutRef.current)
         clearTimeout(updateSessionTimeoutRef.current);
       updateSessionTimeoutRef.current = setTimeout(() => {
-        updateSession(activeSessionId, messages);
+        updateSession(activeSessionId, messages, true);
       }, 1000); // Debounce store updates while typing
     } else {
       if (updateSessionTimeoutRef.current)
         clearTimeout(updateSessionTimeoutRef.current);
-      updateSession(activeSessionId, messages);
+      updateSession(activeSessionId, messages, true);
     }
 
     return () => {
@@ -486,7 +505,7 @@ export function AIAssistantView({
   const deleteSession = (id: string) => {
     deleteSessionState(id);
     deleteChatSessionDb(id);
-    if (activeSessionId === id) startNewChat();
+    // if (activeSessionId === id) startNewChat();
   };
 
   // =====================
@@ -1305,6 +1324,7 @@ export function AIAssistantView({
     input,
     onInputChange: setInput,
     isLoading,
+    isLoadingSession,
     onIsLoadingChange: setIsLoading,
     files,
     onFilesChange: setFiles,
@@ -1406,55 +1426,160 @@ export function AIAssistantView({
 
       {/* History Panel */}
       {showHistory && (
-        <div className="absolute top-10 left-0 right-0 bottom-0 z-20 bg-background/95 backdrop-blur-sm flex flex-col border-b">
-          <div className="p-3 border-b">
+        <div className="absolute top-0 left-0 right-0 bottom-0 z-20 bg-background/95 backdrop-blur-sm flex flex-col border-b">
+          <div className="flex items-center gap-2 h-10 p-2">
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setShowHistory(!showHistory)}
+              tooltip={"Đóng"}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </Button>
             <h4 className="text-sm font-semibold">Lịch sử cuộc trò chuyện</h4>
           </div>
-          <ScrollArea className="flex-1">
-            {sessions.length === 0 ? (
-              <div className="p-6 text-center text-muted-foreground text-sm">
-                Chưa có cuộc trò chuyện nào.
+          <div className="flex-1 flex flex-col min-h-0 h-full">
+            <div className="px-3 pb-3 shrink-0">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-[9px] size-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm kiếm cuộc trò chuyện"
+                  className="pl-9 h-8 w-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
-            ) : (
-              <div className="flex flex-col gap-1 p-2">
-                {sessions
-                  .sort((a, b) => b.updatedAt - a.updatedAt)
-                  .map((session) => (
-                    <div
-                      key={session.id}
-                      className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
-                        session.id === activeSessionId
-                          ? "bg-primary/10 border border-primary/20"
-                          : "hover:bg-accent border border-transparent"
-                      }`}
-                      onClick={() => loadSession(session)}
-                    >
-                      <Sparkles className="h-3.5 w-3.5 text-primary/60 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {session.title}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {session.messages.length} tin nhắn ·{" "}
-                          {new Date(session.updatedAt).toLocaleDateString(
-                            "vi-VN",
-                          )}
-                        </p>
+            </div>
+
+            {(() => {
+              const filtered = sessions.filter((s) =>
+                s.title.toLowerCase().includes(searchQuery.toLowerCase()),
+              );
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="p-6 text-center text-muted-foreground text-sm">
+                    {searchQuery
+                      ? "Không tìm thấy cuộc trò chuyện nào."
+                      : "Chưa có cuộc trò chuyện nào."}
+                  </div>
+                );
+              }
+
+              const groups: Record<string, ChatSession[]> = {
+                "Hôm nay": [],
+                "Hôm qua": [],
+                "7 ngày trước": [],
+                "30 ngày trước": [],
+                "Cũ hơn": [],
+              };
+
+              const now = new Date();
+              now.setHours(0, 0, 0, 0);
+
+              // Group by createdAt (immutable — clicking/viewing a session never changes it)
+              // Sort within each group by updatedAt so most-recently-active appears first
+              filtered.forEach((s) => {
+                const created = new Date(s.createdAt);
+                created.setHours(0, 0, 0, 0);
+                const diffTime = now.getTime() - created.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays <= 0) groups["Hôm nay"].push(s);
+                else if (diffDays === 1) groups["Hôm qua"].push(s);
+                else if (diffDays <= 7) groups["7 ngày trước"].push(s);
+                else if (diffDays <= 30) groups["30 ngày trước"].push(s);
+                else groups["Cũ hơn"].push(s);
+              });
+
+              // Sort each group internally by most-recently-created first
+              Object.values(groups).forEach((g) =>
+                g.sort((a, b) => b.createdAt - a.createdAt),
+              );
+
+              const nonEmptyGroups = Object.entries(groups).filter(
+                ([_, items]) => items.length > 0,
+              );
+
+              return (
+                <ScrollArea className="flex-1 px-2 h-full">
+                  <div className="flex flex-col gap-2 mb-4">
+                    {nonEmptyGroups.map(([label, items]) => (
+                      <div key={label} className="flex flex-col gap-0.5">
+                        <div className="px-2 text-xs font-semibold text-muted-foreground mb-1 mt-1">
+                          {label}
+                        </div>
+                        {items.map((session) => (
+                          <Tooltip key={session.id}>
+                            <TooltipTrigger asChild>
+                              <div
+                                className={`group flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer transition-colors ${
+                                  session.id === activeSessionId
+                                    ? "bg-primary/10 border border-primary/20"
+                                    : "hover:bg-accent border border-transparent"
+                                }`}
+                                onClick={() => loadSession(session)}
+                              >
+                                <Sparkles className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">
+                                    {session.title}
+                                  </p>
+                                  <p className="text-[11px] text-muted-foreground mt-0.5 opacity-80"></p>
+                                </div>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="xs"
+                                      tooltip={"Tùy chọn"}
+                                    >
+                                      <MoreHorizontal className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-40"
+                                  >
+                                    <DropdownMenuLabel>
+                                      Tùy chọn
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onSelect={(e) => {
+                                        e.preventDefault();
+                                        deleteSession(session.id);
+                                      }}
+                                      variant="destructive"
+                                      className="cursor-pointer"
+                                    >
+                                      <Trash2 />
+                                      <span className="flex-1">Xóa</span>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                {format(
+                                  session.createdAt,
+                                  "MMMM dd, yyyy, HH:mm:ss",
+                                  {
+                                    locale: vi,
+                                  },
+                                )}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ))}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteSession(session.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-1 rounded"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </ScrollArea>
+                    ))}
+                  </div>
+                </ScrollArea>
+              );
+            })()}
+          </div>
         </div>
       )}
 

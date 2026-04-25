@@ -53,3 +53,5 @@ digital_hrm_build_prompt.md.resolved
 .agent/
 AGENTS.md
 GEMINI.md
+# Added by code-review-graph
+.code-review-graph/

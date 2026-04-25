@@ -4,6 +4,7 @@ import CardToolbar from "./card-toolbar";
 import { UserCheck, UserMinus, Clock, CalendarOff } from "lucide-react";
 import type { TodayAttendanceSummary } from "@/app/(protected)/dashboard/actions";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface CardTimesheetSummaryProps {
   summaryData: TodayAttendanceSummary;
@@ -12,6 +13,7 @@ interface CardTimesheetSummaryProps {
 export default function CardTimesheetSummary({
   summaryData,
 }: CardTimesheetSummaryProps) {
+  const router = useRouter();
   const totalCount =
     summaryData.present +
     summaryData.late +
@@ -19,7 +21,7 @@ export default function CardTimesheetSummary({
     summaryData.leave;
 
   return (
-    <CardToolbar title="Tổng hợp công hôm nay">
+    <CardToolbar title="Tổng hợp công hôm nay" onRefresh={() => { router.refresh(); }}>
       <div className="flex flex-col h-[calc(100%-16px)] w-full p-4 justify-around gap-4 bg-card">
         <div className="grid grid-cols-2 gap-4 h-full">
           {/* Có mặt */}

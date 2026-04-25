@@ -13,25 +13,32 @@ Bạn có khả năng:
 
 QUY TRÌNH XỬ LÝ MỖI CÂU HỎI:
 Bước 1: Đọc kỹ câu hỏi và dữ liệu có sẵn
-Bước 2: SUY NGHĨ - Có nên tạo biểu đồ không? Nếu có, loại nào?
-Bước 3: Trả lời với số liệu cụ thể
+Bước 2: SUY NGHĨ - Câu hỏi này yêu cầu DANH SÁCH hay PHÂN TÍCH THỐNG KÊ?
+Bước 3: Trả lời với định dạng phù hợp
 
-NGUYÊN TẮC QUYẾT ĐỊNH TẠO BIỂU ĐỒ:
-- LUÔN tạo biểu đồ khi câu hỏi chứa: "bao nhiêu", "tỷ lệ", "%", "so sánh", "phân bổ", "cơ cấu", "theo tháng", "theo quý", "theo năm", "tổng cộng", "tất cả"
-- LUÔN tạo biểu đồ khi dữ liệu có NHIỀU hơn 2 giá trị để hiển thị
-- NÊN tạo biểu đồ khi câu hỏi yêu cầu "xem", "thống kê", "biểu diễn", "trực quan"
+NGUYÊN TẮC QUYẾT ĐỊNH TẠO BIỂU ĐỒ (PHẢI TUÂN THỦ NGHIÊM NGẶT):
+- CHỈ tạo biểu đồ khi: dữ liệu có ÍT NHẤT 3 điểm đo lường để so sánh/tương quan
+- CHỈ tạo biểu đồ khi câu hỏi rõ ràng yêu cầu: "so sánh", "tỷ lệ %", "phân bổ theo", "xu hướng theo tháng", "biểu đồ"
+- KHÔNG tạo biểu đồ cho: danh sách người, câu hỏi đơn giản 1-2 con số, câu hỏi "có bao nhiêu người trong 30 ngày"
+- KHÔNG tạo biểu đồ khi chỉ có 1-2 giá trị (không có ý nghĩa thống kê)
 
 CHỌN LOẠI BIỂU ĐỒ:
-| Loại câu hỏi | Biểu đồ | Ví dụ |
+| Loại câu hỏi | Biểu đồ | Điều kiện |
 |---|---|---|
-| SO SÁNH đối tượng | bar | "phòng ban nào nhiều nhất", "so sánh các tháng" |
-| XU HƯỚNG theo thời gian | line | "thay đổi thế nào", "tăng hay giảm", "theo tháng" |
-| CƠ CẤU/tỷ trọng | pie | "tỷ lệ", "%", "chiếm", "phân bổ", "cơ cấu" |
-| MỐI QUAN HỆ 2 biến | scatter | "liên quan", "tương quan", "ảnh hưởng" |
-| Câu hỏi đơn giản | none | "có bao nhiêu", "tổng cộng" (1-2 số) |
+| SO SÁNH đối tượng (>=3 đối tượng) | bar | "phòng ban nào nhiều nhất", "so sánh các phòng" |
+| XU HƯỚNG theo thời gian (>=3 tháng) | line | "thay đổi thế nào", "theo tháng", "xu hướng" |
+| CƠ CẤU/tỷ trọng (có %) | pie | "tỷ lệ %", "cơ cấu", "phân bổ", "chiếm bao nhiêu %" |
+| MỐI QUAN HỆ 2 biến số | scatter | "tương quan", "ảnh hưởng giữa" |
+| Mọi trường hợp còn lại | none | Trả lời text/bảng |
 
-QUY TẮC QUAN TRỌNG:
-1. Nếu quyết định tạo biểu đồ → PHẢI có chart_data với đầy đủ giá trị
+QUY TẮC ĐỊNH DẠNG TRẢ LỜI (BẮT BUỘC):
+- KHI TRẢ VỀ DANH SÁCH (nhân viên, đơn nghỉ, ứng viên...) → PHẢI dùng bảng Markdown
+- KHI TRẢ VỀ CHỈ SỐ TỔNG HỢP → dùng bullet points hoặc text
+- KHÔNG BAO GIỜ hiển thị: id, uuid, userId, departmentId, positionId, hay bất kỳ ID kỹ thuật nào
+- Chỉ hiển thị thông tin có ý nghĩa: tên, ngày, phòng ban, chức vụ, trạng thái, số liệu
+
+QUY TẮC KỸ THUẬT:
+1. Nếu quyết định tạo biểu đồ → PHẢI có chart_data với ít nhất 3 điểm dữ liệu
 2. Nếu chart_type là "pie" → mỗi item phải có name, value, percent
 3. Nếu chart_type là "bar" hoặc "line" → mỗi item phải có label và value
 4. Nếu không tạo biểu đồ → đặt chart_type = "none" và không cần chart_data
@@ -44,11 +51,16 @@ Luôn trả lời bằng tiếng Việt, sử dụng số liệu cụ thể từ
 CÂU HỎI: {question}
 
 CAC LOAI INTENT:
-1. COMPARISON - So sanh cac doi tuong (phan bo, nhieu nhat, it nhat, khac nhau)
-2. TREND - Xu huong theo thoi gian (tang, giam, thay doi theo thang/quy/nam)
-3. DISTRIBUTION - Co cau/ty trong (phan bo, ti le, phan tram)
-4. CORRELATION - Moi quan he/tuong quan giua cac bien
-5. GENERAL - Cau hoi chung, tong hop khong thuoc 4 loai tren
+1. COMPARISON - So sanh cac doi tuong (phan bo, nhieu nhat, it nhat, khac nhau) - CAN BIEU DO BAR
+2. TREND - Xu huong theo thoi gian (tang, giam, thay doi theo thang/quy/nam) - CAN BIEU DO LINE
+3. DISTRIBUTION - Co cau/ty trong co phan tram (phan bo, ti le, phan tram) - CAN BIEU DO PIE
+4. CORRELATION - Moi quan he/tuong quan giua cac bien - CAN BIEU DO SCATTER
+5. GENERAL - Cau hoi ve danh sach, thong tin ca nhan, dem so luong don gian - KHONG CAN BIEU DO
+
+LUU Y QUAN TRONG:
+- Neu cau hoi la "danh sach", "cho toi biet", "nhung ai", "nguoi nao", "moi nhat" -> GENERAL, chart_type=none
+- Neu cau hoi chi hoi 1 con so ("co bao nhieu nguoi") -> GENERAL, chart_type=none
+- Chi tao bieu do khi du lieu co IT NHAT 3 diem de so sanh
 
 TRA VE JSON:
 {{
@@ -63,11 +75,11 @@ TRA VE JSON:
 Va du lieu: {data_summary}
 
 CHON LOAI BIEU DO PHU HOP:
-- BAR: So sanh cac doi tuong (vi du: so nhan vien theo phong ban)
-- LINE: Xu huong theo thoi gian (vi du: tuyen dung theo thang)
-- PIE: Co cau ty trong (vi du: ti le gioi tinh)
-- SCATTER: Moi quan he giua 2 bien (vi du: OT va hieu suat)
-- NONE: Khong can bieu do (chi tra loi text)
+- BAR: So sanh >= 3 doi tuong (vi du: so nhan vien theo phong ban)
+- LINE: Xu huong theo thoi gian >= 3 ky (vi du: tuyen dung theo thang)
+- PIE: Co cau ty trong, phan tram (vi du: ti le gioi tinh, phan bo loai hop dong)
+- SCATTER: Moi quan he giua 2 bien so luong (vi du: OT va hieu suat)
+- NONE: Khong can bieu do - danh sach nguoi, 1-2 con so, cau hoi mo ta
 
 TRA VE:
 {{
@@ -79,27 +91,32 @@ TRA VE:
 }}""",
 
     # Prompt tao cau tra loi
-    "data_analyst.answer_generation": """dua tren du lieu HR:
+    "data_analyst.answer_generation": """Dua tren du lieu HR:
 {data}
 
 Tra loi cau hoi: "{question}"
 
-YEU CAU:
+YEU CAU DINH DANG (BAT BUOC):
 1. Tra loi truc tiep, ro rang voi so lieu cu the
-2. Neu co bieu do, format du lieu theo cau truc:
-   - bar/line: {{label, value}}
-   - pie: {{name, value, percent}}
-   - scatter: {{x, y, label}}
-3. Them 1-2 insights neu co
-4. Gap nut do thi can dam bao so lieu chinh xac
+2. NEU CAU HOI LA DANH SACH (danh sach nhan vien, don xin nghi, hop dong...) -> DUNG BANG MARKDOWN:
+   | Ten | Phong ban | Chuc vu | Ngay vao lam |
+   |-----|-----------|---------|--------------|
+   | ... | ...       | ...     | ...          |
+3. NEU CAU HOI LA SO LIEU TONG HOP -> dung bullet points hoac text
+4. KHONG HIEN THI: id, uuid, userId, departmentId va moi truong ky thuat khac
+5. Chi hien thi: ten, ngay, phong ban, chuc vu, trang thai, so lieu co y nghia
+6. Neu co bieu do, format du lieu theo cau truc:
+   - bar/line: {{"label": "...", "value": so}}
+   - pie: {{"name": "...", "value": so, "percent": so}}
+7. Them 1-2 insights neu co va co y nghia thuc tien
 
 TRA VE JSON:
 {{
-  "answer": "Cau tra loi bang tieng Viet",
+  "answer": "Cau tra loi bang tieng Viet, co dinh dang Markdown dep",
   "chart_type": "bar|line|pie|scatter|none",
-  "chart_data": [...],
-  "metrics": [...],
-  "insights": [...]
+  "chart_data": [],
+  "metrics": [],
+  "insights": []
 }}""",
 
     # Prompt phan tich chuyen sac
@@ -112,7 +129,7 @@ TAO 3-5 INSIGHTS:
 1. Tim ra cac mau/dieu bat thuong
 2. Xac dinh xu huong noi bat
 3. Dua ra so sanh voi tieu chi/chuan
-4. Neu nghich cac hanh dong can thuc hien
+4. Neu cac hanh dong can thuc hien
 
 TRA VE JSON:
 {{

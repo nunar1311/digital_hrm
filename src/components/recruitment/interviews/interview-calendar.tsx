@@ -1,7 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { format, startOfWeek, addDays, isSameDay, isToday, startOfMonth, isSameMonth, addMonths, subMonths } from "date-fns";
+import {
+  format,
+  startOfWeek,
+  addDays,
+  isSameDay,
+  isToday,
+  startOfMonth,
+  isSameMonth,
+  addMonths,
+  subMonths,
+} from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   ChevronLeft,
@@ -43,12 +53,40 @@ interface InterviewCalendarProps {
   onStatusChange?: (id: string, status: InterviewStatus) => void;
 }
 
-const STATUS_COLORS: Record<InterviewStatus, { label: string; bg: string; text: string; border: string }> = {
-  SCHEDULED: { label: "Đã lên lịch", bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
-  IN_PROGRESS: { label: "Đang PV", bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
-  COMPLETED: { label: "Hoàn thành", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-  CANCELLED: { label: "Đã hủy", bg: "bg-gray-100", text: "text-gray-500", border: "border-gray-200" },
-  NO_SHOW: { label: "Không đến", bg: "bg-red-50", text: "text-red-600", border: "border-red-200" },
+const STATUS_COLORS: Record<
+  InterviewStatus,
+  { label: string; bg: string; text: string; border: string }
+> = {
+  SCHEDULED: {
+    label: "Đã lên lịch",
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    border: "border-blue-200",
+  },
+  IN_PROGRESS: {
+    label: "Đang PV",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "border-amber-200",
+  },
+  COMPLETED: {
+    label: "Hoàn thành",
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "border-emerald-200",
+  },
+  CANCELLED: {
+    label: "Đã hủy",
+    bg: "bg-gray-100",
+    text: "text-gray-500",
+    border: "border-gray-200",
+  },
+  NO_SHOW: {
+    label: "Không đến",
+    bg: "bg-red-50",
+    text: "text-red-600",
+    border: "border-red-200",
+  },
 };
 
 const INTERVIEW_TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -57,7 +95,10 @@ const INTERVIEW_TYPE_ICONS: Record<string, React.ReactNode> = {
   PHONE: <Phone className="h-3 w-3" />,
 };
 
-const RESULT_COLORS: Record<InterviewResult | string, { label: string; color: string }> = {
+const RESULT_COLORS: Record<
+  InterviewResult | string,
+  { label: string; color: string }
+> = {
   PASS: { label: "Đạt", color: "text-emerald-600" },
   FAIL: { label: "Không đạt", color: "text-red-600" },
   PENDING: { label: "Chờ kết quả", color: "text-amber-500" },
@@ -65,10 +106,22 @@ const RESULT_COLORS: Record<InterviewResult | string, { label: string; color: st
 
 function getInitials(name: string) {
   if (!name) return "?";
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
-function InterviewCardMini({ interview, onEdit, onDelete, onViewDetail, onFeedback, onStatusChange }: {
+function InterviewCardMini({
+  interview,
+  onEdit,
+  onDelete,
+  onViewDetail,
+  onFeedback,
+  onStatusChange,
+}: {
   interview: InterviewBasic;
   onEdit: (i: InterviewBasic) => void;
   onDelete: (i: InterviewBasic) => void;
@@ -96,7 +149,9 @@ function InterviewCardMini({ interview, onEdit, onDelete, onViewDetail, onFeedba
           <Clock className="h-3 w-3 shrink-0" />
           <span>{interview.scheduledTime}</span>
           {interview.duration && (
-            <span className="text-muted-foreground font-normal">({interview.duration}p)</span>
+            <span className="text-muted-foreground font-normal">
+              ({interview.duration}p)
+            </span>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -106,7 +161,10 @@ function InterviewCardMini({ interview, onEdit, onDelete, onViewDetail, onFeedba
             </span>
           )}
           {interview.round && interview.round > 1 && (
-            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 font-normal">
+            <Badge
+              variant="outline"
+              className="text-[9px] px-1 py-0 h-3.5 font-normal"
+            >
               Vòng {interview.round}
             </Badge>
           )}
@@ -130,13 +188,15 @@ function InterviewCardMini({ interview, onEdit, onDelete, onViewDetail, onFeedba
         <div className="flex items-center gap-0.5 mb-1">
           <Users className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
           <div className="flex -space-x-1">
-            {interview.interviewerNames.slice(0, 3).map((name: string, i: number) => (
-              <Avatar key={i} className="w-4 h-4 border border-background">
-                <AvatarFallback className="text-[7px] bg-primary/10 text-primary">
-                  {getInitials(name ?? "?")}
-                </AvatarFallback>
-              </Avatar>
-            ))}
+            {interview.interviewerNames
+              .slice(0, 3)
+              .map((name: string, i: number) => (
+                <Avatar key={i} className="w-4 h-4 border border-background">
+                  <AvatarFallback className="text-[7px] bg-primary/10 text-primary">
+                    {getInitials(name ?? "?")}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
             {interview.interviewerNames.length > 3 && (
               <span className="text-[9px] text-muted-foreground ml-1">
                 +{interview.interviewerNames.length - 3}
@@ -148,7 +208,13 @@ function InterviewCardMini({ interview, onEdit, onDelete, onViewDetail, onFeedba
 
       {/* Result badge */}
       {interview.result && (
-        <Badge variant="outline" className={cn("text-[9px] px-1 py-0 h-3.5 font-normal", RESULT_COLORS[interview.result]?.color)}>
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-[9px] px-1 py-0 h-3.5 font-normal",
+            RESULT_COLORS[interview.result]?.color,
+          )}
+        >
           {RESULT_COLORS[interview.result]?.label ?? interview.result}
         </Badge>
       )}
@@ -163,7 +229,11 @@ function InterviewCardMini({ interview, onEdit, onDelete, onViewDetail, onFeedba
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="icon-xs" className="h-5 w-5 shadow-sm bg-background/90">
+            <Button
+              variant="secondary"
+              size="icon-xs"
+              className="h-5 w-5 shadow-sm bg-background/90"
+            >
               <MoreHorizontal className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
@@ -185,7 +255,14 @@ function InterviewCardMini({ interview, onEdit, onDelete, onViewDetail, onFeedba
             {onStatusChange && (
               <>
                 <DropdownMenuSeparator />
-                {(["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as InterviewStatus[]).map((s) => (
+                {(
+                  [
+                    "SCHEDULED",
+                    "IN_PROGRESS",
+                    "COMPLETED",
+                    "CANCELLED",
+                  ] as InterviewStatus[]
+                ).map((s) => (
                   <DropdownMenuItem
                     key={s}
                     onClick={() => onStatusChange(interview.id, s)}
@@ -197,7 +274,10 @@ function InterviewCardMini({ interview, onEdit, onDelete, onViewDetail, onFeedba
               </>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDelete(interview)}>
+            <DropdownMenuItem
+              className="text-red-600 focus:text-red-600"
+              onClick={() => onDelete(interview)}
+            >
               <Trash2 className="h-3.5 w-3.5 mr-2" />
               Xóa
             </DropdownMenuItem>
@@ -264,8 +344,12 @@ export function InterviewCalendar({
     setSelectedDate(new Date());
   };
 
-  const selectedDateKey = selectedDate ? format(selectedDate, "yyyy-MM-dd") : null;
-  const selectedInterviews = selectedDateKey ? interviewsByDate[selectedDateKey] ?? [] : [];
+  const selectedDateKey = selectedDate
+    ? format(selectedDate, "yyyy-MM-dd")
+    : null;
+  const selectedInterviews = selectedDateKey
+    ? (interviewsByDate[selectedDateKey] ?? [])
+    : [];
 
   if (isLoading) {
     return (
@@ -283,7 +367,10 @@ export function InterviewCalendar({
             </div>
             <div className="grid grid-cols-7 gap-1 mb-1">
               {weekDays.map((d) => (
-                <div key={d} className="h-6 bg-muted rounded text-center text-xs" />
+                <div
+                  key={d}
+                  className="h-6 bg-muted rounded text-center text-xs"
+                />
               ))}
             </div>
             <div className="grid grid-cols-7 gap-1">
@@ -311,20 +398,28 @@ export function InterviewCalendar({
       <div className="flex-1 p-3 overflow-auto">
         <div className="min-w-[500px]">
           {/* Month navigation */}
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-sm">
-              {format(currentDate, "MMMM yyyy", { locale: vi })}
-            </h2>
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon-xs" onClick={goToday}>
+              <Button variant="outline" size="xs" onClick={goToday}>
                 Hôm nay
               </Button>
-              <Button variant="ghost" size="icon-xs" onClick={() => navigateMonth(-1)}>
+              <Button
+                variant="outline"
+                size="icon-xs"
+                onClick={() => navigateMonth(-1)}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon-xs" onClick={() => navigateMonth(1)}>
+              <Button
+                variant="outline"
+                size="icon-xs"
+                onClick={() => navigateMonth(1)}
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
+              <h2 className="font-semibold text-sm">
+                {format(currentDate, "MMMM, yyyy", { locale: vi })}
+              </h2>
             </div>
           </div>
 
@@ -357,7 +452,9 @@ export function InterviewCalendar({
                     !isCurrentMonth && "opacity-30 bg-muted/30",
                     isCurrentMonth && "bg-background hover:bg-muted/30",
                     isSelected && "ring-2 ring-primary bg-primary/5",
-                    isTodayDate && !isSelected && "border-primary/50 bg-primary/5",
+                    isTodayDate &&
+                      !isSelected &&
+                      "border-primary/50 bg-primary/5",
                   )}
                   onClick={() => setSelectedDate(day)}
                 >
@@ -366,8 +463,11 @@ export function InterviewCalendar({
                     <span
                       className={cn(
                         "text-xs w-5 h-5 flex items-center justify-center rounded-full",
-                        isTodayDate && "bg-primary text-primary-foreground font-bold",
-                        isSelected && !isTodayDate && "bg-primary/10 font-semibold text-primary",
+                        isTodayDate &&
+                          "bg-primary text-primary-foreground font-bold",
+                        isSelected &&
+                          !isTodayDate &&
+                          "bg-primary/10 font-semibold text-primary",
                       )}
                     >
                       {format(day, "d")}
@@ -404,8 +504,10 @@ export function InterviewCalendar({
                         variant="secondary"
                         className={cn(
                           "text-[8px] px-1 py-0 h-3.5 min-w-[16px] text-center justify-center font-bold",
-                          STATUS_COLORS[dayInterviews[0].status ?? "SCHEDULED"].bg,
-                          STATUS_COLORS[dayInterviews[0].status ?? "SCHEDULED"].text,
+                          STATUS_COLORS[dayInterviews[0].status ?? "SCHEDULED"]
+                            .bg,
+                          STATUS_COLORS[dayInterviews[0].status ?? "SCHEDULED"]
+                            .text,
                         )}
                       >
                         {dayInterviews.length}
@@ -438,7 +540,9 @@ export function InterviewCalendar({
               </p>
             </>
           ) : (
-            <p className="text-xs text-muted-foreground">Chọn ngày để xem chi tiết</p>
+            <p className="text-xs text-muted-foreground">
+              Chọn ngày để xem chi tiết
+            </p>
           )}
         </div>
 

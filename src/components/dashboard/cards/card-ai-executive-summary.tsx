@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import CardToolbar from "./card-toolbar";
 import {
   Sparkles,
@@ -284,8 +284,16 @@ const AIExecutiveSummaryContent = () => {
 };
 
 const CardAIExecutiveSummary = () => {
+  const queryClient = useQueryClient();
+
+  const handleRefresh = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: ["dashboard-ai-summary"],
+    });
+  }, [queryClient]);
+
   return (
-    <CardToolbar title="Tóm tắt điều hành AI">
+    <CardToolbar title="Tóm tắt điều hành AI" onRefresh={handleRefresh}>
       <AIExecutiveSummaryContent />
     </CardToolbar>
   );

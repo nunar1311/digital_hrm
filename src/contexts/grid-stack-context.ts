@@ -35,6 +35,7 @@ export const GridStackContext = createContext<{
     loadLayout: (layout: GridStackWidget[]) => void;
     syncWidgetMetaMap: (widgets: GridStackWidget[]) => void;
     removeAll: () => void;
+    resetLayout: () => void;
     _gridStack: {
         value: GridStack | null;
         set: React.Dispatch<React.SetStateAction<GridStack | null>>;

@@ -71,7 +71,7 @@ interface AiChatStore {
   setPageActiveSessionId: (id: string | null) => void;
   setSidebarActiveSessionId: (id: string | null) => void;
   addSession: (session: ChatSession) => void;
-  updateSession: (id: string, messages: Message[]) => void;
+  updateSession: (id: string, messages: Message[], updateTime?: boolean) => void;
   deleteSession: (id: string) => void;
   clearStore: () => void;
   setAiCredits: (credits: number | null) => void;
@@ -87,10 +87,10 @@ export const useAiChatStore = create<AiChatStore>()((set) => ({
   setSidebarActiveSessionId: (id) => set({ sidebarActiveSessionId: id }),
   addSession: (session) =>
     set((state) => ({ sessions: [...state.sessions, session] })),
-  updateSession: (id, messages) =>
+  updateSession: (id, messages, updateTime = true) =>
     set((state) => ({
       sessions: state.sessions.map((s) =>
-        s.id === id ? { ...s, messages, updatedAt: Date.now() } : s
+        s.id === id ? { ...s, messages, ...(updateTime ? { updatedAt: Date.now() } : {}) } : s
       ),
     })),
   deleteSession: (id) =>

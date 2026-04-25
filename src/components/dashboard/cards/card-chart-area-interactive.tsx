@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import CardToolbar from "./card-toolbar";
 import {
@@ -11,6 +12,7 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart";
 import type { AttendanceTrendItem } from "@/app/(protected)/dashboard/actions";
+import { useRouter } from "next/navigation";
 
 const chartConfig = {
   onTime: {
@@ -30,8 +32,16 @@ interface CardChartAreaInteractiveProps {
 const CardChartAreaInteractive = ({
   trendData,
 }: CardChartAreaInteractiveProps) => {
+  const router = useRouter();
+  const [showLegend, setShowLegend] = useState(true);
+
   return (
-    <CardToolbar title="Nhân sự đi làm đúng giờ">
+    <CardToolbar
+      title="Nhân sự đi làm đúng giờ"
+      onRefresh={() => { router.refresh(); }}
+      showLegend={showLegend}
+      onToggleLegend={setShowLegend}
+    >
       <div className="h-full w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <AreaChart
@@ -57,7 +67,7 @@ const CardChartAreaInteractive = ({
               allowDecimals={false}
             />
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <ChartLegend content={<ChartLegendContent />} />
+            {showLegend && <ChartLegend content={<ChartLegendContent />} />}
             <Area
               dataKey="late"
               type="natural"

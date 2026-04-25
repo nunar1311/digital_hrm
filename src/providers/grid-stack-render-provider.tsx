@@ -173,7 +173,7 @@ export function GridStackRenderProvider({
             if (!items || items.length === 0) return;
             if (previousLayoutRef.current.length === 0) return;
 
-            // Auto-save to localStorage
+            // Auto-save to DB
             saveOptions();
 
             toast("success", "Thay đổi bố cục", {

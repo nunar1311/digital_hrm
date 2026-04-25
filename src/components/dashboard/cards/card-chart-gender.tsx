@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
     Bar,
     BarChart,
@@ -15,8 +16,11 @@ import {
     ChartContainer,
     ChartTooltipContent,
     ChartTooltip,
+    ChartLegend,
+    ChartLegendContent,
 } from "@/components/ui/chart";
 import type { GenderDistributionItem } from "@/app/(protected)/dashboard/actions";
+import { useRouter } from "next/navigation";
 
 const chartConfig = {
     count: {
@@ -48,8 +52,16 @@ interface CardChartGenderProps {
 const CardChartGender = ({
     genderData,
 }: CardChartGenderProps) => {
+    const router = useRouter();
+    const [showLegend, setShowLegend] = useState(false);
+
     return (
-        <CardToolbar title="Thống kê nhân sự theo giới tính">
+        <CardToolbar
+            title="Thống kê nhân sự theo giới tính"
+            onRefresh={() => { router.refresh(); }}
+            showLegend={showLegend}
+            onToggleLegend={setShowLegend}
+        >
             <div className="h-full w-full">
                 <ChartContainer
                     config={chartConfig}
@@ -82,6 +94,7 @@ const CardChartGender = ({
                             cursor={false}
                             content={<ChartTooltipContent hideLabel />}
                         />
+                        {showLegend && <ChartLegend content={<ChartLegendContent />} />}
                         <Bar
                             dataKey="count"
                             radius={4}

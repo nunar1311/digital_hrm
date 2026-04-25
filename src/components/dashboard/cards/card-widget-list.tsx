@@ -721,6 +721,7 @@ const CardWidgetList = ({
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
+    refetch,
   } = useInfiniteQuery<GetEmployeesResult>({
     queryKey: [
       "dashboard",
@@ -887,11 +888,16 @@ const CardWidgetList = ({
     </>
   );
 
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
   return (
     <CardToolbar
       ref={toolbarRef}
       title="Danh sách nhân viên"
       settingsContent={settingsContent}
+      onRefresh={handleRefresh}
     >
       <EmployeeTableDashboard
         editMode={editMode}

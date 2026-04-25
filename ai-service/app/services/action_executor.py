@@ -243,6 +243,15 @@ QUY TẮC QUAN TRỌNG:
 4. Có thể đề xuất NHIỀU action trong cùng một tin nhắn
 5. Luôn đi kèm kết quả thực tế sau khi thực hiện tool
 6. Khi cần SQL INSERT/UPDATE/DELETE — GỌI tool query_database NGAY, hệ thống sẽ tự xử lý
+
+KHI NÀO PHẢI GỌI query_database:
+- Khi user hỏi DANH SÁCH CHI TIẾT mà dữ liệu snapshot chỉ có tổng hợp/count → PHẢI gọi query_database để lấy chi tiết
+- Khi user hỏi thông tin KHÔNG CÓ trong snapshot → PHẢI gọi query_database
+- Khi cần tìm kiếm, lọc, sắp xếp dữ liệu theo điều kiện cụ thể → gọi query_database
+- LUÔN dùng JOIN để lấy tên phòng ban/chức vụ thay vì hiển thị ID
+- LUÔN thêm LIMIT (tối đa 50) trong câu SELECT
+- KHÔNG SELECT các cột id, userId, departmentId, positionId — chỉ lấy thông tin có nghĩa cho user
+- Ví dụ: SELECT u.name, u."hireDate", d.name as phong_ban, p.name as chuc_vu FROM users u LEFT JOIN departments d ON u."departmentId" = d.id LEFT JOIN positions p ON u."positionId" = p.id WHERE ... LIMIT 20
 """
 
 
@@ -301,8 +310,14 @@ class HRCommandExecutor:
 
     async def _query_database(self, params: Dict[str, Any], confirmed: bool = False) -> ToolResult:
         """Thuc thi cau lenh SQL de lay du lieu hoac cap nhat du lieu neu duoc xac nhan"""
-        is_admin = self.user_role in ("SUPER_ADMIN", "HR_MANAGER", "DIRECTOR", "HR_STAFF")
-        if not is_admin:
+        # Admin roles: full access (SELECT + write)
+        admin_roles = ("SUPER_ADMIN", "HR_MANAGER", "DIRECTOR", "HR_STAFF")
+        # Extended roles: read-only access (SELECT only)
+        read_roles = ("DEPT_MANAGER", "TEAM_LEADER", "MANAGER", "ACCOUNTANT", "IT_ADMIN")
+        is_admin = self.user_role in admin_roles
+        is_reader = self.user_role in read_roles
+        
+        if not is_admin and not is_reader:
             return ToolResult(
                 tool_name="query_database",
                 status=ToolStatus.ERROR,
@@ -330,6 +345,14 @@ class HRCommandExecutor:
 
         write_keywords = ["insert", "update", "delete", "commit", "rollback"]
         is_write = any(re.search(rf'\b{kw}\b', lower_query) for kw in write_keywords)
+
+        # Non-admin roles cannot perform write operations
+        if is_write and not is_admin:
+            return ToolResult(
+                tool_name="query_database",
+                status=ToolStatus.ERROR,
+                error="Quyền truy cập bị từ chối: Bạn chỉ có quyền đọc dữ liệu, không thể thay đổi.",
+            )
 
         if is_write and not confirmed:
             return ToolResult(

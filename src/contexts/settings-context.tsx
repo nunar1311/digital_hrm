@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, ReactNode, useContext } from "react";
+import {
+    createContext,
+    ReactNode,
+    useContext,
+    useMemo,
+    useCallback,
+} from "react";
 import { defaultThemeState } from "@/config/theme";
 import { useObjectCookie } from "@/hooks/use-object-cookie";
 import { ThemePreset } from "@/types/theme";
@@ -104,41 +110,46 @@ export const SettingsProvider = ({
         ...keyboardShortcutsSettings,
     };
 
-    const updateSettings = (newSettings: Partial<Settings>) => {
-        if ("mode" in newSettings) {
-            const modeUpdate: ModeSettings = {
-                mode: newSettings.mode!,
-            };
+    const updateSettings = useCallback(
+        (newSettings: Partial<Settings>) => {
+            if ("mode" in newSettings) {
+                const modeUpdate: ModeSettings = {
+                    mode: newSettings.mode!,
+                };
 
-            updateModeCookie(modeUpdate);
-        }
+                updateModeCookie(modeUpdate);
+            }
 
-        if ("theme" in newSettings || "savedThemes" in newSettings) {
-            setThemeSettings((prev: ThemeSettings) => ({
-                ...prev,
-                ...(newSettings.theme && {
-                    theme: newSettings.theme,
-                }),
-                ...(newSettings.savedThemes && {
-                    savedThemes: newSettings.savedThemes,
-                }),
-            }));
-        }
+            if ("theme" in newSettings || "savedThemes" in newSettings) {
+                setThemeSettings((prev: ThemeSettings) => ({
+                    ...prev,
+                    ...(newSettings.theme && {
+                        theme: newSettings.theme,
+                    }),
+                    ...(newSettings.savedThemes && {
+                        savedThemes: newSettings.savedThemes,
+                    }),
+                }));
+            }
 
-        if ("flyoutToastEnabled" in newSettings) {
-            setFlyoutToastSettings({
-                flyoutToastEnabled: newSettings.flyoutToastEnabled!,
-            });
-        }
+            if ("flyoutToastEnabled" in newSettings) {
+                setFlyoutToastSettings({
+                    flyoutToastEnabled: newSettings.flyoutToastEnabled!,
+                });
+            }
 
-        if ("keyboardShortcutsEnabled" in newSettings) {
-            setKeyboardShortcutsSettings({
-                keyboardShortcutsEnabled: newSettings.keyboardShortcutsEnabled!,
-            });
-        }
-    };
+            if ("keyboardShortcutsEnabled" in newSettings) {
+                setKeyboardShortcutsSettings({
+                    keyboardShortcutsEnabled:
+                        newSettings.keyboardShortcutsEnabled!,
+                });
+            }
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [updateModeCookie],
+    );
 
-    const applyThemePreset = (preset: string) => {
+    const applyThemePreset = useCallback((preset: string) => {
         setThemeSettings((prev: ThemeSettings) => ({
             ...prev,
             theme: {
@@ -147,15 +158,19 @@ export const SettingsProvider = ({
                 styles: getPresetThemeStyles(preset),
             },
         }));
-    };
+    }, []);
+
+    const contextValue = useMemo(
+        () => ({
+            settings,
+            updateSettings,
+            applyThemePreset,
+        }),
+        [settings, updateSettings, applyThemePreset],
+    );
+
     return (
-        <SettingsContext.Provider
-            value={{
-                settings,
-                updateSettings,
-                applyThemePreset,
-            }}
-        >
+        <SettingsContext.Provider value={contextValue}>
             {children}
         </SettingsContext.Provider>
     );
