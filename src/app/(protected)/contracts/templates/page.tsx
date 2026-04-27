@@ -11,10 +11,5 @@ export default async function ContractTemplatesPage() {
     includeInactive: true,
   });
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Mẫu hợp đồng</h1>
-      <ContractTemplateManager initialTemplates={initialTemplates} />
-    </div>
-  );
+  return <ContractTemplateManager initialTemplates={initialTemplates} />;
 }

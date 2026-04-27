@@ -1,6 +1,8 @@
 export type ContractStatus =
     | "DRAFT"
-    | "PENDING"
+    | "PENDING_APPROVAL"
+    | "APPROVED"
+    | "PENDING_SIGN"
     | "ACTIVE"
     | "EXPIRED"
     | "TERMINATED";
@@ -66,12 +68,30 @@ export interface ContractListItem {
     expiryInDays: number | null;
     isExpiringIn15Days: boolean;
     isExpiringIn30Days: boolean;
+    approvalChain?: any;
+    currentStep?: number;
+    signedIp?: string | null;
+    signedDevice?: string | null;
+    eSignatureUrl?: string | null;
     createdAt: string;
     updatedAt: string;
 }
 
+export interface ContractHistoryItem {
+  id: string;
+  contractId: string;
+  action: string;
+  statusFrom: ContractStatus | null;
+  statusTo: ContractStatus | null;
+  notes: string | null;
+  actorId: string | null;
+  actorName?: string;
+  createdAt: string;
+}
+
 export interface ContractDetailItem extends ContractListItem {
     addendums: ContractAddendumItem[];
+    histories: ContractHistoryItem[];
 }
 
 export interface ContractListQuery {

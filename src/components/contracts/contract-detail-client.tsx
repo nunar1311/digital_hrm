@@ -458,6 +458,56 @@ export function ContractDetailClient({ contractId, initialData }: Props) {
           </Table>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History className="h-4 w-4" />
+            Lịch sử hoạt động
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {data.histories.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Chưa có lịch sử hoạt động.
+              </p>
+            ) : (
+              <div className="relative border-l ml-2 pl-4 space-y-6">
+                {data.histories.map((h, i) => (
+                  <div key={h.id} className="relative">
+                    <div className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-background" />
+                    <p className="text-sm font-medium">
+                      {h.action === "CREATED" && "Khởi tạo hợp đồng"}
+                      {h.action === "STATUS_CHANGED" && "Cập nhật trạng thái"}
+                      {h.action === "SIGNED" && "Ký hợp đồng"}
+                      {h.action === "EXPORTED" && "Xuất hợp đồng"}
+                    </p>
+                    {h.statusFrom || h.statusTo ? (
+                      <p className="text-xs mt-1 text-muted-foreground">
+                        Trạng thái:{" "}
+                        <span className="font-semibold">{h.statusFrom || "-"}</span>{" "}
+                        →{" "}
+                        <span className="font-semibold">{h.statusTo || "-"}</span>
+                      </p>
+                    ) : null}
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                      <span>Bởi: {h.actorName}</span>
+                      <span>•</span>
+                      <span>
+                        {new Date(h.createdAt).toLocaleString("vi-VN", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

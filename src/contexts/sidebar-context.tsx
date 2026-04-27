@@ -11,6 +11,7 @@ import OnboardingSidebar from "@/components/onboarding/onboarding-sidebar";
 import PayrollSidebar from "@/components/payroll/payroll-sidebar";
 import RecruitmentSidebar from "@/components/recruitment/recruitment-sidebar";
 import AISidebar from "@/components/ai/ai-sidebar";
+import ContractsSidebar from "@/components/contracts/contracts-sidebar";
 
 // ============================================================
 // Department tree context
@@ -166,6 +167,10 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
       return "ess";
     }
 
+    if (pathname === "/contracts" || pathname.startsWith("/contracts/")) {
+      return "contracts";
+    }
+
     return "default";
   }, [pathname]);
 
@@ -187,6 +192,9 @@ export function SidebarSlot({ children, className }: SidebarSlotProps) {
     }
     if (sidebarType === "ai") {
       return <AISidebar />;
+    }
+    if (sidebarType === "contracts") {
+      return <ContractsSidebar />;
     }
     if (sidebarType === "ess") {
       return <ESSSidebar />;

@@ -1,6 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import mammoth from "mammoth";
+import WordExtractor from "word-extractor";
+import { parseOffice } from "officeparser";
+
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
@@ -34,7 +38,9 @@ import type {
 
 const CONTRACT_STATUSES = [
     "DRAFT",
-    "PENDING",
+    "PENDING_APPROVAL",
+    "APPROVED",
+    "PENDING_SIGN",
     "ACTIVE",
     "EXPIRED",
     "TERMINATED",
@@ -148,13 +154,9 @@ function normalizeContractStatus(params: {
     if (
         params.endDate &&
         now > params.endDate &&
-        ["ACTIVE", "PENDING"].includes(params.status)
+        ["ACTIVE", "PENDING_SIGN", "APPROVED", "PENDING_APPROVAL"].includes(params.status)
     ) {
         return "EXPIRED";
-    }
-
-    if (params.status === "PENDING" && now >= params.startDate) {
-        return "ACTIVE";
     }
 
     if (CONTRACT_STATUSES.includes(params.status as ContractStatus)) {
@@ -202,6 +204,11 @@ function mapContractToListItem(contract: {
     currency: string;
     fileUrl: string | null;
     notes: string | null;
+    approvalChain?: any;
+    currentStep?: number;
+    signedIp?: string | null;
+    signedDevice?: string | null;
+    eSignatureUrl?: string | null;
     createdAt: Date;
     updatedAt: Date;
     user: {
@@ -247,6 +254,11 @@ function mapContractToListItem(contract: {
         expiryInDays: expiry.expiryInDays,
         isExpiringIn15Days: expiry.isExpiringIn15Days,
         isExpiringIn30Days: expiry.isExpiringIn30Days,
+        approvalChain: contract.approvalChain,
+        currentStep: contract.currentStep,
+        signedIp: contract.signedIp ?? null,
+        signedDevice: contract.signedDevice ?? null,
+        eSignatureUrl: contract.eSignatureUrl ?? null,
         createdAt: contract.createdAt.toISOString(),
         updatedAt: contract.updatedAt.toISOString(),
     };
@@ -385,6 +397,19 @@ async function getContractDetailRaw(contractId: string) {
                 },
                 orderBy: {
                     effectiveDate: "desc",
+                },
+            },
+            histories: {
+                include: {
+                    actor: {
+                        select: {
+                            name: true,
+                            username: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    createdAt: "desc",
                 },
             },
         },
@@ -553,6 +578,20 @@ export async function getContractById(contractId: string): Promise<ContractDetai
     return {
         ...base,
         addendums: contract.addendums.map(mapAddendumToItem),
+        histories: contract.histories.map((h) => {
+            const changes = h.changes as any;
+            return {
+                id: h.id,
+                contractId: h.contractId,
+                action: h.action,
+                statusFrom: (changes?.statusFrom as ContractStatus) || null,
+                statusTo: (changes?.statusTo as ContractStatus) || null,
+                notes: changes?.notes || null,
+                actorId: h.actorId,
+                actorName: h.actor?.name ?? "Hệ thống",
+                createdAt: h.createdAt.toISOString(),
+            };
+        }),
     };
 }
 
@@ -656,6 +695,14 @@ export async function upsertContract(data: z.infer<typeof upsertContractSchema>)
         : await prisma.contract.create({
               data: payload,
           });
+
+    await prisma.contractHistory.create({
+        data: {
+            contractId: contract.id,
+            action: parsed.id ? "UPDATED" : "CREATED",
+            actorId: access.session.user.id,
+        },
+    });
 
     revalidatePath("/contracts");
     revalidatePath(`/contracts/${contract.id}`);
@@ -943,6 +990,37 @@ export async function getContractTemplatePreview(params: {
     };
 }
 
+export async function getContractPreviewHtmlAction(contractId: string) {
+    const preview = await getContractTemplatePreview({ contractId });
+
+    if (!preview.success || !preview.mergedContent) {
+        return { success: false, message: preview.message || "Lỗi xem trước hợp đồng" };
+    }
+
+    try {
+        const docxBuffer = await buildContractDocxBuffer({
+            title: preview.mergedContent.split("\n")[0] ?? "Hop Dong Lao Dong",
+            mergedContent: preview.mergedContent,
+        });
+
+        const result = await mammoth.convertToHtml(
+            { buffer: Buffer.from(docxBuffer) },
+            {
+                styleMap: [
+                    "p[style-name='Heading 1'] => h1:fresh",
+                    "p[style-name='Heading 2'] => h2:fresh",
+                    "p[style-name='Title'] => h1:fresh",
+                    "p => p",
+                ],
+            },
+        );
+
+        return { success: true, html: result.value };
+    } catch (err: any) {
+        return { success: false, message: err.message || "Lỗi render HTML hợp đồng" };
+    }
+}
+
 export async function exportContractDocument(payload: {
     contractId: string;
     format: "DOCX" | "PDF";
@@ -1059,4 +1137,304 @@ export async function triggerContractExpiryReminderCheck() {
         skipped: false,
         ...result,
     };
+}
+
+export async function signContract(contractId: string) {
+    const session = await requireAuth();
+
+    const contract = await prisma.contract.findUnique({
+        where: { id: contractId },
+        select: { id: true, userId: true, status: true },
+    });
+
+    if (!contract) {
+        return { success: false, message: "Không tìm thấy hợp đồng" };
+    }
+
+    if (contract.userId !== session.user.id) {
+        return { success: false, message: "Bạn không có quyền ký hợp đồng này" };
+    }
+
+    if (contract.status !== "PENDING_SIGN" && contract.status !== "DRAFT" && contract.status !== "PENDING_APPROVAL" && contract.status !== "APPROVED") {
+        return { success: false, message: "Hợp đồng không ở trạng thái có thể ký" };
+    }
+
+    await prisma.contract.update({
+        where: { id: contractId },
+        data: {
+            status: "ACTIVE",
+            signedDate: new Date(),
+            signedIp: "Internal System",
+            histories: {
+                create: {
+                    action: "SIGNED",
+                    actorId: session.user.id,
+                },
+            },
+        },
+    });
+
+    revalidatePath("/contracts");
+    revalidatePath(`/contracts/${contract.id}`);
+    revalidatePath("/ess/contracts");
+
+    return { success: true };
+}
+
+export async function importContractFromDocx(formData: FormData) {
+    await requirePermission(Permission.CONTRACT_TEMPLATE_MANAGE, Permission.CONTRACT_CREATE, Permission.CONTRACT_EDIT);
+
+    const file = formData.get("file") as File | null;
+    if (!file) return { success: false, message: "Không tìm thấy file" };
+
+    // Read buffer ONCE upfront — File.arrayBuffer() can only be consumed reliably once
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    console.log("[importContractFromDocx] file.name:", file.name, "size:", file.size, "buffer.length:", buffer.length, "type:", file.type);
+    
+    if (buffer.length === 0) {
+        return { success: false, message: "File rỗng hoặc bị lỗi khi tải lên" };
+    }
+
+    // Check file magic bytes to detect actual format
+    const magicBytes = buffer.slice(0, 4).toString('hex');
+    console.log("[importContractFromDocx] magic bytes:", magicBytes);
+    
+    // PK (ZIP/DOCX) starts with 504b0304
+    // DOC (OLE2) starts with d0cf11e0
+    // RTF starts with 7b5c7274 ({\\rt)
+    // PDF starts with 25504446 (%PDF)
+    
+    const isZip = magicBytes.startsWith('504b');
+    const isOle2 = magicBytes.startsWith('d0cf11e0');
+    const isRtf = magicBytes.startsWith('7b5c7274');
+    
+    // If it's actually an OLE2 (.doc) file, skip mammoth and go straight to word-extractor
+    if (isOle2) {
+        console.log("[importContractFromDocx] Detected OLE2 (.doc) format, using word-extractor directly");
+        
+        // Attempt 1: word-extractor
+        try {
+            const extractor = new WordExtractor();
+            const extracted = await extractor.extract(buffer);
+            const text = extracted.getBody();
+            
+            const html = text
+                .split(/\n+/)
+                .filter((p: string) => p.trim() !== '')
+                .map((p: string) => `<p>${p}</p>`)
+                .join('');
+            
+            if (html.length > 0) {
+                return { success: true, html };
+            }
+        } catch (docErr: any) {
+            console.error("[importContractFromDocx] word-extractor failed:", docErr.message);
+        }
+        
+        // Attempt 2: officeparser (more robust for complex .doc files)
+        try {
+            console.log("[importContractFromDocx] Trying officeparser as fallback...");
+            const ast = await parseOffice(buffer);
+            const text = typeof ast === 'string' ? ast : ast.toText?.() || String(ast);
+            
+            const html = text
+                .split(/\n+/)
+                .filter((p: string) => p.trim() !== '')
+                .map((p: string) => `<p>${p}</p>`)
+                .join('');
+            
+            if (html.length > 0) {
+                return { success: true, html };
+            }
+        } catch (officeErr: any) {
+            console.error("[importContractFromDocx] officeparser also failed:", officeErr.message);
+        }
+        
+        return { 
+            success: false, 
+            message: "Không thể đọc file .doc này. File có thể bị hỏng hoặc có cấu trúc không được hỗ trợ. Vui lòng mở file bằng Word và chọn 'Save As' -> 'Word Document (*.docx)' rồi thử lại." 
+        };
+    }
+    
+    // If it's RTF, provide a clear message
+    if (isRtf) {
+        return { 
+            success: false, 
+            message: "File này có định dạng RTF, không phải DOCX. Vui lòng mở file bằng Word và chọn 'Save As' -> 'Word Document (*.docx)' rồi thử lại." 
+        };
+    }
+
+    // Try mammoth for ZIP-based DOCX
+    try {
+        const result = await mammoth.convertToHtml(
+            { buffer },
+            {
+                styleMap: [
+                    "p[style-name='Heading 1'] => h1:fresh",
+                    "p[style-name='Heading 2'] => h2:fresh",
+                    "p[style-name='Title'] => h1:fresh",
+                    "p => p",
+                ]
+            }
+        );
+        return { success: true, html: result.value };
+    } catch (err: any) {
+        const msg = err.message || "";
+        console.error("[importContractFromDocx] mammoth failed:", msg);
+        
+        if (msg.includes("Can't find end of central directory")) {
+            // Last resort: Try word-extractor then officeparser
+            try {
+                const extractor = new WordExtractor();
+                const extracted = await extractor.extract(buffer);
+                const text = extracted.getBody();
+                
+                const html = text
+                    .split(/\n+/)
+                    .filter((p: string) => p.trim() !== '')
+                    .map((p: string) => `<p>${p}</p>`)
+                    .join('');
+                
+                if (html.length > 0) {
+                    return { success: true, html };
+                }
+            } catch (fallbackErr: any) {
+                console.error("[importContractFromDocx] word-extractor fallback also failed:", fallbackErr.message);
+            }
+            
+            // Try officeparser
+            try {
+                const ast = await parseOffice(buffer);
+                const text = typeof ast === 'string' ? ast : ast.toText?.() || String(ast);
+                
+                const html = text
+                    .split(/\n+/)
+                    .filter((p: string) => p.trim() !== '')
+                    .map((p: string) => `<p>${p}</p>`)
+                    .join('');
+                
+                if (html.length > 0) {
+                    return { success: true, html };
+                }
+            } catch (officeErr: any) {
+                console.error("[importContractFromDocx] officeparser fallback also failed:", officeErr.message);
+            }
+            
+            return { 
+                success: false, 
+                message: "File không đúng định dạng chuẩn DOCX. Vui lòng mở file bằng Word và chọn 'Save As' -> định dạng 'Word Document (*.docx)' rồi thử lại." 
+            };
+        }
+        return { success: false, message: msg || "Lỗi khi trích xuất dữ liệu từ file DOCX" };
+    }
+}
+
+export async function importContractFromBase64(base64String: string) {
+    await requirePermission(Permission.CONTRACT_TEMPLATE_MANAGE, Permission.CONTRACT_CREATE, Permission.CONTRACT_EDIT);
+
+    try {
+        const buffer = Buffer.from(base64String, 'base64');
+        
+        if (buffer.length === 0) {
+            return { success: false, message: "Dữ liệu file rỗng hoặc bị lỗi khi truyền tải" };
+        }
+
+        const result = await mammoth.convertToHtml(
+            { buffer },
+            {
+                styleMap: [
+                    "p[style-name='Heading 1'] => h1:fresh",
+                    "p[style-name='Heading 2'] => h2:fresh",
+                    "p[style-name='Title'] => h1:fresh",
+                    "p => p",
+                ]
+            }
+        );
+        return { success: true, html: result.value };
+    } catch (err: any) {
+        const msg = err.message || "";
+        if (msg.includes("Can't find end of central directory")) {
+            return { 
+                success: false, 
+                message: "File không đúng định dạng chuẩn DOCX. Vui lòng mở file bằng Word và chọn 'Save As' -> định dạng 'Word Document (*.docx)' rồi thử lại." 
+            };
+        }
+        return { success: false, message: msg || "Lỗi khi trích xuất dữ liệu từ file DOCX" };
+    }
+}
+
+export async function importContractFromOldDoc(base64String: string) {
+    await requirePermission(Permission.CONTRACT_TEMPLATE_MANAGE, Permission.CONTRACT_CREATE, Permission.CONTRACT_EDIT);
+
+    const buffer = Buffer.from(base64String, 'base64');
+    if (buffer.length === 0) {
+        return { success: false, message: "Dữ liệu file rỗng" };
+    }
+
+    // Attempt 1: word-extractor
+    try {
+        const extractor = new WordExtractor();
+        const extracted = await extractor.extract(buffer);
+        const text = extracted.getBody();
+
+        const html = text
+            .split(/\n+/)
+            .filter((p: string) => p.trim() !== '')
+            .map((p: string) => `<p>${p}</p>`)
+            .join('');
+
+        if (html.length > 0) {
+            return { success: true, html };
+        }
+    } catch (err: any) {
+        console.error("[importContractFromOldDoc] word-extractor failed:", err.message);
+    }
+
+    // Attempt 2: officeparser
+    try {
+        const ast = await parseOffice(buffer);
+        const text = typeof ast === 'string' ? ast : ast.toText?.() || String(ast);
+
+        const html = text
+            .split(/\n+/)
+            .filter((p: string) => p.trim() !== '')
+            .map((p: string) => `<p>${p}</p>`)
+            .join('');
+
+        if (html.length > 0) {
+            return { success: true, html };
+        }
+    } catch (officeErr: any) {
+        console.error("[importContractFromOldDoc] officeparser also failed:", officeErr.message);
+    }
+
+    return { success: false, message: "Không thể đọc file .doc này. Vui lòng mở file bằng Word và lưu lại dưới định dạng .docx rồi thử lại." };
+}
+
+export async function importContractFromPdf(base64String: string) {
+    await requirePermission(Permission.CONTRACT_TEMPLATE_MANAGE, Permission.CONTRACT_CREATE, Permission.CONTRACT_EDIT);
+
+    try {
+        const buffer = Buffer.from(base64String, 'base64');
+        if (buffer.length === 0) {
+            return { success: false, message: "Dữ liệu file rỗng" };
+        }
+
+        const pdfParse = require('pdf-parse');
+        const data = await pdfParse(buffer);
+        const text = data.text;
+
+        // Convert plain text to basic HTML paragraphs
+        const html = text
+            .split(/\n+/)
+            .filter((p: string) => p.trim() !== '')
+            .map((p: string) => `<p>${p}</p>`)
+            .join('');
+
+        return { success: true, html };
+    } catch (err: any) {
+        return { success: false, message: err.message || "Lỗi khi trích xuất dữ liệu từ file PDF" };
+    }
 }

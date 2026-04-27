@@ -50,8 +50,12 @@ AntigravityReadMe.txt
 digital_hrm_build_prompt.md.resolved
 
 # Bỏ qua não bộ AI của cá nhân
-.agent/
+.agents/ 
 AGENTS.md
 GEMINI.md
+.claude/
+.codex/
+.gemini/
+.cursor/
 # Added by code-review-graph
 .code-review-graph/

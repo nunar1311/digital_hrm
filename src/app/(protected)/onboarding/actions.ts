@@ -480,6 +480,37 @@ export async function hireCandidate(data: HireCandidateData) {
     });
   }
 
+  // Auto create draft contract
+  const defaultContractTemplate = await prisma.contractTemplate.findFirst({
+    where: { isDefault: true, isActive: true },
+  });
+
+  if (defaultContractTemplate) {
+    const contractType = await prisma.contractType.findFirst({
+      where: { name: { contains: "Thử việc" } },
+    });
+
+    await prisma.contract.create({
+      data: {
+        userId: newUserId,
+        contractNumber: `HD-${username}-${new Date().getFullYear()}`,
+        title: "Hợp đồng thử việc",
+        contractTypeId: contractType?.id,
+        templateId: defaultContractTemplate.id,
+        startDate: data.hireDate,
+        endDate: data.probationEndDate || null,
+        salary: data.salary ? Number(data.salary) : null,
+        status: "DRAFT",
+        histories: {
+          create: {
+            action: "CREATED",
+            actorId: session.user.id,
+          },
+        },
+      },
+    });
+  }
+
   // Get default onboarding template
   const defaultTemplate = await prisma.onboardingTemplate.findFirst({
     where: { isActive: true },

@@ -4,10 +4,12 @@ import { useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, PenTool } from "lucide-react";
+import { signContract } from "@/app/(protected)/contracts/actions";
 
 interface ContractPreviewPanelClientProps {
   contractId: string;
+  status?: string;
 }
 
 function base64ToBlob(base64: string, mimeType: string): Blob {
@@ -21,7 +23,21 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
 
 export function ContractPreviewPanelClient({
   contractId,
+  status,
 }: ContractPreviewPanelClientProps) {
+  const signMutation = useMutation({
+    mutationFn: async () => {
+      const res = await signContract(contractId);
+      if (!res.success) throw new Error(res.message || "Lỗi ký hợp đồng");
+      return res;
+    },
+    onSuccess: () => {
+      toast.success("Ký hợp đồng thành công");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Không thể ký hợp đồng");
+    },
+  });
   const mutation = useMutation({
     mutationFn: async (format: "DOCX" | "PDF") => {
       const res = await fetch("/api/contracts/export", {
@@ -65,6 +81,20 @@ export function ContractPreviewPanelClient({
 
   return (
     <>
+      {status === "PENDING_SIGN" && (
+        <Button
+          size="sm"
+          className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={() => signMutation.mutate()}
+          disabled={signMutation.isPending}
+        >
+          {signMutation.isPending ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <span className="font-semibold px-1">Ký hợp đồng</span>
+          )}
+        </Button>
+      )}
       <Button
         variant="outline"
         size="sm"

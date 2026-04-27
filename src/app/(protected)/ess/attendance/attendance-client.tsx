@@ -6,7 +6,6 @@ import { getMyAttendanceHistory } from "../actions";
 import { Button } from "@/components/ui/button";
 import {
   CalendarCheck,
-  Download,
   Loader2,
   CheckCircle2,
   XCircle,
@@ -39,6 +38,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuTrigger,
@@ -130,7 +130,15 @@ const MONTH_NAMES = [
   "Tháng 12",
 ];
 
-const DAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+const DAY_LABELS = [
+  "Thứ 2",
+  "Thứ 3",
+  "Thứ 4",
+  "Thứ 5",
+  "Thứ 6",
+  "Thứ 7",
+  "Chủ Nhật",
+];
 
 type AttendanceStatus =
   | "ALL"
@@ -274,141 +282,445 @@ function calcTotalHours(checkIn: string | null, checkOut: string | null) {
   return hours.toFixed(1);
 }
 
-function buildCalendarWeeks(attendances: AttendanceRecord[], timezone: string) {
-  const sorted = [...attendances].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-  );
-  if (sorted.length === 0) return [];
+interface CalendarDay {
+  date: string;
+  dayNum: number;
+  isWeekend: boolean;
+  isToday: boolean;
+  isCurrentMonth: boolean;
+  records: AttendanceRecord[];
+}
 
-  const weeks: (AttendanceRecord | null)[][] = [];
-  let currentWeek: (AttendanceRecord | null)[] = [];
-
-  const firstDay = getDayOfWeek(sorted[0].date, timezone);
-  if (firstDay !== 1) {
-    for (let i = 1; i < firstDay; i++) currentWeek.push(null);
+function buildMonthGrid(
+  month: number,
+  year: number,
+  attendances: AttendanceRecord[],
+): CalendarDay[][] {
+  const recordMap = new Map<string, AttendanceRecord[]>();
+  for (const r of attendances) {
+    if (!recordMap.has(r.date)) recordMap.set(r.date, []);
+    recordMap.get(r.date)!.push(r);
   }
 
-  for (const record of sorted) {
-    currentWeek.push(record);
-    if (getDayOfWeek(record.date, timezone) === 0) {
-      weeks.push(currentWeek);
-      currentWeek = [];
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let startDow = new Date(year, month - 1, 1).getDay();
+  startDow = startDow === 0 ? 6 : startDow - 1;
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const weeks: CalendarDay[][] = [];
+  let week: CalendarDay[] = [];
+
+  if (startDow > 0) {
+    const prevDays = new Date(year, month - 1, 0).getDate();
+    for (let i = startDow - 1; i >= 0; i--) {
+      const d = prevDays - i;
+      const m = month - 1 <= 0 ? 12 : month - 1;
+      const y = month - 1 <= 0 ? year - 1 : year;
+      const dateStr = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      week.push({
+        date: dateStr,
+        dayNum: d,
+        isWeekend: week.length >= 5,
+        isToday: dateStr === todayStr,
+        isCurrentMonth: false,
+        records: [],
+      });
     }
   }
 
-  if (currentWeek.length > 0) {
-    while (currentWeek.length < 7) currentWeek.push(null);
-    weeks.push(currentWeek);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    week.push({
+      date: dateStr,
+      dayNum: d,
+      isWeekend: week.length >= 5,
+      isToday: dateStr === todayStr,
+      isCurrentMonth: true,
+      records: recordMap.get(dateStr) ?? [],
+    });
+    if (week.length === 7) {
+      weeks.push(week);
+      week = [];
+    }
+  }
+
+  if (week.length > 0) {
+    let d = 1;
+    while (week.length < 7) {
+      const m = month + 1 > 12 ? 1 : month + 1;
+      const y = month + 1 > 12 ? year + 1 : year;
+      const dateStr = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      week.push({
+        date: dateStr,
+        dayNum: d,
+        isWeekend: week.length >= 5,
+        isToday: dateStr === todayStr,
+        isCurrentMonth: false,
+        records: [],
+      });
+      d++;
+    }
+    weeks.push(week);
   }
   return weeks;
 }
 
 // ─── Calendar View ───────────────────────────────────────────────────────────
 
-const CALENDAR_BG: Record<string, string> = {
-  PRESENT: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100",
-  ABSENT: "bg-red-50 border-red-200 hover:bg-red-100",
-  ON_LEAVE: "bg-blue-50 border-blue-200 hover:bg-blue-100",
-  HOLIDAY: "bg-purple-50 border-purple-200 hover:bg-purple-100",
+const CALENDAR_STRIP: Record<string, string> = {
+  PRESENT: "bg-emerald-500",
+  LATE: "bg-amber-500",
+  EARLY_LEAVE: "bg-orange-500",
+  LATE_AND_EARLY: "bg-red-500",
+  ABSENT: "bg-red-500",
+  ON_LEAVE: "bg-blue-500",
+  HOLIDAY: "bg-purple-500",
+};
+const CALENDAR_CELL_BG: Record<string, string> = {
+  PRESENT:
+    "bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30",
+  LATE: "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30",
+  EARLY_LEAVE:
+    "bg-orange-50/60 dark:bg-orange-950/20 border-orange-200/60 dark:border-orange-800/30",
+  LATE_AND_EARLY:
+    "bg-red-50/60 dark:bg-red-950/20 border-red-200/60 dark:border-red-800/30",
+  ABSENT:
+    "bg-red-50/60 dark:bg-red-950/20 border-red-200/60 dark:border-red-800/30",
+  ON_LEAVE:
+    "bg-blue-50/60 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30",
+  HOLIDAY:
+    "bg-purple-50/60 dark:bg-purple-950/20 border-purple-200/60 dark:border-purple-800/30",
+};
+const CALENDAR_DATE_COLOR: Record<string, string> = {
+  PRESENT: "text-emerald-700 dark:text-emerald-400",
+  LATE: "text-amber-700 dark:text-amber-400",
+  EARLY_LEAVE: "text-orange-700 dark:text-orange-400",
+  LATE_AND_EARLY: "text-red-700 dark:text-red-400",
+  ABSENT: "text-red-700 dark:text-red-400",
+  ON_LEAVE: "text-blue-700 dark:text-blue-400",
+  HOLIDAY: "text-purple-700 dark:text-purple-400",
 };
 
-const CALENDAR_ICON_COLOR: Record<string, string> = {
-  PRESENT: "text-emerald-600",
-  ABSENT: "text-red-600",
-  LATE: "text-amber-600",
-  EARLY_LEAVE: "text-orange-600",
-  LATE_AND_EARLY: "text-red-600",
-  ON_LEAVE: "text-blue-600",
-  HOLIDAY: "text-purple-600",
-};
+type CalendarMode = "month" | "week";
+
+function getWeekLabel(week: CalendarDay[]) {
+  const first = week[0];
+  const last = week[week.length - 1];
+  if (!first || !last) return "";
+  const fmt = (d: string) => {
+    const [, m, day] = d.split("-");
+    return `${day}/${m}`;
+  };
+  return `${fmt(first.date)} – ${fmt(last.date)}`;
+}
+
+function CalendarCell({
+  day,
+  onRecordClick,
+  timezone,
+}: {
+  day: CalendarDay;
+  onRecordClick?: (record: AttendanceRecord) => void;
+  timezone: string;
+}) {
+  const { records, dayNum, isWeekend, isToday, isCurrentMonth } = day;
+
+  // Base cell layout matching the user's requested style
+  const Wrapper = ({
+    children,
+    className,
+    onClick,
+  }: {
+    children?: React.ReactNode;
+    className?: string;
+    onClick?: () => void;
+  }) => (
+    <div
+      onClick={onClick}
+      className={cn(
+        "relative min-h-[80px] sm:min-h-24 lg:min-h-32 border-r border-b border-t-0 flex flex-col p-1 group/cell transition-colors",
+        !isCurrentMonth
+          ? "bg-muted/10 text-muted-foreground/30"
+          : isWeekend
+            ? "bg-muted/30"
+            : "bg-background",
+        isToday && "bg-primary/5",
+        onClick && "cursor-pointer hover:bg-muted/50",
+        className,
+      )}
+    >
+      <div className="flex-1 flex flex-col gap-1 z-10 w-full overflow-y-auto hide-scrollbar pb-4">
+        {children}
+      </div>
+      <span
+        className={cn(
+          "absolute bottom-1 right-1.5 text-xs sm:text-sm font-medium z-20 bg-background/80 px-1 rounded",
+          !isCurrentMonth
+            ? "text-muted-foreground/30"
+            : isToday
+              ? "text-primary font-bold"
+              : isWeekend
+                ? "text-muted-foreground/50"
+                : "text-muted-foreground/70",
+        )}
+      >
+        {dayNum}
+      </span>
+    </div>
+  );
+
+  if (!records || records.length === 0) {
+    return <Wrapper />;
+  }
+
+  return (
+    <Wrapper>
+      {records.map((record, idx) => {
+        const strip = CALENDAR_STRIP[record.status] ?? "bg-muted-foreground/30";
+        const cellBg =
+          CALENDAR_CELL_BG[record.status] ?? "bg-muted/20 border-border/50";
+        const cfg = STATUS_CONFIG[record.status] ?? STATUS_CONFIG.PRESENT;
+        const hours = calcTotalHours(record.checkIn, record.checkOut);
+
+        return (
+          <Tooltip key={record.id || idx}>
+            <TooltipTrigger asChild>
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRecordClick?.(record);
+                }}
+                className={cn(
+                  "relative overflow-hidden rounded-sm cursor-pointer hover:brightness-95",
+                  cellBg,
+                )}
+              >
+                <div
+                  className={cn(
+                    "absolute left-0 top-0 bottom-0 w-[2px]",
+                    strip,
+                  )}
+                />
+                <div className="pl-1.5 flex flex-col gap-1 w-full p-0.5">
+                  {/* Shift or Status Pill */}
+                  {record.shift?.name ? (
+                    <div className="text-foreground text-[10px] sm:text-xs font-medium px-1 py-0.5 truncate">
+                      {record.shift.name}
+                    </div>
+                  ) : record.status === "HOLIDAY" ||
+                    record.status === "ON_LEAVE" ||
+                    record.status === "ABSENT" ? (
+                    <div
+                      className={cn(
+                        "text-[10px] font-medium px-1 py-0.5 rounded-sm shadow-sm truncate w-fit",
+                        cfg.className,
+                      )}
+                    >
+                      {cfg.label}
+                    </div>
+                  ) : null}
+
+                  {/* Check IN/OUT */}
+                  {(record.checkIn || record.checkOut) && (
+                    <div className="hidden sm:flex flex-col gap-0.5">
+                      {record.checkIn && (
+                        <div className="flex items-center gap-1">
+                          <Sun
+                            className={cn(
+                              "h-2.5 w-2.5 shrink-0",
+                              record.lateMinutes > 0
+                                ? "text-amber-500"
+                                : "text-emerald-500",
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "text-[9px] font-mono",
+                              record.lateMinutes > 0
+                                ? "text-amber-600 font-semibold"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            {formatTime(record.checkIn, timezone)}
+                          </span>
+                        </div>
+                      )}
+                      {record.checkOut && (
+                        <div className="flex items-center gap-1">
+                          <Moon
+                            className={cn(
+                              "h-2.5 w-2.5 shrink-0",
+                              record.earlyMinutes > 0
+                                ? "text-orange-500"
+                                : "text-slate-400",
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "text-[9px] font-mono",
+                              record.earlyMinutes > 0
+                                ? "text-orange-600 font-semibold"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            {formatTime(record.checkOut, timezone)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="sm:hidden flex items-center">
+                    {(() => {
+                      const Icon = cfg.icon;
+                      return (
+                        <Icon
+                          className={cn(
+                            "h-3 w-3",
+                            CALENDAR_DATE_COLOR[record.status] ??
+                              "text-muted-foreground",
+                          )}
+                        />
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent
+              side="top"
+              className="max-w-[220px] p-0"
+              sideOffset={6}
+            >
+              <div className="p-2.5 space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold">
+                    {formatDate(record.date, timezone)}
+                  </span>
+                  <Badge
+                    variant={cfg.variant}
+                    className={cn(
+                      "gap-0.5 text-[10px] px-1.5 py-0 h-4",
+                      cfg.className,
+                    )}
+                  >
+                    {cfg.label}
+                  </Badge>
+                </div>
+                {(record.checkIn || record.checkOut) && (
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <span className="text-background/80">Vào:</span>
+                    <span
+                      className={cn(
+                        "font-mono",
+                        record.lateMinutes > 0 && "text-amber-600 font-medium",
+                      )}
+                    >
+                      {formatTime(record.checkIn, timezone)}
+                    </span>
+                    <span className="text-background/80">Ra:</span>
+                    <span
+                      className={cn(
+                        "font-mono",
+                        record.earlyMinutes > 0 &&
+                          "text-orange-600 font-medium",
+                      )}
+                    >
+                      {formatTime(record.checkOut, timezone)}
+                    </span>
+                  </div>
+                )}
+                {record.lateMinutes > 0 && (
+                  <div className="text-[10px] text-amber-600">
+                    Trễ {record.lateMinutes} phút
+                  </div>
+                )}
+                {record.earlyMinutes > 0 && (
+                  <div className="text-[10px] text-orange-600">
+                    Về sớm {record.earlyMinutes} phút
+                  </div>
+                )}
+                {record.shift && (
+                  <div className="text-[10px] text-background/80">
+                    Ca: {record.shift.name} (
+                    {record.shift.startTime?.slice(0, 5)}–
+                    {record.shift.endTime?.slice(0, 5)})
+                  </div>
+                )}
+                {hours && (
+                  <div className="text-[10px] text-background/80">
+                    Tổng:{" "}
+                    <span className="font-mono font-medium text-background/80">
+                      {hours}h
+                    </span>
+                  </div>
+                )}
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
+    </Wrapper>
+  );
+}
 
 function AttendanceCalendarView({
   weeks,
   isLoading,
   onRecordClick,
   timezone,
+  calendarMode,
+  selectedWeek,
 }: {
-  weeks: (AttendanceRecord | null)[][];
+  weeks: CalendarDay[][];
   isLoading: boolean;
   onRecordClick?: (record: AttendanceRecord) => void;
   timezone: string;
+  calendarMode: CalendarMode;
+  selectedWeek: number;
 }) {
   if (isLoading)
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center py-16">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-7 w-7 animate-spin text-primary/60" />
+          <span className="text-xs text-muted-foreground">
+            Đang tải dữ liệu…
+          </span>
+        </div>
       </div>
     );
-  if (weeks.length === 0)
-    return (
-      <div className="text-center py-12">
-        <CalendarCheck className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-        <p className="text-muted-foreground">Không có dữ liệu chấm công</p>
-      </div>
-    );
-
+  const safeWeek = Math.min(Math.max(0, selectedWeek), weeks.length - 1);
+  const displayWeeks = calendarMode === "week" ? [weeks[safeWeek]] : weeks;
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-7 gap-1 sm:gap-2">
+    <>
+      <div className="grid grid-cols-7 sticky top-0 bg-transparent z-10">
         {DAY_LABELS.map((day, i) => (
           <div
             key={i}
             className={cn(
-              "text-center text-[10px] sm:text-xs font-medium py-1 sm:py-2",
-              (i === 5 || i === 6) && "text-muted-foreground",
+              "text-start px-2 text-xs sm:text-sm font-semibold py-1.5 border-r",
             )}
           >
             {day}
           </div>
         ))}
       </div>
-      {weeks.map((week, wi) => (
-        <div key={wi} className="grid grid-cols-7 gap-1 sm:gap-2">
-          {week.map((record, di) => {
-            if (!record)
-              return (
-                <div
-                  key={`empty-${di}`}
-                  className="aspect-square hidden sm:block"
-                />
-              );
-            const weekend = isWeekend(record.date, timezone);
-            const bgClass = CALENDAR_BG[record.status] ?? "bg-muted/30";
-            const iconColor =
-              CALENDAR_ICON_COLOR[record.status] ?? "text-muted-foreground";
-            return (
-              <div
-                key={record.id}
-                onClick={() => onRecordClick?.(record)}
-                className={cn(
-                  "aspect-square sm:aspect-square rounded-md sm:rounded-lg border p-1 sm:p-2 flex flex-col items-center justify-center transition-all hover:shadow-md cursor-pointer text-[10px] sm:text-xs",
-                  weekend && "bg-muted/30",
-                  bgClass,
-                )}
-              >
-                <span
-                  className={cn(
-                    "font-medium",
-                    weekend && "text-muted-foreground",
-                  )}
-                >
-                  {new Date(record.date).getDate()}
-                </span>
-                <div className={cn("mt-0.5 sm:mt-1", iconColor)}>
-                  {record.status === "PRESENT" ? (
-                    <CheckCircle2 className="h-2 w-2 sm:h-3 sm:w-3" />
-                  ) : record.status === "ABSENT" ? (
-                    <XCircle className="h-2 w-2 sm:h-3 sm:w-3" />
-                  ) : (
-                    <Calendar className="h-2 w-2 sm:h-3 sm:w-3" />
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      {displayWeeks.map((week, wi) => (
+        <div key={wi} className="grid grid-cols-7">
+          {week.map((day, di) => (
+            <CalendarCell
+              key={day.date || `pad-${di}`}
+              day={day}
+              onRecordClick={onRecordClick}
+              timezone={timezone}
+            />
+          ))}
         </div>
       ))}
-    </div>
+    </>
   );
 }
 
@@ -444,19 +756,21 @@ function StatCard({
       <CardContent className="px-0">
         <div className="space-y-1.5">
           <div className="text-xl font-bold">{value}</div>
-          {subValue && (
-            <div className="text-xs text-muted-foreground">{subValue}</div>
-          )}
+          <div className="flex items-center gap-2">
+            {subValue && (
+              <div className="text-xs text-muted-foreground">{subValue}</div>
+            )}
+            {badge && (
+              <Badge
+                variant="secondary"
+                className={cn("text-xs px-1.5 py-0", badgeClass)}
+              >
+                {badge}
+              </Badge>
+            )}
+          </div>
           {progress !== undefined && (
             <Progress value={progress} className="h-1.5" />
-          )}
-          {badge && (
-            <Badge
-              variant="secondary"
-              className={cn("text-xs px-1.5 py-0", badgeClass)}
-            >
-              {badge}
-            </Badge>
           )}
         </div>
       </CardContent>
@@ -501,6 +815,8 @@ export function ESSAttendanceClient({
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
+  const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(
     null,
   );
@@ -527,12 +843,20 @@ export function ESSAttendanceClient({
   });
   const mergedSearchRef = useMergedRef(searchContainerRef, clickOutsideRef);
 
+  const isInitialMonthYear =
+    selectedMonth === initialMonth && selectedYear === initialYear;
+
   const { data, isLoading } = useQuery({
     queryKey: ["my-attendance", selectedMonth, selectedYear],
     queryFn: () => getMyAttendanceHistory(selectedMonth, selectedYear),
-    initialData: initialData as unknown as Awaited<
-      ReturnType<typeof getMyAttendanceHistory>
-    >,
+    ...(isInitialMonthYear
+      ? {
+          initialData: initialData as unknown as Awaited<
+            ReturnType<typeof getMyAttendanceHistory>
+          >,
+        }
+      : {}),
+    staleTime: 0,
   });
 
   useSocketEvents(
@@ -567,24 +891,22 @@ export function ESSAttendanceClient({
   }, [allAttendances, statusFilter, search, timezone]);
 
   const weeks = useMemo(
-    () => buildCalendarWeeks(allAttendances, timezone),
-    [allAttendances, timezone],
+    () => buildMonthGrid(selectedMonth, selectedYear, allAttendances),
+    [selectedMonth, selectedYear, allAttendances],
   );
 
   const changeMonth = (delta: number) => {
-    setSelectedMonth((prev) => {
-      let month = prev + delta;
-      let year = selectedYear;
-      if (month < 1) {
-        month = 12;
-        year--;
-      } else if (month > 12) {
-        month = 1;
-        year++;
-      }
-      setSelectedYear(year);
-      return month;
-    });
+    let newMonth = selectedMonth + delta;
+    let newYear = selectedYear;
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear--;
+    } else if (newMonth > 12) {
+      newMonth = 1;
+      newYear++;
+    }
+    setSelectedMonth(newMonth);
+    setSelectedYear(newYear);
   };
 
   const handleSearchToggle = useCallback(() => {
@@ -888,19 +1210,6 @@ export function ESSAttendanceClient({
           <section>
             <header className="p-2 flex items-center h-10 border-b justify-between">
               <h1 className="font-bold">Chấm công</h1>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="xs" className="hidden md:flex">
-                  <Download className="mr-1.5 h-3.5 w-3.5" />
-                  Xuất Excel
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon-xs"
-                  onClick={() => setSettingsOpen(true)}
-                >
-                  <Settings className="h-3.5 w-3.5" />
-                </Button>
-              </div>
             </header>
           </section>
 
@@ -949,32 +1258,6 @@ export function ESSAttendanceClient({
           {/* Controls Bar */}
           <div className="px-2 py-2 flex items-center justify-between bg-muted/10 shrink-0">
             <div className="flex items-center gap-1.5 overflow-x-auto min-w-0">
-              {/* Month Navigator */}
-              <div className="flex items-center gap-0.5 border rounded-md bg-background shrink-0">
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => changeMonth(-1)}
-                  className="rounded-r-none"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </Button>
-                <span className="text-xs sm:text-sm font-medium px-2 whitespace-nowrap hidden sm:inline">
-                  {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
-                </span>
-                <span className="text-xs font-medium px-1 sm:hidden">
-                  T{selectedMonth}/{selectedYear.toString().slice(-2)}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => changeMonth(1)}
-                  className="rounded-l-none"
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-
               {!isMobile && (
                 <Button
                   variant="outline"
@@ -987,48 +1270,65 @@ export function ESSAttendanceClient({
                     setSelectedYear(today.getFullYear());
                   }}
                 >
-                  Hiện tại
+                  Hôm nay
                 </Button>
               )}
 
-              <Separator
-                orientation="vertical"
-                className="h-4 hidden sm:block mx-1"
-              />
-
-              {/* View Mode Toggle */}
-              <div className="flex items-center border rounded-md overflow-hidden bg-background shrink-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    className="bg-background shrink-0"
+                  >
+                    {calendarMode === "week" ? "Tuần" : "Tháng"}
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Xem theo</DropdownMenuLabel>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setCalendarMode("week");
+                      const ti = weeks.findIndex((w) =>
+                        w.some((d) => d.isToday && d.isCurrentMonth),
+                      );
+                      if (ti >= 0) setSelectedWeekIdx(ti);
+                    }}
+                  >
+                    Tuần
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setCalendarMode("month")}>
+                    Tháng
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {/* Month Navigator */}
+              <div className="flex items-center gap-0.5 shrink-0">
                 <Button
-                  variant={viewMode === "table" ? "secondary" : "ghost"}
-                  size="xs"
-                  className={cn(
-                    "rounded-none px-2.5",
-                    viewMode === "table" && "bg-primary/10 text-primary hover:bg-primary/20",
-                  )}
-                  onClick={() => setViewMode("table")}
+                  variant="outline"
+                  size="icon-xs"
+                  onClick={() => changeMonth(-1)}
                 >
-                  <TableIcon className="h-3.5 w-3.5" />
-                  <span className="hidden lg:inline ml-1.5">Bảng</span>
+                  <ChevronLeft className="h-3.5 w-3.5" />
                 </Button>
+                <span className="text-xs sm:text-sm font-medium px-2 whitespace-nowrap hidden sm:inline">
+                  {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+                </span>
+                <span className="text-xs font-medium px-1 sm:hidden">
+                  T{selectedMonth}/{selectedYear.toString().slice(-2)}
+                </span>
                 <Button
-                  variant={viewMode === "calendar" ? "secondary" : "ghost"}
-                  size="xs"
-                  className={cn(
-                    "rounded-none px-2.5 border-l",
-                    viewMode === "calendar" && "bg-primary/10 text-primary hover:bg-primary/20",
-                  )}
-                  onClick={() => setViewMode("calendar")}
+                  variant="outline"
+                  size="icon-xs"
+                  onClick={() => changeMonth(1)}
                 >
-                  <Calendar className="h-3.5 w-3.5" />
-                  <span className="hidden lg:inline ml-1.5">Lịch</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
+            </div>
 
-              <Separator
-                orientation="vertical"
-                className="h-4 hidden sm:block mx-1"
-              />
-
+            <div className="flex items-center gap-2 ml-2 shrink-0">
               {/* Status Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -1075,9 +1375,6 @@ export function ESSAttendanceClient({
                   </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-
-            <div className="flex items-center gap-2 ml-2 shrink-0">
               {/* Search */}
               <div className="relative flex items-center" ref={mergedSearchRef}>
                 <Input
@@ -1085,27 +1382,66 @@ export function ESSAttendanceClient({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
-                  placeholder="Tìm kiếm..."
+                  placeholder="Tìm kiếm nhân viên..."
                   className={cn(
-                    "h-7 text-xs transition-all duration-300 ease-in-out pr-7 bg-background",
+                    "h-7 text-xs transition-all duration-300 ease-in-out pr-6",
                     searchExpanded
-                      ? "w-32 sm:w-48 opacity-100 pl-2.5 border-input"
-                      : "w-0 opacity-0 pl-0 border-transparent",
+                      ? "w-50 opacity-100 pl-3"
+                      : "w-0 opacity-0 pl-0",
                   )}
                 />
                 <Button
-                  size="icon-xs"
-                  variant={searchExpanded ? "ghost" : "outline"}
+                  size={"icon-xs"}
+                  variant={"ghost"}
                   onClick={handleSearchToggle}
                   className={cn(
-                    "absolute right-0 z-10",
-                    !searchExpanded && "bg-background relative right-auto",
-                    searchExpanded && "[&_svg]:text-primary hover:bg-transparent",
+                    "absolute right-0.5 z-10",
+                    searchExpanded && "[&_svg]:text-primary",
                   )}
                 >
-                  <Search className="h-3.5 w-3.5" />
+                  <Search />
                 </Button>
               </div>
+
+              <Separator orientation="vertical" className="h-4!" />
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center border rounded-md overflow-hidden bg-background shrink-0">
+                <Button
+                  variant={viewMode === "table" ? "secondary" : "ghost"}
+                  size="xs"
+                  className={cn(
+                    "rounded-none px-2.5",
+                    viewMode === "table" &&
+                      "bg-primary/10 text-primary hover:bg-primary/20",
+                  )}
+                  onClick={() => setViewMode("table")}
+                >
+                  <TableIcon className="h-3.5 w-3.5" />
+                  <span className="hidden lg:inline ml-1.5">Bảng</span>
+                </Button>
+                <Button
+                  variant={viewMode === "calendar" ? "secondary" : "ghost"}
+                  size="xs"
+                  className={cn(
+                    "rounded-none px-2.5 border-l",
+                    viewMode === "calendar" &&
+                      "bg-primary/10 text-primary hover:bg-primary/20",
+                  )}
+                  onClick={() => setViewMode("calendar")}
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span className="hidden lg:inline ml-1.5">Lịch</span>
+                </Button>
+              </div>
+
+              <Button
+                variant="outline"
+                size="icon-xs"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
         </div>
@@ -1164,12 +1500,14 @@ export function ESSAttendanceClient({
 
           <div className="h-full flex flex-col pb-8">
             {viewMode === "calendar" ? (
-              <div className="p-2 sm:p-4 overflow-auto h-full">
+              <div className="overflow-auto h-full">
                 <AttendanceCalendarView
                   weeks={weeks}
                   isLoading={isLoading}
                   onRecordClick={setSelectedRecord}
                   timezone={timezone}
+                  calendarMode={calendarMode}
+                  selectedWeek={selectedWeekIdx}
                 />
               </div>
             ) : isMobile ? (
@@ -1314,6 +1652,25 @@ export function ESSAttendanceClient({
                     }
                   </span>
                 )}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  {[
+                    { color: "bg-emerald-500", label: "Có mặt" },
+                    { color: "bg-amber-500", label: "Đi trễ" },
+                    { color: "bg-orange-500", label: "Về sớm" },
+                    { color: "bg-red-500", label: "Vắng" },
+                    { color: "bg-blue-500", label: "Nghỉ phép" },
+                    { color: "bg-purple-500", label: "Ngày lễ" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-1">
+                      <div
+                        className={cn("w-2.5 h-2.5 rounded-sm", item.color)}
+                      />
+                      <span className="text-[10px] text-muted-foreground">
+                        {item.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

@@ -46,8 +46,7 @@ export function LoginForm() {
 
     if (result.error) {
       form.setError("root", {
-        message:
-          result.error.message ?? "Tên đăng nhập hoặc mật khẩu không đúng",
+        message: "Tên đăng nhập hoặc mật khẩu không đúng",
       });
       return;
     }

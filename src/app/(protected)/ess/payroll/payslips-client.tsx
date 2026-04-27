@@ -138,7 +138,7 @@ function formatCurrency(amount: number | null) {
 function secureFormat(amount: number | null, isSecure?: boolean) {
   if (isSecure) {
     return (
-      <span className="blur-[4px] opacity-40 select-none pointer-events-none tracking-widest text-[0.95em]">
+      <span className="blur-xs opacity-40 select-none pointer-events-none tracking-widest text-[0.95em]">
         {formatCurrency(12345678)}
       </span>
     );
@@ -884,11 +884,15 @@ export function ESSPayslipsClient({ initialPayslips }: ESSPayslipsClientProps) {
               <Button
                 variant="outline"
                 size="xs"
+                tooltip={"Hôm nay"}
                 onClick={() => setSelectedYear(new Date().getFullYear())}
               >
-                Hiện tại
+                Hôm nay
               </Button>
             </div>
+
+            {/* Spacer */}
+            <div className="flex-1" />
 
             {/* Search */}
             <div className="relative flex items-center" ref={mergedSearchRef}>
@@ -899,10 +903,11 @@ export function ESSPayslipsClient({ initialPayslips }: ESSPayslipsClientProps) {
                 onKeyDown={handleSearchKeyDown}
                 placeholder="Tìm..."
                 className={cn(
-                  "h-7 text-xs transition-all duration-300 ease-in-out pr-7",
+                  "h-6 text-xs transition-all duration-300 ease-in-out pr-7",
                   searchExpanded ? "w-28 sm:w-48 pl-3" : "w-0 opacity-0 pl-0",
                 )}
               />
+
               <Button
                 size="icon-xs"
                 variant="ghost"
@@ -957,9 +962,6 @@ export function ESSPayslipsClient({ initialPayslips }: ESSPayslipsClientProps) {
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* Spacer */}
-            <div className="flex-1" />
 
             {/* View Mode Toggle (Desktop only) */}
             {!isMobile && (

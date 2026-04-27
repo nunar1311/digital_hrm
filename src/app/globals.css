@@ -193,3 +193,437 @@
 .grid-stack .gs-static .dragging {
   cursor: default !important;
 }
+
+/* =========================================================
+   Tiptap Editor — WYSIWYG editing surface
+   ========================================================= */
+
+/* Editor content area: inherit contract formatting */
+.contract-editor-content .tiptap {
+  font-family: "Times New Roman", "Noto Serif", serif;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--foreground);
+  padding: 96px 96px;
+  min-height: 297mm;
+  outline: none;
+}
+
+.contract-editor-content .tiptap:focus {
+  outline: none;
+}
+
+/* Placeholder */
+.contract-editor-content .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+  font-style: italic;
+}
+
+/* Headings */
+.contract-editor-content .tiptap h1,
+.contract-editor-content .tiptap h2,
+.contract-editor-content .tiptap h3,
+.contract-editor-content .tiptap h4 {
+  font-family: "Times New Roman", "Noto Serif", serif;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.4;
+  margin: 12px 0 6px 0;
+}
+
+.contract-editor-content .tiptap h1 {
+  font-size: 18px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.contract-editor-content .tiptap h2 {
+  font-size: 16px;
+}
+
+.contract-editor-content .tiptap h3 {
+  font-size: 15px;
+}
+
+.contract-editor-content .tiptap h4 {
+  font-size: 14px;
+}
+
+/* Paragraphs */
+.contract-editor-content .tiptap p {
+  margin: 0 0 4px 0;
+}
+
+/* Bold */
+.contract-editor-content .tiptap strong {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+/* Lists */
+.contract-editor-content .tiptap ul,
+.contract-editor-content .tiptap ol {
+  margin: 4px 0;
+  padding-left: 28px;
+}
+
+.contract-editor-content .tiptap ul {
+  list-style-type: disc;
+}
+
+.contract-editor-content .tiptap ol {
+  list-style-type: decimal;
+}
+
+.contract-editor-content .tiptap li {
+  margin-bottom: 3px;
+  line-height: 1.6;
+}
+
+/* HR */
+.contract-editor-content .tiptap hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+/* Tables */
+.contract-editor-content .tiptap table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  table-layout: fixed;
+}
+
+.contract-editor-content .tiptap table td,
+.contract-editor-content .tiptap table th {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  vertical-align: top;
+  font-size: 14px;
+  min-width: 60px;
+  position: relative;
+}
+
+.contract-editor-content .tiptap table th {
+  background-color: var(--muted);
+  font-weight: 700;
+}
+
+/* Selected cells */
+.contract-editor-content .tiptap table .selectedCell {
+  background-color: var(--primary-muted);
+}
+
+/* Column resize handle */
+.contract-editor-content .tiptap .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #3b82f6;
+  pointer-events: none;
+}
+
+/* Blockquote */
+.contract-editor-content .tiptap blockquote {
+  border-left: 3px solid var(--muted-foreground);
+  padding-left: 16px;
+  color: var(--muted-foreground);
+  font-style: italic;
+  margin: 8px 0;
+}
+
+/* =========================================================
+   Contract Document Preview — Vietnamese legal document style
+   ========================================================= */
+
+/* Base typography */
+.contract-content {
+  font-family: "Times New Roman", "Noto Serif", serif;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--foreground);
+  text-align: justify;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Reset margins for direct children */
+.contract-content > *:first-child {
+  margin-top: 0;
+}
+
+.contract-content > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Paragraphs */
+.contract-content p {
+  margin: 0 0 4px 0;
+  text-align: inherit;
+}
+
+/* Centered paragraphs — Quốc hiệu, tiêu ngữ, tiêu đề */
+.contract-content p[style*="text-align:center"],
+.contract-content p[style*="text-align: center"] {
+  text-align: center !important;
+  margin-bottom: 2px;
+}
+
+/* Justified body text */
+.contract-content p[style*="text-align:justify"],
+.contract-content p[style*="text-align: justify"] {
+  text-indent: 0;
+}
+
+/* Headings — Tiêu đề điều khoản */
+.contract-content h1,
+.contract-content h2,
+.contract-content h3,
+.contract-content h4,
+.contract-content h5,
+.contract-content h6 {
+  font-family: "Times New Roman", "Noto Serif", serif;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 12px 0 6px 0;
+  page-break-after: avoid;
+  line-height: 1.4;
+}
+
+.contract-content h1 {
+  font-size: 18px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.contract-content h2 {
+  font-size: 16px;
+  text-align: center;
+}
+
+.contract-content h3 {
+  font-size: 15px;
+}
+
+.contract-content h4,
+.contract-content h5,
+.contract-content h6 {
+  font-size: 14px;
+}
+
+/* Bold text — Điều X, tiêu đề bên A/B */
+.contract-content strong,
+.contract-content b {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+/* Italic — ghi chú, chú thích */
+.contract-content em,
+.contract-content i {
+  font-style: italic;
+}
+
+/* Underline */
+.contract-content u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Links */
+.contract-content a {
+  color: #1a56db;
+  text-decoration: underline;
+}
+
+/* Line breaks — spacer between sections */
+.contract-content br {
+  display: block;
+  content: "";
+  margin-top: 4px;
+}
+
+/* Ordered and unordered lists */
+.contract-content ol,
+.contract-content ul {
+  margin: 4px 0 4px 0;
+  padding-left: 28px;
+}
+
+.contract-content ol {
+  list-style-type: decimal;
+}
+
+.contract-content ul {
+  list-style-type: disc;
+}
+
+.contract-content li {
+  margin-bottom: 3px;
+  text-align: justify;
+  line-height: 1.6;
+}
+
+.contract-content li::marker {
+  font-weight: normal;
+}
+
+/* Nested lists */
+.contract-content ol ol,
+.contract-content ul ul,
+.contract-content ol ul,
+.contract-content ul ol {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+/* ── Tables — Signature block & data tables ── */
+.contract-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.contract-content table,
+.contract-content table td,
+.contract-content table th {
+  border: none !important;
+}
+
+.contract-content table td,
+.contract-content table th {
+  padding: 6px 12px;
+  text-align: center;
+  vertical-align: top;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Signature block specifically — the last table */
+.contract-content table:last-of-type {
+  margin-top: 20px;
+}
+
+.contract-content table:last-of-type td {
+  padding: 8px 16px;
+  text-align: center;
+  vertical-align: top;
+}
+
+/* Bordered tables (if explicitly styled) */
+.contract-content table[border] td,
+.contract-content table[border] th {
+  border: 1px solid var(--border) !important;
+}
+
+/* ── Blockquote — for notes / references ── */
+.contract-content blockquote {
+  margin: 8px 0;
+  padding: 8px 16px;
+  border-left: 3px solid var(--muted-foreground);
+  color: var(--muted-foreground);
+  font-style: italic;
+  background: var(--muted);
+}
+
+/* ── Horizontal rule — section divider ── */
+.contract-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+/* ── Images ── */
+.contract-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 8px auto;
+}
+
+/* ── Preformatted / code blocks (rare in contracts) ── */
+.contract-content pre,
+.contract-content code {
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  background: var(--muted);
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+.contract-content pre {
+  padding: 8px 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+/* ── Print-specific optimizations ── */
+@media print {
+  .contract-content {
+    font-size: 13pt;
+    color: #000;
+  }
+
+  .contract-content p,
+  .contract-content li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .contract-content h1,
+  .contract-content h2,
+  .contract-content h3 {
+    page-break-after: avoid;
+  }
+
+  .contract-content table {
+    page-break-inside: avoid;
+  }
+}
+
+/* ── Legacy Quill class compatibility ──
+   Stored contract HTML may contain ql-* classes from
+   the previous Quill editor. These rules ensure they
+   still render correctly after removing the Quill dependency. */
+
+/* Alignment */
+.contract-content .ql-align-center {
+  text-align: center !important;
+}
+
+.contract-content .ql-align-right {
+  text-align: right !important;
+}
+
+.contract-content .ql-align-justify {
+  text-align: justify !important;
+}
+
+/* Indentation (Quill uses multiples of 3em) */
+.contract-content .ql-indent-1 { padding-left: 3em; }
+.contract-content .ql-indent-2 { padding-left: 6em; }
+.contract-content .ql-indent-3 { padding-left: 9em; }
+.contract-content .ql-indent-4 { padding-left: 12em; }
+.contract-content .ql-indent-5 { padding-left: 15em; }
+
+/* Font sizes */
+.contract-content .ql-size-small  { font-size: 0.75em; }
+.contract-content .ql-size-large  { font-size: 1.5em; }
+.contract-content .ql-size-huge   { font-size: 2.5em; }
+
+/* Font families */
+.contract-content .ql-font-serif      { font-family: "Times New Roman", Georgia, serif; }
+.contract-content .ql-font-monospace   { font-family: "Courier New", Monaco, monospace; }
+
+/* Direction */
+.contract-content .ql-direction-rtl {
+  direction: rtl;
+  text-align: inherit;
+}

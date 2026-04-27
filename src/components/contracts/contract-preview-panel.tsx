@@ -1,14 +1,20 @@
-import { FileText, X } from "lucide-react";
-import { getContractTemplatePreview } from "@/app/(protected)/contracts/actions";
-import { buildContractDocxBuffer } from "@/lib/contracts/document-export";
-import mammoth from "mammoth";
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+
+import { FileText, X, Loader2 } from "lucide-react";
+
+import { getContractPreviewHtmlAction } from "@/app/(protected)/contracts/actions";
 import { Button } from "@/components/ui/button";
 import { ContractPreviewPanelClient } from "@/components/contracts/contract-preview-panel-client";
+import { useQuery } from "@tanstack/react-query";
+
 
 interface ContractPreviewPanelProps {
   contractId: string;
   contractTitle: string;
   contractNumber: string;
+  status: string;
   onClose: () => void;
 }
 
@@ -34,80 +40,41 @@ function NotFoundState() {
   );
 }
 
-async function ContractPreviewContent({
-  contractId,
-}: {
-  contractId: string;
-}) {
-  const preview = await getContractTemplatePreview({ contractId });
+import { A4PaginatedPreview } from "./a4-paginated-preview";
 
-  if (!preview.success) {
-    return <NotFoundState />;
+function ContractPreviewContent({ contractId }: { contractId: string }) {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["contract-preview-html", contractId],
+    queryFn: () => getContractPreviewHtmlAction(contractId),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8">
+        <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
+        <p className="text-sm text-muted-foreground text-center">
+          Đang tải nội dung hợp đồng...
+        </p>
+      </div>
+    );
   }
 
-  let html: string;
-  try {
-    const docxBuffer = await buildContractDocxBuffer({
-      title:
-        preview.mergedContent?.split("\n")[0] ?? "Hop Dong Lao Dong",
-      mergedContent: preview.mergedContent ?? "",
-    });
-
-    const result = await mammoth.convertToHtml(
-      { buffer: Buffer.from(docxBuffer) },
-      {
-        styleMap: [
-          "p[style-name='Heading 1'] => h1:fresh",
-          "p[style-name='Heading 2'] => h2:fresh",
-          "p[style-name='Title'] => h1:fresh",
-          "p => p",
-        ],
-      },
-    );
-    html = result.value;
-  } catch {
+  if (isError || !data || !data.success) {
     return <ErrorState />;
   }
 
-  return (
-    <div
-      className="h-full overflow-auto p-6"
-      style={{
-        background: "white",
-        color: "#1a1a1a",
-        fontFamily: "Times New Roman, serif",
-        fontSize: "13px",
-        lineHeight: "1.6",
-      }}
-    >
-      <style>{`
-        .docx-preview h1 {
-          font-size: 18px;
-          font-weight: bold;
-          text-align: center;
-          margin-bottom: 16px;
-          text-transform: uppercase;
-        }
-        .docx-preview p {
-          margin-bottom: 8px;
-          text-align: justify;
-        }
-        .docx-preview strong {
-          font-weight: bold;
-        }
-      `}</style>
-      <div
-        className="docx-preview"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    </div>
-  );
+  if (!data.html) {
+    return <NotFoundState />;
+  }
+
+  return <A4PaginatedPreview htmlContent={data.html} />;
 }
 
 export function ContractPreviewPanel({
   contractId,
   contractTitle,
   contractNumber,
+  status,
   onClose,
 }: ContractPreviewPanelProps) {
   return (
@@ -135,7 +102,7 @@ export function ContractPreviewPanel({
 
       {/* Export buttons */}
       <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/20 shrink-0">
-        <ContractPreviewPanelClient contractId={contractId} />
+        <ContractPreviewPanelClient contractId={contractId} status={status} />
       </div>
 
       {/* Preview content */}

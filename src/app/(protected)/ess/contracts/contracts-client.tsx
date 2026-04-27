@@ -9,6 +9,7 @@ import {
   Loader2,
   Search,
   ChevronRight,
+  PenTool,
 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -24,7 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ContractStatusBadge } from "@/components/contracts/contract-status-badge";
-import { exportContractDocument } from "@/app/(protected)/contracts/actions";
+import { exportContractDocument, signContract } from "@/app/(protected)/contracts/actions";
 import type { ContractListItem } from "@/types/contract";
 import {
   DropdownMenu,
@@ -112,8 +113,11 @@ function getContractTypeColor(typeName: string): { bg: string; text: string } {
 
 const STATUS_FILTERS = [
   { value: "ALL", label: "Tất cả" },
+  { value: "DRAFT", label: "Bản nháp" },
+  { value: "PENDING_APPROVAL", label: "Chờ duyệt" },
+  { value: "APPROVED", label: "Đã duyệt" },
+  { value: "PENDING_SIGN", label: "Chờ ký" },
   { value: "ACTIVE", label: "Đang hiệu lực" },
-  { value: "PENDING", label: "Chờ hiệu lực" },
   { value: "EXPIRED", label: "Hết hạn" },
   { value: "TERMINATED", label: "Đã chấm dứt" },
 ];
@@ -277,6 +281,8 @@ function ContractDetailDialog({
   onClose: () => void;
   onExport: (format: "DOCX" | "PDF") => void;
   isExporting: boolean;
+  onSign: () => void;
+  isSigning: boolean;
 }) {
   if (!contract) return null;
 
@@ -368,6 +374,24 @@ function ContractDetailDialog({
 
           <Separator />
 
+          {/* Actions */}
+          {contract.status === "PENDING_SIGN" && (
+            <div className="pb-2">
+              <Button
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                onClick={onSign}
+                disabled={isSigning}
+              >
+                {isSigning ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PenTool className="h-4 w-4" />
+                )}
+                Ký hợp đồng điện tử
+              </Button>
+            </div>
+          )}
+
           {/* Export Buttons */}
           <div className="flex gap-3">
             <Button
@@ -448,6 +472,21 @@ export function ESSContractsClient({
     },
     onError: () => {
       toast.error("Không thể xuất file hợp đồng");
+    },
+  });
+
+  const signMutation = useMutation({
+    mutationFn: async (contractId: string) => {
+      const res = await signContract(contractId);
+      if (!res.success) throw new Error(res.message || "Lỗi ký hợp đồng");
+      return res;
+    },
+    onSuccess: () => {
+      toast.success("Ký hợp đồng thành công");
+      setSelectedContractForPreview(null);
+    },
+    onError: (err) => {
+      toast.error(err.message || "Không thể ký hợp đồng");
     },
   });
 
@@ -769,6 +808,7 @@ export function ESSContractsClient({
                         contractId={selectedContractForPreview}
                         contractTitle={selectedContractData.title}
                         contractNumber={selectedContractData.contractNumber}
+                        status={selectedContractData.status}
                         onClose={() =>
                           setSelectedContractForPreview(null)
                         }
@@ -812,6 +852,12 @@ export function ESSContractsClient({
             }
           }}
           isExporting={exportMutation.isPending}
+          onSign={() => {
+            if (selectedContractForPreview) {
+              signMutation.mutate(selectedContractForPreview);
+            }
+          }}
+          isSigning={signMutation.isPending}
         />
       )}
     </div>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.container {
+  width: 642px;
+  height: 1009px;
+  column-width: 642px;
+  column-gap: 40px;
+  background: yellow;
+  overflow: visible;
+}
+.page {
+  position: relative;
+  width: 794px;
+  height: 1123px;
+  background: lightblue;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.inner {
+  position: absolute;
+  top: 57px;
+  left: 76px;
+  width: 642px;
+  height: 1009px;
+  background: pink;
+}
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="inner">
+      <div class="container" id="col1">
+        <script>
+          for (let i = 0; i < 100; i++) document.write("<p>Line " + i + " this is a long line to test wrapping and column behavior.</p>");
+        </script>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

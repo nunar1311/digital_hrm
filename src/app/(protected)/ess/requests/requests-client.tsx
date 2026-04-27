@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Briefcase,
   Info,
+  Filter,
+  ListFilter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +36,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -44,7 +56,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { submitAdministrativeRequest, cancelAdministrativeRequest } from "../actions";
+import {
+  submitAdministrativeRequest,
+  cancelAdministrativeRequest,
+} from "../actions";
 
 interface AdministrativeRequest {
   id: string;
@@ -212,7 +227,9 @@ function RequestDetailDialog({
           <Card className="bg-teal-50/50 border-teal-100">
             <CardContent className="p-3">
               <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-0.5">Loại yêu cầu</p>
+                <p className="text-xs text-muted-foreground mb-0.5">
+                  Loại yêu cầu
+                </p>
                 <p className="text-lg font-bold text-teal-700">
                   {getTypeLabel(request.type)}
                 </p>
@@ -239,9 +256,7 @@ function RequestDetailDialog({
                   <DetailRow
                     label="Người duyệt"
                     value={
-                      request.reviewedByUser?.name ||
-                      request.reviewedBy ||
-                      "-"
+                      request.reviewedByUser?.name || request.reviewedBy || "-"
                     }
                   />
                   <DetailRow
@@ -274,7 +289,11 @@ function RequestDetailDialog({
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => onCancel("")}>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => onCancel("")}
+            >
               Đóng
             </Button>
             {request.status === "PENDING" && (
@@ -327,7 +346,9 @@ function RequestDetailSheet({
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-lg font-semibold">{getTypeLabel(request.type)}</h2>
+              <h2 className="text-lg font-semibold">
+                {getTypeLabel(request.type)}
+              </h2>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant={cfg.variant} className={cfg.className}>
                   {cfg.label}
@@ -342,7 +363,9 @@ function RequestDetailSheet({
           <Card className="bg-teal-50/50 border-teal-100">
             <CardContent className="p-3">
               <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-0.5">Loại yêu cầu</p>
+                <p className="text-xs text-muted-foreground mb-0.5">
+                  Loại yêu cầu
+                </p>
                 <p className="text-lg font-bold text-teal-700">
                   {getTypeLabel(request.type)}
                 </p>
@@ -375,7 +398,9 @@ function RequestDetailSheet({
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Ngày duyệt</span>
-                <span className="font-medium">{formatDateTime(request.reviewedAt)}</span>
+                <span className="font-medium">
+                  {formatDateTime(request.reviewedAt)}
+                </span>
               </div>
             </div>
           )}
@@ -401,7 +426,11 @@ function RequestDetailSheet({
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">
-            <Button variant="outline" className="flex-1" onClick={() => onCancel("")}>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => onCancel("")}
+            >
               Đóng
             </Button>
             {request.status === "PENDING" && (
@@ -574,11 +603,19 @@ function RequestCard({
 
 // ─── Empty State ─────────────────────────────────────────────────────────────
 
-function EmptyState({ title, description }: { title: string; description: string }) {
+function EmptyState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
     <div className="flex flex-col items-center justify-center h-64 px-4">
       <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
-      <p className="text-muted-foreground text-center mb-1 font-medium">{title}</p>
+      <p className="text-muted-foreground text-center mb-1 font-medium">
+        {title}
+      </p>
       <p className="text-xs text-muted-foreground text-center">{description}</p>
     </div>
   );
@@ -715,7 +752,9 @@ export function ESSRequestsClient({ initialRequests }: ESSRequestsClientProps) {
         {/* Header */}
         <section>
           <header className="px-2 flex items-center sm:px-4 h-10 border-b">
-            <h1 className="font-bold text-sm sm:text-base">Yêu cầu hành chính</h1>
+            <h1 className="font-bold text-sm sm:text-base">
+              Yêu cầu hành chính
+            </h1>
           </header>
 
           {/* Stats row */}
@@ -769,7 +808,7 @@ export function ESSRequestsClient({ initialRequests }: ESSRequestsClientProps) {
           </div>
 
           {/* Search & Filter Bar */}
-          <div className="flex items-center gap-1 sm:gap-2 px-2 py-2">
+          <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 py-2">
             {/* Search */}
             <div className="relative flex items-center" ref={mergedSearchRef}>
               <Input
@@ -779,7 +818,7 @@ export function ESSRequestsClient({ initialRequests }: ESSRequestsClientProps) {
                 onKeyDown={handleSearchKeyDown}
                 placeholder="Tìm..."
                 className={cn(
-                  "h-7 sm:h-8 text-xs transition-all duration-300 ease-in-out pr-7",
+                  "h-6 text-xs transition-all duration-300 ease-in-out pr-7",
                   searchExpanded ? "w-32 sm:w-48 pl-3" : "w-0 opacity-0 pl-0",
                 )}
               />
@@ -796,45 +835,53 @@ export function ESSRequestsClient({ initialRequests }: ESSRequestsClientProps) {
               </Button>
             </div>
 
-            {/* Status Filter Dropdown */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger
-                className={cn(
-                  "h-7 sm:h-8 text-xs w-auto min-w-[80px]",
-                  statusFilter !== "ALL" &&
-                    "bg-primary/10 border-primary text-primary",
-                )}
-              >
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_FILTERS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Quick filter pills (desktop) */}
-            <div className="hidden sm:flex items-center gap-1">
-              {STATUS_FILTERS.slice(1).map((opt) => (
+            {/* Dropdown filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
-                  key={opt.value}
-                  variant={statusFilter === opt.value ? "default" : "outline"}
+                  variant={statusFilter === "ALL" ? "ghost" : "outline"}
                   size="xs"
-                  onClick={() => setStatusFilter(opt.value)}
-                  className="text-xs"
+                  className=""
                 >
-                  {opt.label}
+                  <ListFilter className="h-3.5 w-3.5" />
+                  <span>
+                    {statusFilter === "ALL"
+                      ? "Lọc"
+                      : STATUS_FILTERS.find((s) => s.value === statusFilter)
+                          ?.label}
+                  </span>
                 </Button>
-              ))}
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Lọc theo trạng thái
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                >
+                  {STATUS_FILTERS.map((opt) => (
+                    <DropdownMenuCheckboxItem
+                      key={opt.value}
+                      checked={statusFilter === opt.value}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setStatusFilter(opt.value);
+                        }
+                      }}
+                      className="text-sm"
+                    >
+                      {opt.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-            <div className="flex-1" />
+            <Separator className="h-4! " orientation="vertical" />
 
             <Button size="xs" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-3 w-3 sm:mr-1" />
               <span className="hidden sm:inline">Tạo yêu cầu</span>
             </Button>
           </div>
@@ -901,7 +948,10 @@ export function ESSRequestsClient({ initialRequests }: ESSRequestsClientProps) {
                             <p className="font-medium text-blue-900">Lưu ý</p>
                             <ul className="mt-1.5 space-y-0.5 text-blue-800">
                               <li>• Nhấn vào thẻ để xem chi tiết yêu cầu</li>
-                              <li>• Đơn có trạng thái &quot;Đang chờ&quot; có thể được hủy</li>
+                              <li>
+                                • Đơn có trạng thái &quot;Đang chờ&quot; có thể
+                                được hủy
+                              </li>
                               <li>• Liên hệ HCNS nếu cần hỗ trợ thêm</li>
                             </ul>
                           </div>
@@ -922,7 +972,11 @@ export function ESSRequestsClient({ initialRequests }: ESSRequestsClientProps) {
                 </p>
                 {statusFilter !== "ALL" && (
                   <span className="text-xs text-muted-foreground">
-                    Lọc: {STATUS_FILTERS.find((s) => s.value === statusFilter)?.label}
+                    Lọc:{" "}
+                    {
+                      STATUS_FILTERS.find((s) => s.value === statusFilter)
+                        ?.label
+                    }
                   </span>
                 )}
               </div>
@@ -988,7 +1042,10 @@ export function ESSRequestsClient({ initialRequests }: ESSRequestsClientProps) {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Hủy
             </Button>
-            <Button onClick={handleSubmit} disabled={!selectedType || isSubmitting}>
+            <Button
+              onClick={handleSubmit}
+              disabled={!selectedType || isSubmitting}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

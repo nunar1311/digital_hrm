@@ -90,6 +90,7 @@ model User {
   createdContractAddendums     ContractAddendum[]            @relation("ContractAddendumsCreatedBy")
   createdContractTemplates     ContractTemplate[]            @relation("ContractTemplatesCreatedBy")
   receivedContractExpiryAlerts ContractExpiryDispatch[]      @relation("ContractExpiryDispatchRecipient")
+  contractHistories            ContractHistory[]             @relation("ContractHistoriesActor")
   processedPayrollRecords      PayrollRecord[]               @relation("ProcessedByUser")
   approvedPayrollRecords       PayrollRecord[]               @relation("ApprovedByUser")
 
@@ -1702,12 +1703,20 @@ model Contract {
   startDate       DateTime
   endDate         DateTime?
   signedDate      DateTime?
-  status          String    @default("DRAFT") // DRAFT, PENDING, ACTIVE, EXPIRED, TERMINATED
+  status          String    @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, PENDING_SIGN, ACTIVE, EXPIRED, TERMINATED
   salary          Float?
   currency        String    @default("VND")
   probationSalary Float?
   fileUrl         String?
   notes           String?
+  
+  // ── Luồng duyệt đa cấp & Ký điện tử ──
+  approvalChain   Json?   // Array<ApprovalStepRecord>
+  currentStep     Int     @default(0)
+  signedIp        String?
+  signedDevice    String?
+  eSignatureUrl   String?
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -1716,11 +1725,28 @@ model Contract {
   template         ContractTemplate?        @relation(fields: [templateId], references: [id])
   addendums        ContractAddendum[]
   expiryDispatches ContractExpiryDispatch[]
+  histories        ContractHistory[]
 
   @@index([userId])
   @@index([status, endDate])
   @@index([templateId])
   @@map("contracts")
+}
+
+model ContractHistory {
+  id          String   @id @default(cuid())
+  contractId  String
+  action      String   // CREATED, STATUS_CHANGED, UPDATED, SIGNED, etc.
+  changes     Json?    // { old: {}, new: {} }
+  actorId     String?
+  createdAt   DateTime @default(now())
+
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  actor       User?    @relation("ContractHistoriesActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([contractId])
+  @@index([actorId])
+  @@map("contract_histories")
 }
 
 model ContractType {
