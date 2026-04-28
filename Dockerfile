@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # ============================================================
-# Digital HRM - Next.js Application Dockerfile (Production)
+# Digital HRM — Next.js + Socket.IO Custom Server Dockerfile
 # ============================================================
 
 # ── Stage 1: Install dependencies ──────────────────────────
@@ -33,7 +33,7 @@ ENV DATABASE_URL=${DATABASE_URL}
 # Generate Prisma client
 RUN pnpm prisma generate
 
-# Limit RAM usage on low-spec VPS (OOM prevention)
+# Limit RAM usage on low-spec VPS
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -53,22 +53,32 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
+# Copy full node_modules (needed for custom server.ts + tsx)
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy package files
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+
+# Copy custom server entry point
+COPY --from=builder /app/server.ts ./server.ts
+
+# Copy Next.js build output
+COPY --from=builder /app/.next ./.next
+
 # Copy public assets
 COPY --from=builder /app/public ./public
 
-# Create and set permissions for Next.js cache
-RUN mkdir -p .next && chown nextjs:nodejs .next
+# Copy Prisma artifacts
+COPY --from=builder /app/generated ./generated
+COPY --from=builder /app/prisma ./prisma
 
-# Copy standalone build output
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy Prisma artifacts (needed at runtime for db push)
-COPY --from=builder --chown=nextjs:nodejs /app/generated ./generated
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+# Copy source (needed for server.ts dynamic imports at runtime)
+COPY --from=builder /app/src ./src
 
 # Create uploads directory
 RUN mkdir -p /app/uploads && chown nextjs:nodejs /app/uploads
+RUN chown -R nextjs:nodejs /app/.next
 
 USER nextjs
 
@@ -80,4 +90,5 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-CMD ["node", "server.js"]
+# Run custom server with tsx (supports TypeScript + Socket.IO)
+CMD ["node", "--import", "tsx", "server.ts"]
