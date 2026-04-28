@@ -649,6 +649,25 @@ async function seed() {
         { code: "EMP-100", name: "Trần Thị Mỹ Linh", gender: "FEMALE", dept: "HR", pos: "POS-HR-STAFF", role: "HR_STAFF", dob: "1999-10-05", phone: "0912123460", nationalId: "025080001332", hire: "2023-04-01", type: "FULL_TIME", username: "230401108" },
     ];
 
+    // Tạo thêm 400 nhân viên để đủ 500
+    for (let i = 101; i <= 500; i++) {
+        const codeStr = i.toString().padStart(3, "0");
+        employees.push({
+            code: `EMP-${codeStr}`,
+            name: `Nhân viên tự động ${codeStr}`,
+            gender: i % 2 === 0 ? "MALE" : "FEMALE",
+            dept: "TECH",
+            pos: "POS-TECH-DEV",
+            role: "EMPLOYEE",
+            dob: "1995-01-01",
+            phone: `0999${codeStr.padStart(6, "0")}`,
+            nationalId: `025089${codeStr.padStart(6, "0")}`,
+            hire: "2020-01-01",
+            type: "FULL_TIME",
+            username: codeStr,
+        });
+    }
+
     // Xác định manager cho từng nhân viên
     const managerIdMap: Record<string, string> = {};
 
@@ -688,6 +707,63 @@ async function seed() {
             }
         }
         console.log(`   ✅ Đã gán ca làm việc cho ${shiftAssigned} nhân viên\n`);
+    }
+
+    // ── 13.5. Attendance History ──────────────────────────────────
+    console.log("📅 Đang seed attendance history (180 ngày)...");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (defaultShift) {
+        const activeUsersForAtt = await prisma.user.findMany({ where: { employeeStatus: "ACTIVE" } });
+        let attCount = 0;
+        // Seed cho 500 nhân viên
+        const totalUsers = Math.min(500, activeUsersForAtt.length);
+        
+        for (let uIdx = 0; uIdx < totalUsers; uIdx++) {
+            const user = activeUsersForAtt[uIdx];
+            const attendancesToInsert = [];
+            
+            for (let d = 0; d < 180; d++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - d);
+                const dayOfWeek = date.getDay();
+                
+                // Bỏ qua Thứ 7 (6) và Chủ nhật (0)
+                if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+                
+                // Check-in ngẫu nhiên 07:45 - 08:15
+                const checkIn = new Date(date);
+                checkIn.setHours(7, 45 + Math.floor(Math.random() * 30), 0, 0);
+                
+                // Check-out ngẫu nhiên 17:30 - 18:00
+                const checkOut = new Date(date);
+                checkOut.setHours(17, 30 + Math.floor(Math.random() * 30), 0, 0);
+                
+                attendancesToInsert.push({
+                    userId: user.id,
+                    date: date,
+                    shiftId: defaultShift.id,
+                    checkIn: checkIn,
+                    checkOut: checkOut,
+                    status: "PRESENT",
+                    workHours: 8,
+                    source: "SYSTEM",
+                });
+            }
+            
+            if (attendancesToInsert.length > 0) {
+                 await prisma.attendance.createMany({
+                     data: attendancesToInsert,
+                     skipDuplicates: true
+                 });
+                 attCount += attendancesToInsert.length;
+            }
+            
+            if ((uIdx + 1) % 50 === 0) {
+                 console.log(`   📊 Đã tạo attendance cho ${uIdx + 1}/${totalUsers} nhân viên...`);
+            }
+        }
+        console.log(`   ✅ Đã seed attendance history: ${attCount} bản ghi\n`);
     }
 
     // ── 14. Onboarding Templates ─────────────────────────────────

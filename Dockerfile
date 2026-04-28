@@ -48,6 +48,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
