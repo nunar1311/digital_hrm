@@ -33,6 +33,10 @@ ENV DATABASE_URL=${DATABASE_URL}
 
 RUN pnpm prisma generate
 
+# Giới hạn RAM cho Nodejs để tránh bị đứng (OOM) trên VPS
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV NEXT_TELEMETRY_DISABLED=1
+
 RUN pnpm build
 
 # ============================================
