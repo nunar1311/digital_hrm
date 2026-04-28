@@ -132,14 +132,14 @@ services:
       CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-3600}
       # Better Auth
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost}
-      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-https://digital-hrm.click}
+      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-https://digital-hrm.click,https://www.digital-hrm.click}
       # AI Service (internal network)
       AI_SERVICE_URL: http://ai-service:8000
       AI_SERVICE_KEY: ${AI_INTERNAL_API_KEY}
       # Public URLs
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost}/api
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://digital-hrm.click}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_APP_URL:-https://digital-hrm.click}/api
       NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Digital HRM}
       # File uploads
       UPLOAD_DIR: /app/uploads
