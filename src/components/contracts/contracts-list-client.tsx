@@ -57,7 +57,7 @@ interface Props {
 type ContractStatusFilter =
   | "ALL"
   | "DRAFT"
-  | "PENDING"
+  | "PENDING_APPROVAL"
   | "ACTIVE"
   | "EXPIRED"
   | "TERMINATED";
@@ -67,7 +67,7 @@ type ExpiringFilter = "ALL" | "15" | "30";
 const STATUS_OPTIONS: { value: ContractStatusFilter; label: string }[] = [
   { value: "ALL", label: "Tất cả" },
   { value: "DRAFT", label: "Bản nháp" },
-  { value: "PENDING", label: "Chờ hiệu lực" },
+  { value: "PENDING_APPROVAL", label: "Chờ hiệu lực" },
   { value: "ACTIVE", label: "Đang hiệu lực" },
   { value: "EXPIRED", label: "Hết hạn" },
   { value: "TERMINATED", label: "Đã chấm dứt" },

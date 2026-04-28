@@ -6,7 +6,9 @@ import type { ContractStatus } from "@/types/contract";
 
 const STATUS_LABELS: Record<ContractStatus, string> = {
   DRAFT: "Bản nháp",
-  PENDING: "Chờ hiệu lực",
+  PENDING_APPROVAL: "Chờ duyệt",
+  APPROVED: "Đã duyệt",
+  PENDING_SIGN: "Chờ ký",
   ACTIVE: "Đang hiệu lực",
   EXPIRED: "Hết hạn",
   TERMINATED: "Đã chấm dứt",
@@ -14,7 +16,9 @@ const STATUS_LABELS: Record<ContractStatus, string> = {
 
 const STATUS_CLASSES: Record<ContractStatus, string> = {
   DRAFT: "bg-muted text-muted-foreground border-transparent",
-  PENDING: "bg-amber-100 text-amber-800 border-transparent",
+  PENDING_APPROVAL: "bg-amber-100 text-amber-800 border-transparent",
+  APPROVED: "bg-blue-100 text-blue-800 border-transparent",
+  PENDING_SIGN: "bg-purple-100 text-purple-800 border-transparent",
   ACTIVE: "bg-emerald-100 text-emerald-800 border-transparent",
   EXPIRED: "bg-slate-200 text-slate-700 border-transparent",
   TERMINATED: "bg-rose-100 text-rose-800 border-transparent",

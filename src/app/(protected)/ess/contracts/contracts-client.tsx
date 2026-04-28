@@ -276,6 +276,8 @@ function ContractDetailDialog({
   onClose,
   onExport,
   isExporting,
+  onSign,
+  isSigning,
 }: {
   contract: ContractListItem | null;
   onClose: () => void;
