@@ -11,6 +11,9 @@
     "lint": "eslint",
     "update-managers": "tsx scripts/update-manager-ids.ts"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@better-fetch/fetch": "^1.1.21",
     "@dnd-kit/core": "^6.3.1",
