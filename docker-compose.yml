@@ -133,7 +133,7 @@ services:
       # Better Auth
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-https://digital-hrm.click}
-      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-https://digital-hrm.click,https://www.digital-hrm.click}
+      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-https://digital-hrm.click}
       # AI Service (internal network)
       AI_SERVICE_URL: http://ai-service:8000
       AI_SERVICE_KEY: ${AI_INTERNAL_API_KEY}
