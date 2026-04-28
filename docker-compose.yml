@@ -18,7 +18,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "127.0.0.1:5432:5432"          # Bind to localhost only — not exposed to internet
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-digital_hrm}"]
       interval: 10s
@@ -33,18 +33,13 @@ services:
     image: redis:7-alpine
     container_name: digital_hrm_redis
     restart: unless-stopped
-    command: >
-      redis-server
-      --appendonly yes
-      --requirepass ${REDIS_PASSWORD:-}
-      --maxmemory 256mb
-      --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     ports:
-      - "127.0.0.1:6379:6379"          # Bind to localhost only
+      - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-}", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -82,7 +77,7 @@ services:
       DB_POOL_MIN_SIZE: ${DB_POOL_MIN_SIZE:-5}
       DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-30}
       # Redis
-      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
+      REDIS_URL: redis://redis:6379/0
       REDIS_ENABLED: "true"
       REDIS_CACHE_TTL: ${REDIS_CACHE_TTL:-300}
       REDIS_AI_CACHE_TTL: ${REDIS_AI_CACHE_TTL:-600}
@@ -99,7 +94,13 @@ services:
       # Logging
       LOG_LEVEL: ${AI_LOG_LEVEL:-INFO}
     expose:
-      - "8000"                          # Internal only — not exposed to internet
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - internal
 
@@ -126,7 +127,7 @@ services:
       # Database
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable
       # Redis
-      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
+      REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
       CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-3600}
       # Better Auth
@@ -153,7 +154,7 @@ services:
       # Security
       SESSION_SECRET: ${SESSION_SECRET}
     ports:
-      - "127.0.0.1:3000:3000"          # Bind to localhost — Nginx proxies externally
+      - "3000:3000"
     volumes:
       - uploads_data:/app/uploads
     networks:
