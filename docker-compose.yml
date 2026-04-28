@@ -214,7 +214,7 @@ services:
       args:
         DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable
     container_name: digital_hrm_prisma_seed
-    command: npx prisma db seed
+    command: npx prisma migrate seed
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable
     depends_on:
