@@ -710,60 +710,149 @@ async function seed() {
     }
 
     // ── 13.5. Attendance History ──────────────────────────────────
-    console.log("📅 Đang seed attendance history (180 ngày)...");
+    console.log("📅 Đang seed attendance history (180 ngày) + flight-risk patterns...");
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (defaultShift) {
         const activeUsersForAtt = await prisma.user.findMany({ where: { employeeStatus: "ACTIVE" } });
         let attCount = 0;
-        // Seed cho 500 nhân viên
         const totalUsers = Math.min(500, activeUsersForAtt.length);
-        
+
+        // Flight-risk employee indices (first 15 employees get anomalous patterns)
+        // Pattern 1 (idx 0-4): Check-in drifts later in recent 30 days
+        // Pattern 2 (idx 5-9): Increased absences/half-days in recent 30 days
+        // Pattern 3 (idx 10-12): OT decline (had OT before, none recently)
+        // Pattern 4 (idx 13-14): Combined signals (drift + absences + no OT)
+        const FLIGHT_RISK_DRIFT = new Set([0, 1, 2, 3, 4]);
+        const FLIGHT_RISK_ABSENT = new Set([5, 6, 7, 8, 9]);
+        const FLIGHT_RISK_OT = new Set([10, 11, 12]);
+        const FLIGHT_RISK_COMBO = new Set([13, 14]);
+
         for (let uIdx = 0; uIdx < totalUsers; uIdx++) {
             const user = activeUsersForAtt[uIdx];
             const attendancesToInsert = [];
-            
+
             for (let d = 0; d < 180; d++) {
                 const date = new Date(today);
                 date.setDate(date.getDate() - d);
                 const dayOfWeek = date.getDay();
-                
+
                 // Bỏ qua Thứ 7 (6) và Chủ nhật (0)
                 if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-                
-                // Check-in ngẫu nhiên 07:45 - 08:15
+
+                const isRecent = d < 30; // 30 ngày gần nhất
                 const checkIn = new Date(date);
-                checkIn.setHours(7, 45 + Math.floor(Math.random() * 30), 0, 0);
-                
-                // Check-out ngẫu nhiên 17:30 - 18:00
                 const checkOut = new Date(date);
-                checkOut.setHours(17, 30 + Math.floor(Math.random() * 30), 0, 0);
-                
-                attendancesToInsert.push({
+                let status = "PRESENT";
+                let lateMinutes = 0;
+                let overtimeHours: number | null = null;
+
+                // ── Pattern 1: Check-in drift ──
+                if (FLIGHT_RISK_DRIFT.has(uIdx)) {
+                    if (isRecent) {
+                        // Recent: check-in 08:30 - 09:15 (trễ dần)
+                        const driftMin = 30 + Math.floor(Math.random() * 45);
+                        checkIn.setHours(8, driftMin, 0, 0);
+                        status = driftMin > 30 ? "LATE" : "PRESENT";
+                        lateMinutes = Math.max(0, driftMin - 15);
+                    } else {
+                        // Baseline: check-in 07:50 - 08:05 (đúng giờ)
+                        checkIn.setHours(7, 50 + Math.floor(Math.random() * 15), 0, 0);
+                    }
+                    checkOut.setHours(17, 30 + Math.floor(Math.random() * 30), 0, 0);
+
+                // ── Pattern 2: Increased absences ──
+                } else if (FLIGHT_RISK_ABSENT.has(uIdx)) {
+                    if (isRecent && Math.random() < 0.3) {
+                        // 30% chance of absence/half-day in recent period
+                        if (Math.random() < 0.5) {
+                            status = "ABSENT";
+                            checkIn.setHours(0, 0, 0, 0);
+                            checkOut.setHours(0, 0, 0, 0);
+                        } else {
+                            status = "HALF_DAY";
+                            checkIn.setHours(8, Math.floor(Math.random() * 15), 0, 0);
+                            checkOut.setHours(12, 0, 0, 0);
+                        }
+                    } else {
+                        checkIn.setHours(7, 50 + Math.floor(Math.random() * 15), 0, 0);
+                        checkOut.setHours(17, 30 + Math.floor(Math.random() * 30), 0, 0);
+                    }
+
+                // ── Pattern 3: OT decline ──
+                } else if (FLIGHT_RISK_OT.has(uIdx)) {
+                    checkIn.setHours(7, 50 + Math.floor(Math.random() * 15), 0, 0);
+                    if (isRecent) {
+                        // No OT recently
+                        checkOut.setHours(17, 30 + Math.floor(Math.random() * 10), 0, 0);
+                        overtimeHours = 0;
+                    } else {
+                        // Had regular OT before
+                        const otH = 1 + Math.floor(Math.random() * 2);
+                        checkOut.setHours(17 + otH, 30 + Math.floor(Math.random() * 30), 0, 0);
+                        overtimeHours = otH;
+                    }
+
+                // ── Pattern 4: Combined ──
+                } else if (FLIGHT_RISK_COMBO.has(uIdx)) {
+                    if (isRecent) {
+                        if (Math.random() < 0.2) {
+                            status = "ABSENT";
+                            checkIn.setHours(0, 0, 0, 0);
+                            checkOut.setHours(0, 0, 0, 0);
+                        } else {
+                            const driftMin = 25 + Math.floor(Math.random() * 40);
+                            checkIn.setHours(8, driftMin, 0, 0);
+                            checkOut.setHours(17, 30 + Math.floor(Math.random() * 10), 0, 0);
+                            status = driftMin > 30 ? "LATE" : "PRESENT";
+                            lateMinutes = Math.max(0, driftMin - 15);
+                            overtimeHours = 0;
+                        }
+                    } else {
+                        checkIn.setHours(7, 50 + Math.floor(Math.random() * 10), 0, 0);
+                        const otH = 1 + Math.floor(Math.random() * 2);
+                        checkOut.setHours(17 + otH, 30 + Math.floor(Math.random() * 30), 0, 0);
+                        overtimeHours = otH;
+                    }
+
+                // ── Normal employees ──
+                } else {
+                    checkIn.setHours(7, 45 + Math.floor(Math.random() * 30), 0, 0);
+                    checkOut.setHours(17, 30 + Math.floor(Math.random() * 30), 0, 0);
+                }
+
+                const record: Record<string, unknown> = {
                     userId: user.id,
                     date: date,
                     shiftId: defaultShift.id,
-                    checkIn: checkIn,
-                    checkOut: checkOut,
-                    status: "PRESENT",
-                    workHours: 8,
+                    checkIn: status === "ABSENT" ? null : checkIn,
+                    checkOut: status === "ABSENT" ? null : checkOut,
+                    status: status,
+                    workHours: status === "ABSENT" ? 0 : status === "HALF_DAY" ? 4 : 8,
+                    lateMinutes: lateMinutes,
                     source: "SYSTEM",
-                });
+                };
+                if (overtimeHours !== null) {
+                    record.overtimeHours = overtimeHours;
+                }
+
+                attendancesToInsert.push(record);
             }
-            
+
             if (attendancesToInsert.length > 0) {
+                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                  await prisma.attendance.createMany({
-                     data: attendancesToInsert,
+                     data: attendancesToInsert as any,
                      skipDuplicates: true
                  });
                  attCount += attendancesToInsert.length;
             }
-            
+
             if ((uIdx + 1) % 50 === 0) {
                  console.log(`   📊 Đã tạo attendance cho ${uIdx + 1}/${totalUsers} nhân viên...`);
             }
         }
-        console.log(`   ✅ Đã seed attendance history: ${attCount} bản ghi\n`);
+        console.log(`   ✅ Đã seed attendance history: ${attCount} bản ghi (${FLIGHT_RISK_DRIFT.size + FLIGHT_RISK_ABSENT.size + FLIGHT_RISK_OT.size + FLIGHT_RISK_COMBO.size} flight-risk patterns)\n`);
     }
 
     // ── 14. Onboarding Templates ─────────────────────────────────

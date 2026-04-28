@@ -76,7 +76,7 @@ function CodeBlockCopyButton({ code }: { code: string }) {
 // =====================
 export const MarkdownComponents = {
   p: ({ children }: any) => (
-    <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
+    <p className="mb-2 last:mb-0 leading-relaxed wrap-break-word">{children}</p>
   ),
   strong: ({ children }: any) => (
     <strong className="font-semibold">{children}</strong>
@@ -96,7 +96,7 @@ export const MarkdownComponents = {
   ol: ({ children }: any) => (
     <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>
   ),
-  li: ({ children }: any) => <li className="leading-relaxed">{children}</li>,
+  li: ({ children }: any) => <li className="leading-relaxed break-words">{children}</li>,
   table: ({ children }: any) => (
     <div className="w-full overflow-x-auto mb-3 rounded-lg border border-border/50 bg-background custom-scrollbar">
       <table className="w-full min-w-max border-collapse border-hidden">

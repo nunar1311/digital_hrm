@@ -14,8 +14,11 @@ class Settings(BaseSettings):
 
     # API Keys
     openai_api_key: str = Field(default="", description="OpenAI API Key")
+    openai_base_url: str = Field(default="", description="OpenAI Base URL")
     anthropic_api_key: str = Field(
         default="", description="Anthropic Claude API Key")
+    anthropic_base_url: str = Field(
+        default="", description="Anthropic Base URL")
     google_api_key: str = Field(
         default="", description="Google Gemini API Key")
     openrouter_api_key: str = Field(

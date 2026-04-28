@@ -18,7 +18,16 @@ class AnthropicService:
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.anthropic_api_key
-        self.client = AsyncAnthropic(api_key=self.api_key) if self.api_key else None
+        base_url = settings.anthropic_base_url
+        
+        if self.api_key:
+            if base_url:
+                self.client = AsyncAnthropic(api_key=self.api_key, base_url=base_url)
+            else:
+                self.client = AsyncAnthropic(api_key=self.api_key)
+        else:
+            self.client = None
+            
         self.enabled = bool(self.api_key)
 
     async def chat(

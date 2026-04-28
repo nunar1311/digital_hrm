@@ -435,6 +435,8 @@ async def analyze_attendance(request: AttendanceAnalysisRequest):
             "anomaly": "Phát hiện các mẫu bất thường trong dữ liệu chấm công như: đi muộn thường xuyên, về sớm bất thường, vắng mặt nhiều, patterns đáng ngờ.",
             "pattern": "Phân tích mẫu chấm công để tìm xu hướng, thói quen làm việc, peak hours, và insights về hiệu suất.",
             "overtime": "Dự đoán nhu cầu overtime dựa trên workload, project deadlines, và historical data.",
+            "stay_interview": "Đóng vai trò HR Business Partner (HRBP). Dựa trên dữ liệu 30 ngày gần nhất, hãy:\n1. Đánh giá rủi ro nghỉ việc hiện tại (Low/Medium/High)\n2. Phân tích nguyên nhân tâm lý có thể xảy ra\n3. Sinh ra 'Kịch bản phỏng vấn giữ chân' (Stay Interview Script). BẮT BUỘC phải có đúng nguyên văn câu hỏi này: \"Dạo này tôi thấy bạn thường xuyên đến muộn, liệu có phải bạn đang gặp áp lực về khối lượng công việc hiện tại hay có định hướng mới không?\"",
+            "flight_risk": "Đóng vai trò chuyên gia phân tích nhân sự. Phân tích các nhân viên có nguy cơ nghỉ việc cao (Flight Risk) dựa trên dữ liệu đầu vào bao gồm độ lệch giờ check-in, tỷ lệ đi muộn, vắng mặt và số giờ OT. Đưa ra cảnh báo tổng thể và đề xuất giải pháp.",
         }
 
         prompt = f"""

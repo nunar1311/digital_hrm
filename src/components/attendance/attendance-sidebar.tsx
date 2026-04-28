@@ -27,6 +27,7 @@ import {
   CalendarCheck,
   CalendarOff,
   Settings,
+  ShieldAlert,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -367,6 +368,10 @@ const AttendanceSidebar = () => {
         {
           title: "Tổng hợp chấm công",
           url: "/attendance/monthly",
+        },
+        {
+          title: "Phát hiện nghỉ việc",
+          url: "/attendance/flight-risk",
         },
       ],
     },

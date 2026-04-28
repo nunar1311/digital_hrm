@@ -1,100 +1,60 @@
+# =============================================================
+# Digital HRM — Docker Compose Production
+# Deploy: docker compose -f docker-compose.yml up -d
+# =============================================================
+
 services:
-  # PostgreSQL Database
+  # ── PostgreSQL Database ──────────────────────────────────
   db:
-    image: postgres:14-alpine
+    image: postgres:16-alpine
     container_name: digital_hrm_db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-digital_hrm}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"          # Bind to localhost only — not exposed to internet
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-digital_hrm}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
-      - digital_hrm_network
+      - internal
 
-  # Redis Cache (Optional - for session management)
+  # ── Redis Cache ──────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: digital_hrm_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"          # Bind to localhost only
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
     networks:
-      - digital_hrm_network
+      - internal
 
-  # Digital HRM Application
-  app:
-    image: digital_hrm_app_prod
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: runner
-      args:
-        DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable}
-    container_name: digital_hrm_app
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      ai-service:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable}
-      REDIS_URL: redis://redis:6379
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-your-better-auth-secret-change-in-production}
-      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-}
-      # AI Service Configuration
-      AI_SERVICE_URL: http://ai-service:8000
-      AI_SERVICE_KEY: ${AI_INTERNAL_API_KEY:-}
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./uploads:/app/uploads:rw
-    networks:
-      - digital_hrm_network
-
-  # pgAdmin for Database Management (Optional)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: digital_hrm_pgadmin
-    restart: unless-stopped
-    depends_on:
-      - db
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@digitalhrm.vn
-      PGADMIN_DEFAULT_PASSWORD: admin123
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    networks:
-      - digital_hrm_network
-    profiles:
-      - admin
-
-  # AI Service - Python Microservice for AI Integration
+  # ── AI Microservice (Python / FastAPI) ───────────────────
   ai-service:
+    image: digital_hrm_ai:latest
     build:
       context: ./ai-service
       dockerfile: Dockerfile
@@ -106,49 +66,202 @@ services:
       redis:
         condition: service_healthy
     environment:
-      # AI Provider API Keys
+      # AI Provider Keys
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OPENROUTER_DEFAULT_MODEL: ${OPENROUTER_DEFAULT_MODEL:-gpt-5.3-codex}
-      # Database - Direct PostgreSQL access for AI analysis
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres123}@db:5432/${POSTGRES_DB:-digital_hrm}?sslmode=disable
-      DB_POOL_MIN_SIZE: "5"
-      DB_POOL_MAX_SIZE: "30"
-      # Redis Configuration
-      REDIS_URL: redis://redis:6379/0
-      REDIS_ENABLED: "true"
-      REDIS_CACHE_TTL: "300"
-      REDIS_AI_CACHE_TTL: "600"
-      # Concurrency Control
-      MAX_CONCURRENT_AI_CALLS: "20"
-      QUEUE_TIMEOUT_SECONDS: "90"
-      # Rate Limiting
-      RATE_LIMIT_PER_MINUTE: "60"
-      RATE_LIMIT_PER_DAY: "1000"
+      OPENROUTER_DEFAULT_MODEL: ${OPENROUTER_DEFAULT_MODEL:-}
       # AI Defaults
-      DEFAULT_PROVIDER: ${AI_DEFAULT_PROVIDER:-openrouter}
-      DEFAULT_MODEL: ${AI_DEFAULT_MODEL:-gpt-5.3-codex}
-      REQUEST_TIMEOUT_SECONDS: "120"
+      DEFAULT_PROVIDER: ${AI_DEFAULT_PROVIDER:-openai}
+      DEFAULT_MODEL: ${AI_DEFAULT_MODEL:-grok-3}
+      # Database — direct asyncpg access for analytics
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-digital_hrm}?sslmode=disable
+      DB_POOL_MIN_SIZE: ${DB_POOL_MIN_SIZE:-5}
+      DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-30}
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
+      REDIS_ENABLED: "true"
+      REDIS_CACHE_TTL: ${REDIS_CACHE_TTL:-300}
+      REDIS_AI_CACHE_TTL: ${REDIS_AI_CACHE_TTL:-600}
+      # Concurrency
+      MAX_CONCURRENT_AI_CALLS: ${MAX_CONCURRENT_AI_CALLS:-20}
+      QUEUE_TIMEOUT_SECONDS: ${QUEUE_TIMEOUT_SECONDS:-90}
+      REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-120}
+      # Rate Limiting
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
+      RATE_LIMIT_PER_DAY: ${RATE_LIMIT_PER_DAY:-1000}
       # Internal Auth
-      INTERNAL_API_KEY: ${AI_INTERNAL_API_KEY:-}
+      INTERNAL_API_KEY: ${AI_INTERNAL_API_KEY}
       NEXT_PUBLIC_API_URL: http://app:3000
       # Logging
       LOG_LEVEL: ${AI_LOG_LEVEL:-INFO}
-    # Port 8000 chỉ expose nội bộ Docker network (không ra internet)
     expose:
-      - "8000"
-    # Production: 4 workers cho concurrent handling
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+      - "8000"                          # Internal only — not exposed to internet
     networks:
-      - digital_hrm_network
+      - internal
 
+  # ── Next.js Application ──────────────────────────────────
+  app:
+    image: digital_hrm_app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+      args:
+        DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable
+    container_name: digital_hrm_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
+      REDIS_ENABLED: "true"
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-3600}
+      # Better Auth
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost}
+      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-}
+      # AI Service (internal network)
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_SERVICE_KEY: ${AI_INTERNAL_API_KEY}
+      # Public URLs
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost}/api
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Digital HRM}
+      # File uploads
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+      # Email (optional)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@digitalhrm.vn}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Digital HRM}
+      # Security
+      SESSION_SECRET: ${SESSION_SECRET}
+    ports:
+      - "127.0.0.1:3000:3000"          # Bind to localhost — Nginx proxies externally
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - internal
+      - proxy
+
+  # ── Nginx Reverse Proxy ──────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: digital_hrm_nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx_logs:/var/log/nginx
+      # SSL certificates — mount from certbot or your SSL provider
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - proxy
+      - internal
+
+  # ── Prisma Migration Tool ────────────────────────────────
+  # Usage: docker compose --profile tools run --rm prisma-push
+  prisma-push:
+    image: digital_hrm_app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+      args:
+        DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable
+    container_name: digital_hrm_prisma_push
+    command: npx prisma db push --skip-generate
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    profiles:
+      - tools
+
+  # ── Prisma Seed Tool ─────────────────────────────────────
+  # Usage: docker compose --profile tools run --rm prisma-seed
+  prisma-seed:
+    image: digital_hrm_app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+      args:
+        DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable
+    container_name: digital_hrm_prisma_seed
+    command: npx prisma db seed
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-digital_hrm}?schema=public&sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    profiles:
+      - tools
+
+  # ── pgAdmin (Optional Admin Panel) ──────────────────────
+  # Usage: docker compose --profile admin up -d pgadmin
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: digital_hrm_pgadmin
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@digitalhrm.vn}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-Admin@123456}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+    ports:
+      - "127.0.0.1:5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - internal
+    profiles:
+      - admin
+
+# ── Networks ────────────────────────────────────────────────
 networks:
-  digital_hrm_network:
+  internal:
+    driver: bridge
+    internal: false
+  proxy:
     driver: bridge
 
+# ── Volumes ─────────────────────────────────────────────────
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
+  uploads_data:
+    driver: local
   pgadmin_data:
+    driver: local
+  nginx_logs:
+    driver: local

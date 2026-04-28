@@ -6,8 +6,6 @@ import { Permission } from "@/lib/rbac/permissions";
 import { revalidatePath } from "next/cache";
 import { getIO, emitToAll } from "@/lib/socket/server";
 import bcrypt from "bcryptjs";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 
 // Types
 export interface GetEmployeesParams {
@@ -455,15 +453,23 @@ export async function updateEmployeePassword(
   await requirePermission(Permission.EMPLOYEE_UPDATE);
 
   const passwordToSet = newPassword || generateRandomPassword();
+  const hashedPassword = await bcrypt.hash(passwordToSet, 10);
 
-  // Sử dụng better-auth API để thay đổi mật khẩu
-  await auth.api.setUserPassword({
-    body: {
+  // Update trực tiếp bảng account thay vì dùng auth.api.setUserPassword
+  // (API đó yêu cầu user phải tự đổi mật khẩu, không cho phép admin set cho người khác)
+  const updated = await prisma.account.updateMany({
+    where: {
       userId: employeeId,
-      newPassword: passwordToSet,
+      providerId: "credential",
     },
-    headers: await headers(),
+    data: {
+      password: hashedPassword,
+    },
   });
+
+  if (updated.count === 0) {
+    throw new Error("Không tìm thấy tài khoản credential cho nhân viên này");
+  }
 
   return passwordToSet;
 }

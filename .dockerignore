@@ -2,38 +2,84 @@
 node_modules
 .pnpm-store
 
-# next.js
+# next.js build output
 .next
 out
 build
-
-# production
 dist
+
+# environment files (NEVER include in Docker image)
+.env
+.env*.local
+.env.production
+.env.staging
+
+# local development
+Dockerfile.dev
+docker-compose.dev.yml
+docker-compose.override.yml
 
 # misc
 .DS_Store
 *.pem
+Thumbs.db
 
-# debug
+# debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# local env files
-.env
-.env*.local
-.env.production
-
-# vercel
-.vercel
+*.log
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma
+# prisma — exclude migrations dir from build context
+# (Prisma schema is needed for generate, so keep prisma/ root)
 prisma/migrations
 
-# logs
-logs
-*.log
+# tests
+__tests__
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+coverage
+
+# git
+.git
+.gitignore
+
+# editors / IDEs
+.vscode
+.cursor
+.kiro
+.claude
+.codex
+.agents
+.code-review-graph
+.gemini
+.windsurfrules
+.cursorrules
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+AI_INTEGRATION.md
+README.md
+
+# AI service (managed by its own Dockerfile)
+ai-service
+
+# uploads (mounted as volume)
+uploads
+
+# temp / scratch
+*.tmp
+scratch.*
+test_*.py
+test_*.json
+models.txt
+docs
+
+# CI / scripts
+scripts

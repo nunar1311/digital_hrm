@@ -2397,3 +2397,1108 @@ HINT:  Perhaps you meant to reference the column "attendances.date".
 2026-04-28 00:44:16,614 - watchfiles.main - INFO - 1 change detected
 2026-04-28 00:44:17,094 - watchfiles.main - INFO - 1 change detected
 2026-04-28 00:46:44,503 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:05:37,955 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:05:37,960 - app.main - INFO - Default provider: openai
+2026-04-28 10:05:37,960 - app.main - INFO - Default model: gpt-4o
+2026-04-28 10:05:37,961 - app.main - INFO - Redis enabled: True
+2026-04-28 10:05:37,961 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:05:37,961 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:05:38,228 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:05:38,228 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:05:38,463 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:05:38,471 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:05:38,472 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:05:38,472 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:06:04,083 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 10:06:18,779 - app.services.openrouter_service - INFO - Vitexa Gateway chat completed: model=gpt-5.3-codex, tokens=3347
+2026-04-28 10:06:44,001 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:06:44,145 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:06:44,146 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:06:44,155 - app.database - INFO - Database connection pool closed
+2026-04-28 10:06:44,155 - app.main - INFO - Cleanup complete
+2026-04-28 10:06:45,066 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:06:49,509 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 10:06:49,559 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:06:49,559 - app.main - INFO - Default provider: openai
+2026-04-28 10:06:49,559 - app.main - INFO - Default model: gpt-4o
+2026-04-28 10:06:49,559 - app.main - INFO - Redis enabled: True
+2026-04-28 10:06:49,559 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:06:49,560 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:06:49,737 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:06:49,737 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:06:49,941 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:06:49,942 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:06:49,942 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:06:49,942 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:16:16,178 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-28 10:16:16,180 - app.routers.analyze - ERROR - Attendance analysis error: Attempted to access streaming response content, without having called `read()`.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 80, in chat
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://gate.vitexa.app/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\analyze.py", line 460, in analyze_attendance
+    result = await provider_router.analyze(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "D:\digital_hrm\ai-service\app\services\provider_router.py", line 117, in analyze
+    result = await service.analyze(prompt, data, model=target_model)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 148, in analyze
+    return await self.chat(messages, model=model, temperature=0.3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 113, in chat
+    error_body = e.response.text
+                 ^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 644, in text
+    content = self.content
+              ^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 638, in content
+    raise ResponseNotRead()
+httpx.ResponseNotRead: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:17:45,637 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:20:07,826 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:20:07,986 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:20:07,987 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:20:07,988 - app.database - INFO - Database connection pool closed
+2026-04-28 10:20:07,988 - app.main - INFO - Cleanup complete
+2026-04-28 10:20:09,095 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:20:14,282 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 10:20:14,338 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:20:14,339 - app.main - INFO - Default provider: openai
+2026-04-28 10:20:14,339 - app.main - INFO - Default model: gpt-4o
+2026-04-28 10:20:14,339 - app.main - INFO - Redis enabled: True
+2026-04-28 10:20:14,339 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:20:14,340 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:20:14,536 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:20:14,537 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:20:14,778 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:20:14,780 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:20:14,780 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:20:14,780 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:20:17,163 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-28 10:20:17,164 - app.routers.analyze - ERROR - Attendance analysis error: Attempted to access streaming response content, without having called `read()`.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 80, in chat
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://gate.vitexa.app/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\analyze.py", line 461, in analyze_attendance
+    result = await provider_router.analyze(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "D:\digital_hrm\ai-service\app\services\provider_router.py", line 117, in analyze
+    result = await service.analyze(prompt, data, model=target_model)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 148, in analyze
+    return await self.chat(messages, model=model, temperature=0.3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 113, in chat
+    error_body = e.response.text
+                 ^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 644, in text
+    content = self.content
+              ^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 638, in content
+    raise ResponseNotRead()
+httpx.ResponseNotRead: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:22:07,144 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-28 10:22:07,145 - app.routers.analyze - ERROR - Attendance analysis error: Attempted to access streaming response content, without having called `read()`.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 80, in chat
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://gate.vitexa.app/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\analyze.py", line 461, in analyze_attendance
+    result = await provider_router.analyze(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "D:\digital_hrm\ai-service\app\services\provider_router.py", line 117, in analyze
+    result = await service.analyze(prompt, data, model=target_model)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 148, in analyze
+    return await self.chat(messages, model=model, temperature=0.3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 113, in chat
+    error_body = e.response.text
+                 ^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 644, in text
+    content = self.content
+              ^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 638, in content
+    raise ResponseNotRead()
+httpx.ResponseNotRead: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:22:24,676 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 10:22:32,147 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-28 10:22:32,147 - app.services.queue_manager - ERROR - [ws_cmnwwwgyt0035ygugl50k92fx_8fa1ef] Failed after 1929ms: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:22:32,148 - app.routers.ws_chat - ERROR - Error in chat processing: Attempted to access streaming response content, without having called `read()`.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 80, in chat
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://gate.vitexa.app/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 410, in _process_chat
+    result = await ai_queue.execute(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "D:\digital_hrm\ai-service\app\services\queue_manager.py", line 140, in execute
+    result = await coroutine
+             ^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\provider_router.py", line 94, in chat
+    result = await service.chat(messages, model=target_model, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 113, in chat
+    error_body = e.response.text
+                 ^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 644, in text
+    content = self.content
+              ^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 638, in content
+    raise ResponseNotRead()
+httpx.ResponseNotRead: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:24:24,426 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-28 10:24:24,427 - app.services.queue_manager - ERROR - [ws_cmnwwwgyt0035ygugl50k92fx_e2c999] Failed after 1998ms: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:24:24,427 - app.routers.ws_chat - ERROR - Error in chat processing: Attempted to access streaming response content, without having called `read()`.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 80, in chat
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://gate.vitexa.app/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 410, in _process_chat
+    result = await ai_queue.execute(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "D:\digital_hrm\ai-service\app\services\queue_manager.py", line 140, in execute
+    result = await coroutine
+             ^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\provider_router.py", line 94, in chat
+    result = await service.chat(messages, model=target_model, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 113, in chat
+    error_body = e.response.text
+                 ^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 644, in text
+    content = self.content
+              ^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 638, in content
+    raise ResponseNotRead()
+httpx.ResponseNotRead: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:26:28,729 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:26:30,193 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:26:41,943 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-28 10:26:41,944 - app.services.queue_manager - ERROR - [ws_cmnwwwgyt0035ygugl50k92fx_4e3b49] Failed after 2042ms: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:26:41,944 - app.routers.ws_chat - ERROR - Error in chat processing: Attempted to access streaming response content, without having called `read()`.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 80, in chat
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://gate.vitexa.app/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 410, in _process_chat
+    result = await ai_queue.execute(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "D:\digital_hrm\ai-service\app\services\queue_manager.py", line 140, in execute
+    result = await coroutine
+             ^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\provider_router.py", line 94, in chat
+    result = await service.chat(messages, model=target_model, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 113, in chat
+    error_body = e.response.text
+                 ^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 644, in text
+    content = self.content
+              ^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 638, in content
+    raise ResponseNotRead()
+httpx.ResponseNotRead: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:26:45,094 - httpx - INFO - HTTP Request: POST https://gate.vitexa.app/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-04-28 10:26:45,094 - app.services.queue_manager - ERROR - [ws_cmnwwwgyt0035ygugl50k92fx_045dc4] Failed after 1854ms: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:26:45,095 - app.routers.ws_chat - ERROR - Error in chat processing: Attempted to access streaming response content, without having called `read()`.
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 80, in chat
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://gate.vitexa.app/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\digital_hrm\ai-service\app\routers\ws_chat.py", line 410, in _process_chat
+    result = await ai_queue.execute(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "D:\digital_hrm\ai-service\app\services\queue_manager.py", line 140, in execute
+    result = await coroutine
+             ^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\provider_router.py", line 94, in chat
+    result = await service.chat(messages, model=target_model, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\digital_hrm\ai-service\app\services\openrouter_service.py", line 113, in chat
+    error_body = e.response.text
+                 ^^^^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 644, in text
+    content = self.content
+              ^^^^^^^^^^^^
+  File "C:\Users\nguyenhoangquan\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\httpx\_models.py", line 638, in content
+    raise ResponseNotRead()
+httpx.ResponseNotRead: Attempted to access streaming response content, without having called `read()`.
+2026-04-28 10:28:20,899 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:29:02,222 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:29:02,223 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:29:02,230 - app.database - INFO - Database connection pool closed
+2026-04-28 10:29:02,230 - app.main - INFO - Cleanup complete
+2026-04-28 10:29:17,774 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:29:17,775 - app.main - INFO - Default provider: openai
+2026-04-28 10:29:17,775 - app.main - INFO - Default model: gpt-4o
+2026-04-28 10:29:17,775 - app.main - INFO - Redis enabled: True
+2026-04-28 10:29:17,775 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:29:18,172 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:29:18,319 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:29:18,319 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:29:18,509 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:29:18,510 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:29:18,510 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:29:18,511 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:29:36,276 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:29:44,505 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:29:56,663 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:30:06,247 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:30:08,118 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:30:08,120 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:30:08,126 - app.database - INFO - Database connection pool closed
+2026-04-28 10:30:08,127 - app.main - INFO - Cleanup complete
+2026-04-28 10:30:21,421 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:30:21,423 - app.main - INFO - Default provider: openai
+2026-04-28 10:30:21,424 - app.main - INFO - Default model: gpt-4o
+2026-04-28 10:30:21,424 - app.main - INFO - Redis enabled: True
+2026-04-28 10:30:21,424 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:30:22,057 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:30:22,321 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:30:22,322 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:30:22,692 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:30:22,693 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:30:22,694 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:30:22,695 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:30:51,618 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:31:08,998 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:31:13,343 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 10:31:18,599 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+2026-04-28 10:31:18,600 - app.services.openai_service - ERROR - OpenAI chat error: Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-dat-2***********************************************************rFuL. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'code': 'invalid_api_key', 'param': None}, 'status': 401}
+2026-04-28 10:31:42,813 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:31:44,937 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:31:50,683 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:31:52,294 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:31:55,919 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+2026-04-28 10:31:55,920 - app.services.openai_service - ERROR - OpenAI chat error: Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-dat-2***********************************************************rFuL. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'code': 'invalid_api_key', 'param': None}, 'status': 401}
+2026-04-28 10:32:44,830 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:32:45,028 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:32:45,028 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:32:45,035 - app.database - INFO - Database connection pool closed
+2026-04-28 10:32:45,035 - app.main - INFO - Cleanup complete
+2026-04-28 10:32:46,209 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:32:47,148 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 10:32:50,892 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:32:50,892 - app.main - INFO - Default provider: openai
+2026-04-28 10:32:50,892 - app.main - INFO - Default model: gpt-4o
+2026-04-28 10:32:50,892 - app.main - INFO - Redis enabled: True
+2026-04-28 10:32:50,893 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:32:51,287 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:32:51,437 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:32:51,437 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:32:51,655 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:32:51,657 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:32:51,657 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:32:51,657 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:32:53,224 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:32:53,438 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:32:53,440 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:32:53,446 - app.database - INFO - Database connection pool closed
+2026-04-28 10:32:53,449 - app.main - INFO - Cleanup complete
+2026-04-28 10:32:54,481 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:32:55,436 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 10:32:59,521 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:32:59,521 - app.main - INFO - Default provider: openai
+2026-04-28 10:32:59,522 - app.main - INFO - Default model: gpt-4o
+2026-04-28 10:32:59,522 - app.main - INFO - Redis enabled: True
+2026-04-28 10:32:59,522 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:32:59,919 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:33:00,065 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:33:00,066 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:33:00,258 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:33:00,260 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:33:00,260 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:33:00,260 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:33:07,206 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 502 Bad Gateway"
+2026-04-28 10:33:07,207 - openai._base_client - INFO - Retrying request to /chat/completions in 60.000000 seconds
+2026-04-28 10:33:33,032 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:33:34,363 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 10:33:40,459 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 10:33:48,071 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 502 Bad Gateway"
+2026-04-28 10:33:48,072 - openai._base_client - INFO - Retrying request to /chat/completions in 60.000000 seconds
+2026-04-28 10:34:48,413 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 502 Bad Gateway"
+2026-04-28 10:34:48,416 - openai._base_client - INFO - Retrying request to /chat/completions in 60.000000 seconds
+2026-04-28 10:35:15,052 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 10:37:47,844 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:38:25,327 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 502 Bad Gateway"
+2026-04-28 10:38:25,328 - openai._base_client - INFO - Retrying request to /chat/completions in 60.000000 seconds
+2026-04-28 10:39:17,389 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 10:41:43,347 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:42:57,075 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:43:05,049 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:43:24,450 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 10:43:36,964 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:43:36,966 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:43:36,968 - app.database - INFO - Database connection pool closed
+2026-04-28 10:43:36,969 - app.main - INFO - Cleanup complete
+2026-04-28 10:43:52,794 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:43:52,794 - app.main - INFO - Default provider: openai
+2026-04-28 10:43:52,794 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 10:43:52,794 - app.main - INFO - Redis enabled: True
+2026-04-28 10:43:52,794 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:43:53,138 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:43:53,315 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:43:53,315 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:43:53,543 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:43:53,545 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:43:53,546 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:43:53,546 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:43:55,708 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 10:46:19,083 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:46:19,265 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:46:19,266 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:46:19,280 - app.database - INFO - Database connection pool closed
+2026-04-28 10:46:19,281 - app.main - INFO - Cleanup complete
+2026-04-28 10:46:20,564 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:46:22,695 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 10:46:27,286 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:46:27,286 - app.main - INFO - Default provider: openai
+2026-04-28 10:46:27,286 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 10:46:27,286 - app.main - INFO - Redis enabled: True
+2026-04-28 10:46:27,286 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:46:27,975 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:46:28,236 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:46:28,237 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:46:28,371 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:46:28,669 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:46:28,671 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:46:28,672 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:46:28,673 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:46:29,893 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:46:31,724 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 10:46:33,996 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:46:33,996 - app.main - INFO - Default provider: openai
+2026-04-28 10:46:33,997 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 10:46:33,997 - app.main - INFO - Redis enabled: True
+2026-04-28 10:46:33,997 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:46:34,621 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:46:34,829 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:46:34,829 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:46:35,109 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:46:35,111 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:46:35,111 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:46:35,111 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:46:54,695 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:48:14,041 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:48:14,042 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:48:14,047 - app.database - INFO - Database connection pool closed
+2026-04-28 10:48:14,047 - app.main - INFO - Cleanup complete
+2026-04-28 10:48:25,028 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:48:25,028 - app.main - INFO - Default provider: openai
+2026-04-28 10:48:25,029 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 10:48:25,029 - app.main - INFO - Redis enabled: True
+2026-04-28 10:48:25,029 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:48:25,772 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:48:25,901 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:48:25,902 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:48:26,166 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:48:26,168 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:48:26,168 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:48:26,168 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:48:46,498 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 10:49:02,485 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 10:50:30,922 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:56:23,550 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:56:23,732 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:56:23,733 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:56:23,734 - app.database - INFO - Database connection pool closed
+2026-04-28 10:56:23,734 - app.main - INFO - Cleanup complete
+2026-04-28 10:56:24,733 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:56:25,344 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 10:56:29,468 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:56:29,469 - app.main - INFO - Default provider: openai
+2026-04-28 10:56:29,469 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 10:56:29,469 - app.main - INFO - Redis enabled: True
+2026-04-28 10:56:29,469 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:56:30,176 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:56:30,372 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:56:30,373 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:56:30,560 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:56:30,563 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:56:30,563 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:56:30,563 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:56:49,178 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 10:57:02,169 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:57:02,369 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:57:02,369 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:57:02,376 - app.database - INFO - Database connection pool closed
+2026-04-28 10:57:02,376 - app.main - INFO - Cleanup complete
+2026-04-28 10:57:03,480 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:57:15,722 - watchfiles.main - INFO - 3 changes detected
+2026-04-28 10:57:20,315 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:57:20,315 - app.main - INFO - Default provider: openai
+2026-04-28 10:57:20,316 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 10:57:20,316 - app.main - INFO - Redis enabled: True
+2026-04-28 10:57:20,316 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:57:20,375 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 10:57:20,945 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:57:21,064 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:57:21,064 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:57:21,260 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:57:21,261 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:57:21,261 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:57:21,262 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:57:34,515 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:57:34,728 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:57:34,728 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:57:34,733 - app.database - INFO - Database connection pool closed
+2026-04-28 10:57:34,734 - app.main - INFO - Cleanup complete
+2026-04-28 10:57:35,823 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:57:40,051 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:57:40,052 - app.main - INFO - Default provider: openai
+2026-04-28 10:57:40,052 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 10:57:40,052 - app.main - INFO - Redis enabled: True
+2026-04-28 10:57:40,052 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:57:40,064 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 10:57:40,664 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:57:40,801 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:57:40,802 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:57:40,995 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:57:40,996 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:57:40,996 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:57:40,997 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:58:20,270 - watchfiles.main - INFO - 1 change detected
+2026-04-28 10:58:51,263 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 10:58:51,318 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=1020, completion_tokens=2103
+2026-04-28 10:58:51,340 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 10:58:51,341 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 10:58:51,347 - app.database - INFO - Database connection pool closed
+2026-04-28 10:58:51,348 - app.main - INFO - Cleanup complete
+2026-04-28 10:58:52,669 - watchfiles.main - INFO - 2 changes detected
+2026-04-28 10:58:58,752 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:58:58,752 - app.main - INFO - Default provider: openai
+2026-04-28 10:58:58,752 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 10:58:58,752 - app.main - INFO - Redis enabled: True
+2026-04-28 10:58:58,753 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:58:58,930 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 10:58:59,657 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:58:59,800 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:58:59,801 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:59:00,022 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:59:00,023 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:59:00,024 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:59:00,024 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:59:19,310 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:59:19,311 - app.main - INFO - Default provider: openai
+2026-04-28 10:59:19,311 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 10:59:19,312 - app.main - INFO - Redis enabled: True
+2026-04-28 10:59:19,312 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:59:20,312 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:59:20,481 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:59:20,481 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:59:20,707 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:59:20,709 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:59:20,709 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:59:20,709 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:59:23,104 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 10:59:23,104 - app.main - INFO - Default provider: openai
+2026-04-28 10:59:23,105 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 10:59:23,105 - app.main - INFO - Redis enabled: True
+2026-04-28 10:59:23,105 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 10:59:24,587 - app.main - INFO - AI Provider router initialized
+2026-04-28 10:59:24,731 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 10:59:24,731 - app.main - INFO - Redis cache layer initialized
+2026-04-28 10:59:24,925 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 10:59:24,926 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 10:59:24,927 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 10:59:24,927 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 10:59:39,444 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 10:59:39,455 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=19731, completion_tokens=107
+2026-04-28 11:00:01,072 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:00:01,253 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=18661, completion_tokens=174
+2026-04-28 11:00:09,164 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 11:00:56,992 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 11:01:04,126 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 11:02:34,521 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:02:34,537 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:03:31,432 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:03:31,432 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:03:31,558 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 11:03:31,559 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 11:03:31,564 - app.database - INFO - Database connection pool closed
+2026-04-28 11:03:31,564 - app.main - INFO - Cleanup complete
+2026-04-28 11:03:32,568 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:03:35,838 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 11:03:35,839 - app.main - INFO - Default provider: openai
+2026-04-28 11:03:35,839 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 11:03:35,839 - app.main - INFO - Redis enabled: True
+2026-04-28 11:03:35,839 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 11:03:35,849 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 11:03:36,485 - app.main - INFO - AI Provider router initialized
+2026-04-28 11:03:36,607 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 11:03:36,607 - app.main - INFO - Redis cache layer initialized
+2026-04-28 11:03:36,785 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 11:03:36,786 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 11:03:36,787 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 11:03:36,787 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 11:03:49,099 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 11:04:19,093 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 11:04:19,093 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 11:04:19,098 - app.database - INFO - Database connection pool closed
+2026-04-28 11:04:19,098 - app.main - INFO - Cleanup complete
+2026-04-28 11:04:31,794 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:04:31,833 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=1020, completion_tokens=2154
+2026-04-28 11:04:31,926 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 11:04:31,927 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 11:04:31,933 - app.database - INFO - Database connection pool closed
+2026-04-28 11:04:31,933 - app.main - INFO - Cleanup complete
+2026-04-28 11:04:32,074 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:04:33,340 - watchfiles.main - INFO - 6 changes detected
+2026-04-28 11:04:35,003 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 11:04:35,004 - app.main - INFO - Default provider: openai
+2026-04-28 11:04:35,005 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 11:04:35,005 - app.main - INFO - Redis enabled: True
+2026-04-28 11:04:35,006 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 11:04:36,051 - app.main - INFO - AI Provider router initialized
+2026-04-28 11:04:36,333 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 11:04:36,334 - app.main - INFO - Redis cache layer initialized
+2026-04-28 11:04:36,636 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 11:04:36,638 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 11:04:36,638 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 11:04:36,638 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 11:04:38,646 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 11:04:38,647 - app.main - INFO - Default provider: openai
+2026-04-28 11:04:38,647 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 11:04:38,647 - app.main - INFO - Redis enabled: True
+2026-04-28 11:04:38,647 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 11:04:39,312 - app.main - INFO - AI Provider router initialized
+2026-04-28 11:04:39,443 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 11:04:39,443 - app.main - INFO - Redis cache layer initialized
+2026-04-28 11:04:39,724 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 11:04:39,726 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 11:04:39,726 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 11:04:39,727 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 11:04:39,751 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 11:04:39,751 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 11:04:39,889 - app.routers.chat - INFO - Full HR data access for role=HRMRole.SUPER_ADMIN
+2026-04-28 11:04:45,930 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:04:45,936 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=20487, completion_tokens=79
+2026-04-28 11:04:58,029 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 11:05:48,966 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:05:49,005 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=1020, completion_tokens=2308
+2026-04-28 11:06:11,391 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:06:55,002 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:07:16,449 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:07:19,942 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 11:07:19,943 - app.main - INFO - Default provider: openai
+2026-04-28 11:07:19,943 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 11:07:19,943 - app.main - INFO - Redis enabled: True
+2026-04-28 11:07:19,943 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 11:07:20,531 - app.main - INFO - AI Provider router initialized
+2026-04-28 11:07:20,675 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 11:07:20,675 - app.main - INFO - Redis cache layer initialized
+2026-04-28 11:07:20,855 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 11:07:20,856 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 11:07:20,857 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 11:07:20,857 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 11:10:14,301 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:10:14,300 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:10:14,542 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 11:10:14,543 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 11:10:14,548 - app.database - INFO - Database connection pool closed
+2026-04-28 11:10:14,548 - app.main - INFO - Cleanup complete
+2026-04-28 11:10:16,201 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:10:17,721 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:10:18,078 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:10:28,909 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 11:10:28,909 - app.main - INFO - Default provider: openai
+2026-04-28 11:10:28,909 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 11:10:28,909 - app.main - INFO - Redis enabled: True
+2026-04-28 11:10:28,910 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 11:10:29,532 - app.main - INFO - AI Provider router initialized
+2026-04-28 11:10:29,642 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 11:10:29,642 - app.main - INFO - Redis cache layer initialized
+2026-04-28 11:10:29,806 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 11:10:29,807 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 11:10:29,807 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 11:10:29,807 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 11:10:35,223 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:10:53,713 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:10:53,884 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 11:10:53,884 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 11:10:53,889 - app.database - INFO - Database connection pool closed
+2026-04-28 11:10:53,890 - app.main - INFO - Cleanup complete
+2026-04-28 11:10:54,749 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:10:57,815 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 11:10:57,816 - app.main - INFO - Default provider: openai
+2026-04-28 11:10:57,816 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 11:10:57,816 - app.main - INFO - Redis enabled: True
+2026-04-28 11:10:57,817 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 11:10:58,441 - app.main - INFO - AI Provider router initialized
+2026-04-28 11:10:58,556 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 11:10:58,556 - app.main - INFO - Redis cache layer initialized
+2026-04-28 11:10:58,719 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 11:10:58,720 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 11:10:58,720 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 11:10:58,721 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 11:11:08,243 - app.middleware.rbac - WARNING - Unknown role: ADMIN, defaulting to EMPLOYEE
+2026-04-28 11:11:08,249 - app.routers.chat - INFO - Personal data access for user=test-user, role=HRMRole.EMPLOYEE
+2026-04-28 11:11:16,354 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:11:16,355 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=17701, completion_tokens=88
+2026-04-28 11:11:16,445 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 11:11:16,445 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 11:11:16,455 - app.database - INFO - Database connection pool closed
+2026-04-28 11:11:16,455 - app.main - INFO - Cleanup complete
+2026-04-28 11:11:16,539 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:11:17,406 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:11:38,369 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:11:38,542 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 11:11:38,543 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 11:11:38,548 - app.database - INFO - Database connection pool closed
+2026-04-28 11:11:38,548 - app.main - INFO - Cleanup complete
+2026-04-28 11:11:39,386 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:11:42,416 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 11:11:42,416 - app.main - INFO - Default provider: openai
+2026-04-28 11:11:42,416 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 11:11:42,417 - app.main - INFO - Redis enabled: True
+2026-04-28 11:11:42,417 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 11:11:42,984 - app.main - INFO - AI Provider router initialized
+2026-04-28 11:11:43,110 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 11:11:43,110 - app.main - INFO - Redis cache layer initialized
+2026-04-28 11:11:43,277 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 11:11:43,278 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 11:11:43,278 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 11:11:43,278 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 11:11:51,125 - app.middleware.rbac - WARNING - Unknown role: ADMIN, defaulting to EMPLOYEE
+2026-04-28 11:11:51,134 - app.routers.chat - INFO - Personal data access for user=test-user, role=HRMRole.EMPLOYEE
+2026-04-28 11:11:59,120 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:11:59,126 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=17706, completion_tokens=95
+2026-04-28 11:12:21,967 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:12:22,220 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 11:12:22,249 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 11:12:22,262 - app.database - INFO - Database connection pool closed
+2026-04-28 11:12:22,287 - app.main - INFO - Cleanup complete
+2026-04-28 11:12:24,154 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:12:28,584 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 11:12:28,584 - app.main - INFO - Default provider: openai
+2026-04-28 11:12:28,584 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 11:12:28,585 - app.main - INFO - Redis enabled: True
+2026-04-28 11:12:28,585 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 11:12:29,194 - app.main - INFO - AI Provider router initialized
+2026-04-28 11:12:29,307 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 11:12:29,307 - app.main - INFO - Redis cache layer initialized
+2026-04-28 11:12:29,478 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 11:12:29,479 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 11:12:29,480 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 11:12:29,480 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 11:12:36,038 - app.middleware.rbac - WARNING - Unknown role: ADMIN, defaulting to EMPLOYEE
+2026-04-28 11:12:44,634 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:12:44,641 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=18318, completion_tokens=95
+2026-04-28 11:12:44,641 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=364, reasoning length=1342
+2026-04-28 11:12:44,708 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 0
+2026-04-28 11:12:44,954 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 11:12:55,347 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:12:55,348 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=21102, completion_tokens=82
+2026-04-28 11:12:55,348 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=286, reasoning length=1258
+2026-04-28 11:12:55,357 - app.routers.ws_chat - INFO - [DEBUG] reasoning preview: First, the user said "hi", which is a greeting. I'm supposed to respond naturally like a colleague, keep it short, and end with follow-ups.
+
+As a friendly colleague, I should acknowledge the greeting 
+2026-04-28 11:12:55,357 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 0
+2026-04-28 11:13:11,789 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:13:50,759 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:13:50,822 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=234, completion_tokens=2255
+2026-04-28 11:13:50,911 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 11:13:50,912 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 11:13:50,917 - app.database - INFO - Database connection pool closed
+2026-04-28 11:13:50,917 - app.main - INFO - Cleanup complete
+2026-04-28 11:13:51,806 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:13:55,086 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 11:13:55,086 - app.main - INFO - Default provider: openai
+2026-04-28 11:13:55,086 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 11:13:55,086 - app.main - INFO - Redis enabled: True
+2026-04-28 11:13:55,087 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 11:13:55,688 - app.main - INFO - AI Provider router initialized
+2026-04-28 11:13:55,820 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 11:13:55,820 - app.main - INFO - Redis cache layer initialized
+2026-04-28 11:13:55,996 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 11:13:55,997 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 11:13:55,998 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 11:13:55,998 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 11:13:56,005 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 11:13:56,005 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 11:13:56,005 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 11:14:24,032 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 11:14:37,858 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 11:15:33,507 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:15:33,521 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=19731, completion_tokens=101
+2026-04-28 11:15:33,522 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=363, reasoning length=2045
+2026-04-28 11:15:33,557 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 1
+2026-04-28 11:16:05,607 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:16:05,609 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=19810, completion_tokens=711
+2026-04-28 11:16:05,609 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=1899, reasoning length=1145
+2026-04-28 11:16:05,621 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 0
+2026-04-28 11:16:07,858 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:16:07,860 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=18651, completion_tokens=67
+2026-04-28 11:16:07,861 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=240, reasoning length=1297
+2026-04-28 11:16:07,876 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 0
+2026-04-28 11:17:39,259 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:17:39,261 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=1020, completion_tokens=2034
+2026-04-28 11:18:48,123 - watchfiles.main - INFO - 1 change detected
+2026-04-28 11:19:47,495 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:19:47,535 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=234, completion_tokens=2526
+2026-04-28 11:25:09,220 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 11:25:17,689 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:25:17,690 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=21102, completion_tokens=79
+2026-04-28 11:25:17,691 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=276, reasoning length=891
+2026-04-28 11:25:17,699 - app.routers.ws_chat - INFO - [DEBUG] reasoning preview: First, the user said "hi", which is a greeting. As a friendly colleague, I should respond naturally, like in a chat.
+
+My system prompt says to talk naturally, keep responses concise, and always end wi
+2026-04-28 11:25:17,699 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 0
+2026-04-28 11:25:40,351 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 11:25:40,353 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=18589, completion_tokens=292
+2026-04-28 11:25:40,353 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=839, reasoning length=1300
+2026-04-28 11:25:40,367 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 0
+2026-04-28 12:10:35,714 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 12:11:07,755 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:11:07,798 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=1018, completion_tokens=2226
+2026-04-28 12:17:17,989 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 520 <none>"
+2026-04-28 12:17:17,995 - openai._base_client - INFO - Retrying request to /chat/completions in 60.000000 seconds
+2026-04-28 12:19:04,591 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:19:04,670 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=1018, completion_tokens=2140
+2026-04-28 12:19:31,247 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:19:31,248 - app.main - INFO - Default provider: openai
+2026-04-28 12:19:31,248 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 12:19:31,248 - app.main - INFO - Redis enabled: True
+2026-04-28 12:19:31,248 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:19:32,716 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:19:32,924 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:19:32,925 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:19:33,098 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:19:33,104 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:19:33,104 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:19:33,104 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:19:41,578 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:19:41,584 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=21104, completion_tokens=81
+2026-04-28 12:19:41,584 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=286, reasoning length=1070
+2026-04-28 12:19:41,723 - app.routers.ws_chat - INFO - [DEBUG] reasoning preview: First, the user said "hi", which is a greeting. As a friendly colleague, I need to respond naturally, like in a chat.
+
+My role is to be helpful and engaging. I should keep responses short and on point
+2026-04-28 12:19:41,724 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 0
+2026-04-28 12:20:11,492 - app.routers.data_analyst - INFO - DB data keys: ['employees', 'attendance', 'payroll', 'leave', 'recruitment', 'contracts', 'generated_at']
+2026-04-28 12:20:11,493 - app.routers.data_analyst - INFO - Leave data: {"leave_by_status": [{"status": "APPROVED", "count": 9.0}, {"status": "CANCELLED", "count": 4.0}, {"status": "REJECTED", "count": 4.0}], "pending_requests_count": 0, "pending_requests_details": "Kh\u00f4ng c\u00f3 \u0111\u01a1n ch\u1edd duy\u1ec7t.", "recent_processed_requests": [{"id": "cmnemivnumdnf84plrh58v", "startDate": "2026-05-01T00:00:00", "endDate": "2026-05-01T00:00:00", "totalDays": 1.0, "reason": "Ngh\u1ec9 ph\u00e9p n\u0103m", "status": "APPROVED", "createdAt": "2026-04-17T07:52:02.
+2026-04-28 12:20:25,389 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:20:25,390 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=4825, completion_tokens=283
+2026-04-28 12:20:25,391 - app.routers.data_analyst - INFO - Final chart_type=none, chart_data_len=0
+2026-04-28 12:22:32,218 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:24:48,513 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 12:25:07,130 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:25:07,131 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3-mini, prompt_tokens=18495, completion_tokens=124
+2026-04-28 12:25:07,132 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=450, reasoning length=2983
+2026-04-28 12:25:07,136 - app.routers.ws_chat - INFO - [DEBUG] reasoning preview: First, the user is asking about their own leave balance. From the system prompt, I need to ONLY respond about the user's personal information. The data snapshot provided is:
+
+{'profile': {'profile': {
+2026-04-28 12:25:07,137 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 1
+2026-04-28 12:25:46,572 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:27:30,013 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:27:30,192 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 12:27:30,193 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 12:27:30,197 - app.database - INFO - Database connection pool closed
+2026-04-28 12:27:30,198 - app.main - INFO - Cleanup complete
+2026-04-28 12:27:31,194 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:27:35,250 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:27:35,251 - app.main - INFO - Default provider: openai
+2026-04-28 12:27:35,251 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 12:27:35,251 - app.main - INFO - Redis enabled: True
+2026-04-28 12:27:35,251 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:27:35,283 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 12:27:35,933 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:27:36,087 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:27:36,088 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:27:36,297 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:27:36,303 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:27:36,305 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:27:36,305 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:27:57,734 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:27:57,888 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 12:27:57,889 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 12:27:57,894 - app.database - INFO - Database connection pool closed
+2026-04-28 12:27:57,894 - app.main - INFO - Cleanup complete
+2026-04-28 12:27:58,734 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:28:01,690 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:28:01,691 - app.main - INFO - Default provider: openai
+2026-04-28 12:28:01,691 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 12:28:01,691 - app.main - INFO - Redis enabled: True
+2026-04-28 12:28:01,692 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:28:01,708 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 12:28:02,248 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:28:02,356 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:28:02,356 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:28:02,523 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:28:02,524 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:28:02,525 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:28:02,525 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:28:26,538 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:28:26,538 - app.main - INFO - Default provider: openai
+2026-04-28 12:28:26,538 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 12:28:26,538 - app.main - INFO - Redis enabled: True
+2026-04-28 12:28:26,538 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:28:27,119 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:28:27,237 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:28:27,237 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:28:27,401 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:28:27,402 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:28:27,402 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:28:27,402 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:28:40,894 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:28:41,119 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 12:28:41,119 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 12:28:41,124 - app.database - INFO - Database connection pool closed
+2026-04-28 12:28:41,125 - app.main - INFO - Cleanup complete
+2026-04-28 12:28:41,977 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:28:45,125 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:28:45,126 - app.main - INFO - Default provider: openai
+2026-04-28 12:28:45,126 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 12:28:45,126 - app.main - INFO - Redis enabled: True
+2026-04-28 12:28:45,126 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:28:45,159 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 12:28:45,764 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:28:45,873 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:28:45,874 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:28:46,034 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:28:46,035 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:28:46,035 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:28:46,035 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:29:00,557 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:29:00,557 - app.main - INFO - Default provider: openai
+2026-04-28 12:29:00,558 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 12:29:00,558 - app.main - INFO - Redis enabled: True
+2026-04-28 12:29:00,558 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:29:01,170 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:29:01,309 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:29:01,309 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:29:01,511 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:29:01,512 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:29:01,513 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:29:01,513 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:29:01,549 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:29:05,977 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:29:05,977 - app.main - INFO - Default provider: openai
+2026-04-28 12:29:05,977 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 12:29:05,977 - app.main - INFO - Redis enabled: True
+2026-04-28 12:29:05,978 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:29:06,552 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:29:06,660 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:29:06,661 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:29:06,827 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:29:06,829 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:29:06,829 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:29:06,829 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:29:10,012 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 12:30:13,313 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 12:31:05,620 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 12:31:05,621 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 12:31:05,626 - app.database - INFO - Database connection pool closed
+2026-04-28 12:31:05,626 - app.main - INFO - Cleanup complete
+2026-04-28 12:31:05,722 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:31:11,524 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:31:16,314 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:31:16,314 - app.main - INFO - Default provider: openai
+2026-04-28 12:31:16,314 - app.main - INFO - Default model: grok-3-mini
+2026-04-28 12:31:16,314 - app.main - INFO - Redis enabled: True
+2026-04-28 12:31:16,315 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:31:16,981 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:31:17,257 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:31:17,258 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:31:17,532 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:31:17,534 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:31:17,535 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:31:17,535 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:31:22,652 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 12:31:32,763 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 12:32:37,513 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:32:37,513 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:34:54,131 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:34:54,131 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:35:18,321 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:35:18,321 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:35:18,497 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 12:35:18,497 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 12:35:18,504 - app.database - INFO - Database connection pool closed
+2026-04-28 12:35:18,505 - app.main - INFO - Cleanup complete
+2026-04-28 12:35:18,529 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 12:35:18,530 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 12:35:18,535 - app.database - INFO - Database connection pool closed
+2026-04-28 12:35:18,536 - app.main - INFO - Cleanup complete
+2026-04-28 12:35:19,556 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:35:19,623 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:35:25,142 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:35:25,143 - app.main - INFO - Default provider: openai
+2026-04-28 12:35:25,143 - app.main - INFO - Default model: grok-3
+2026-04-28 12:35:25,143 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:35:25,143 - app.main - INFO - Redis enabled: True
+2026-04-28 12:35:25,143 - app.main - INFO - Default provider: openai
+2026-04-28 12:35:25,143 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:35:25,143 - app.main - INFO - Default model: grok-3
+2026-04-28 12:35:25,144 - app.main - INFO - Redis enabled: True
+2026-04-28 12:35:25,144 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:35:25,222 - watchfiles.main - INFO - 7 changes detected
+2026-04-28 12:35:25,238 - watchfiles.main - INFO - 7 changes detected
+2026-04-28 12:35:26,045 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:35:26,078 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:35:26,280 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:35:26,280 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:35:26,280 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:35:26,280 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:35:26,467 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:35:26,468 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:35:26,469 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:35:26,469 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:35:26,470 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:35:26,471 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:35:26,471 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:35:26,472 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:35:26,501 - app.routers.chat - INFO - Personal data access for user=cmnwwwibl0055ygugtsafyc80, role=HRMRole.EMPLOYEE
+2026-04-28 12:35:34,840 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:35:34,848 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3, prompt_tokens=17879, completion_tokens=173
+2026-04-28 12:35:58,059 - app.routers.data_analyst - INFO - DB data keys: ['leave']
+2026-04-28 12:35:58,059 - app.routers.data_analyst - INFO - Leave data: {"leave_by_status": [{"status": "APPROVED", "count": 9.0}, {"status": "CANCELLED", "count": 4.0}, {"status": "REJECTED", "count": 4.0}], "pending_requests_count": 0, "pending_requests_details": "Kh\u00f4ng c\u00f3 \u0111\u01a1n ch\u1edd duy\u1ec7t.", "recent_processed_requests": [{"id": "cmnemivnumdnf84plrh58v", "startDate": "2026-05-01T00:00:00", "endDate": "2026-05-01T00:00:00", "totalDays": 1.0, "reason": "Ngh\u1ec9 ph\u00e9p n\u0103m", "status": "APPROVED", "createdAt": "2026-04-17T07:52:02.
+2026-04-28 12:36:02,624 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:36:02,626 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3, prompt_tokens=3118, completion_tokens=198
+2026-04-28 12:36:02,626 - app.routers.data_analyst - INFO - Final chart_type=none, chart_data_len=0
+2026-04-28 12:36:26,079 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:36:26,079 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:36:26,278 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 12:36:26,278 - app.main - INFO - Shutting down Digital HRM AI Service...
+2026-04-28 12:36:26,278 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 12:36:26,279 - app.services.redis_service - INFO - Redis connection closed
+2026-04-28 12:36:26,284 - app.database - INFO - Database connection pool closed
+2026-04-28 12:36:26,284 - app.main - INFO - Cleanup complete
+2026-04-28 12:36:26,286 - app.database - INFO - Database connection pool closed
+2026-04-28 12:36:26,286 - app.main - INFO - Cleanup complete
+2026-04-28 12:36:27,460 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:36:27,510 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:36:30,480 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 12:36:30,485 - watchfiles.main - INFO - 5 changes detected
+2026-04-28 12:37:33,005 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:37:33,005 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:38:43,368 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:38:43,368 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:38:47,202 - watchfiles.main - INFO - 7 changes detected
+2026-04-28 12:38:47,202 - watchfiles.main - INFO - 7 changes detected
+2026-04-28 12:38:47,349 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:38:47,349 - app.main - INFO - Default provider: openai
+2026-04-28 12:38:47,349 - app.main - INFO - Default model: grok-3
+2026-04-28 12:38:47,349 - app.main - INFO - Redis enabled: True
+2026-04-28 12:38:47,349 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:38:47,355 - app.main - INFO - Starting Digital HRM AI Service...
+2026-04-28 12:38:47,355 - app.main - INFO - Default provider: openai
+2026-04-28 12:38:47,356 - app.main - INFO - Default model: grok-3
+2026-04-28 12:38:47,356 - app.main - INFO - Redis enabled: True
+2026-04-28 12:38:47,356 - app.main - INFO - Rate limit: 60 req/min, 1000 req/day
+2026-04-28 12:38:48,130 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:38:48,131 - app.main - INFO - AI Provider router initialized
+2026-04-28 12:38:48,248 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:38:48,248 - app.services.redis_service - INFO - Redis connected successfully: redis://localhost:6379/0
+2026-04-28 12:38:48,248 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:38:48,248 - app.main - INFO - Redis cache layer initialized
+2026-04-28 12:38:48,463 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:38:48,463 - app.database - INFO - Database connected (pool min=5, max=30): PostgreSQL 14.22 on x86_64-pc-linux-musl, compiled...
+2026-04-28 12:38:48,465 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:38:48,465 - app.main - INFO - Database connection pool initialized successfully
+2026-04-28 12:38:48,466 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:38:48,466 - app.services.queue_manager - INFO - AI Request Queue initialized: max_concurrent=20
+2026-04-28 12:38:48,466 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:38:48,466 - app.main - INFO - AI Request Queue initialized (max_concurrent=20)
+2026-04-28 12:38:48,475 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 12:38:48,498 - app.routers.chat - INFO - Personal data access for user=cmnwwwibl0055ygugtsafyc80, role=HRMRole.EMPLOYEE
+2026-04-28 12:38:54,723 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:38:54,731 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3, prompt_tokens=18074, completion_tokens=118
+2026-04-28 12:39:10,728 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:39:10,729 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3, prompt_tokens=19046, completion_tokens=235
+2026-04-28 12:39:10,730 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=730, reasoning length=0
+2026-04-28 12:39:10,744 - app.routers.ws_chat - INFO - [DEBUG] reasoning preview: (empty)
+2026-04-28 12:39:10,744 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 1
+2026-04-28 12:39:36,266 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 12:40:04,788 - app.routers.ws_chat - INFO - Chat processing cancelled by user
+2026-04-28 12:40:40,011 - app.routers.ws_chat - INFO - Client disconnected during auth handshake
+2026-04-28 12:40:50,009 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:40:50,010 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3, prompt_tokens=18863, completion_tokens=141
+2026-04-28 12:40:50,010 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=454, reasoning length=0
+2026-04-28 12:40:50,014 - app.routers.ws_chat - INFO - [DEBUG] reasoning preview: (empty)
+2026-04-28 12:40:50,015 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 0
+2026-04-28 12:40:58,742 - httpx - INFO - HTTP Request: POST https://chat.vitexa.app/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-28 12:40:58,743 - app.services.openai_service - INFO - OpenAI chat completed: model=grok-3, prompt_tokens=19040, completion_tokens=227
+2026-04-28 12:40:58,744 - app.routers.ws_chat - INFO - [DEBUG] ai_content length=694, reasoning length=0
+2026-04-28 12:40:58,748 - app.routers.ws_chat - INFO - [DEBUG] reasoning preview: (empty)
+2026-04-28 12:40:58,749 - app.routers.ws_chat - INFO - [DEBUG] tool_calls found: 1
+2026-04-28 12:42:17,649 - watchfiles.main - INFO - 1 change detected
+2026-04-28 12:42:17,649 - watchfiles.main - INFO - 1 change detected

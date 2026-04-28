@@ -4,6 +4,7 @@ Cac ham truy van du lieu tu PostgreSQL de phuc vu phan tich AI
 Tat ca queries la READ-ONLY, khong thay doi du lieu
 """
 
+import asyncio
 import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime, date
@@ -793,9 +794,9 @@ class HRDataQueries:
         """
         Thong minh tim kiem du lieu phu hop voi cau hoi cua nguoi dung.
         Phan tich keywords de quyet dinh query nao can chay.
+        Tat ca queries chay SONG SONG voi asyncio.gather() de giam latency.
         """
         query_lower = query.lower()
-        result = {}
 
         # Keywords mapping
         employee_keywords = ["nhân viên", "nhan vien", "employee", "người", "tổng số", "bao nhiêu người", "headcount"]
@@ -806,28 +807,49 @@ class HRDataQueries:
         contract_keywords = ["hợp đồng", "hop dong", "contract"]
         department_keywords = ["phòng ban", "phong ban", "department", "bộ phận"]
 
-        # Luon lay tong quan nhan vien
-        if any(k in query_lower for k in employee_keywords) or any(k in query_lower for k in department_keywords):
-            result["employees"] = await HRDataQueries.get_employee_overview()
+        # Xác định queries nào cần chạy
+        need_employees = any(k in query_lower for k in employee_keywords) or any(k in query_lower for k in department_keywords)
+        need_attendance = any(k in query_lower for k in attendance_keywords)
+        need_payroll = any(k in query_lower for k in payroll_keywords)
+        need_leave = any(k in query_lower for k in leave_keywords)
+        need_recruitment = any(k in query_lower for k in recruitment_keywords)
+        need_contracts = any(k in query_lower for k in contract_keywords)
 
-        if any(k in query_lower for k in attendance_keywords):
-            result["attendance"] = await HRDataQueries.get_attendance_summary()
+        # Nếu không match gì cả → lay toàn bộ snapshot
+        need_all = not any([need_employees, need_attendance, need_payroll, need_leave, need_recruitment, need_contracts])
 
-        if any(k in query_lower for k in payroll_keywords):
-            result["payroll"] = await HRDataQueries.get_payroll_summary()
+        if need_all:
+            return await HRDataQueries.get_full_hr_snapshot()
 
-        if any(k in query_lower for k in leave_keywords):
-            result["leave"] = await HRDataQueries.get_leave_summary()
+        # Chạy song song tất cả queries cần thiết
+        tasks = []
+        keys = []
 
-        if any(k in query_lower for k in recruitment_keywords):
-            result["recruitment"] = await HRDataQueries.get_recruitment_summary()
+        if need_employees:
+            tasks.append(HRDataQueries.get_employee_overview())
+            keys.append("employees")
+        if need_attendance:
+            tasks.append(HRDataQueries.get_attendance_summary())
+            keys.append("attendance")
+        if need_payroll:
+            tasks.append(HRDataQueries.get_payroll_summary())
+            keys.append("payroll")
+        if need_leave:
+            tasks.append(HRDataQueries.get_leave_summary())
+            keys.append("leave")
+        if need_recruitment:
+            tasks.append(HRDataQueries.get_recruitment_summary())
+            keys.append("recruitment")
+        if need_contracts:
+            tasks.append(HRDataQueries.get_contract_summary())
+            keys.append("contracts")
 
-        if any(k in query_lower for k in contract_keywords):
-            result["contracts"] = await HRDataQueries.get_contract_summary()
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Neu khong match gi, lay toan bo snapshot
-        if not result:
-            result = await HRDataQueries.get_full_hr_snapshot()
+        result = {}
+        for key, res in zip(keys, results):
+            if not isinstance(res, Exception):
+                result[key] = res
 
         return result
 
@@ -891,7 +913,6 @@ class EmployeePersonalQueries:
 
         try:
             async with pool.acquire() as conn:
-                # Thang hien tai
                 current = await conn.fetchrow(
                     """
                     SELECT month, year, "totalWorkDays", "standardDays",
@@ -903,7 +924,6 @@ class EmployeePersonalQueries:
                     user_id, target_month, target_year,
                 )
 
-                # Lich su 3 thang gan nhat
                 history = await conn.fetch(
                     """
                     SELECT month, year, "totalWorkDays", "standardDays",
@@ -917,7 +937,6 @@ class EmployeePersonalQueries:
                     user_id,
                 )
 
-                # Chi tiet cham cong thang nay (10 ban ghi gan nhat)
                 records = await conn.fetch(
                     """
                     SELECT date, "checkIn", "checkOut", "workHours",
@@ -952,7 +971,6 @@ class EmployeePersonalQueries:
 
         try:
             async with pool.acquire() as conn:
-                # So du phep
                 balances = await conn.fetch(
                     """
                     SELECT lt.name as leave_type,
@@ -967,7 +985,6 @@ class EmployeePersonalQueries:
                     user_id,
                 )
 
-                # Lich su don nghi (10 don gan nhat)
                 requests = await conn.fetch(
                     """
                     SELECT lr.id, lt.name as leave_type, lr."startDate", lr."endDate",
@@ -981,7 +998,6 @@ class EmployeePersonalQueries:
                     user_id,
                 )
 
-                # Don dang cho duyet
                 pending = await conn.fetchval(
                     "SELECT COUNT(*) FROM leave_requests WHERE \"userId\" = $1 AND status = 'PENDING'",
                     user_id,
@@ -1005,7 +1021,6 @@ class EmployeePersonalQueries:
 
         try:
             async with pool.acquire() as conn:
-                # Luong hien tai
                 salary = await conn.fetchrow(
                     """
                     SELECT "baseSalary", "allowances", "effectiveDate"
@@ -1017,7 +1032,6 @@ class EmployeePersonalQueries:
                     user_id,
                 )
 
-                # Payslip gan nhat (3 thang)
                 payslips = await conn.fetch(
                     """
                     SELECT pe.month, pe.year, pe."grossSalary", pe."netSalary",
@@ -1095,12 +1109,14 @@ class EmployeePersonalQueries:
     @staticmethod
     async def get_personal_full_data(user_id: str) -> Dict[str, Any]:
         """Lay toan bo du lieu ca nhan cho AI phan tich (tuong duong employee 360)"""
-        profile = await EmployeePersonalQueries.get_personal_profile(user_id)
-        attendance = await EmployeePersonalQueries.get_personal_attendance(user_id)
-        leave = await EmployeePersonalQueries.get_personal_leave(user_id)
-        salary = await EmployeePersonalQueries.get_personal_salary(user_id)
-        contract = await EmployeePersonalQueries.get_personal_contract(user_id)
-        rewards = await EmployeePersonalQueries.get_personal_rewards(user_id)
+        profile, attendance, leave, salary, contract, rewards = await asyncio.gather(
+            EmployeePersonalQueries.get_personal_profile(user_id),
+            EmployeePersonalQueries.get_personal_attendance(user_id),
+            EmployeePersonalQueries.get_personal_leave(user_id),
+            EmployeePersonalQueries.get_personal_salary(user_id),
+            EmployeePersonalQueries.get_personal_contract(user_id),
+            EmployeePersonalQueries.get_personal_rewards(user_id),
+        )
 
         return {
             "profile": profile,
@@ -1117,12 +1133,9 @@ class EmployeePersonalQueries:
         """
         Tim kiem du lieu CA NHAN phu hop voi cau hoi.
         Chi lay nhung data can thiet de tiet kiem query.
+        Tat ca queries chay SONG SONG voi asyncio.gather() de giam latency.
         """
         query_lower = query.lower()
-        result = {}
-
-        # Profile luon duoc lay
-        result["profile"] = await EmployeePersonalQueries.get_personal_profile(user_id)
 
         attendance_keywords = ["chấm công", "cham cong", "đi muộn", "di muon", "vắng", "attendance", "late", "absent", "làm việc", "ot", "overtime"]
         payroll_keywords = ["lương", "luong", "salary", "payroll", "thu nhập", "payslip", "bảng lương"]
@@ -1130,19 +1143,38 @@ class EmployeePersonalQueries:
         contract_keywords = ["hợp đồng", "hop dong", "contract"]
         reward_keywords = ["khen thưởng", "khen thuong", "reward", "kỷ luật", "ky luat"]
 
-        if any(k in query_lower for k in attendance_keywords):
-            result["attendance"] = await EmployeePersonalQueries.get_personal_attendance(user_id)
+        need_attendance = any(k in query_lower for k in attendance_keywords)
+        need_salary = any(k in query_lower for k in payroll_keywords)
+        need_leave = any(k in query_lower for k in leave_keywords)
+        need_contract = any(k in query_lower for k in contract_keywords)
+        need_rewards = any(k in query_lower for k in reward_keywords)
 
-        if any(k in query_lower for k in payroll_keywords):
-            result["salary"] = await EmployeePersonalQueries.get_personal_salary(user_id)
+        # Xay dung danh sach tasks chay song song
+        tasks = [EmployeePersonalQueries.get_personal_profile(user_id)]
+        keys = ["profile"]
 
-        if any(k in query_lower for k in leave_keywords):
-            result["leave"] = await EmployeePersonalQueries.get_personal_leave(user_id)
+        if need_attendance:
+            tasks.append(EmployeePersonalQueries.get_personal_attendance(user_id))
+            keys.append("attendance")
+        if need_salary:
+            tasks.append(EmployeePersonalQueries.get_personal_salary(user_id))
+            keys.append("salary")
+        if need_leave:
+            tasks.append(EmployeePersonalQueries.get_personal_leave(user_id))
+            keys.append("leave")
+        if need_contract:
+            tasks.append(EmployeePersonalQueries.get_personal_contract(user_id))
+            keys.append("contract")
+        if need_rewards:
+            tasks.append(EmployeePersonalQueries.get_personal_rewards(user_id))
+            keys.append("rewards")
 
-        if any(k in query_lower for k in contract_keywords):
-            result["contract"] = await EmployeePersonalQueries.get_personal_contract(user_id)
+        # Chay tat ca song song
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        if any(k in query_lower for k in reward_keywords):
-            result["rewards"] = await EmployeePersonalQueries.get_personal_rewards(user_id)
+        result = {}
+        for key, res in zip(keys, results):
+            if not isinstance(res, Exception):
+                result[key] = res
 
         return result

@@ -294,18 +294,21 @@ async def _process_chat(websocket: WebSocket, data: dict, user_id: Optional[str]
 
             if user_ctx.has_full_access:
                 relevant_data = await HRDataQueries.search_data_for_query(message)
+                data_label = "DỮ LIỆU HR TOÀN TỔ CHỨC"
             elif user_ctx.is_identified:
                 relevant_data = await EmployeePersonalQueries.search_personal_data_for_query(
                     user_ctx.user_id, message
                 )
+                data_label = "DỮ LIỆU CÁ NHÂN CỦA NGƯỜI DÙNG NÀY (đã truy vấn trực tiếp từ database — TRẢ LỜI NGAY, KHÔNG cần gọi thêm tool)"
             else:
                 relevant_data = {}
+                data_label = "DỮ LIỆU HR"
 
             if relevant_data:
                 for key in relevant_data:
                     if relevant_data[key]:
                         data_sources.append(key)
-                db_context = f"\nDỮ LIỆU THỰC TỪ HỆ THỐNG HR:\n==========================================\n{relevant_data}\n==========================================\n"
+                db_context = f"\n{data_label}:\n==========================================\n{relevant_data}\n==========================================\n"
                 hr_data_for_charts = relevant_data
         except Exception as db_error:
             logger.warning(f"Could not fetch DB data: {db_error}")
@@ -324,7 +327,15 @@ Có thể cung cấp dữ liệu tổng quan toàn tổ chức, thống kê, so 
 CHỈ trả lời về thông tin CÁ NHÂN của người dùng này.
 KHÔNG đưa ra thông tin của nhân viên khác, phòng ban khác, hay số liệu tổng quan tổ chức.
 Nếu người dùng hỏi về dữ liệu tổng thể (ví dụ: lương toàn công ty, số nhân viên...),
-hãy lịch sự giải thích rằng bạn chỉ có thể cung cấp thông tin cá nhân của họ."""
+hãy lịch sự giải thích rằng bạn chỉ có thể cung cấp thông tin cá nhân của họ.
+
+QUAN TRỌNG - DỮ LIỆU CÁ NHÂN TRONG SNAPSHOT:
+Dữ liệu trong phần "DỮ LIỆU THỰC TỪ HỆ THỐNG HR" bên dưới đã là dữ liệu CÁ NHÂN TRỰC TIẾP của chính người dùng này, được truy vấn sẵn từ database.
+- Nếu snapshot có trường "leave" hoặc "leave_balances" → ĐÂY CHÍNH LÀ số dư nghỉ phép của họ. TRẢ LỜI NGAY, KHÔNG gọi get_leave_balance.
+- Nếu snapshot có trường "attendance" → TRẢ LỜI NGAY, KHÔNG gọi get_attendance_report.
+- Nếu snapshot có trường "salary" → TRẢ LỜI NGAY, KHÔNG gọi tool nào.
+- Nếu snapshot có trường "profile" → TRẢ LỜI NGAY về thông tin cá nhân.
+CHỈ gọi tool khi câu hỏi yêu cầu HÀNH ĐỘNG (tạo đơn, xin nghỉ...) hoặc khi snapshot THỰC SỰ không có dữ liệu liên quan."""
 
         tools_prompt = get_tools_prompt()
         prisma_schema = get_prisma_schema()
@@ -365,18 +376,15 @@ QUY TẮC NGHIÊM NGẶT - KHÔNG ĐƯỢC VI PHẠM:
 - {language_instruction}
 
 TRUY VẤN DATABASE THÔNG MINH - ĐỌC KỸ:
-- Dữ liệu HR snapshot ở trên là dữ liệu TỔNG HỢP sẵn có. Hãy DÙN NGAY nếu đủ thông tin.
-- NẾU snapshot KHÔNG ĐỦ CHI TIẾT cho câu hỏi (ví dụ: user hỏi "danh sách" nhưng snapshot chỉ có count) → PHẢI GỌI tool query_database để lấy thêm chi tiết.
+- Dữ liệu HR snapshot ở trên là dữ liệu THỰC từ database, đã được truy vấn sẵn. Hãy DÙNG NGAY nếu đủ thông tin.
+- ƯU TIÊN SỐ 1: Nếu snapshot đã có dữ liệu liên quan → TRẢ LỜI NGAY từ snapshot. KHÔNG gọi thêm tool.
+- Chỉ gọi tool khi câu hỏi cần HÀNH ĐỘNG (tạo đơn, duyệt...) hoặc snapshot THỰC SỰ không có dữ liệu liên quan.
+- NẾU snapshot chỉ có COUNT/tổng hợp mà user cần danh sách chi tiết → GỌI query_database.
 - Khi gọi query_database:
   + LUÔN dùng JOIN để lấy tên phòng ban, chức vụ thay vì ID
   + LUÔN thêm LIMIT (tối đa 50)
   + KHÔNG BAO GIỜ SELECT các cột ID (id, userId, departmentId, positionId) — chỉ SELECT thông tin có nghĩa
   + Ví dụ đúng: SELECT u.name, u."hireDate", d.name as department_name, p.name as position_name FROM users u LEFT JOIN departments d ON u."departmentId" = d.id LEFT JOIN positions p ON u."positionId" = p.id WHERE ... LIMIT 20
-- Quy tắc ưu tiên:
-  1. Nếu snapshot có đủ danh sách chi tiết → trả lời ngay, KHÔNG cần query thêm
-  2. Nếu snapshot chỉ có COUNT/tổng hợp mà user cần danh sách → GỌI query_database
-  3. Nếu câu hỏi KHÔNG liên quan tới dữ liệu trong snapshot → GỌI query_database chủ động
-- KHÔNG BAO GIỜ trả lời "Không có dữ liệu chi tiết trong snapshot" — hãy query database thay vì nói không có!
 
 DƯỚI ĐÂY LÀ KIẾN TRÚC DATABASE CỦA HỆ THỐNG (schema.prisma). HÃY DÙNG NÓ ĐỂ TẠO CÂU LỆNH SQL CHUẨN XÁC NẾU CẦN:
 ```prisma
@@ -430,7 +438,20 @@ DƯỚI ĐÂY LÀ KIẾN TRÚC DATABASE CỦA HỆ THỐNG (schema.prisma). HÃY
 
         # Step 4: Parse tool calls and execute with per-tool retry
         ai_content = result.get("content", "")
-        tool_calls = parse_tool_calls_from_response(ai_content)
+        reasoning = result.get("reasoning_content", "")
+        
+        logger.info(f"[DEBUG] ai_content length={len(ai_content)}, reasoning length={len(reasoning)}")
+        logger.info(f"[DEBUG] ai_content preview: {ai_content[:200] if ai_content else '(empty)'}")
+        logger.info(f"[DEBUG] reasoning preview: {reasoning[:200] if reasoning else '(empty)'}")
+        
+        combined_content = ai_content + "\n" + reasoning if reasoning else ai_content
+        tool_calls = parse_tool_calls_from_response(combined_content)
+        
+        logger.info(f"[DEBUG] tool_calls found: {len(tool_calls)}")
+        
+        if not ai_content and reasoning and not tool_calls:
+            ai_content = reasoning  # Use reasoning directly as the response
+            
         actions = []
         needs_followup = False
         any_tool_permanently_failed = False
@@ -619,8 +640,10 @@ QUY TẮC TRẢ LỜI:
                         ),
                         request_id=f"{request_id}_followup",
                     )
-                    if followup_result.get("success") and followup_result.get("content"):
-                        ai_content = followup_result["content"]
+                    if followup_result.get("success"):
+                        fu_content = followup_result.get("content", "")
+                        fu_reasoning = followup_result.get("reasoning_content", "")
+                        ai_content = fu_content if fu_content else fu_reasoning
                 except Exception as fu_err:
                     logger.warning(f"Follow-up AI call failed: {fu_err}")
                     # Fall through to use original ai_content
@@ -668,19 +691,23 @@ QUY TẮC TRẢ LỜI:
             
             ai_content = "\n".join(summary_parts) if summary_parts else ai_content
 
+        # Strip action blocks so the user doesn't see raw XML from reasoning
+        ai_content = strip_action_blocks(ai_content)
+
         # Step 5: Stream the response content
         if ai_content:
             # Stream by word boundaries for natural feeling
+            # Tăng chunk size lên 40 ký tự và giảm delay xuống 4ms để stream nhanh hơn
             words = ai_content.split(' ')
             buffer = ""
             for i, word in enumerate(words):
                 buffer += word
                 if i < len(words) - 1:
                     buffer += " "
-                if len(buffer) >= 8 or i == len(words) - 1:
+                if len(buffer) >= 40 or i == len(words) - 1:
                     await websocket.send_json({"type": "token", "content": buffer})
                     buffer = ""
-                    await asyncio.sleep(0.012)
+                    await asyncio.sleep(0.004)
 
         # Step 6: Send done
         await websocket.send_json({

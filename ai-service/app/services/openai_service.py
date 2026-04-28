@@ -20,7 +20,7 @@ class OpenAIService:
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.openai_api_key
-        base_url = os.getenv("OPENAI_BASE_URL")
+        base_url = settings.openai_base_url
         
         if self.api_key:
             if base_url:
@@ -71,6 +71,7 @@ class OpenAIService:
             )
 
             content = response.choices[0].message.content or ""
+            reasoning_content = getattr(response.choices[0].message, "reasoning_content", "") or ""
             usage = response.usage
 
             logger.info(
@@ -82,6 +83,7 @@ class OpenAIService:
             return {
                 "success": True,
                 "content": content,
+                "reasoning_content": reasoning_content,
                 "usage": {
                     "prompt_tokens": usage.prompt_tokens,
                     "completion_tokens": usage.completion_tokens,

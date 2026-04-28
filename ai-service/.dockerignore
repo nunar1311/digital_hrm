@@ -1,0 +1,42 @@
+# AI service — exclude dev/test files from Docker image context
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist
+build
+.eggs
+
+# Virtual environments
+.venv
+venv
+env
+.env
+
+# Tests
+tests/
+test_*.py
+*_test.py
+
+# Dev dependencies
+requirements-dev.txt
+
+# Logs
+*.log
+logs/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+
+# IDE
+.vscode
+.idea
+.cursor
+
+# Misc
+.DS_Store
+*.tmp
+README.md
